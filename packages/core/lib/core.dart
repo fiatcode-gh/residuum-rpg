@@ -1,5 +1,6 @@
 export 'src/dungeon/floor.dart';
 export 'src/dungeon/floor_map.dart';
+export 'src/dungeon/floor_memory.dart';
 export 'src/dungeon/flow_field.dart';
 export 'src/dungeon/fov.dart';
 export 'src/dungeon/generator.dart';
@@ -19,3 +20,6 @@ export 'src/loot/item.dart';
 export 'src/loot/loadout.dart';
 export 'src/loot/rarity.dart';
 export 'src/skills/skill.dart';
+export 'src/town/profile.dart';
+export 'src/town/run_boundary.dart';
+export 'src/town/town.dart';

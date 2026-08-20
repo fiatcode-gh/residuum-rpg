@@ -8,12 +8,6 @@ sealed class GameBlocEvent {
   const GameBlocEvent();
 }
 
-final class GameStarted extends GameBlocEvent {
-  const GameStarted({this.worldSeed = 1});
-
-  final int worldSeed;
-}
-
 final class TileTapped extends GameBlocEvent {
   const TileTapped(this.position);
 
@@ -22,6 +16,10 @@ final class TileTapped extends GameBlocEvent {
 
 final class DescendPressed extends GameBlocEvent {
   const DescendPressed();
+}
+
+final class AscendPressed extends GameBlocEvent {
+  const AscendPressed();
 }
 
 /// Take what is lying under the hero.
@@ -92,6 +90,17 @@ class GameViewState {
       game.stairsDown != null &&
       game.hero.position == game.stairsDown;
 
+  bool get canAscend =>
+      !game.isGameOver &&
+      game.stairsUp != null &&
+      game.hero.position == game.stairsUp;
+
+  /// Whether the hero is standing where it could walk out of the dungeon.
+  ///
+  /// Either flight of stairs is a way home, which is what makes a stairwell the
+  /// place a player decides at rather than a place they pass through.
+  bool get canLeave => !game.isGameOver && (canDescend || canAscend);
+
   /// What is lying under the hero, oldest first.
   List<Item> get itemsUnderfoot => game.itemsAt(game.hero.position);
 
@@ -130,9 +139,9 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
            log: const [],
          ),
        ) {
-    on<GameStarted>(_onGameStarted);
     on<TileTapped>(_onTileTapped);
     on<DescendPressed>(_onDescendPressed);
+    on<AscendPressed>(_onAscendPressed);
     on<AutoWalkAdvanced>(_onAutoWalkAdvanced);
     on<PickUpPressed>(_onPickUpPressed);
     on<EquipPressed>(_onEquipPressed);
@@ -144,16 +153,6 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
 
   /// How long the hero pauses between tiles of a walk. Zero in tests.
   final Duration stepDelay;
-
-  void _onGameStarted(GameStarted event, Emitter<GameViewState> emit) {
-    emit(
-      GameViewState(
-        game: newGame(worldSeed: event.worldSeed),
-        log: const [],
-        walkId: state.walkId + 1,
-      ),
-    );
-  }
 
   void _onTileTapped(TileTapped event, Emitter<GameViewState> emit) {
     final game = state.game;
@@ -182,6 +181,11 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   void _onDescendPressed(DescendPressed event, Emitter<GameViewState> emit) {
     if (state.game.isGameOver) return;
     emit(_afterAction(const DescendAction()));
+  }
+
+  void _onAscendPressed(AscendPressed event, Emitter<GameViewState> emit) {
+    if (state.game.isGameOver) return;
+    emit(_afterAction(const AscendAction()));
   }
 
   void _onPickUpPressed(PickUpPressed event, Emitter<GameViewState> emit) =>

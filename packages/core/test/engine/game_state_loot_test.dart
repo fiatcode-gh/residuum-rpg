@@ -171,8 +171,8 @@ void main() {
           ItemUnequipped(item: item, slot: EquipSlot.mainHand),
         ),
         (
-          EquipRefused(reason: 'both hands are full'),
-          EquipRefused(reason: 'both hands are full'),
+          ActionRefused(reason: 'both hands are full'),
+          ActionRefused(reason: 'both hands are full'),
         ),
         (
           PotionDrunk(item: item, healed: 5),

@@ -102,10 +102,41 @@ Floor buildFloor(int depth, {required int worldSeed, required int visit}) {
   );
 }
 
-/// A fresh crawl on the first floor of the dungeon [worldSeed] describes.
+/// A hero who has never gone down: armed, stocked, untrained and broke.
 ///
-/// [visit] is 0 for now; it exists so a death can reshuffle the dungeon without
-/// changing the world.
+/// The hero stands nowhere in particular, because a profile is a hero between
+/// runs and there is no floor to stand on. [startDungeonRun] is what puts it on
+/// one.
+Profile newProfile({int worldSeed = 1}) => Profile(
+  hero: _freshHero(const Position(0, 0)),
+  worldSeed: worldSeed,
+  equipment: _startingEquipment(),
+  inventory: _startingInventory(),
+  skills: untrainedSkills,
+);
+
+/// The dungeon [worldSeed] describes, ready to be reshuffled by a visit.
+Dungeon residuumDungeon(int worldSeed) =>
+    (visit) =>
+        (depth) => buildFloor(depth, worldSeed: worldSeed, visit: visit);
+
+/// The crawl [profile] begins by walking in, with content's tables aboard.
+///
+/// The one door the town uses. [newGame] is the other door, and it stays
+/// because asking for one specific dungeon by seed and visit is still an honest
+/// thing to want — the balance bot and the seeded rule tests want exactly that.
+GameState startDungeonRun(Profile profile) => startRun(
+  profile,
+  dungeon: residuumDungeon(profile.worldSeed),
+  dropTables: dropTables,
+  lootSeedSalt: lootStreamSalt,
+);
+
+/// A fresh crawl on the first floor of the dungeon [worldSeed] describes, laid
+/// out for [visit].
+///
+/// The direct door: no profile, no visit bump, exactly the crawl the arguments
+/// name. [startDungeonRun] is the door the town walks through.
 GameState newGame({int worldSeed = 1, int visit = 0}) {
   final floor = buildFloor(1, worldSeed: worldSeed, visit: visit);
   final visible = computeFov(floor.map, floor.heroSpawn, fovRadius);

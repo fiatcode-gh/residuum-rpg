@@ -123,7 +123,7 @@ void main() {
       final (after, events) = step(game, const PickUpAction());
 
       // assert
-      expect(events.single, isA<EquipRefused>());
+      expect(events.single, isA<ActionRefused>());
       expect(after.monsters.single.position, const Position(1, 1));
       expect(after.hero.energy, game.hero.energy);
     });
@@ -298,7 +298,7 @@ void main() {
         final (after, events) = step(game, const EquipAction('kit-1'));
 
         // assert
-        expect(events.single, isA<EquipRefused>());
+        expect(events.single, isA<ActionRefused>());
         expect(after.equipment.containsKey(EquipSlot.offHand), isFalse);
         expect(after.inventory, [shield]);
         expect(after.monsters.single.position, const Position(1, 1));
@@ -333,7 +333,7 @@ void main() {
       final (after, events) = step(game, const EquipAction('kit-1'));
 
       // assert
-      expect(events.single, isA<EquipRefused>());
+      expect(events.single, isA<ActionRefused>());
       expect(after.equipment, isEmpty);
     });
 
@@ -345,7 +345,7 @@ void main() {
       final (after, events) = step(game, const EquipAction('nothing'));
 
       // assert
-      expect(events.single, isA<EquipRefused>());
+      expect(events.single, isA<ActionRefused>());
       expect(after.inventory, isEmpty);
     });
   });
@@ -387,7 +387,7 @@ void main() {
       final (after, events) = step(game, const UnequipAction(EquipSlot.head));
 
       // assert
-      expect(events.single, isA<EquipRefused>());
+      expect(events.single, isA<ActionRefused>());
       expect(after.monsters.single.position, const Position(1, 1));
     });
 
@@ -412,7 +412,7 @@ void main() {
       );
 
       // assert
-      expect(events.single, isA<EquipRefused>());
+      expect(events.single, isA<ActionRefused>());
       expect(after.equipment[EquipSlot.mainHand], worn);
     });
 
@@ -561,7 +561,7 @@ void main() {
       final (after, events) = step(game, const DrinkAction('kit-1'));
 
       // assert
-      expect(events.single, isA<EquipRefused>());
+      expect(events.single, isA<ActionRefused>());
       expect(after.inventory, [sword]);
       expect(after.monsters.single.position, const Position(1, 1));
     });
@@ -602,7 +602,7 @@ void main() {
       final (after, events) = step(game, const DropAction('nothing'));
 
       // assert
-      expect(events.single, isA<EquipRefused>());
+      expect(events.single, isA<ActionRefused>());
       expect(after.monsters.single.position, const Position(1, 1));
     });
 

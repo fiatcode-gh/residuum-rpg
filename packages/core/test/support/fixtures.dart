@@ -26,6 +26,7 @@ Actor ghoul(
   int attack = 3,
   int speed = 10,
   int dropChance = 0,
+  int pierce = 0,
 }) => Actor(
   id: id,
   name: 'the ghoul',
@@ -38,6 +39,7 @@ Actor ghoul(
   speed: speed,
   energy: actThreshold,
   dropChance: dropChance,
+  pierce: pierce,
 );
 
 Floor noFloorBelow(int depth) =>
@@ -55,6 +57,9 @@ GameState crawl({
   int lootSeed = 2,
   int depth = 1,
   Position? stairsDown,
+  Position? stairsUp,
+  Map<int, FloorMemory> floors = const {},
+  int gold = 0,
   FloorBuilder buildFloor = noFloorBelow,
   Map<Position, List<Item>> groundItems = const {},
   List<Item> inventory = const [],
@@ -82,6 +87,9 @@ GameState crawl({
     buildFloor: buildFloor,
     depth: depth,
     stairsDown: stairsDown,
+    stairsUp: stairsUp,
+    floors: floors,
+    gold: gold,
     groundItems: groundItems,
     inventory: inventory,
     equipment: equipment,

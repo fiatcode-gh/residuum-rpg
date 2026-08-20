@@ -24,6 +24,7 @@ String? describeEvent(
   ActorNoticed(:final actorId) =>
     '${_capitalised(_named(names, actorId))} comes into view.',
   Descended(:final newDepth) => 'You descend to depth $newDepth.',
+  Ascended(:final newDepth) => 'You climb to depth $newDepth.',
   AttackDodged(:final attackerId) =>
     '${_capitalised(_named(names, attackerId))} swings and misses.',
   ItemDropped(:final item) => '${item.displayName} falls to the floor.',
@@ -33,7 +34,7 @@ String? describeEvent(
     'You put on ${item.displayName} (${_slotName(slot)}).',
   ItemUnequipped(:final item, :final slot) =>
     'You take off ${item.displayName} (${_slotName(slot)}).',
-  EquipRefused(:final reason) => '${_capitalised(reason)}.',
+  ActionRefused(:final reason) => '${_capitalised(reason)}.',
   PotionDrunk(:final item, :final healed) when healed == 0 =>
     'You drink ${item.displayName}. Nothing was wrong with you.',
   PotionDrunk(:final item, :final healed) =>

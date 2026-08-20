@@ -67,6 +67,78 @@ int _damageTaken(List<GameEvent> events) => events
     .damage;
 
 void main() {
+  group('pierce', () {
+    test('eats the hero armour before the roll is reduced', () {
+      // arrange
+      final game = crawl(
+        ascii: _hall,
+        heroAt: const Position(1, 1),
+        monsters: [
+          ghoul('ghoul-1', const Position(2, 1), attack: 6, pierce: 2),
+        ],
+        equipment: {EquipSlot.chest: _worn(_hauberk)},
+      );
+
+      // act
+      final (_, events) = step(game, const MoveAction(Direction.north));
+
+      // assert
+      expect(_damageTaken(events), 5);
+    });
+
+    test('never turns armour into a bonus when it exceeds it', () {
+      // arrange
+      final game = crawl(
+        ascii: _hall,
+        heroAt: const Position(1, 1),
+        monsters: [
+          ghoul('ghoul-1', const Position(2, 1), attack: 6, pierce: 9),
+        ],
+        equipment: {EquipSlot.chest: _worn(_hauberk)},
+      );
+
+      // act
+      final (_, events) = step(game, const MoveAction(Direction.north));
+
+      // assert
+      expect(_damageTaken(events), 6);
+    });
+
+    test('the floor of one still binds against a pierced hero', () {
+      // arrange
+      final game = crawl(
+        ascii: _hall,
+        heroAt: const Position(1, 1),
+        monsters: [
+          ghoul('ghoul-1', const Position(2, 1), attack: 1, pierce: 1),
+        ],
+        equipment: {EquipSlot.chest: _worn(_hauberk)},
+      );
+
+      // act
+      final (_, events) = step(game, const MoveAction(Direction.north));
+
+      // assert
+      expect(_damageTaken(events), 1);
+    });
+
+    test('a creature with no pierce leaves the armour whole', () {
+      // arrange
+      final game = crawl(
+        ascii: _hall,
+        heroAt: const Position(1, 1),
+        monsters: [ghoul('ghoul-1', const Position(2, 1), attack: 6)],
+        equipment: {EquipSlot.chest: _worn(_hauberk)},
+      );
+
+      // act
+      final (_, events) = step(game, const MoveAction(Direction.north));
+
+      // assert
+      expect(_damageTaken(events), 3);
+    });
+  });
+
   group('armour reduces monster damage', () {
     test('subtracts armour from the roll', () {
       // arrange

@@ -15,6 +15,7 @@ class CreatureSpec {
     required this.attackMax,
     required this.speed,
     required this.dropChance,
+    this.pierce = 0,
   });
 
   final String id;
@@ -34,6 +35,15 @@ class CreatureSpec {
   /// risk: a rat is a nuisance and a wight is an event.
   final int dropChance;
 
+  /// How much of the hero's armour this creature's blows ignore.
+  ///
+  /// Zero on everything shallow: the first two floors are where armour is
+  /// supposed to feel like an answer. It climbs deeper down so that the answer
+  /// stops being the only one — a wight that four points of mail turns into a
+  /// nuisance is a wight nobody has to think about, and a dungeon whose whole
+  /// difficulty curve can be bought off in the armoury is not a dungeon.
+  final int pierce;
+
   /// One of these creatures, alive and ready to act, standing at [at].
   Actor spawn({required String id, required Position at}) => Actor(
     id: id,
@@ -47,6 +57,7 @@ class CreatureSpec {
     speed: speed,
     energy: actThreshold,
     dropChance: dropChance,
+    pierce: pierce,
   );
 }
 
@@ -83,6 +94,7 @@ const CreatureSpec ghoul = CreatureSpec(
   attackMax: 4,
   speed: 10,
   dropChance: 40,
+  pierce: 1,
 );
 
 /// Half the hero's speed, but it hits hard and takes a long time to fell.
@@ -95,6 +107,7 @@ const CreatureSpec skeleton = CreatureSpec(
   attackMax: 5,
   speed: 5,
   dropChance: 50,
+  pierce: 3,
 );
 
 const CreatureSpec wight = CreatureSpec(
@@ -106,6 +119,7 @@ const CreatureSpec wight = CreatureSpec(
   attackMax: 6,
   speed: 10,
   dropChance: 60,
+  pierce: 4,
 );
 
 /// Every creature in the game, in the order they are first met.

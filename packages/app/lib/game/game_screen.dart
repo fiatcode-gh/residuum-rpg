@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
 
+import '../town/town_bloc.dart';
 import 'game_bloc.dart';
 import 'glyph_grid.dart';
 import 'inventory_screen.dart';
@@ -32,7 +33,7 @@ class GameScreen extends StatelessWidget {
                 _MessageLog(log: state.log),
               ],
             ),
-            if (state.game.isGameOver) const _DeathOverlay(),
+            if (state.game.isGameOver) _DeathOverlay(state: state),
           ],
         ),
       ),
@@ -164,11 +165,25 @@ class _Controls extends StatelessWidget {
                   ),
                 ),
               ),
+              if (state.canAscend)
+                Expanded(
+                  child: _Control(
+                    label: 'Ascend <',
+                    onPressed: () => bloc.add(const AscendPressed()),
+                  ),
+                ),
               if (state.canDescend)
                 Expanded(
                   child: _Control(
                     label: 'Descend >',
                     onPressed: () => bloc.add(const DescendPressed()),
+                  ),
+                ),
+              if (state.canLeave)
+                Expanded(
+                  child: _Control(
+                    label: 'Leave',
+                    onPressed: () => leaveDungeon(context, state, died: false),
                   ),
                 ),
             ],
@@ -177,6 +192,20 @@ class _Controls extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Hands the finished run back to the town and uncovers the town screen.
+///
+/// The town was never torn down — entering the dungeon pushed the crawl on top
+/// of it — so coming home is one pop and one event, and there is exactly one
+/// place in the app that does it.
+void leaveDungeon(
+  BuildContext context,
+  GameViewState state, {
+  required bool died,
+}) {
+  context.read<TownBloc>().add(RunEnded(state.game, died: died));
+  Navigator.of(context).pop();
 }
 
 class _Control extends StatelessWidget {
@@ -230,7 +259,9 @@ class _MessageLog extends StatelessWidget {
 }
 
 class _DeathOverlay extends StatelessWidget {
-  const _DeathOverlay();
+  const _DeathOverlay({required this.state});
+
+  final GameViewState state;
 
   @override
   Widget build(BuildContext context) => ColoredBox(
@@ -247,10 +278,19 @@ class _DeathOverlay extends StatelessWidget {
               color: Color(0xFFE6EAF0),
             ),
           ),
+          const SizedBox(height: 8),
+          const Text(
+            'What you carried is gone. What you wore is not.',
+            style: TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 13,
+              color: Color(0xFF8A919E),
+            ),
+          ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: () => context.read<GameBloc>().add(const GameStarted()),
-            child: const Text('Restart'),
+            onPressed: () => leaveDungeon(context, state, died: true),
+            child: const Text('Return to town'),
           ),
         ],
       ),

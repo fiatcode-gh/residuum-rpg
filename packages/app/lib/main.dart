@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:residuum_content/content.dart';
 
-import 'game/game_bloc.dart';
-import 'game/game_screen.dart';
+import 'town/town_bloc.dart';
+import 'town/town_screen.dart';
 
 void main() => runApp(const ResiduumApp());
 
@@ -18,6 +19,9 @@ class ResiduumApp extends StatelessWidget {
       scaffoldBackgroundColor: const Color(0xFF0E1014),
       useMaterial3: true,
     ),
-    home: BlocProvider(create: (_) => GameBloc(), child: const GameScreen()),
+    home: BlocProvider(
+      create: (_) => TownBloc(profile: newProfile()),
+      child: const TownScreen(),
+    ),
   );
 }

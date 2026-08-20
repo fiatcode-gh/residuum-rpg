@@ -9,7 +9,7 @@ class FloorMap {
   const FloorMap._(this._rows);
 
   /// Parses a rectangular ASCII floor: `#` is wall, `.` is floor, `>` is the
-  /// stairs down.
+  /// stairs down and `<` is the stairs up.
   ///
   /// Leading and trailing blank lines are ignored so multi-line string
   /// literals read naturally. Throws [ArgumentError] on an empty floor, a
@@ -38,6 +38,7 @@ class FloorMap {
     '#' => Tile.wall,
     '.' => Tile.floor,
     '>' => Tile.stairsDown,
+    '<' => Tile.stairsUp,
     _ => throw ArgumentError.value(character, 'character', 'not a tile'),
   };
 
@@ -45,6 +46,7 @@ class FloorMap {
     Tile.wall => '#',
     Tile.floor => '.',
     Tile.stairsDown => '>',
+    Tile.stairsUp => '<',
   };
 
   final List<List<Tile>> _rows;

@@ -80,12 +80,14 @@ class _GlyphPainter extends CustomPainter {
     Tile.wall => '#',
     Tile.floor => '.',
     Tile.stairsDown => '>',
+    Tile.stairsUp => '<',
   };
 
   static Color _colourFor(Tile tile) => switch (tile) {
     Tile.wall => _wall,
     Tile.floor => _floor,
     Tile.stairsDown => _stairs,
+    Tile.stairsUp => _stairs,
   };
 
   void _paintGlyph(

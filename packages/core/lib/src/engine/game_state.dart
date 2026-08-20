@@ -1,5 +1,6 @@
 import '../dungeon/floor.dart';
 import '../dungeon/floor_map.dart';
+import '../dungeon/floor_memory.dart';
 import '../loot/drop.dart';
 import '../loot/item.dart';
 import '../loot/loadout.dart';
@@ -39,7 +40,10 @@ class GameState {
     this.worldSeed = 1,
     this.visit = 0,
     this.stairsDown,
+    this.stairsUp,
+    this.gold = 0,
     this.isGameOver = false,
+    Map<int, FloorMemory> floors = const {},
     Map<Position, List<Item>> groundItems = const {},
     List<Item> inventory = const [],
     Equipment equipment = const {},
@@ -53,6 +57,7 @@ class GameState {
          for (final tile in groundItems.entries)
            tile.key: List<Item>.unmodifiable(tile.value),
        }),
+       floors = Map.unmodifiable(floors),
        inventory = List.unmodifiable(inventory),
        equipment = Map.unmodifiable(equipment),
        skills = Map.unmodifiable(skills),
@@ -92,12 +97,34 @@ class GameState {
   /// The seed the whole dungeon derives from.
   final int worldSeed;
 
-  /// How many times this dungeon has been reshuffled. Always 0 for now; the
-  /// death penalty will bump it.
+  /// How many times this dungeon has been reshuffled.
+  ///
+  /// Every entry bumps it — see `startRun` — so re-entering after a death, or
+  /// after a walk home with the haul, lays out five new floors from the same
+  /// world.
   final int visit;
 
   /// Where the stairs down are on this floor, or null on the deepest one.
   final Position? stairsDown;
+
+  /// Where the stairs up are on this floor, or null on depth one.
+  final Position? stairsUp;
+
+  /// Every floor the hero has left and can walk back onto, by depth.
+  ///
+  /// The floor the hero is standing on is **not** in here: that one is the map,
+  /// the monsters and the ground items on the state itself. Keeping the active
+  /// floor out of the snapshots means there is never a second copy of it to go
+  /// stale, and a lookup by depth can never hand back the floor you are already
+  /// on.
+  final Map<int, FloorMemory> floors;
+
+  /// What the hero is carrying in coin. Dying in the dungeon loses all of it.
+  ///
+  /// Nothing in `step` ever changes this. Monsters do not drop coin — selling
+  /// what they drop is the whole economy — so gold rides a run as a passenger,
+  /// and only the town moves it.
+  final int gold;
 
   final bool isGameOver;
 
@@ -149,6 +176,9 @@ class GameState {
     int? depth,
     Position? stairsDown,
     bool clearStairsDown = false,
+    Position? stairsUp,
+    bool clearStairsUp = false,
+    Map<int, FloorMemory>? floors,
     bool? isGameOver,
     Map<Position, List<Item>>? groundItems,
     List<Item>? inventory,
@@ -168,6 +198,9 @@ class GameState {
     worldSeed: worldSeed,
     visit: visit,
     stairsDown: clearStairsDown ? null : (stairsDown ?? this.stairsDown),
+    stairsUp: clearStairsUp ? null : (stairsUp ?? this.stairsUp),
+    gold: gold,
+    floors: floors ?? this.floors,
     isGameOver: isGameOver ?? this.isGameOver,
     groundItems: groundItems ?? this.groundItems,
     inventory: inventory ?? this.inventory,

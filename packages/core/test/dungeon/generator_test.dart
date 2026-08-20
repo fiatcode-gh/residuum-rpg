@@ -193,6 +193,39 @@ void main() {
       );
     });
 
+    test('depth one has no way up', () {
+      // arrange
+      final floor = floorAt(1);
+
+      // act
+      final up = floor.stairsUp;
+
+      // assert
+      expect(up, isNull);
+      expect(
+        _walkableTiles(floor.map).map(floor.map.tileAt),
+        isNot(contains(Tile.stairsUp)),
+      );
+    });
+
+    test('depths two to five arrive on a real stairs-up tile', () {
+      // arrange
+      final floors = [for (var depth = 2; depth <= 5; depth++) floorAt(depth)];
+
+      // act
+      final up = floors.map((floor) => floor.stairsUp).toList();
+
+      // assert
+      for (var index = 0; index < floors.length; index++) {
+        final floor = floors[index];
+        expect(up[index], isNotNull);
+        expect(up[index], floor.heroSpawn);
+        expect(floor.map.tileAt(up[index]!), Tile.stairsUp);
+        expect(_reachableFrom(floor), contains(up[index]));
+        expect(up[index], isNot(floor.stairsDown));
+      }
+    });
+
     test('the stairs are a real walk away from where the hero arrives', () {
       // arrange
       final floor = floorAt(1);

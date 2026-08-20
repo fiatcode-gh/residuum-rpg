@@ -14,6 +14,7 @@ class Floor {
     required this.heroSpawn,
     required this.monsters,
     required this.stairsDown,
+    this.stairsUp,
     this.groundItems = const {},
   });
 
@@ -26,6 +27,10 @@ class Floor {
 
   /// Null exactly on the deepest floor.
   final Position? stairsDown;
+
+  /// The way back up, or null on depth one. Always [heroSpawn] where it exists,
+  /// because the tile you arrive on is the tile you leave from.
+  final Position? stairsUp;
 
   /// What is already lying on this floor when the hero arrives, by tile.
   ///
