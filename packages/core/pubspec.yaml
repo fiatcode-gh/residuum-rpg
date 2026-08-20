@@ -1,0 +1,13 @@
+name: residuum_core
+description: Pure Dart game rules for Residuum — turn resolution, dungeon
+  geometry, combat.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.0
+
+dev_dependencies:
+  test: ^1.25.0
+dependencies:
+  equatable: ^2.1.0
