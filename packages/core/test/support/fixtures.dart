@@ -25,6 +25,7 @@ Actor ghoul(
   int hp = 10,
   int attack = 3,
   int speed = 10,
+  int dropChance = 0,
 }) => Actor(
   id: id,
   name: 'the ghoul',
@@ -36,6 +37,7 @@ Actor ghoul(
   attackMax: attack,
   speed: speed,
   energy: actThreshold,
+  dropChance: dropChance,
 );
 
 Floor noFloorBelow(int depth) =>
@@ -50,9 +52,16 @@ GameState crawl({
   int? heroAttackMax,
   int heroSpeed = 10,
   int seed = 1,
+  int lootSeed = 2,
   int depth = 1,
   Position? stairsDown,
   FloorBuilder buildFloor = noFloorBelow,
+  Map<Position, List<Item>> groundItems = const {},
+  List<Item> inventory = const [],
+  Equipment equipment = const {},
+  Map<SkillId, SkillState> skills = untrainedSkills,
+  Map<int, DropTable> dropTables = const {},
+  int nextDropNumber = 1,
 }) {
   final map = FloorMap.parse(ascii);
   final visible = computeFov(map, heroAt, fovRadius);
@@ -67,10 +76,17 @@ GameState crawl({
     ),
     monsters: monsters,
     rng: Rng(seed),
+    lootRng: Rng(lootSeed),
     visible: visible,
     explored: {...visible},
     buildFloor: buildFloor,
     depth: depth,
     stairsDown: stairsDown,
+    groundItems: groundItems,
+    inventory: inventory,
+    equipment: equipment,
+    skills: skills,
+    dropTables: dropTables,
+    nextDropNumber: nextDropNumber,
   );
 }

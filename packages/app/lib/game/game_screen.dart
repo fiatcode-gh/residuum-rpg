@@ -4,6 +4,7 @@ import 'package:residuum_core/core.dart';
 
 import 'game_bloc.dart';
 import 'glyph_grid.dart';
+import 'inventory_screen.dart';
 
 class GameScreen extends StatelessWidget {
   const GameScreen({super.key});
@@ -27,7 +28,7 @@ class GameScreen extends StatelessWidget {
                   ),
                 ),
                 _HitPoints(state: state),
-                if (state.canDescend) const _DescendButton(),
+                _Controls(state: state),
                 _MessageLog(log: state.log),
               ],
             ),
@@ -47,8 +48,9 @@ class _HitPoints extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hero = state.game.hero;
-    final fraction = hero.maxHp == 0 ? 0.0 : hero.hp / hero.maxHp;
-    final shown = hero.hp.clamp(0, hero.maxHp);
+    final ceiling = state.maxHp;
+    final fraction = ceiling == 0 ? 0.0 : hero.hp / ceiling;
+    final shown = hero.hp.clamp(0, ceiling);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(
@@ -66,7 +68,7 @@ class _HitPoints extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            '$shown / ${hero.maxHp}  ${_condition(fraction)}',
+            '$shown / $ceiling  ${_condition(fraction)}',
             style: const TextStyle(
               fontFamily: 'monospace',
               fontSize: 14,
@@ -95,17 +97,107 @@ class _HitPoints extends StatelessWidget {
   }
 }
 
-class _DescendButton extends StatelessWidget {
-  const _DescendButton();
+/// The one row of controls the crawl needs, each appearing only when it can do
+/// something.
+///
+/// A control that is visible but inert teaches the player nothing; a control
+/// that appears exactly when it applies is how the rules explain themselves. The
+/// pack is the exception and is always reachable, because looking at what you
+/// are carrying is not an action and should never be gated.
+class _Controls extends StatelessWidget {
+  const _Controls({required this.state});
+
+  final GameViewState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<GameBloc>();
+    final underfoot = state.itemsUnderfoot;
+    final potion = state.firstPotion;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Column(
+        children: [
+          if (underfoot.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                underfoot.length == 1
+                    ? 'Here: ${underfoot.last.displayName}'
+                    : 'Here: ${underfoot.last.displayName} '
+                          'and ${underfoot.length - 1} more',
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  color: Color(0xFF8A919E),
+                ),
+              ),
+            ),
+          Row(
+            children: [
+              if (state.canPickUp)
+                Expanded(
+                  child: _Control(
+                    label: 'Pick up',
+                    onPressed: () => bloc.add(const PickUpPressed()),
+                  ),
+                ),
+              if (potion != null)
+                Expanded(
+                  child: _Control(
+                    label: 'Drink potion',
+                    onPressed: state.game.isGameOver
+                        ? null
+                        : () => bloc.add(const QuickDrinkPressed()),
+                  ),
+                ),
+              Expanded(
+                child: _Control(
+                  label: 'Pack (${state.game.inventory.length})',
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => BlocProvider.value(
+                        value: bloc,
+                        child: const InventoryScreen(),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              if (state.canDescend)
+                Expanded(
+                  child: _Control(
+                    label: 'Descend >',
+                    onPressed: () => bloc.add(const DescendPressed()),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Control extends StatelessWidget {
+  const _Control({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-    child: SizedBox(
-      width: double.infinity,
-      child: FilledButton(
-        onPressed: () => context.read<GameBloc>().add(const DescendPressed()),
-        child: const Text('Descend >'),
+    padding: const EdgeInsets.symmetric(horizontal: 3),
+    child: FilledButton(
+      onPressed: onPressed,
+      style: FilledButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
       ),
     ),
   );

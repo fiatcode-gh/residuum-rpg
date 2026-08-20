@@ -45,6 +45,11 @@ GameState arenaGame({
   Position? stairsDown,
   FloorBuilder buildFloor = _noFloorBelow,
   Set<Position>? explored,
+  Map<Position, List<Item>> groundItems = const {},
+  List<Item> inventory = const [],
+  Equipment equipment = const {},
+  Map<SkillId, SkillState> skills = untrainedSkills,
+  Map<int, DropTable> dropTables = const {},
 }) {
   final map = FloorMap.parse(ascii);
   final visible = computeFov(map, heroAt, fovRadius);
@@ -64,11 +69,17 @@ GameState arenaGame({
     ),
     monsters: monsters,
     rng: Rng(1),
+    lootRng: Rng(2),
     buildFloor: buildFloor,
     visible: visible,
     explored: explored ?? {...visible},
     depth: depth,
     stairsDown: stairsDown,
+    groundItems: groundItems,
+    inventory: inventory,
+    equipment: equipment,
+    skills: skills,
+    dropTables: dropTables,
   );
 }
 
@@ -90,6 +101,7 @@ GameBloc walker(GameState game) =>
     GameBloc(game: game, stepDelay: Duration.zero);
 
 void main() {
+  _lootTests();
   group('GameBloc', () {
     test('starts a fresh crawl on depth one with an empty log', () {
       // arrange
@@ -387,6 +399,326 @@ void main() {
 
       // assert
       expect(canDescend, isFalse);
+      addTearDown(bloc.close);
+    });
+  });
+}
+
+const _sword = BaseItem(
+  id: 'iron-sword',
+  name: 'Iron Sword',
+  glyph: ')',
+  slot: EquipSlot.mainHand,
+  hands: WeaponHands.one,
+  attackMin: 3,
+  attackMax: 5,
+);
+
+const _shield = BaseItem(
+  id: 'kite-shield',
+  name: 'Kite Shield',
+  glyph: '[',
+  slot: EquipSlot.offHand,
+  armor: 3,
+  heavy: true,
+);
+
+const _potion = BaseItem(
+  id: 'healing-potion',
+  name: 'Healing Potion',
+  glyph: '!',
+  heal: 10,
+);
+
+Item _item(String id, BaseItem base, {Rarity rarity = Rarity.common}) =>
+    Item(id: id, base: base, rarity: rarity);
+
+void _lootTests() {
+  group('GameBloc picking things up', () {
+    blocTest<GameBloc, GameViewState>(
+      'takes what is underfoot and says so',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          groundItems: {
+            const Position(3, 2): [_item('floor-1-1', _sword)],
+          },
+        ),
+      ),
+      act: (bloc) => bloc.add(const PickUpPressed()),
+      expect: () => [
+        isA<GameViewState>()
+            .having((s) => s.game.inventory.map((item) => item.id), 'carried', [
+              'floor-1-1',
+            ])
+            .having((s) => s.log, 'log', ['You pick up Common Iron Sword.']),
+      ],
+    );
+
+    test('offers the control only when there is something to take', () {
+      // arrange
+      final bare = GameBloc(game: arenaGame(heroAt: const Position(3, 2)));
+      final littered = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          groundItems: {
+            const Position(3, 2): [_item('floor-1-1', _sword)],
+          },
+        ),
+      );
+
+      // act
+      final offered = (bare.state.canPickUp, littered.state.canPickUp);
+
+      // assert
+      expect(offered, (false, true));
+      addTearDown(bare.close);
+      addTearDown(littered.close);
+    });
+
+    blocTest<GameBloc, GameViewState>(
+      'a full pack refuses the pick-up and the log says why',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          inventory: [
+            for (var index = 0; index < inventoryCap; index++)
+              _item('kit-$index', _potion),
+          ],
+          groundItems: {
+            const Position(3, 2): [_item('floor-1-1', _sword)],
+          },
+        ),
+      ),
+      act: (bloc) => bloc.add(const PickUpPressed()),
+      expect: () => [
+        isA<GameViewState>()
+            .having((s) => s.game.inventory, 'carried', hasLength(inventoryCap))
+            .having((s) => s.log, 'log', ['You cannot carry any more.']),
+      ],
+    );
+  });
+
+  group('GameBloc equipping', () {
+    blocTest<GameBloc, GameViewState>(
+      'wearing a weapon raises the derived attack',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          inventory: [_item('kit-1', _sword)],
+        ),
+      ),
+      act: (bloc) => bloc.add(const EquipPressed('kit-1')),
+      expect: () => [
+        isA<GameViewState>()
+            .having((s) => s.attack, 'attack', (7, 9))
+            .having((s) => s.game.inventory, 'carried', isEmpty)
+            .having((s) => s.log, 'log', [
+              'You put on Common Iron Sword (main hand).',
+            ]),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'wearing a shield raises the derived armour',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          inventory: [_item('kit-1', _shield)],
+        ),
+      ),
+      act: (bloc) => bloc.add(const EquipPressed('kit-1')),
+      expect: () => [isA<GameViewState>().having((s) => s.armor, 'armour', 3)],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'taking a piece off puts it back in the pack',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          equipment: {EquipSlot.mainHand: _item('kit-1', _sword)},
+        ),
+      ),
+      act: (bloc) => bloc.add(const UnequipPressed(EquipSlot.mainHand)),
+      expect: () => [
+        isA<GameViewState>()
+            .having((s) => s.game.equipment, 'worn', isEmpty)
+            .having((s) => s.game.inventory.map((item) => item.id), 'carried', [
+              'kit-1',
+            ])
+            .having((s) => s.attack, 'attack', (4, 4)),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a refused equip surfaces in the log and changes nothing',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          inventory: [_item('kit-1', _potion)],
+        ),
+      ),
+      act: (bloc) => bloc.add(const EquipPressed('kit-1')),
+      expect: () => [
+        isA<GameViewState>()
+            .having((s) => s.game.equipment, 'worn', isEmpty)
+            .having((s) => s.log, 'log', hasLength(1)),
+      ],
+    );
+  });
+
+  group('GameBloc drinking', () {
+    blocTest<GameBloc, GameViewState>(
+      'the quick drink heals and logs the amount',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          heroHp: 5,
+          inventory: [_item('kit-1', _potion)],
+        ),
+      ),
+      act: (bloc) => bloc.add(const QuickDrinkPressed()),
+      expect: () => [
+        isA<GameViewState>()
+            .having((s) => s.game.hero.hp, 'hp', 15)
+            .having((s) => s.game.inventory, 'carried', isEmpty)
+            .having((s) => s.log, 'log', [
+              'You drink Common Healing Potion and recover 10.',
+            ]),
+      ],
+    );
+
+    test('the quick drink does nothing at all with no potion carried', () {
+      // arrange
+      final bloc = GameBloc(
+        game: arenaGame(heroAt: const Position(3, 2), heroHp: 5),
+      );
+
+      // act
+      bloc.add(const QuickDrinkPressed());
+
+      // assert
+      expect(bloc.state.firstPotion, isNull);
+      expect(bloc.state.game.hero.hp, 5);
+      addTearDown(bloc.close);
+    });
+
+    blocTest<GameBloc, GameViewState>(
+      'a potion drunk at full health is wasted, and the log admits it',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          inventory: [_item('kit-1', _potion)],
+        ),
+      ),
+      act: (bloc) => bloc.add(const QuickDrinkPressed()),
+      expect: () => [
+        isA<GameViewState>().having((s) => s.log, 'log', [
+          'You drink Common Healing Potion. Nothing was wrong with you.',
+        ]),
+      ],
+    );
+  });
+
+  group('GameBloc dropping', () {
+    blocTest<GameBloc, GameViewState>(
+      'puts the item down where the hero stands',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          inventory: [_item('kit-1', _sword)],
+        ),
+      ),
+      act: (bloc) => bloc.add(const DropPressed('kit-1')),
+      expect: () => [
+        isA<GameViewState>()
+            .having((s) => s.game.inventory, 'carried', isEmpty)
+            .having(
+              (s) => s.itemsUnderfoot.map((item) => item.id),
+              'underfoot',
+              ['kit-1'],
+            )
+            .having((s) => s.log, 'log', [
+              'Common Iron Sword falls to the floor.',
+            ]),
+      ],
+    );
+  });
+
+  group('GameBloc training', () {
+    blocTest<GameBloc, GameViewState>(
+      'a skill level-up reaches the log',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [ghoul(const Position(4, 2), hp: 500)],
+          skills: const {SkillId.arms: SkillState(level: 0, xp: 3)},
+        ),
+      ),
+      act: (bloc) => bloc.add(const TileTapped(Position(4, 2))),
+      expect: () => [
+        isA<GameViewState>()
+            .having((s) => s.game.skills[SkillId.arms]?.level, 'Arms', 1)
+            .having((s) => s.log, 'log', contains('Arms rises to 1.')),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a dodge reaches the log',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          heroHp: 100000,
+          monsters: [ghoul(const Position(2, 1), hp: 100000)],
+          skills: const {SkillId.fleetfoot: SkillState(level: maxSkillLevel)},
+        ),
+      ),
+      act: (bloc) async {
+        for (var turn = 0; turn < 40; turn++) {
+          bloc.add(const TileTapped(Position(1, 0)));
+          await Future<void>.delayed(Duration.zero);
+        }
+      },
+      verify: (bloc) {
+        expect(bloc.state.log, contains('The ghoul swings and misses.'));
+      },
+    );
+  });
+
+  group('GameBloc loot on the grid', () {
+    test('a ground item is visible to the view state under the hero', () {
+      // arrange
+      final bloc = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          groundItems: {
+            const Position(3, 2): [
+              _item('floor-1-1', _sword),
+              _item('floor-1-2', _potion),
+            ],
+          },
+        ),
+      );
+
+      // act
+      final underfoot = bloc.state.itemsUnderfoot;
+
+      // assert
+      expect(underfoot.map((item) => item.id), ['floor-1-1', 'floor-1-2']);
+      addTearDown(bloc.close);
+    });
+
+    test('a fresh crawl arms the hero and stocks the pack', () {
+      // arrange
+      final bloc = GameBloc();
+
+      // act
+      final state = bloc.state;
+
+      // assert
+      expect(state.attack, (3, 5));
+      expect(state.firstPotion, isNotNull);
+      expect(state.game.equipment[EquipSlot.mainHand], isNotNull);
       addTearDown(bloc.close);
     });
   });

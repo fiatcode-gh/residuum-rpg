@@ -14,6 +14,7 @@ class CreatureSpec {
     required this.attackMin,
     required this.attackMax,
     required this.speed,
+    required this.dropChance,
   });
 
   final String id;
@@ -27,6 +28,12 @@ class CreatureSpec {
   final int attackMax;
   final int speed;
 
+  /// The chance in a hundred that killing one of these yields an item.
+  ///
+  /// It rises with how hard the creature is to kill, so the reward tracks the
+  /// risk: a rat is a nuisance and a wight is an event.
+  final int dropChance;
+
   /// One of these creatures, alive and ready to act, standing at [at].
   Actor spawn({required String id, required Position at}) => Actor(
     id: id,
@@ -39,6 +46,7 @@ class CreatureSpec {
     attackMax: attackMax,
     speed: speed,
     energy: actThreshold,
+    dropChance: dropChance,
   );
 }
 
@@ -51,6 +59,7 @@ const CreatureSpec giantRat = CreatureSpec(
   attackMin: 1,
   attackMax: 2,
   speed: 10,
+  dropChance: 25,
 );
 
 /// Twice the hero's speed: it closes corridors before you can back out of them.
@@ -62,6 +71,7 @@ const CreatureSpec direWolf = CreatureSpec(
   attackMin: 2,
   attackMax: 3,
   speed: 20,
+  dropChance: 30,
 );
 
 const CreatureSpec ghoul = CreatureSpec(
@@ -72,6 +82,7 @@ const CreatureSpec ghoul = CreatureSpec(
   attackMin: 2,
   attackMax: 4,
   speed: 10,
+  dropChance: 40,
 );
 
 /// Half the hero's speed, but it hits hard and takes a long time to fell.
@@ -83,6 +94,7 @@ const CreatureSpec skeleton = CreatureSpec(
   attackMin: 3,
   attackMax: 5,
   speed: 5,
+  dropChance: 50,
 );
 
 const CreatureSpec wight = CreatureSpec(
@@ -93,6 +105,7 @@ const CreatureSpec wight = CreatureSpec(
   attackMin: 4,
   attackMax: 6,
   speed: 10,
+  dropChance: 60,
 );
 
 /// Every creature in the game, in the order they are first met.

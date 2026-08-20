@@ -1,5 +1,6 @@
 import '../engine/actor.dart';
 import '../engine/position.dart';
+import '../loot/item.dart';
 import 'floor_map.dart';
 
 /// A dungeon floor ready to be played: its terrain, where the hero arrives, and
@@ -13,6 +14,7 @@ class Floor {
     required this.heroSpawn,
     required this.monsters,
     required this.stairsDown,
+    this.groundItems = const {},
   });
 
   final FloorMap map;
@@ -24,6 +26,13 @@ class Floor {
 
   /// Null exactly on the deepest floor.
   final Position? stairsDown;
+
+  /// What is already lying on this floor when the hero arrives, by tile.
+  ///
+  /// Unlike the monsters, these may be in sight from the arrival tile. An
+  /// item you can see from the doorway is an invitation; a monster you can
+  /// see from the doorway is an ambush you never got to avoid.
+  final Map<Position, List<Item>> groundItems;
 }
 
 /// Builds the floor at [depth] for the crawl in progress.
