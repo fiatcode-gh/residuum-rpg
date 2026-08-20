@@ -8,6 +8,18 @@ const twoByThree = '''
 
 void main() {
   group('FloorMap.parse', () {
+    test('maps > to stairs down', () {
+      // arrange
+      const ascii = '###\n#>#\n###';
+
+      // act
+      final map = FloorMap.parse(ascii);
+
+      // assert
+      expect(map.tileAt(const Position(1, 1)), Tile.stairsDown);
+      expect(map.isWalkable(const Position(1, 1)), isTrue);
+    });
+
     test('reads the grid dimensions', () {
       // arrange
       const ascii = twoByThree;
@@ -138,6 +150,30 @@ void main() {
       // assert
       expect(map.isWalkable(outside), isFalse);
       expect(map.isTransparent(outside), isFalse);
+    });
+  });
+
+  group('FloorMap.toAscii', () {
+    test('round-trips every tile kind back to the string it came from', () {
+      // arrange
+      const ascii = '#####\n#.>.#\n#####';
+
+      // act
+      final rendered = FloorMap.parse(ascii).toAscii();
+
+      // assert
+      expect(rendered, ascii);
+    });
+
+    test('renders the stairs tile as a greater-than sign', () {
+      // arrange
+      final map = FloorMap.parse('###\n#>#\n###');
+
+      // act
+      final rendered = map.toAscii();
+
+      // assert
+      expect(rendered.split('\n')[1], '#>#');
     });
   });
 }

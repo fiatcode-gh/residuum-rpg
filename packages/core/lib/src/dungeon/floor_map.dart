@@ -8,7 +8,8 @@ import 'tile.dart';
 class FloorMap {
   const FloorMap._(this._rows);
 
-  /// Parses a rectangular ASCII floor: `#` is wall, `.` is floor.
+  /// Parses a rectangular ASCII floor: `#` is wall, `.` is floor, `>` is the
+  /// stairs down.
   ///
   /// Leading and trailing blank lines are ignored so multi-line string
   /// literals read naturally. Throws [ArgumentError] on an empty floor, a
@@ -36,7 +37,14 @@ class FloorMap {
   static Tile _tileFor(String character) => switch (character) {
     '#' => Tile.wall,
     '.' => Tile.floor,
+    '>' => Tile.stairsDown,
     _ => throw ArgumentError.value(character, 'character', 'not a tile'),
+  };
+
+  static String _characterFor(Tile tile) => switch (tile) {
+    Tile.wall => '#',
+    Tile.floor => '.',
+    Tile.stairsDown => '>',
   };
 
   final List<List<Tile>> _rows;
@@ -64,4 +72,12 @@ class FloorMap {
   /// Whether sight passes through [position]. False outside the grid.
   bool isTransparent(Position position) =>
       inBounds(position) && tileAt(position).transparent;
+
+  /// The exact inverse of [FloorMap.parse].
+  ///
+  /// A generated floor is only pinnable by a golden test if it can be written
+  /// down; this is how a seed's layout becomes a string a human can read in a
+  /// diff.
+  String toAscii() =>
+      _rows.map((row) => row.map(_characterFor).join()).join('\n');
 }

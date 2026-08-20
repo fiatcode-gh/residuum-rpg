@@ -39,8 +39,9 @@ class _GlyphPainter extends CustomPainter {
 
   static const _wall = Color(0xFFB9BEC6);
   static const _floor = Color(0xFF5B6270);
+  static const _stairs = Color(0xFFE8ECF2);
   static const _hero = Color(0xFFFFFFFF);
-  static const _ghoul = Color(0xFFD9A227);
+  static const _monster = Color(0xFFD9A227);
   static const _rememberedOpacity = 0.4;
 
   final GameViewState state;
@@ -54,23 +55,33 @@ class _GlyphPainter extends CustomPainter {
         final position = Position(x, y);
         final visible = game.visible.contains(position);
         if (!visible && !game.explored.contains(position)) continue;
-        final tile = game.map.tileAt(position);
-        final isWall = tile == Tile.wall;
         _paintGlyph(
           canvas,
           position,
-          isWall ? '#' : '.',
-          isWall ? _wall : _floor,
+          _glyphFor(game.map.tileAt(position)),
+          _colourFor(game.map.tileAt(position)),
           visible,
         );
       }
     }
     for (final monster in game.monsters) {
       if (!game.visible.contains(monster.position)) continue;
-      _paintGlyph(canvas, monster.position, monster.glyph, _ghoul, true);
+      _paintGlyph(canvas, monster.position, monster.glyph, _monster, true);
     }
     _paintGlyph(canvas, game.hero.position, game.hero.glyph, _hero, true);
   }
+
+  static String _glyphFor(Tile tile) => switch (tile) {
+    Tile.wall => '#',
+    Tile.floor => '.',
+    Tile.stairsDown => '>',
+  };
+
+  static Color _colourFor(Tile tile) => switch (tile) {
+    Tile.wall => _wall,
+    Tile.floor => _floor,
+    Tile.stairsDown => _stairs,
+  };
 
   void _paintGlyph(
     Canvas canvas,

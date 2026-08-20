@@ -31,21 +31,21 @@ void main() {
       final state = crawl(
         ascii: hall,
         heroAt: const Position(2, 2),
-        monsters: [ghoul('ghoul-1', const Position(7, 2))],
+        monsters: [ghoul('ghoul-1', const Position(7, 1))],
       );
 
       // act
       final (next, events) = step(state, const MoveAction(Direction.north));
 
       // assert
-      expect(next.monsters.single.position, const Position(6, 2));
+      expect(next.monsters.single.position, const Position(6, 1));
       expect(
         events,
         contains(
           const ActorMoved(
             actorId: 'ghoul-1',
-            from: Position(7, 2),
-            to: Position(6, 2),
+            from: Position(7, 1),
+            to: Position(6, 1),
           ),
         ),
       );
@@ -93,20 +93,23 @@ void main() {
       );
     });
 
-    test('on equal deltas the monster prefers the x axis', () {
-      // arrange
-      final state = crawl(
-        ascii: hall,
-        heroAt: const Position(2, 2),
-        monsters: [ghoul('ghoul-1', const Position(4, 3))],
-      );
+    test(
+      'on a tie the monster takes the first of north, east, south, west',
+      () {
+        // arrange
+        final state = crawl(
+          ascii: hall,
+          heroAt: const Position(2, 2),
+          monsters: [ghoul('ghoul-1', const Position(4, 3))],
+        );
 
-      // act
-      final (next, _) = step(state, const MoveAction(Direction.north));
+        // act
+        final (next, _) = step(state, const MoveAction(Direction.north));
 
-      // assert
-      expect(next.monsters.single.position, const Position(3, 3));
-    });
+        // assert
+        expect(next.monsters.single.position, const Position(4, 2));
+      },
+    );
 
     test('a monster blocked on its preferred axis tries the other one', () {
       // arrange
@@ -310,12 +313,15 @@ void main() {
         monsters: [
           Actor(
             id: 'ghoul-1',
+            name: 'the ghoul',
             glyph: 'g',
             position: const Position(3, 2),
             hp: 10,
             maxHp: 10,
             attackMin: 2,
             attackMax: 4,
+            speed: 10,
+            energy: actThreshold,
           ),
         ],
         seed: 5,
