@@ -133,8 +133,8 @@ Rules, enforced by convention and tests:
   decisions without a giant tree.
 - **Character level** derives from skill levels; it gates story beats and dungeon
   difficulty tiers.
-- **The twelve starter skills** (each a content entry: name, training trigger, per-level
-  bonus, milestone perks):
+- **The thirteen starter skills** (each a content entry: name, training trigger,
+  per-level bonus, milestone perks):
 
 | Skill | Trains by |
 | --- | --- |
@@ -149,7 +149,8 @@ Rules, enforced by convention and tests:
 | Binding | summoning and control spells |
 | Shadowing | moving unseen near enemies |
 | Larceny | opening locks, disarming traps |
-| Herbcraft | brewing potions from gathered plants |
+| Herbcraft | gathering herbs, brewing potions |
+| Blacksmith | mining ore, smelting, forging, tempering |
 
 Weapon mastery is intentionally folded into these skills rather than a separate
 per-weapon-type track. Per-weapon-type mastery can be an additive later ring.
@@ -173,6 +174,29 @@ per-weapon-type track. Per-weapon-type mastery can be an additive later ring.
   books found early become goals. Specific books drop in specific dungeons, like sets.
 - **Economy:** merchants buy junk; gold buys potions, lockpicks, gap-filler gear. The
   town bank stores loot; only banked loot survives death.
+
+### 7.1 Crafting (Blacksmith and Herbcraft)
+
+Design guard: **crafting serves loot, it never competes with it.** Skyrim's Smithing
+broke its own loot game by letting crafted-and-tempered gear beat every dungeon reward;
+Residuum explicitly avoids that.
+
+- **Gathering:** ore veins and herb nodes appear as tiles in dungeons (and in some
+  travel events). Mining trains Blacksmith; gathering herbs trains Herbcraft. Monsters
+  and chests can also drop ingots and reagents.
+- **Stations:** smelting and forging happen at the town forge; brewing happens at the
+  town alchemist (basic potions also brewable at camp). No portable forge — town trips
+  stay meaningful. Towns gain a Forge button.
+- **Recipes are loot.** Common recipes (basic gear, minor potions) are known from the
+  start. Better recipes drop in dungeons — crafting power is itself loot. Crafted gear
+  caps at **Epic** via rare recipes. **Legendary items and armor-set pieces are never
+  craftable** — found only.
+- **Tempering (the star of Blacksmith):** spend ingots to upgrade a *found* item's stats
+  by tiers (+1/+2/+3), gated by Blacksmith level. Milestone perks: cheaper tempering,
+  higher tiers, set-piece tempering at 75+. Best-in-slot is always a found item you
+  invested in, so drops stay exciting.
+- **Herbcraft mirrors this:** gather → brew at a station → advanced recipes as dungeon
+  drops. Potions are consumables, so Herbcraft never threatens the gear loot loop.
 
 ## 8. Overworld
 
@@ -234,10 +258,13 @@ Prose is AI-written and author-steered. Shape (steerable):
    and equipment slots, 4 starter skills training by use, town screen with merchant and
    bank, death penalty.
 3. **M3 — The World.** Overworld node map, 3 themed dungeons, travel encounters, rumors,
-   side-quest templates, all 12 skills, spell books and first spells, saves hardened.
+   side-quest templates, all 13 skills, spell books and first spells, gathering nodes,
+   town forge and alchemist with basic (recipe-free) crafting and tempering, saves
+   hardened.
 4. **M4 — The Story.** Act 1 beats, armor sets, boss floors, milestone perks.
-5. **M5+ — The Garden.** Acts 2–3, more themes/sets/spells, pixel-tile renderer swap,
-   balance passes. The hobby-garden ring, indefinitely.
+5. **M5+ — The Garden.** Acts 2–3, recipe drops (Epic crafting, advanced potions), more
+   themes/sets/spells, pixel-tile renderer swap, balance passes. The hobby-garden ring,
+   indefinitely.
 
 ## 13. Error handling and robustness
 
