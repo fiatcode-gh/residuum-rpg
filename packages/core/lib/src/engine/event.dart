@@ -76,6 +76,37 @@ final class ActorDied extends GameEvent with Equatable {
   String toString() => 'ActorDied($actorId)';
 }
 
+/// The hero took the stairs and arrived on a deeper floor.
+final class Descended extends GameEvent with Equatable {
+  const Descended({required this.newDepth});
+
+  final int newDepth;
+
+  @override
+  List<Object?> get props => [newDepth];
+
+  @override
+  String toString() => 'Descended(to $newDepth)';
+}
+
+/// A monster the hero could not see at the start of the turn is in sight now.
+///
+/// Emitted once, on the turn sight is gained, whether the monster walked into
+/// view or the hero walked into view of it. It is what turns "something moved
+/// out there" into a line in the log and a reason to stop walking.
+final class ActorNoticed extends GameEvent with Equatable {
+  const ActorNoticed({required this.actorId, required this.at});
+
+  final String actorId;
+  final Position at;
+
+  @override
+  List<Object?> get props => [actorId, at];
+
+  @override
+  String toString() => 'ActorNoticed($actorId, at $at)';
+}
+
 /// The crawl is over: the hero is dead.
 final class GameOver extends GameEvent with Equatable {
   const GameOver();

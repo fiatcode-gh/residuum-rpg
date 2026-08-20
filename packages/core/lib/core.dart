@@ -1,8 +1,13 @@
+export 'src/dungeon/floor.dart';
 export 'src/dungeon/floor_map.dart';
+export 'src/dungeon/flow_field.dart';
 export 'src/dungeon/fov.dart';
+export 'src/dungeon/generator.dart';
+export 'src/dungeon/path.dart';
 export 'src/dungeon/tile.dart';
 export 'src/engine/action.dart';
 export 'src/engine/actor.dart';
+export 'src/engine/energy.dart';
 export 'src/engine/event.dart';
 export 'src/engine/game_state.dart';
 export 'src/engine/position.dart';

@@ -11,3 +11,8 @@ final class MoveAction extends GameAction {
 
   final Direction direction;
 }
+
+/// Take the stairs down. Only does anything where the stairs are.
+final class DescendAction extends GameAction {
+  const DescendAction();
+}

@@ -1,7 +1,8 @@
 /// One cell of dungeon terrain.
 enum Tile {
   wall(walkable: false, transparent: false),
-  floor(walkable: true, transparent: true);
+  floor(walkable: true, transparent: true),
+  stairsDown(walkable: true, transparent: true);
 
   const Tile({required this.walkable, required this.transparent});
 

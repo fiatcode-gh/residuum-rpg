@@ -1,18 +1,24 @@
 import 'package:residuum_core/core.dart';
 import 'package:test/test.dart';
 
+Floor _noFloorBelow(int depth) =>
+    throw StateError('this crawl was not meant to descend');
+
 void main() {
   group('Actor', () {
     test('is alive while it has hit points', () {
       // arrange
       const actor = Actor(
         id: 'hero',
+        name: 'you',
         glyph: '@',
         position: Position(1, 1),
         hp: 1,
         maxHp: 20,
         attackMin: 3,
         attackMax: 5,
+        speed: 10,
+        energy: actThreshold,
       );
 
       // act
@@ -28,12 +34,15 @@ void main() {
       // arrange
       const actor = Actor(
         id: 'ghoul-1',
+        name: 'the ghoul',
         glyph: 'g',
         position: Position(4, 4),
         hp: 10,
         maxHp: 10,
         attackMin: 2,
         attackMax: 4,
+        speed: 10,
+        energy: actThreshold,
       );
 
       // act
@@ -47,6 +56,32 @@ void main() {
       expect(moved.attackMin, 2);
       expect(moved.attackMax, 4);
       expect(moved.position, const Position(5, 4));
+    });
+
+    test('carries a display name, a speed and an energy pool', () {
+      // arrange
+      const actor = Actor(
+        id: 'wolf-1',
+        name: 'the dire wolf',
+        glyph: 'w',
+        position: Position(4, 4),
+        hp: 8,
+        maxHp: 8,
+        attackMin: 2,
+        attackMax: 3,
+        speed: 20,
+        energy: actThreshold,
+      );
+
+      // act
+      final spent = actor.copyWith(energy: actor.energy - actCost);
+
+      // assert
+      expect(
+        (actor.name, actor.speed, actor.energy),
+        ('the dire wolf', 20, 100),
+      );
+      expect((spent.name, spent.speed, spent.energy), ('the dire wolf', 20, 0));
     });
   });
 
@@ -112,25 +147,32 @@ void main() {
         map: FloorMap.parse('###\n#.#\n###'),
         hero: const Actor(
           id: 'hero',
+          name: 'you',
           glyph: '@',
           position: Position(1, 1),
           hp: 20,
           maxHp: 20,
           attackMin: 3,
           attackMax: 5,
+          speed: 10,
+          energy: actThreshold,
         ),
         monsters: const [
           Actor(
             id: 'ghoul-1',
+            name: 'the ghoul',
             glyph: 'g',
             position: Position(2, 1),
             hp: 10,
             maxHp: 10,
             attackMin: 2,
             attackMax: 4,
+            speed: 10,
+            energy: actThreshold,
           ),
         ],
         rng: Rng(1),
+        buildFloor: _noFloorBelow,
         visible: {const Position(1, 1)},
         explored: {const Position(1, 1)},
       );
@@ -149,22 +191,28 @@ void main() {
       final map = FloorMap.parse('###\n#.#\n###');
       const hero = Actor(
         id: 'hero',
+        name: 'you',
         glyph: '@',
         position: Position(1, 1),
         hp: 20,
         maxHp: 20,
         attackMin: 3,
         attackMax: 5,
+        speed: 10,
+        energy: actThreshold,
       );
       const monsters = <Actor>[
         Actor(
           id: 'ghoul-1',
+          name: 'the ghoul',
           glyph: 'g',
           position: Position(2, 1),
           hp: 10,
           maxHp: 10,
           attackMin: 2,
           attackMax: 4,
+          speed: 10,
+          energy: actThreshold,
         ),
       ];
       final rng = Rng(1);
@@ -175,17 +223,21 @@ void main() {
         hero: hero,
         monsters: monsters,
         rng: rng,
+        buildFloor: _noFloorBelow,
         visible: visible,
         explored: explored,
       );
       const movedHero = Actor(
         id: 'hero',
+        name: 'you',
         glyph: '@',
         position: Position(2, 2),
         hp: 20,
         maxHp: 20,
         attackMin: 3,
         attackMax: 5,
+        speed: 10,
+        energy: actThreshold,
       );
 
       // act
@@ -208,27 +260,34 @@ void main() {
         final mutableMonsters = <Actor>[
           const Actor(
             id: 'ghoul-1',
+            name: 'the ghoul',
             glyph: 'g',
             position: Position(2, 1),
             hp: 10,
             maxHp: 10,
             attackMin: 2,
             attackMax: 4,
+            speed: 10,
+            energy: actThreshold,
           ),
         ];
         final state = GameState(
           map: FloorMap.parse('###\n#.#\n###'),
           hero: const Actor(
             id: 'hero',
+            name: 'you',
             glyph: '@',
             position: Position(1, 1),
             hp: 20,
             maxHp: 20,
             attackMin: 3,
             attackMax: 5,
+            speed: 10,
+            energy: actThreshold,
           ),
           monsters: mutableMonsters,
           rng: Rng(1),
+          buildFloor: _noFloorBelow,
           visible: {const Position(1, 1)},
           explored: {const Position(1, 1)},
         );
@@ -237,12 +296,15 @@ void main() {
         mutableMonsters.add(
           const Actor(
             id: 'ghoul-2',
+            name: 'the ghoul',
             glyph: 'g',
             position: Position(1, 2),
             hp: 5,
             maxHp: 5,
             attackMin: 1,
             attackMax: 2,
+            speed: 10,
+            energy: actThreshold,
           ),
         );
 
