@@ -1,6 +1,14 @@
 import 'package:residuum_core/core.dart';
 import 'package:test/test.dart';
 
+import '../support/fixtures.dart';
+
+const _room = '''
+#######
+#.....#
+#.....#
+#######''';
+
 Floor _noFloorBelow(int depth) =>
     throw StateError('this crawl was not meant to descend');
 
@@ -315,5 +323,88 @@ void main() {
         expect(state.monsters, hasLength(1));
       },
     );
+  });
+
+  group('GameState floors', () {
+    test('carries no snapshots, no gold and no stairs up by default', () {
+      // arrange
+      final state = crawl(ascii: _room, heroAt: const Position(1, 1));
+
+      // act
+      final carried = (state.gold, state.stairsUp);
+
+      // assert
+      expect(carried, (0, null));
+      expect(state.floors, isEmpty);
+    });
+
+    test('copyWith clears the stairs up without clearing the stairs down', () {
+      // arrange
+      final state = crawl(
+        ascii: _room,
+        heroAt: const Position(1, 1),
+        stairsDown: const Position(2, 1),
+        stairsUp: const Position(1, 1),
+      );
+
+      // act
+      final next = state.copyWith(clearStairsUp: true);
+
+      // assert
+      expect((next.stairsUp, next.stairsDown), (null, const Position(2, 1)));
+    });
+
+    test('copyWith carries the gold across untouched', () {
+      // arrange
+      final state = crawl(ascii: _room, heroAt: const Position(1, 1), gold: 44);
+
+      // act
+      final next = state.copyWith(depth: 2);
+
+      // assert
+      expect(next.gold, 44);
+    });
+
+    test('defensively copies the floors it is handed', () {
+      // arrange
+      final snapshots = <int, FloorMemory>{};
+      final state = crawl(
+        ascii: _room,
+        heroAt: const Position(1, 1),
+        floors: snapshots,
+      );
+
+      // act
+      snapshots[7] = FloorMemory(
+        map: FloorMap.parse(_room),
+        monsters: const [],
+        groundItems: const {},
+        explored: const {},
+        stairsDown: null,
+        stairsUp: null,
+      );
+
+      // assert
+      expect(state.floors, isEmpty);
+    });
+
+    test('a snapshot defensively copies the monsters it is handed', () {
+      // arrange
+      final monsters = [ghoul('ghoul-1', const Position(2, 2))];
+      final memory = FloorMemory(
+        map: FloorMap.parse(_room),
+        monsters: monsters,
+        groundItems: const {},
+        explored: const {},
+        stairsDown: null,
+        stairsUp: null,
+      );
+
+      // act
+      monsters.add(ghoul('ghoul-2', const Position(3, 3)));
+
+      // assert
+      expect(memory.monsters.map((monster) => monster.id), ['ghoul-1']);
+    });
   });
 }

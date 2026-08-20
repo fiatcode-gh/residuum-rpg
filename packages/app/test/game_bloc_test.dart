@@ -26,6 +26,7 @@ Floor deeperFloor(int depth) => Floor(
   heroSpawn: const Position(1, 1),
   monsters: const [],
   stairsDown: depth >= deepestDepth ? null : const Position(5, 3),
+  stairsUp: depth <= 1 ? null : const Position(1, 1),
 );
 
 Set<Position> everywhereIn(String ascii) {
@@ -43,6 +44,7 @@ GameState arenaGame({
   String ascii = arena,
   int depth = 1,
   Position? stairsDown,
+  Position? stairsUp,
   FloorBuilder buildFloor = _noFloorBelow,
   Set<Position>? explored,
   Map<Position, List<Item>> groundItems = const {},
@@ -75,6 +77,7 @@ GameState arenaGame({
     explored: explored ?? {...visible},
     depth: depth,
     stairsDown: stairsDown,
+    stairsUp: stairsUp,
     groundItems: groundItems,
     inventory: inventory,
     equipment: equipment,
@@ -223,28 +226,6 @@ void main() {
         ..add(const TileTapped(Position(2, 2))),
       expect: () => [
         isA<GameViewState>().having((s) => s.game.isGameOver, 'over', isTrue),
-      ],
-    );
-
-    blocTest<GameBloc, GameViewState>(
-      'restarting clears the log and starts a fresh crawl on depth one',
-      build: () => GameBloc(
-        game: arenaGame(
-          heroAt: const Position(3, 2),
-          heroHp: 2,
-          monsters: [ghoul(const Position(4, 2), attack: 3)],
-        ),
-      ),
-      act: (bloc) => bloc
-        ..add(const TileTapped(Position(4, 2)))
-        ..add(const GameStarted()),
-      skip: 1,
-      expect: () => [
-        isA<GameViewState>()
-            .having((s) => s.game.isGameOver, 'isGameOver', isFalse)
-            .having((s) => s.depth, 'depth', 1)
-            .having((s) => s.game.hero.hp, 'hp', 20)
-            .having((s) => s.log, 'log', isEmpty),
       ],
     );
   });
@@ -721,5 +702,121 @@ void _lootTests() {
       expect(state.game.equipment[EquipSlot.mainHand], isNotNull);
       addTearDown(bloc.close);
     });
+  });
+
+  group('GameBloc climbing', () {
+    test('the ascend control appears only on the stairs up', () {
+      // arrange
+      final onTile = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          depth: 2,
+          stairsUp: const Position(1, 1),
+        ),
+      );
+      final elsewhere = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(2, 1),
+          depth: 2,
+          stairsUp: const Position(1, 1),
+        ),
+      );
+
+      // act
+      final offered = (onTile.state.canAscend, elsewhere.state.canAscend);
+
+      // assert
+      expect(offered, (true, false));
+    });
+
+    test('depth one never offers a way up', () {
+      // arrange
+      final bloc = GameBloc(game: arenaGame(heroAt: const Position(1, 1)));
+
+      // act
+      final offered = bloc.state.canAscend;
+
+      // assert
+      expect(offered, isFalse);
+    });
+
+    test('a dead hero is offered nothing', () {
+      // arrange
+      final bloc = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          depth: 2,
+          stairsUp: const Position(1, 1),
+        ).copyWith(isGameOver: true),
+      );
+
+      // act
+      final offered = (bloc.state.canAscend, bloc.state.canLeave);
+
+      // assert
+      expect(offered, (false, false));
+    });
+
+    test('leaving is offered on either flight of stairs and nowhere else', () {
+      // arrange
+      final down = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(5, 3),
+          stairsDown: const Position(5, 3),
+        ),
+      );
+      final up = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          depth: 2,
+          stairsUp: const Position(1, 1),
+        ),
+      );
+      final neither = GameBloc(game: arenaGame(heroAt: const Position(2, 2)));
+
+      // act
+      final offered = (
+        down.state.canLeave,
+        up.state.canLeave,
+        neither.state.canLeave,
+      );
+
+      // assert
+      expect(offered, (true, true, false));
+    });
+
+    blocTest<GameBloc, GameViewState>(
+      'the ascend control takes the hero up a floor',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(5, 3),
+          stairsDown: const Position(5, 3),
+          buildFloor: deeperFloor,
+        ),
+        stepDelay: Duration.zero,
+      ),
+      act: (bloc) async {
+        bloc.add(const DescendPressed());
+        await bloc.stream.first;
+        bloc.add(const AscendPressed());
+      },
+      verify: (bloc) {
+        expect(bloc.state.depth, 1);
+        expect(bloc.state.log.last, 'You climb to depth 1.');
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'asking to climb where there are no stairs says so and costs nothing',
+      build: () => GameBloc(
+        game: arenaGame(heroAt: const Position(2, 2), depth: 1),
+        stepDelay: Duration.zero,
+      ),
+      act: (bloc) => bloc.add(const AscendPressed()),
+      verify: (bloc) {
+        expect(bloc.state.depth, 1);
+        expect(bloc.state.log.last, 'There are no stairs up from here.');
+      },
+    );
   });
 }

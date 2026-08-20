@@ -20,6 +20,7 @@ Floor nextFloor(int depth) => Floor(
   heroSpawn: const Position(1, 1),
   monsters: [ghoul('ghoul-9', const Position(8, 2))],
   stairsDown: depth >= deepestDepth ? null : const Position(8, 1),
+  stairsUp: const Position(1, 1),
 );
 
 GameState onTheStairs({int heroHp = 20, int depth = 1}) => crawl(
@@ -81,6 +82,31 @@ void main() {
       // assert
       expect(next.explored, next.visible);
       expect(next.visible, computeFov(next.map, next.hero.position, fovRadius));
+    });
+
+    test('leaves the floor it came from behind as a snapshot', () {
+      // arrange
+      final state = onTheStairs();
+
+      // act
+      final (next, _) = step(state, const DescendAction());
+
+      // assert
+      expect(next.floors.keys, [1]);
+      expect(next.floors[1]!.monsters.map((m) => m.id), ['ghoul-1']);
+      expect(next.floors[1]!.stairsDown, const Position(3, 1));
+    });
+
+    test('arrives on the new floor\'s stairs up', () {
+      // arrange
+      final state = onTheStairs();
+
+      // act
+      final (next, _) = step(state, const DescendAction());
+
+      // assert
+      expect(next.stairsUp, const Position(1, 1));
+      expect(next.hero.position, next.stairsUp);
     });
 
     test('announces the new depth', () {

@@ -1045,6 +1045,228 @@ void _armouryAndLoot() {
       expect(names.length, greaterThan(5));
     });
   });
+
+  group('pierce', () {
+    test('every creature carries a pierce value that is never negative', () {
+      // arrange
+      const creatures = bestiary;
+
+      // act
+      final pierces = creatures.map((creature) => creature.pierce).toList();
+
+      // assert
+      expect(pierces, everyElement(greaterThanOrEqualTo(0)));
+    });
+
+    test('the shallow creatures leave armour alone', () {
+      // arrange
+      const shallow = [giantRat, direWolf];
+
+      // act
+      final pierces = shallow.map((creature) => creature.pierce);
+
+      // assert
+      expect(pierces, everyElement(0));
+    });
+
+    test('something deep can get through armour', () {
+      // arrange
+      const creatures = bestiary;
+
+      // act
+      final deepest = creatures
+          .map((creature) => creature.pierce)
+          .reduce((one, other) => one > other ? one : other);
+
+      // assert
+      expect(deepest, greaterThan(0));
+    });
+
+    test('pierce never rises above the armour the game can wear', () {
+      // arrange
+      final heaviest = armory.fold(0, (most, base) => base.armor + most);
+
+      // act
+      final deepest = bestiary
+          .map((creature) => creature.pierce)
+          .reduce((one, other) => one > other ? one : other);
+
+      // assert
+      expect(deepest, lessThan(heaviest));
+    });
+
+    test('a spawned creature carries its own pierce', () {
+      // arrange
+      const creature = wight;
+
+      // act
+      final actor = creature.spawn(id: 'wight-1', at: const Position(1, 1));
+
+      // assert
+      expect(actor.pierce, creature.pierce);
+    });
+  });
+
+  group('newProfile', () {
+    test('walks in armed, stocked and untrained on visit zero', () {
+      // arrange
+      final profile = newProfile(worldSeed: 3);
+
+      // act
+      final opening = (
+        profile.visit,
+        profile.gold,
+        profile.bankedGold,
+        profile.equipment[EquipSlot.mainHand]?.base.id,
+        profile.inventory.length,
+      );
+
+      // assert
+      expect(opening, (0, 0, 0, 'rusty-sword', 2));
+      expect(profile.bank, isEmpty);
+      expect(profile.hero.hp, profile.maxHp);
+      expect(profile.skills, untrainedSkills);
+    });
+
+    test('the first entry is played on visit one', () {
+      // arrange
+      final profile = newProfile(worldSeed: 3);
+
+      // act
+      final run = startDungeonRun(profile);
+
+      // assert
+      expect(run.visit, 1);
+      expect(run.depth, 1);
+      expect(run.dropTables.keys, dropTables.keys);
+    });
+
+    test('the first entry lands the hero on ground it can stand on', () {
+      // arrange
+      final profile = newProfile(worldSeed: 3);
+
+      // act
+      final run = startDungeonRun(profile);
+
+      // assert
+      expect(run.map.isWalkable(run.hero.position), isTrue);
+      expect(run.stairsDown, isNotNull);
+      expect(run.stairsUp, isNull);
+    });
+
+    test('re-entering after a run reshuffles the floors', () {
+      // arrange
+      final profile = newProfile(worldSeed: 3);
+      final first = startDungeonRun(profile);
+
+      // act
+      final second = startDungeonRun(endRun(profile, first, died: true));
+
+      // assert
+      expect(second.map.toAscii(), isNot(first.map.toAscii()));
+    });
+
+    test('a re-entry keeps the world, so a seed still names the dungeon', () {
+      // arrange
+      final profile = newProfile(worldSeed: 3);
+      final first = startDungeonRun(profile);
+
+      // act
+      final again = startDungeonRun(endRun(profile, first, died: true));
+      final other = startDungeonRun(
+        endRun(profile, startDungeonRun(newProfile(worldSeed: 3)), died: true),
+      );
+
+      // assert
+      expect(again.map.toAscii(), other.map.toAscii());
+    });
+
+    test('a hero can walk all five floors down and find them again', () {
+      // arrange
+      var game = startDungeonRun(_unkillable(newProfile(worldSeed: 3)));
+      final layouts = <int, String>{1: game.map.toAscii()};
+
+      // act
+      while (game.depth < deepestDepth) {
+        game = _walkTo(game, game.stairsDown!);
+        final (below, _) = step(game, const DescendAction());
+        game = below;
+        layouts[game.depth] = game.map.toAscii();
+      }
+      while (game.depth > 1) {
+        game = _walkTo(game, game.stairsUp!);
+        final (above, _) = step(game, const AscendAction());
+        game = above;
+        expect(game.map.toAscii(), layouts[game.depth]);
+      }
+
+      // assert
+      expect(game.depth, 1);
+    });
+
+    test('every floor below the first offers a way back up', () {
+      // arrange
+      var game = startDungeonRun(_unkillable(newProfile(worldSeed: 8)));
+      final ups = <int, Position?>{1: game.stairsUp};
+
+      // act
+      while (game.depth < deepestDepth) {
+        game = _walkTo(game, game.stairsDown!);
+        final (below, _) = step(game, const DescendAction());
+        game = below;
+        ups[game.depth] = game.stairsUp;
+      }
+
+      // assert
+      expect(ups[1], isNull);
+      for (var depth = 2; depth <= deepestDepth; depth++) {
+        expect(ups[depth], isNotNull, reason: 'depth $depth has no way up');
+      }
+    });
+  });
+}
+
+/// The same hero, with enough hit points that the walk below is a test of the
+/// floors and never of the fighting.
+///
+/// A structural test that can lose to a bad seed is a flaky test. The bot in
+/// the survivability suite is where the fighting gets measured; this hero only
+/// has to arrive.
+Profile _unkillable(Profile profile) => profile.copyWith(
+  hero: Actor(
+    id: profile.hero.id,
+    name: profile.hero.name,
+    glyph: profile.hero.glyph,
+    position: profile.hero.position,
+    hp: 100000,
+    maxHp: 100000,
+    attackMin: 500,
+    attackMax: 500,
+    speed: profile.hero.speed,
+    energy: profile.hero.energy,
+  ),
+);
+
+/// Walks the hero to [target] the short way, taking whatever fights the road
+/// hands it.
+///
+/// The step budget is a guard against a walk that cannot finish, not a rule:
+/// with an unkillable hero the only thing between it and the stairs is how many
+/// monsters it has to cut through on the way.
+GameState _walkTo(GameState game, Position target) {
+  var walked = game;
+  var budget = 0;
+  while (walked.hero.position != target && budget < 5000) {
+    budget++;
+    final path = findPath(walked.map, walked.hero.position, target);
+    if (path.isEmpty) break;
+    final direction = walked.hero.position.directionTo(path.first);
+    if (direction == null) break;
+    final (next, _) = step(walked, MoveAction(direction));
+    walked = next;
+    if (walked.isGameOver) break;
+  }
+  return walked;
 }
 
 /// Every littered tile and what lies on it, as strings a diff can read.

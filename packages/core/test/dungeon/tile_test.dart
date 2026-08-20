@@ -35,5 +35,16 @@ void main() {
       // assert
       expect(properties, (true, true));
     });
+
+    test('stairs up are walked onto and seen through', () {
+      // arrange
+      const tile = Tile.stairsUp;
+
+      // act
+      final properties = (tile.walkable, tile.transparent);
+
+      // assert
+      expect(properties, (true, true));
+    });
   });
 }

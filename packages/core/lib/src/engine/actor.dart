@@ -14,6 +14,7 @@ class Actor {
     required this.speed,
     required this.energy,
     this.dropChance = 0,
+    this.pierce = 0,
   });
 
   /// Unique within a crawl: `hero`, or `ghoul-1`.
@@ -59,6 +60,14 @@ class Actor {
   /// later milestone's rule.
   final int dropChance;
 
+  /// How much of the hero's armour this actor's blows ignore.
+  ///
+  /// Subtracted from the hero's armour rather than added to the damage, so a
+  /// pierced hit reads as "your armour did less" and the floor-of-one rule
+  /// keeps its meaning. Zero on everything shallow, and zero on the hero: a
+  /// monster has no armour to get through.
+  final int pierce;
+
   /// Whether this actor still has hit points.
   bool get isAlive => hp > 0;
 
@@ -75,6 +84,7 @@ class Actor {
     speed: speed,
     energy: energy ?? this.energy,
     dropChance: dropChance,
+    pierce: pierce,
   );
 
   @override

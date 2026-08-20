@@ -1,3 +1,5 @@
+import '../dungeon/floor.dart';
+import '../dungeon/floor_memory.dart';
 import '../dungeon/flow_field.dart';
 import '../dungeon/fov.dart';
 import '../loot/equip_slot.dart';
@@ -36,10 +38,16 @@ import 'position.dart';
 /// charging a monster turn for a control the interface should not have offered
 /// is how a player loses a run to a mis-tap.
 ///
-/// Descending is the one action that does not end in a monster phase: the hero
-/// arrives on a still floor with the clock restarted. Carrying spent energy
-/// down the stairs would hand every monster on the new floor a free move before
-/// the player had seen a single tile of it.
+/// Taking the stairs, either way, is the one action that does not end in a
+/// monster phase: the hero arrives on a still floor with the clock restarted.
+/// Carrying spent energy through the stairwell would hand every monster on the
+/// far side a free move before the player had seen a single tile of it.
+///
+/// A floor the hero has already walked is **restored, never rebuilt**. Only a
+/// depth nobody has been to runs the generator, so a monster left on three hit
+/// points is still on three hit points and an item left on the ground is still
+/// on the ground. See [FloorMemory] for why the monsters freeze while the hero
+/// is elsewhere.
 (GameState, List<GameEvent>) step(GameState state, GameAction action) {
   if (state.isGameOver) return (state, const []);
 
@@ -80,6 +88,8 @@ import 'position.dart';
         return _arriveBelow(state, hero, events);
       }
       events.add(MoveBlocked(actorId: hero.id, at: hero.position));
+    case AscendAction():
+      return _arriveAbove(state, hero, events);
     case PickUpAction():
       final here = groundItems[hero.position]!;
       final taken = here.last;
@@ -154,43 +164,53 @@ GameEvent? _refuse(GameState state, GameAction action) {
     case MoveAction():
     case DescendAction():
       return null;
+    case AscendAction():
+      if (state.depth <= 1) {
+        return const ActionRefused(reason: 'there are no stairs up from here');
+      }
+      if (state.stairsUp != state.hero.position) {
+        return const ActionRefused(reason: 'the stairs up are not here');
+      }
+      return null;
     case PickUpAction():
       if (state.itemsAt(state.hero.position).isEmpty) {
-        return const EquipRefused(reason: 'there is nothing here to take');
+        return const ActionRefused(reason: 'there is nothing here to take');
       }
       if (state.inventory.length >= inventoryCap) return const InventoryFull();
       return null;
     case EquipAction(:final itemId):
       final item = _carried(state, itemId);
       if (item == null)
-        return const EquipRefused(reason: 'you are not carrying that');
+        return const ActionRefused(reason: 'you are not carrying that');
       final slot = item.base.slot;
       if (slot == null) {
-        return EquipRefused(reason: '${item.base.name} is not worn');
+        return ActionRefused(reason: '${item.base.name} is not worn');
       }
       if (slot == EquipSlot.offHand && state.loadout.wieldsTwoHanded) {
-        return const EquipRefused(reason: 'both hands are on the weapon');
+        return const ActionRefused(reason: 'both hands are on the weapon');
       }
       return null;
     case UnequipAction(:final slot):
       if (!state.equipment.containsKey(slot)) {
-        return EquipRefused(reason: 'nothing is on your ${slot.name}');
+        return ActionRefused(reason: 'nothing is on your ${slot.name}');
       }
       if (state.inventory.length >= inventoryCap) {
-        return const EquipRefused(reason: 'your hands are too full to stow it');
+        return const ActionRefused(
+          reason: 'your hands are too full to stow it',
+        );
       }
       return null;
     case DrinkAction(:final itemId):
       final item = _carried(state, itemId);
       if (item == null)
-        return const EquipRefused(reason: 'you are not carrying that');
+        return const ActionRefused(reason: 'you are not carrying that');
       if (!item.base.isPotion) {
-        return EquipRefused(reason: '${item.base.name} is not a drink');
+        return ActionRefused(reason: '${item.base.name} is not a drink');
       }
       return null;
     case DropAction(:final itemId):
       if (_carried(state, itemId) == null) {
-        return const EquipRefused(reason: 'you are not carrying that');
+        return const ActionRefused(reason: 'you are not carrying that');
       }
       return null;
   }
@@ -408,6 +428,13 @@ _MonsterPhase _monsterPhase(
 /// are exclusive: Bulwark while any piece is heavy, Fleetfoot while none is.
 /// That is what keeps armour and dodge from compounding — a hero cannot train
 /// both at once, so it has to pick a defence and live with it.
+///
+/// **Pierce subtracts from the hero's armour, never adds to the roll.** The two
+/// arithmetics look alike until the armour runs out: adding to the roll would
+/// go on scaling against a hero wearing nothing, while eating armour stops at
+/// zero and leaves the floor of one to do the rest. It also keeps the sentence
+/// the player reads honest — the wight did not swing harder, the mail did
+/// less.
 Map<SkillId, SkillState> _defend(
   GameState state,
   Actor attacker,
@@ -423,7 +450,8 @@ Map<SkillId, SkillState> _defend(
     return _train(defence, loadout.skills, events);
   }
   final roll = state.rng.rollRange(attacker.attackMin, attacker.attackMax);
-  final reduced = roll - heroArmor(loadout);
+  final armor = heroArmor(loadout) - attacker.pierce;
+  final reduced = roll - (armor < 0 ? 0 : armor);
   final damage = reduced < 1 ? 1 : reduced;
   events.add(
     AttackHit(attackerId: attacker.id, targetId: heroId, damage: damage),
@@ -471,36 +499,112 @@ Set<Position> _occupiedTiles(Actor hero, List<Actor> monsters, String moving) =>
         if (other.id != moving) other.position,
     };
 
+/// The floor the hero is standing on, frozen for its return.
+FloorMemory _snapshot(GameState state) => FloorMemory(
+  map: state.map,
+  monsters: state.monsters,
+  groundItems: state.groundItems,
+  explored: state.explored,
+  stairsDown: state.stairsDown,
+  stairsUp: state.stairsUp,
+);
+
+/// A floor built for the first time, ready to be arrived on.
+///
+/// Freshly built monsters are set ready to act, which is what everything on a
+/// generated floor has always been. Restored monsters skip this: theirs is the
+/// energy they were left holding.
+///
+/// A floor built here is always a floor entered from the one above, so it
+/// always has a way back up. Where the builder did not name one, the arrival
+/// tile is it — which is where the generator puts it anyway.
+FloorMemory _built(Floor floor) => FloorMemory(
+  map: floor.map,
+  monsters: [
+    for (final monster in floor.monsters)
+      monster.copyWith(energy: actThreshold),
+  ],
+  groundItems: floor.groundItems,
+  explored: const {},
+  stairsDown: floor.stairsDown,
+  stairsUp: floor.stairsUp ?? floor.heroSpawn,
+);
+
+/// The state after stepping onto [depth], arriving at [at].
+///
+/// The departing floor goes into [GameState.floors] and the arriving one comes
+/// out of it, so exactly one floor is ever live and there is never a second
+/// copy of it to go stale.
+///
+/// The clock restarts for the hero and the arrival runs no monster phase, which
+/// is the rule descending has always followed: a hero who has not yet seen a
+/// tile of the floor should not already have been swung at on it.
+///
+/// **That makes a stairs bounce two free actions**, because neither direction
+/// runs a monster phase: a hero cornered on the stairs can step through and
+/// back without ever being hit. It is harmless only while nothing in the game
+/// gives hit points back on its own — the bounce buys time, and time buys
+/// nothing. The day regeneration arrives, or any rule that pays out per turn,
+/// this becomes a healing loop and the arrival will have to start charging for
+/// itself.
+(GameState, List<GameEvent>) _arriveOn(
+  GameState state,
+  Actor hero,
+  int depth,
+  FloorMemory floor,
+  Position at,
+  List<GameEvent> events,
+) {
+  final arrived = hero.copyWith(position: at, energy: actThreshold);
+  final visible = computeFov(floor.map, at, fovRadius);
+  return (
+    state.copyWith(
+      map: floor.map,
+      hero: arrived,
+      monsters: floor.monsters,
+      visible: visible,
+      explored: {...floor.explored, ...visible},
+      depth: depth,
+      stairsDown: floor.stairsDown,
+      clearStairsDown: floor.stairsDown == null,
+      stairsUp: floor.stairsUp,
+      clearStairsUp: floor.stairsUp == null,
+      groundItems: floor.groundItems,
+      floors: {...state.floors, state.depth: _snapshot(state)}..remove(depth),
+    ),
+    events,
+  );
+}
+
 (GameState, List<GameEvent>) _arriveBelow(
   GameState state,
   Actor hero,
   List<GameEvent> events,
 ) {
   final depth = state.depth + 1;
-  final floor = state.buildFloor(depth);
-  final arrived = hero.copyWith(
-    position: floor.heroSpawn,
-    energy: actThreshold,
-  );
-  final visible = computeFov(floor.map, floor.heroSpawn, fovRadius);
+  final floor = state.floors[depth] ?? _built(state.buildFloor(depth));
   events.add(Descended(newDepth: depth));
-  return (
-    state.copyWith(
-      map: floor.map,
-      hero: arrived,
-      monsters: [
-        for (final monster in floor.monsters)
-          monster.copyWith(energy: actThreshold),
-      ],
-      visible: visible,
-      explored: {...visible},
-      depth: depth,
-      stairsDown: floor.stairsDown,
-      clearStairsDown: floor.stairsDown == null,
-      groundItems: floor.groundItems,
-    ),
-    events,
-  );
+  return _arriveOn(state, hero, depth, floor, floor.stairsUp!, events);
+}
+
+/// Climbs to the floor above, which the hero must have walked to get here.
+///
+/// A missing snapshot is a programming error rather than a game state: the only
+/// way onto depth two or deeper is through the floor above it, and that descent
+/// is what wrote the snapshot. Rebuilding one here would be worse than throwing
+/// — it would silently reshuffle a floor the player thought they knew.
+(GameState, List<GameEvent>) _arriveAbove(
+  GameState state,
+  Actor hero,
+  List<GameEvent> events,
+) {
+  final depth = state.depth - 1;
+  final floor = state.floors[depth];
+  if (floor == null) {
+    throw StateError('depth $depth was never walked, so there is no way back');
+  }
+  events.add(Ascended(newDepth: depth));
+  return _arriveOn(state, hero, depth, floor, floor.stairsDown!, events);
 }
 
 Set<String> _visibleMonsterIds(GameState state) => {

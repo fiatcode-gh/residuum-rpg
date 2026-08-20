@@ -14,8 +14,9 @@ import 'tile.dart';
 /// as well as a native integer — a shared world seed must describe the same
 /// dungeon whichever way the game is compiled.
 ///
-/// [visit] is 0 throughout this milestone. It exists so that dying and coming
-/// back reshuffles the dungeon without changing the world.
+/// [visit] counts entries into the dungeon. Every entry, and so every death,
+/// bumps it, which reshuffles all five floors without changing the world the
+/// seed describes.
 int floorSeed(int worldSeed, int depth, int visit) {
   var hash = 0x811c9dc5;
   for (final value in [worldSeed, depth, visit]) {
@@ -35,6 +36,7 @@ class GeneratedFloor {
     required this.heroSpawn,
     required this.monsterSpawns,
     required this.stairsDown,
+    this.stairsUp,
     this.itemSpawns = const [],
   });
 
@@ -47,6 +49,14 @@ class GeneratedFloor {
 
   /// Null exactly on the deepest floor.
   final Position? stairsDown;
+
+  /// Where the hero arrives from the floor above, and the way back up.
+  ///
+  /// Null exactly on depth one, which is entered from the town rather than from
+  /// a floor above it. Everywhere else it is [heroSpawn]: the tile the hero
+  /// lands on is the tile it leaves from, so the way back is never something to
+  /// go and find in the dark.
+  final Position? stairsUp;
 
   /// Where this floor's starting items lie.
   ///
@@ -121,11 +131,13 @@ GeneratedFloor generateFloor(
 /// What is wrong with [floor], or null when nothing is.
 ///
 /// Checks, in order: the hero stands on walkable ground; every walkable tile is
-/// reachable from the hero; the stairs exist, are reachable and are somewhere
-/// else on depths above [deepestDepth] and are absent on it; and the monster
-/// spawns are the right number, distinct, reachable, clear of the hero and the
-/// stairs, and — the point of the whole rule — none of them is already in
-/// sight when the hero arrives.
+/// reachable from the hero; the stairs down exist, are reachable and are
+/// somewhere else on depths above [deepestDepth] and are absent on it; the
+/// stairs up exist and are reachable everywhere below depth one, are absent on
+/// depth one, and are never the stairs down; and the monster spawns are the
+/// right number, distinct, reachable, clear of the hero and the stairs, and —
+/// the point of the whole rule — none of them is already in sight when the hero
+/// arrives.
 String? describeFloorProblem(
   GeneratedFloor floor,
   int depth,
@@ -154,6 +166,17 @@ String? describeFloorProblem(
     return 'the stairs at $stairs cannot be walked to';
   } else if (stairs == floor.heroSpawn) {
     return 'the hero arrives standing on the stairs down';
+  }
+
+  final up = floor.stairsUp;
+  if (depth <= 1) {
+    if (up != null) return 'depth $depth is the top and has stairs up';
+  } else if (up == null) {
+    return 'depth $depth has no stairs up';
+  } else if (up == stairs) {
+    return 'the stairs up and the stairs down are the same tile';
+  } else if (!reachable.contains(up)) {
+    return 'the stairs up at $up cannot be walked to';
   }
 
   final spawns = floor.monsterSpawns;
@@ -225,6 +248,11 @@ GeneratedFloor? _attemptFloor(
     tiles[stairsDown.y][stairsDown.x] = Tile.stairsDown;
   }
 
+  final stairsUp = depth > 1 ? heroSpawn : null;
+  if (stairsUp != null) {
+    tiles[stairsUp.y][stairsUp.x] = Tile.stairsUp;
+  }
+
   final pool = [
     for (final room in rooms.skip(1))
       for (final tile in room.tiles)
@@ -260,6 +288,7 @@ GeneratedFloor? _attemptFloor(
     heroSpawn: heroSpawn,
     monsterSpawns: monsterSpawns,
     stairsDown: stairsDown,
+    stairsUp: stairsUp,
     itemSpawns: itemSpawns,
   );
 }
@@ -350,6 +379,7 @@ String _render(List<List<Tile>> tiles) => tiles
               Tile.wall => '#',
               Tile.floor => '.',
               Tile.stairsDown => '>',
+              Tile.stairsUp => '<',
             },
           )
           .join(),

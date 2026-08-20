@@ -175,5 +175,27 @@ void main() {
       // assert
       expect(rendered.split('\n')[1], '#>#');
     });
+
+    test('parses a less-than sign as the stairs up', () {
+      // arrange
+      final map = FloorMap.parse('###\n#<#\n###');
+
+      // act
+      final tile = map.tileAt(const Position(1, 1));
+
+      // assert
+      expect(tile, Tile.stairsUp);
+    });
+
+    test('renders the stairs up as a less-than sign', () {
+      // arrange
+      final map = FloorMap.parse('###\n#<#\n###');
+
+      // act
+      final rendered = map.toAscii();
+
+      // assert
+      expect(rendered.split('\n')[1], '#<#');
+    });
   });
 }

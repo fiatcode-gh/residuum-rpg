@@ -22,6 +22,16 @@ final class DescendAction extends GameAction {
   const DescendAction();
 }
 
+/// Take the stairs up. Only does anything where the stairs up are.
+///
+/// **Refused** rather than blocked away from the tile, which is the opposite of
+/// [DescendAction]'s wall-bump. The two differ because their controls do: the
+/// interface only ever offers Ascend on the tile it works from, so charging a
+/// turn for it could only ever punish a mis-tap, never a probe of the dark.
+final class AscendAction extends GameAction {
+  const AscendAction();
+}
+
 /// Take the newest item lying under the hero.
 ///
 /// Refused when there is nothing underfoot, and when the inventory is full.

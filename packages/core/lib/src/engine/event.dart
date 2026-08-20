@@ -92,6 +92,19 @@ final class Descended extends GameEvent with Equatable {
   String toString() => 'Descended(to $newDepth)';
 }
 
+/// The hero took the stairs and arrived on a shallower floor.
+final class Ascended extends GameEvent with Equatable {
+  const Ascended({required this.newDepth});
+
+  final int newDepth;
+
+  @override
+  List<Object?> get props => [newDepth];
+
+  @override
+  String toString() => 'Ascended(to $newDepth)';
+}
+
 /// A monster the hero could not see at the start of the turn is in sight now.
 ///
 /// Emitted once, on the turn sight is gained, whether the monster walked into
@@ -187,9 +200,14 @@ final class ItemUnequipped extends GameEvent with Equatable {
   String toString() => 'ItemUnequipped(${item.id}, ${slot.name})';
 }
 
-/// The rules would not let the hero wear that, and said why.
-final class EquipRefused extends GameEvent with Equatable {
-  const EquipRefused({required this.reason});
+/// The rules would not even try what was asked, and said why.
+///
+/// A refusal is not a turn: nothing changed and no monster acted. It covers
+/// every control the interface should not have offered — wearing what the hero
+/// is not carrying, taking what is not there, climbing stairs that are not
+/// underfoot.
+final class ActionRefused extends GameEvent with Equatable {
+  const ActionRefused({required this.reason});
 
   /// Written to be read aloud in the log, not parsed.
   final String reason;
@@ -198,7 +216,7 @@ final class EquipRefused extends GameEvent with Equatable {
   List<Object?> get props => [reason];
 
   @override
-  String toString() => 'EquipRefused($reason)';
+  String toString() => 'ActionRefused($reason)';
 }
 
 /// The hero drank a potion and got [healed] hit points back.
