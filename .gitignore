@@ -1,2 +1,7 @@
 docs/epic/
 .worktrees/
+.dart_tool/
+build/
+.superpowers/
+packages/core/pubspec.lock
+packages/content/pubspec.lock
