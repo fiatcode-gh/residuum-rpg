@@ -48,12 +48,12 @@ class SpawnTable {
 const Map<int, SpawnTable> spawnTables = {
   1: SpawnTable(
     minCount: 3,
-    maxCount: 5,
-    entries: [SpawnEntry('rat', 4), SpawnEntry('wolf', 1)],
+    maxCount: 4,
+    entries: [SpawnEntry('rat', 6), SpawnEntry('wolf', 1)],
   ),
   2: SpawnTable(
     minCount: 4,
-    maxCount: 6,
+    maxCount: 5,
     entries: [
       SpawnEntry('rat', 3),
       SpawnEntry('wolf', 2),

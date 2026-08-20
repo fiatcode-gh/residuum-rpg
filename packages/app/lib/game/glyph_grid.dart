@@ -42,6 +42,7 @@ class _GlyphPainter extends CustomPainter {
   static const _stairs = Color(0xFFE8ECF2);
   static const _hero = Color(0xFFFFFFFF);
   static const _monster = Color(0xFFD9A227);
+  static const _item = Color(0xFF7FC8B8);
   static const _rememberedOpacity = 0.4;
 
   final GameViewState state;
@@ -63,6 +64,10 @@ class _GlyphPainter extends CustomPainter {
           visible,
         );
       }
+    }
+    for (final tile in game.groundItems.entries) {
+      if (!game.visible.contains(tile.key) || tile.value.isEmpty) continue;
+      _paintGlyph(canvas, tile.key, tile.value.last.base.glyph, _item, true);
     }
     for (final monster in game.monsters) {
       if (!game.visible.contains(monster.position)) continue;

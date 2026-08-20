@@ -24,6 +24,40 @@ final class DescendPressed extends GameBlocEvent {
   const DescendPressed();
 }
 
+/// Take what is lying under the hero.
+final class PickUpPressed extends GameBlocEvent {
+  const PickUpPressed();
+}
+
+final class EquipPressed extends GameBlocEvent {
+  const EquipPressed(this.itemId);
+
+  final String itemId;
+}
+
+final class UnequipPressed extends GameBlocEvent {
+  const UnequipPressed(this.slot);
+
+  final EquipSlot slot;
+}
+
+final class DrinkPressed extends GameBlocEvent {
+  const DrinkPressed(this.itemId);
+
+  final String itemId;
+}
+
+final class DropPressed extends GameBlocEvent {
+  const DropPressed(this.itemId);
+
+  final String itemId;
+}
+
+/// Drink the first potion the hero is carrying, so the common case is one tap.
+final class QuickDrinkPressed extends GameBlocEvent {
+  const QuickDrinkPressed();
+}
+
 /// One step of a walk in progress. Carries the [walkId] it belongs to so a
 /// step left over from a cancelled walk cannot resume it.
 final class AutoWalkAdvanced extends GameBlocEvent {
@@ -57,6 +91,32 @@ class GameViewState {
       !game.isGameOver &&
       game.stairsDown != null &&
       game.hero.position == game.stairsDown;
+
+  /// What is lying under the hero, oldest first.
+  List<Item> get itemsUnderfoot => game.itemsAt(game.hero.position);
+
+  bool get canPickUp =>
+      !game.isGameOver &&
+      itemsUnderfoot.isNotEmpty &&
+      game.inventory.length < inventoryCap;
+
+  /// The potion a quick drink would reach for, or null when none is carried.
+  Item? get firstPotion {
+    for (final item in game.inventory) {
+      if (item.base.isPotion) return item;
+    }
+    return null;
+  }
+
+  (int, int) get attack => heroAttack(game.hero, game.loadout);
+
+  int get armor => heroArmor(game.loadout);
+
+  int get dodgePercent => heroDodgePercent(game.loadout);
+
+  int get maxHp => heroMaxHp(game.hero, game.loadout);
+
+  int get speed => heroSpeed(game.hero, game.loadout);
 }
 
 class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
@@ -74,6 +134,12 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     on<TileTapped>(_onTileTapped);
     on<DescendPressed>(_onDescendPressed);
     on<AutoWalkAdvanced>(_onAutoWalkAdvanced);
+    on<PickUpPressed>(_onPickUpPressed);
+    on<EquipPressed>(_onEquipPressed);
+    on<UnequipPressed>(_onUnequipPressed);
+    on<DrinkPressed>(_onDrinkPressed);
+    on<DropPressed>(_onDropPressed);
+    on<QuickDrinkPressed>(_onQuickDrinkPressed);
   }
 
   /// How long the hero pauses between tiles of a walk. Zero in tests.
@@ -116,6 +182,48 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   void _onDescendPressed(DescendPressed event, Emitter<GameViewState> emit) {
     if (state.game.isGameOver) return;
     emit(_afterAction(const DescendAction()));
+  }
+
+  void _onPickUpPressed(PickUpPressed event, Emitter<GameViewState> emit) =>
+      _act(const PickUpAction(), emit);
+
+  void _onEquipPressed(EquipPressed event, Emitter<GameViewState> emit) =>
+      _act(EquipAction(event.itemId), emit);
+
+  void _onUnequipPressed(UnequipPressed event, Emitter<GameViewState> emit) =>
+      _act(UnequipAction(event.slot), emit);
+
+  void _onDrinkPressed(DrinkPressed event, Emitter<GameViewState> emit) =>
+      _act(DrinkAction(event.itemId), emit);
+
+  void _onDropPressed(DropPressed event, Emitter<GameViewState> emit) =>
+      _act(DropAction(event.itemId), emit);
+
+  void _onQuickDrinkPressed(
+    QuickDrinkPressed event,
+    Emitter<GameViewState> emit,
+  ) {
+    final potion = state.firstPotion;
+    if (potion == null) return;
+    _act(DrinkAction(potion.id), emit);
+  }
+
+  /// Runs one loot action, cancelling any walk in progress first.
+  ///
+  /// Every loot control goes through here rather than calling [step] itself, so
+  /// the rule that reaching into the pack interrupts a walk lives in exactly one
+  /// place — and so does the rule that a dead hero does nothing.
+  void _act(GameAction action, Emitter<GameViewState> emit) {
+    if (state.game.isGameOver) return;
+    final before = state.game;
+    final (after, events) = step(before, action);
+    emit(
+      GameViewState(
+        game: after,
+        log: [...state.log, ..._describe(before, events)],
+        walkId: state.walkId + 1,
+      ),
+    );
   }
 
   Future<void> _onAutoWalkAdvanced(

@@ -1,12 +1,25 @@
 import 'package:residuum_core/core.dart';
 
+import 'armory.dart';
+import 'drop_tables.dart';
 import 'spawn_tables.dart';
 
-/// The hero, as every crawl begins: twenty hit points, a rusty sword folded
-/// straight into its attack range, and the baseline speed everything else is
-/// measured against.
+/// What the loot stream's seed is offset by, so it never runs in step with the
+/// combat stream.
 ///
-/// There is no inventory to hang a weapon on yet, so the sword is the numbers.
+/// A literal rather than a derived value, because a world seed has to describe
+/// the same loot to every player who types it in — including one running a
+/// build compiled years apart from another's.
+const int lootStreamSalt = 0x100D;
+
+/// The hero, as every crawl begins: twenty hit points, bare fists, and the
+/// baseline speed everything else is measured against.
+///
+/// The fists are the *whole* of the hero's own attack. A weapon adds to this
+/// rather than replacing it, so an unarmed hero still punches for one or two,
+/// and the starting rusty sword's `+2/+3` lands the opening attack on three to
+/// five — the same three to five the game shipped with before there was any
+/// such thing as a weapon to take off.
 Actor _freshHero(Position at) => Actor(
   id: 'hero',
   name: 'you',
@@ -14,34 +27,67 @@ Actor _freshHero(Position at) => Actor(
   position: at,
   hp: 20,
   maxHp: 20,
-  attackMin: 3,
-  attackMax: 5,
+  attackMin: 1,
+  attackMax: 2,
   speed: 10,
   energy: actThreshold,
 );
+
+/// What the hero is wearing when it walks in: one rusty sword.
+Equipment _startingEquipment() => {
+  EquipSlot.mainHand: const Item(
+    id: 'kit-1',
+    base: rustySword,
+    rarity: Rarity.common,
+  ),
+};
+
+/// What the hero is carrying when it walks in: two healing potions.
+///
+/// Two, not one and not five. One is a single mistake's worth of slack and five
+/// makes the first two floors a formality; two is enough to survive a bad room
+/// and not enough to survive a bad plan.
+List<Item> _startingInventory() => const [
+  Item(id: 'kit-2', base: healingPotion, rarity: Rarity.common),
+  Item(id: 'kit-3', base: healingPotion, rarity: Rarity.common),
+];
 
 /// The floor at [depth] of the dungeon that [worldSeed] and [visit] describe.
 ///
 /// Layout comes from the generator's own generator-of-numbers, seeded on the
 /// floor seed alone. Which creature stands on which tile is drawn from the same
-/// stream, and both are separate from the crawl's combat stream — so how a
-/// fight goes can never reshuffle the map, and two players sharing a world seed
-/// walk the same five floors.
+/// stream, and so is what lies on the ground — and all three are separate from
+/// the crawl's combat stream, so how a fight goes can never reshuffle the map,
+/// and two players sharing a world seed walk the same five floors and find the
+/// same things lying on them.
 ///
-/// Monster ids are the creature's id plus its place in the spawn list, which
-/// makes them unique on the floor by construction.
+/// Monster ids are the creature's id plus its place in the spawn list, and item
+/// ids are the depth plus their place in the litter, which makes both unique on
+/// the floor by construction.
 Floor buildFloor(int depth, {required int worldSeed, required int visit}) {
   final seed = floorSeed(worldSeed, depth, visit);
   final table = spawnTableFor(depth);
+  final drops = dropTableFor(depth);
   final rng = Rng(seed);
   final count = table.rollCount(rng);
-  final generated = generateFloor(seed, depth, monsterCount: count);
+  final itemCount = rollFloorItemCount(drops, rng);
+  final generated = generateFloor(
+    seed,
+    depth,
+    monsterCount: count,
+    itemCount: itemCount,
+  );
   final monsters = <Actor>[];
   for (final spawn in generated.monsterSpawns) {
     final creature = table.rollCreature(rng);
     monsters.add(
       creature.spawn(id: '${creature.id}-${monsters.length + 1}', at: spawn),
     );
+  }
+  final groundItems = <Position, List<Item>>{};
+  for (final spawn in generated.itemSpawns) {
+    final item = rollDrop(drops, rng, 'floor-$depth-${groundItems.length + 1}');
+    groundItems[spawn] = [item];
   }
   assert(
     monsters.map((monster) => monster.id).toSet().length == monsters.length,
@@ -52,6 +98,7 @@ Floor buildFloor(int depth, {required int worldSeed, required int visit}) {
     heroSpawn: generated.heroSpawn,
     stairsDown: generated.stairsDown,
     monsters: monsters,
+    groundItems: groundItems,
   );
 }
 
@@ -67,6 +114,7 @@ GameState newGame({int worldSeed = 1, int visit = 0}) {
     hero: _freshHero(floor.heroSpawn),
     monsters: floor.monsters,
     rng: Rng(worldSeed),
+    lootRng: Rng(worldSeed ^ lootStreamSalt),
     visible: visible,
     explored: {...visible},
     buildFloor: (depth) =>
@@ -75,5 +123,10 @@ GameState newGame({int worldSeed = 1, int visit = 0}) {
     worldSeed: worldSeed,
     visit: visit,
     stairsDown: floor.stairsDown,
+    groundItems: floor.groundItems,
+    inventory: _startingInventory(),
+    equipment: _startingEquipment(),
+    skills: untrainedSkills,
+    dropTables: dropTables,
   );
 }

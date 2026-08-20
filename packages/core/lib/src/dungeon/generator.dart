@@ -35,6 +35,7 @@ class GeneratedFloor {
     required this.heroSpawn,
     required this.monsterSpawns,
     required this.stairsDown,
+    this.itemSpawns = const [],
   });
 
   final FloorMap map;
@@ -46,6 +47,13 @@ class GeneratedFloor {
 
   /// Null exactly on the deepest floor.
   final Position? stairsDown;
+
+  /// Where this floor's starting items lie.
+  ///
+  /// Unlike [monsterSpawns] these are **not** kept out of the hero's opening
+  /// field of view. An item across the room is a reason to walk over there; a
+  /// monster across the room is a fight the player never got to decline.
+  final List<Position> itemSpawns;
 }
 
 /// Reports what is wrong with a generated floor, or null when it is sound.
@@ -77,6 +85,12 @@ const int deepestDepth = 5;
 /// tables are content and this is core: the count stays a guarantee of the
 /// floor, while the table that chose it stays where the creatures live.
 ///
+/// [itemCount] is a parameter for the same reason as [monsterCount]: how much
+/// loot a depth scatters is a content table, while *where* it lands is a
+/// property of the floor. Items are drawn after the monsters, so raising
+/// [itemCount] cannot reshuffle a layout or a spawn a player already shared the
+/// seed for.
+///
 /// [findProblem] is the seam that makes the retry contract testable — the
 /// shipped validator does not fail on real seeds, so a test can only reach the
 /// retry path by supplying its own.
@@ -84,11 +98,12 @@ GeneratedFloor generateFloor(
   int seed,
   int depth, {
   required int monsterCount,
+  int itemCount = 0,
   FloorProblem findProblem = describeFloorProblem,
 }) {
   var problem = 'no attempt was made';
   for (var attempt = 0; attempt < maxGenerationAttempts; attempt++) {
-    final floor = _attemptFloor(seed + attempt, depth, monsterCount);
+    final floor = _attemptFloor(seed + attempt, depth, monsterCount, itemCount);
     if (floor == null) {
       problem = 'not enough room for $monsterCount monsters';
       continue;
@@ -167,7 +182,12 @@ const int _maxLeafWidth = 11;
 const int _maxLeafHeight = 8;
 const int _minRoomSize = 3;
 
-GeneratedFloor? _attemptFloor(int seed, int depth, int monsterCount) {
+GeneratedFloor? _attemptFloor(
+  int seed,
+  int depth,
+  int monsterCount,
+  int itemCount,
+) {
   final rng = Rng(seed);
   final width = 24 + (depth - 1) * 2;
   final height = 16 + (depth - 1);
@@ -220,11 +240,27 @@ GeneratedFloor? _attemptFloor(int seed, int depth, int monsterCount) {
       pool.removeAt(rng.rollRange(0, pool.length - 1)),
   ];
 
+  final litter = [
+    for (final room in rooms)
+      for (final tile in room.tiles)
+        if (tile != stairsDown &&
+            tile != heroSpawn &&
+            distances.containsKey(tile) &&
+            !monsterSpawns.contains(tile))
+          tile,
+  ];
+  if (litter.length < itemCount) return null;
+  final itemSpawns = [
+    for (var placed = 0; placed < itemCount; placed++)
+      litter.removeAt(rng.rollRange(0, litter.length - 1)),
+  ];
+
   return GeneratedFloor(
     map: FloorMap.parse(_render(tiles)),
     heroSpawn: heroSpawn,
     monsterSpawns: monsterSpawns,
     stairsDown: stairsDown,
+    itemSpawns: itemSpawns,
   );
 }
 

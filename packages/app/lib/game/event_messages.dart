@@ -24,7 +24,43 @@ String? describeEvent(
   ActorNoticed(:final actorId) =>
     '${_capitalised(_named(names, actorId))} comes into view.',
   Descended(:final newDepth) => 'You descend to depth $newDepth.',
+  AttackDodged(:final attackerId) =>
+    '${_capitalised(_named(names, attackerId))} swings and misses.',
+  ItemDropped(:final item) => '${item.displayName} falls to the floor.',
+  ItemPickedUp(:final item) => 'You pick up ${item.displayName}.',
+  InventoryFull() => 'You cannot carry any more.',
+  ItemEquipped(:final item, :final slot) =>
+    'You put on ${item.displayName} (${_slotName(slot)}).',
+  ItemUnequipped(:final item, :final slot) =>
+    'You take off ${item.displayName} (${_slotName(slot)}).',
+  EquipRefused(:final reason) => '${_capitalised(reason)}.',
+  PotionDrunk(:final item, :final healed) when healed == 0 =>
+    'You drink ${item.displayName}. Nothing was wrong with you.',
+  PotionDrunk(:final item, :final healed) =>
+    'You drink ${item.displayName} and recover $healed.',
+  SkillLevelledUp(:final skill, :final level) =>
+    '${_skillName(skill)} rises to $level.',
   GameOver() => null,
+};
+
+/// What the log calls a slot, in words rather than a field name.
+String _slotName(EquipSlot slot) => switch (slot) {
+  EquipSlot.mainHand => 'main hand',
+  EquipSlot.offHand => 'off hand',
+  EquipSlot.head => 'head',
+  EquipSlot.chest => 'chest',
+  EquipSlot.hands => 'hands',
+  EquipSlot.feet => 'feet',
+};
+
+/// What the log and the skill readout call a skill.
+String skillName(SkillId skill) => _skillName(skill);
+
+String _skillName(SkillId skill) => switch (skill) {
+  SkillId.arms => 'Arms',
+  SkillId.might => 'Might',
+  SkillId.bulwark => 'Bulwark',
+  SkillId.fleetfoot => 'Fleetfoot',
 };
 
 /// The id the hero always answers to.

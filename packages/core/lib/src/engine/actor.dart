@@ -13,6 +13,7 @@ class Actor {
     required this.attackMax,
     required this.speed,
     required this.energy,
+    this.dropChance = 0,
   });
 
   /// Unique within a crawl: `hero`, or `ghoul-1`.
@@ -29,20 +30,34 @@ class Actor {
 
   final Position position;
   final int hp;
+
+  /// The hit point ceiling before any gear. For the hero, gear adds to this
+  /// rather than replacing it — see `heroMaxHp`.
   final int maxHp;
 
-  /// The lowest damage a hit from this actor deals.
+  /// The lowest damage a hit from this actor deals, before any gear.
+  ///
+  /// For the hero this is its bare fists: a weapon adds on top, so an unarmed
+  /// hero still punches. See `heroAttack`.
   final int attackMin;
 
-  /// The highest damage a hit from this actor deals.
+  /// The highest damage a hit from this actor deals, before any gear.
   final int attackMax;
 
-  /// Energy gained per tick of the speed clock. The baseline is 10.
+  /// Energy gained per tick of the speed clock. The baseline is 10. For the
+  /// hero, gear adds to this — see `heroSpeed`.
   final int speed;
 
   /// Energy accumulated so far: an actor acts at `actThreshold` and spends
   /// `actCost` doing so.
   final int energy;
+
+  /// The chance in a hundred that killing this actor yields an item.
+  ///
+  /// Zero for the hero, which is why it defaults to nothing: the hero's own
+  /// death spills nothing, and the death penalty that will take its gear is a
+  /// later milestone's rule.
+  final int dropChance;
 
   /// Whether this actor still has hit points.
   bool get isAlive => hp > 0;
@@ -59,6 +74,7 @@ class Actor {
     attackMax: attackMax,
     speed: speed,
     energy: energy ?? this.energy,
+    dropChance: dropChance,
   );
 
   @override
