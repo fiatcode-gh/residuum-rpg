@@ -169,68 +169,8 @@ void main() {
       // assert
       expect(booted.document.heroes, hasLength(1));
       expect(booted.document.active, 'hero-987654321');
-      expect(booted.document.hero.label, defaultHeroLabel);
+      expect(booted.document.hero.label, heroLabelFor(0));
       expect(booted.profile.worldSeed, 987654321);
-    });
-
-    test('giving a hero up keeps every other hero', () async {
-      // arrange
-      final files = MemorySaveFiles();
-      final store = SaveStore(files);
-      final kept = SavedHero(
-        label: 'Ilse',
-        profile: newProfile(worldSeed: 111).copyWith(gold: 40),
-        run: startDungeonRun(newProfile(worldSeed: 111)),
-      );
-      final was = SaveDocument(
-        active: 'hero-2',
-        heroes: {
-          'hero-1': kept,
-          'hero-2': SavedHero(
-            label: 'Bram',
-            profile: newProfile(worldSeed: 222),
-          ),
-        },
-      );
-      await store.save(was);
-
-      // act
-      final after = await abandonActiveHero(
-        store,
-        was,
-        rollWorldSeed: () => 555,
-      );
-
-      // assert
-      expect(after.document.active, 'hero-555');
-      expect(after.document.heroes.keys.toList()..sort(), [
-        'hero-1',
-        'hero-555',
-      ]);
-      expect(after.document.heroes['hero-1']!.profile, kept.profile);
-      expect(after.document.heroes['hero-1']!.run, isNotNull);
-      expect(after.profile.worldSeed, 555);
-    });
-
-    test('a hero given up is written down before being played', () async {
-      // arrange
-      final files = MemorySaveFiles();
-      final store = SaveStore(files);
-      final was = SaveDocument.one(
-        id: 'hero-1',
-        label: 'Hero 1',
-        profile: newProfile(worldSeed: 111),
-      );
-      await store.save(was);
-
-      // act
-      await abandonActiveHero(store, was, rollWorldSeed: () => 555);
-      final reread = await bootFrom(store, rollWorldSeed: () => 9);
-
-      // assert
-      expect(reread.document.active, 'hero-555');
-      expect(reread.profile.worldSeed, 555);
-      expect(reread.document.heroes.containsKey('hero-1'), isFalse);
     });
 
     test('a hero id is never reused, even inside one millisecond', () {
@@ -245,5 +185,194 @@ void main() {
       expect(fresh, 'hero-555-3');
       expect(unusedHeroIdFrom(556, taken), 'hero-556');
     });
+  });
+
+  group('the four edits a roster makes', () {
+    test('a label is suggested from how many heroes there already are', () {
+      // arrange
+      const existing = 2;
+
+      // act
+      final suggested = heroLabelFor(existing);
+
+      // assert
+      expect(heroLabelFor(0), 'Hero 1');
+      expect(suggested, 'Hero 3');
+    });
+
+    test('a created hero is named, played, and written down first', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+      final was = SaveDocument.one(
+        id: 'hero-1',
+        label: 'Hero 1',
+        profile: newProfile(worldSeed: 111),
+      );
+      await store.save(was);
+
+      // act
+      final after = await createHero(
+        store,
+        was,
+        label: 'Ilse',
+        rollWorldSeed: () => 555,
+      );
+      final reread = await bootFrom(store, rollWorldSeed: () => 9);
+
+      // assert
+      expect(after.document.active, 'hero-555');
+      expect(after.document.hero.label, 'Ilse');
+      expect(after.profile.worldSeed, 555);
+      expect(after.run, isNull);
+      expect(reread.document.heroes.keys.toList()..sort(), [
+        'hero-1',
+        'hero-555',
+      ]);
+      expect(reread.document.active, 'hero-555');
+    });
+
+    test('a created hero never takes an id already in the roster', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+      final was = SaveDocument.one(
+        id: 'hero-555',
+        label: 'Hero 1',
+        profile: newProfile(worldSeed: 555),
+      );
+
+      // act
+      final after = await createHero(
+        store,
+        was,
+        label: 'Ilse',
+        rollWorldSeed: () => 555,
+      );
+
+      // assert
+      expect(after.document.active, 'hero-555-2');
+      expect(after.document.heroes.keys.toList()..sort(), [
+        'hero-555',
+        'hero-555-2',
+      ]);
+    });
+
+    test(
+      'switching lands on the other hero, crawl and visit and all',
+      () async {
+        // arrange
+        final files = MemorySaveFiles();
+        final store = SaveStore(files);
+        final suspended = startDungeonRun(newProfile(worldSeed: 111));
+        final was = SaveDocument(
+          active: 'hero-2',
+          heroes: {
+            'hero-1': SavedHero(
+              label: 'Ilse',
+              profile: newProfile(worldSeed: 111),
+              run: suspended,
+              merchant: const MerchantVisit(bought: ['market-0-potion-1']),
+            ),
+            'hero-2': SavedHero(
+              label: 'Bram',
+              profile: newProfile(worldSeed: 222),
+            ),
+          },
+        );
+        await store.save(was);
+
+        // act
+        final after = await switchHero(store, was, 'hero-1');
+        final reread = await bootFrom(store, rollWorldSeed: () => 9);
+
+        // assert
+        expect(after.document.active, 'hero-1');
+        expect(after.profile.worldSeed, 111);
+        expect(after.run!.rng.state, suspended.rng.state);
+        expect(after.merchant.bought, ['market-0-potion-1']);
+        expect(reread.document.active, 'hero-1');
+      },
+    );
+
+    test('deleting the played hero lands on the first one left', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+      final was = SaveDocument(
+        active: 'hero-2',
+        heroes: {
+          'hero-1': SavedHero(
+            label: 'Ilse',
+            profile: newProfile(worldSeed: 111).copyWith(gold: 40),
+          ),
+          'hero-2': SavedHero(
+            label: 'Bram',
+            profile: newProfile(worldSeed: 222),
+          ),
+        },
+      );
+      await store.save(was);
+
+      // act
+      final after = await deleteHero(store, was, 'hero-2');
+      final reread = await bootFrom(store, rollWorldSeed: () => 9);
+
+      // assert
+      expect(after!.document.active, 'hero-1');
+      expect(after.profile.gold, 40);
+      expect(reread.document.heroes.keys.toList(), ['hero-1']);
+    });
+
+    test('deleting the only hero is refused rather than written', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+      final was = SaveDocument.one(
+        id: 'hero-1',
+        label: 'Hero 1',
+        profile: newProfile(worldSeed: 111).copyWith(gold: 40),
+      );
+      await store.save(was);
+
+      // act
+      final after = await deleteHero(store, was, 'hero-1');
+      final reread = await bootFrom(store, rollWorldSeed: () => 9);
+
+      // assert
+      expect(after, isNull);
+      expect(reread.document.heroes.keys.toList(), ['hero-1']);
+      expect(reread.profile.gold, 40);
+    });
+
+    test(
+      'the only hero is replaced by a named one on their own world',
+      () async {
+        // arrange
+        final files = MemorySaveFiles();
+        final store = SaveStore(files);
+        final was = SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: newProfile(worldSeed: 111),
+        );
+        await store.save(was);
+
+        // act
+        final after = await replaceOnlyHero(
+          store,
+          was,
+          label: 'Cato',
+          rollWorldSeed: () => 555,
+        );
+        final reread = await bootFrom(store, rollWorldSeed: () => 9);
+
+        // assert
+        expect(after.document.heroes.keys.toList(), ['hero-555']);
+        expect(after.document.hero.label, 'Cato');
+        expect(after.profile.worldSeed, 555);
+        expect(reread.document.heroes.containsKey('hero-1'), isFalse);
+      },
+    );
   });
 }

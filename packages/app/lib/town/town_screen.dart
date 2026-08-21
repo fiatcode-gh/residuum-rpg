@@ -19,7 +19,7 @@ import 'town_style.dart';
 class TownScreen extends StatelessWidget {
   const TownScreen({
     required this.onEnterDungeon,
-    required this.onAbandonHero,
+    required this.onOpenRoster,
     super.key,
   });
 
@@ -27,8 +27,12 @@ class TownScreen extends StatelessWidget {
   /// that has to watch it.
   final Future<void> Function() onEnterDungeon;
 
-  /// Gives the hero up, once a person has said yes.
-  final VoidCallback onAbandonHero;
+  /// Opens the roster: every hero on this install, and the three things that can
+  /// be done about them.
+  ///
+  /// The session owns it, because every answer the roster gives ends with the
+  /// whole bloc tree being rebuilt.
+  final Future<void> Function() onOpenRoster;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -75,10 +79,7 @@ class TownScreen extends StatelessWidget {
               const SizedBox(height: 16),
               _Door(label: 'Enter Dungeon', onPressed: onEnterDungeon),
               const SizedBox(height: 8),
-              _Door(
-                label: 'Abandon Hero',
-                onPressed: () => _confirmAbandon(context),
-              ),
+              _Door(label: 'Heroes', onPressed: onOpenRoster),
             ],
           ),
         ),
@@ -101,48 +102,6 @@ class TownScreen extends StatelessWidget {
         builder: (_) => BlocProvider.value(value: bloc, child: screen),
       ),
     );
-  }
-
-  /// Asks once, in words, before a hero and their world are deleted.
-  ///
-  /// Abandoning is the only way a rolled world ends, and closing the app cannot
-  /// undo it: both slots go. So the door does not do it — this does, and only
-  /// after a person has read a sentence and pressed the word in it. The dialog
-  /// is the whole guard, which is why it is checked on a device rather than in a
-  /// test: this package has no widget tests by convention.
-  Future<void> _confirmAbandon(BuildContext context) async {
-    final given = await showDialog<bool>(
-      context: context,
-      builder: (dialog) => AlertDialog(
-        title: const Text(
-          'Abandon this hero?',
-          style: TextStyle(fontFamily: 'monospace'),
-        ),
-        content: const Text(
-          'Everything they carried, banked and learned is deleted, and their '
-          'world is gone. A new hero begins in a new world. This cannot be '
-          'undone.',
-          style: TextStyle(fontFamily: 'monospace', fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialog).pop(false),
-            child: const Text(
-              'Keep this hero',
-              style: TextStyle(fontFamily: 'monospace'),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialog).pop(true),
-            child: const Text(
-              'Abandon',
-              style: TextStyle(fontFamily: 'monospace'),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (given ?? false) onAbandonHero();
   }
 }
 

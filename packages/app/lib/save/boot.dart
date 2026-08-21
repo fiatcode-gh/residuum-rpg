@@ -22,10 +22,18 @@ class Boot {
 
   /// The crawl to drop straight back into, or null to open on the town.
   GameState? get run => document.run;
+
+  /// What the merchant remembers of the active hero's visit.
+  MerchantVisit get merchant => document.merchant;
 }
 
-/// The label a hero gets before anything has named them.
-const String defaultHeroLabel = 'Hero 1';
+/// The label a hero is offered when nobody has typed one.
+///
+/// Derived from how many heroes there already are rather than stored, so the
+/// suggestion is always the next number and the word `Hero` appears in exactly
+/// one place. A hero who has never been named still has one, so the roster never
+/// has a blank row to explain.
+String heroLabelFor(int existingHeroes) => 'Hero ${existingHeroes + 1}';
 
 /// Reads [store], falls back, or begins a hero on a world of their own.
 ///
@@ -44,29 +52,79 @@ Future<Boot> bootFrom(
   final stamp = rollWorldSeed();
   final document = SaveDocument.one(
     id: heroIdFrom(stamp),
-    label: defaultHeroLabel,
+    label: heroLabelFor(0),
     profile: newProfile(worldSeed: stamp),
   );
   await store.save(document);
   return Boot(document: document, notice: loaded.report);
 }
 
-/// The roster [was], with the hero being played given up and a new one in their
-/// place, written down before it is played.
+/// The roster [was] with one more hero on a world of their own, played, and
+/// written down before they are played.
 ///
-/// Abandoning replaces one slot rather than the file. Wiping both save slots was
-/// simpler and was what this did while a document could hold only one hero — but
-/// it would now delete every hero the player did not ask about, which is the
-/// opposite of what the button says.
-Future<Boot> abandonActiveHero(
+/// Written first for the same reason a fresh install is: the world they rolled
+/// has to outlive the first crash, or a player killed by the task switcher on
+/// the way to their first fight comes back to a different dungeon and never
+/// knows one was lost.
+Future<Boot> createHero(
   SaveStore store,
   SaveDocument was, {
+  required String label,
+  required int Function() rollWorldSeed,
+}) async {
+  final stamp = rollWorldSeed();
+  final document = was.addingHero(
+    id: unusedHeroIdFrom(stamp, was.heroes.keys),
+    label: label,
+    profile: newProfile(worldSeed: stamp),
+  );
+  await store.save(document);
+  return Boot(document: document);
+}
+
+/// The roster [was] with [id] the hero being played, written down.
+///
+/// Saved before the session is rebuilt rather than after: the rebuild tears the
+/// autosaver down, so a switch that had not landed on disk first would be undone
+/// by the next launch while the player was already looking at the other hero.
+Future<Boot> switchHero(SaveStore store, SaveDocument was, String id) async {
+  final document = was.playing(id);
+  await store.save(document);
+  return Boot(document: document);
+}
+
+/// The roster [was] without the hero [id], or null when [id] is the only hero.
+///
+/// Null is not a failure to report to the player: it is the roster's own rule
+/// arriving here, and the caller answers it by creating the next hero instead.
+/// Nothing is written in that case, so the document on disk never holds an empty
+/// roster, not even for the length of one save.
+Future<Boot?> deleteHero(SaveStore store, SaveDocument was, String id) async {
+  if (was.without(id) case final SaveDocument left) {
+    await store.save(left);
+    return Boot(document: left);
+  }
+  return null;
+}
+
+/// The roster [was] — one hero, being played — with that hero given up and a
+/// named one in their place on a new world.
+///
+/// **The game never has zero heroes.** Deleting the only hero is a replacement
+/// rather than a removal: a roster with nobody in it has no game to open, the
+/// decoder refuses such a document, and a player who reached it would be looking
+/// at a screen with nothing behind it. So that delete flows straight into
+/// creating the next hero, and the two edits are one write.
+Future<Boot> replaceOnlyHero(
+  SaveStore store,
+  SaveDocument was, {
+  required String label,
   required int Function() rollWorldSeed,
 }) async {
   final stamp = rollWorldSeed();
   final document = was.replacingActiveWithNewHero(
     id: unusedHeroIdFrom(stamp, was.heroes.keys),
-    label: defaultHeroLabel,
+    label: label,
     profile: newProfile(worldSeed: stamp),
   );
   await store.save(document);

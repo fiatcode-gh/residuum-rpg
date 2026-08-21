@@ -42,8 +42,10 @@ substantive work.
   `// arrange` / `// act` / `// assert`.
 - **content:** validation tests (every referenced ID exists, every quest beat has a
   trigger, every spell's school is a real skill).
-- **app:** BLoC-level tests only (events → states). No widget or page tests; verify UI
-  manually on device.
+- **app:** BLoC-level tests (events → states) are the default. Widget tests are
+  permitted wherever a bloc test cannot observe the behavior — route guards, boot
+  wiring, navigation, dialogs. No golden-image tests; look and feel are still
+  verified manually on device.
 - Determinism is tested: same seed must produce identical floors, identical rolls.
 
 ## Accessibility (non-negotiable)

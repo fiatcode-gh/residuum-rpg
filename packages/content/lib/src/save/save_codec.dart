@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'item_codec.dart';
+import 'merchant_visit.dart';
 import 'profile_codec.dart';
 import 'run_codec.dart';
 import 'save_json.dart';
@@ -36,6 +38,12 @@ Map<String, Object?> _encodeHero(SavedHero hero) => {
   'label': hero.label,
   'profile': encodeProfile(hero.profile),
   'run': hero.run == null ? null : encodeRun(hero.run!),
+  'merchant': _encodeMerchant(hero.merchant),
+};
+
+Map<String, Object?> _encodeMerchant(MerchantVisit merchant) => {
+  'bought': [...merchant.bought],
+  'sold': encodeItems(merchant.sold),
 };
 
 /// One save document, read back, or the reason it could not be.
@@ -107,5 +115,29 @@ SavedHero _decodeHero(String id, Object? written) {
     label: stringAt(written, 'label'),
     profile: decodeProfile(written, 'profile'),
     run: written['run'] == null ? null : loadRun(written, 'run'),
+    merchant: _decodeMerchant(written),
   );
+}
+
+/// What the merchant remembers, from the required block on a hero entry.
+///
+/// Required, not defaulted. Version 1 never shipped without this block, so a
+/// hero entry has exactly one shape — and a decoder that filled in an empty
+/// visit for a document missing it would be repairing, which this codec does not
+/// do.
+MerchantVisit _decodeMerchant(Map<String, Object?> hero) {
+  final written = objectAt(hero, 'merchant');
+  return MerchantVisit(
+    bought: [for (final id in listAt(written, 'bought')) _boughtId(id)],
+    sold: decodeItems(written, 'sold'),
+  );
+}
+
+String _boughtId(Object? written) {
+  if (written is! String) {
+    throw SaveMalformed(
+      'a "bought" item in the save file is not named by text',
+    );
+  }
+  return written;
 }

@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:residuum_core/core.dart';
 
+import 'merchant_visit.dart';
+
 /// What reading a save document produced: the document, or why there is none.
 ///
 /// Sealed rather than a nullable pair, so a caller cannot reach for the document
@@ -18,7 +20,12 @@ sealed class SaveRead {
 /// A hero who has never been named still has one, so the roster never has a
 /// blank row to explain.
 class SavedHero extends Equatable {
-  const SavedHero({required this.label, required this.profile, this.run});
+  const SavedHero({
+    required this.label,
+    required this.profile,
+    this.run,
+    this.merchant = MerchantVisit.none,
+  });
 
   /// What the roster calls this hero.
   final String label;
@@ -33,11 +40,22 @@ class SavedHero extends Equatable {
   /// only one run between them would have to end somebody's crawl to switch.
   final GameState? run;
 
-  SavedHero withProfile(Profile profile, GameState? run) =>
-      SavedHero(label: label, profile: profile, run: run);
+  /// What the merchant remembers of this hero's current visit.
+  ///
+  /// Per hero for the same reason [run] is: two heroes are two visits, and a
+  /// shop that remembered one purchase for everybody would put another hero's
+  /// item on this hero's shelf — or take it off.
+  final MerchantVisit merchant;
+
+  /// This hero, brought up to date.
+  SavedHero broughtUpToDate(
+    Profile profile,
+    GameState? run,
+    MerchantVisit merchant,
+  ) => SavedHero(label: label, profile: profile, run: run, merchant: merchant);
 
   @override
-  List<Object?> get props => [label, profile, run];
+  List<Object?> get props => [label, profile, run, merchant];
 
   @override
   String toString() =>
@@ -86,24 +104,82 @@ final class SaveDocument extends SaveRead {
   /// The active hero's suspended crawl, or null when they are in town.
   GameState? get run => hero.run;
 
+  /// What the merchant remembers of the active hero's visit.
+  MerchantVisit get merchant => hero.merchant;
+
   /// This document with the active hero moved on, and every other hero as it was.
   ///
   /// The whole roster is rewritten on every save, so this is what keeps a hero
   /// nobody is playing from being written out of existence by the hero who is.
-  SaveDocument replacingActive(Profile profile, GameState? run) => SaveDocument(
+  SaveDocument replacingActive(
+    Profile profile,
+    GameState? run,
+    MerchantVisit merchant,
+  ) => SaveDocument(
     active: active,
     heroes: {
       for (final entry in heroes.entries)
         entry.key: entry.key == active
-            ? entry.value.withProfile(profile, run)
+            ? entry.value.broughtUpToDate(profile, run, merchant)
             : entry.value,
     },
   );
 
-  /// This document with the active hero given up and a new one in their place.
+  /// This document with one more hero in it, and that hero being played.
   ///
-  /// The old entry goes: abandoning is the one thing in the game that deletes a
-  /// hero, and leaving the corpse in the roster would make it a rename. Every
+  /// Creating a hero switches to them. A roster that made a hero and then left
+  /// the player looking at somebody else would be asking for two presses to
+  /// carry out one intention.
+  SaveDocument addingHero({
+    required String id,
+    required String label,
+    required Profile profile,
+  }) => SaveDocument(
+    active: id,
+    heroes: {
+      ...heroes,
+      id: SavedHero(label: label, profile: profile),
+    },
+  );
+
+  /// This document with [id] the hero being played, and nothing else moved.
+  ///
+  /// Switching hero is one field. Everything about the hero being left — their
+  /// profile, their suspended crawl, what the merchant remembers of their visit —
+  /// stays exactly as it was, which is what makes coming back to them the same
+  /// as never having left.
+  SaveDocument playing(String id) => SaveDocument(active: id, heroes: heroes);
+
+  /// This document without the hero [id], or null when that would empty it.
+  ///
+  /// **Null rather than an empty roster.** A document with nobody in it is not a
+  /// state the game has — the decoder refuses one — and a player who deleted
+  /// their way to it would be looking at a screen with no game behind it.
+  /// Deleting the only hero is therefore a replacement rather than a removal,
+  /// and [replacingActiveWithNewHero] is the operation that does it.
+  ///
+  /// Deleting the hero being played moves play to the first hero left, in the
+  /// document's own key order — which the encoder sorts, so it is the same hero
+  /// however the roster was assembled.
+  SaveDocument? without(String id) {
+    final left = {
+      for (final entry in heroes.entries)
+        if (entry.key != id) entry.key: entry.value,
+    };
+    if (left.length == heroes.length) return this;
+    if (left.isEmpty) return null;
+    return SaveDocument(
+      active: id == active ? left.keys.first : active,
+      heroes: left,
+    );
+  }
+
+  /// This document with the hero being played replaced by a new one.
+  ///
+  /// The old entry goes: this is the one operation in the game that deletes a
+  /// hero, and leaving the corpse in the roster would make it a rename. It exists
+  /// for the roster's last delete — deleting the only hero flows straight into
+  /// creating the next one, because the game never has zero heroes — and every
   /// other hero is untouched, because giving up one hero is not giving up all of
   /// them.
   SaveDocument replacingActiveWithNewHero({
