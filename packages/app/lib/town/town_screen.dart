@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../game/game_bloc.dart';
 import '../game/game_screen.dart';
 import 'bank_screen.dart';
+import 'gear_screen.dart';
 import 'inn_screen.dart';
 import 'merchant_screen.dart';
 import 'town_bloc.dart';
@@ -57,6 +58,10 @@ class TownScreen extends StatelessWidget {
               _Door(
                 label: 'Inn',
                 onPressed: () => _open(context, const InnScreen()),
+              ),
+              _Door(
+                label: 'Gear',
+                onPressed: () => _open(context, const GearScreen()),
               ),
               const SizedBox(height: 16),
               _Door(label: 'Enter Dungeon', onPressed: () => _enter(context)),

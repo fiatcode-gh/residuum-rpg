@@ -46,6 +46,18 @@ final class WithdrawItemPressed extends TownBlocEvent {
   final String itemId;
 }
 
+final class WearPressed extends TownBlocEvent {
+  const WearPressed(this.itemId);
+
+  final String itemId;
+}
+
+final class TakeOffPressed extends TownBlocEvent {
+  const TakeOffPressed(this.slot);
+
+  final EquipSlot slot;
+}
+
 final class DepositGoldPressed extends TownBlocEvent {
   const DepositGoldPressed(this.amount);
 
@@ -110,6 +122,8 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     on<RestPressed>(_onRest);
     on<DepositItemPressed>(_onDepositItem);
     on<WithdrawItemPressed>(_onWithdrawItem);
+    on<WearPressed>(_onWear);
+    on<TakeOffPressed>(_onTakeOff);
     on<DepositGoldPressed>(_onDepositGold);
     on<WithdrawGoldPressed>(_onWithdrawGold);
   }
@@ -172,6 +186,12 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     WithdrawItemPressed event,
     Emitter<TownViewState> emit,
   ) => emit(_transacted(withdrawItem(state.profile, event.itemId)));
+
+  void _onWear(WearPressed event, Emitter<TownViewState> emit) =>
+      emit(_transacted(equipItem(state.profile, event.itemId)));
+
+  void _onTakeOff(TakeOffPressed event, Emitter<TownViewState> emit) =>
+      emit(_transacted(unequipItem(state.profile, event.slot)));
 
   void _onDepositGold(DepositGoldPressed event, Emitter<TownViewState> emit) =>
       emit(_transacted(depositGold(state.profile, event.amount)));

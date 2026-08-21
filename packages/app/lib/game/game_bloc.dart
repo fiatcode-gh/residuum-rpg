@@ -1,3 +1,5 @@
+import 'dart:ui' show Offset;
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
@@ -56,6 +58,13 @@ final class QuickDrinkPressed extends GameBlocEvent {
   const QuickDrinkPressed();
 }
 
+/// The player dragged the map by [delta].
+final class MapPanned extends GameBlocEvent {
+  const MapPanned(this.delta);
+
+  final Offset delta;
+}
+
 /// One step of a walk in progress. Carries the [walkId] it belongs to so a
 /// step left over from a cancelled walk cannot resume it.
 final class AutoWalkAdvanced extends GameBlocEvent {
@@ -70,6 +79,7 @@ class GameViewState {
     required this.log,
     this.autoPath = const [],
     this.walkId = 0,
+    this.pan = Offset.zero,
   });
 
   final GameState game;
@@ -80,6 +90,16 @@ class GameViewState {
 
   /// Bumped whenever a walk starts or stops.
   final int walkId;
+
+  /// How far the player has dragged the view from where the camera would put it.
+  ///
+  /// The rule is that **any new game state resets the camera**, and it is
+  /// enforced by construction rather than by code: every other handler builds a
+  /// fresh [GameViewState] without naming this field, so it falls back to
+  /// [Offset.zero]. A future handler that helpfully carried the pan forward
+  /// would break the snap-back silently, and no test of that handler would
+  /// notice.
+  final Offset pan;
 
   int get depth => game.depth;
 
@@ -117,6 +137,23 @@ class GameViewState {
     return null;
   }
 
+  /// How many potions are in the pack, for the quick-drink control to count.
+  int get potionCount =>
+      game.inventory.where((item) => item.base.isPotion).length;
+
+  /// How many monsters the hero can see right now.
+  ///
+  /// **The single home of "something is watching."** The Engaged indicator and
+  /// the refusal that stops a walk from starting both read this one getter,
+  /// rather than each asking the question in its own words. Two expressions of
+  /// the same question drift, and the drift here would be the worst kind: the
+  /// interface refusing to walk while showing the player an empty room, or
+  /// promising danger that the rules do not act on. A UI that lies about the
+  /// rules is worse than either answer on its own.
+  int get enemiesInSight => game.monsters
+      .where((monster) => game.visible.contains(monster.position))
+      .length;
+
   (int, int) get attack => heroAttack(game.hero, game.loadout);
 
   int get armor => heroArmor(game.loadout);
@@ -149,6 +186,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     on<DrinkPressed>(_onDrinkPressed);
     on<DropPressed>(_onDropPressed);
     on<QuickDrinkPressed>(_onQuickDrinkPressed);
+    on<MapPanned>(_onMapPanned);
   }
 
   /// How long the hero pauses between tiles of a walk. Zero in tests.
@@ -168,7 +206,16 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     }
     if (!game.explored.contains(event.position)) return;
     if (!game.map.isWalkable(event.position)) return;
-    if (_somethingIsWatching(game)) return;
+    if (state.enemiesInSight > 0) {
+      emit(
+        GameViewState(
+          game: game,
+          log: [...state.log, _watchedRefusal],
+          walkId: state.walkId,
+        ),
+      );
+      return;
+    }
     final path = findPath(game.map, game.hero.position, event.position);
     if (path.isEmpty) return;
     final walkId = state.walkId + 1;
@@ -211,6 +258,21 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     if (potion == null) return;
     _act(DrinkAction(potion.id), emit);
   }
+
+  /// Drags the view without spending a turn.
+  ///
+  /// A pan is not a hero action, so it carries the walk in progress through
+  /// rather than cancelling it. The walk's next step then builds a fresh view
+  /// state, which is what snaps the camera back.
+  void _onMapPanned(MapPanned event, Emitter<GameViewState> emit) => emit(
+    GameViewState(
+      game: state.game,
+      log: state.log,
+      autoPath: state.autoPath,
+      walkId: state.walkId,
+      pan: state.pan + event.delta,
+    ),
+  );
 
   /// Runs one loot action, cancelling any walk in progress first.
   ///
@@ -297,10 +359,12 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
             event is ActorNoticed ||
             (event is AttackHit && event.targetId == heroId),
       );
-
-  /// Whether anything is already in sight. A walk never starts under a
-  /// monster's eye; once it has started, [ActorNoticed] is the single thing
-  /// that stops it for a monster, so that rule has exactly one home.
-  static bool _somethingIsWatching(GameState game) =>
-      game.monsters.any((monster) => game.visible.contains(monster.position));
 }
+
+/// What the log says when a walk will not start under a monster's eye.
+///
+/// A walk never starts in sight of anything; once it has started,
+/// [ActorNoticed] is the single thing that stops it. The rule was always there
+/// — until now it refused in silence, which read to the player as a dead tap
+/// rather than a decision the game had made.
+const String _watchedRefusal = 'Something is watching. You stay put.';

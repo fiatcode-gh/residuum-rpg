@@ -19,6 +19,7 @@ export 'src/loot/equip_slot.dart';
 export 'src/loot/item.dart';
 export 'src/loot/loadout.dart';
 export 'src/loot/rarity.dart';
+export 'src/loot/wear.dart';
 export 'src/skills/skill.dart';
 export 'src/town/profile.dart';
 export 'src/town/run_boundary.dart';

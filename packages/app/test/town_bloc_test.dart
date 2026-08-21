@@ -6,6 +6,9 @@ import 'package:residuum_core/core.dart';
 
 Item _cap(String id) => Item(id: id, base: leatherCap, rarity: Rarity.common);
 
+Item _gear(String id, BaseItem base) =>
+    Item(id: id, base: base, rarity: Rarity.common);
+
 Profile _fresh() => newProfile(worldSeed: 4);
 
 Profile _rich() => _fresh().copyWith(gold: 500, inventory: [_cap('held-1')]);
@@ -291,6 +294,135 @@ void main() {
       },
       verify: (bloc) =>
           expect((bloc.state.gold, bloc.state.bankedGold), (0, 400)),
+    );
+  });
+
+  group('TownBloc dressing the hero', () {
+    blocTest<TownBloc, TownViewState>(
+      'wearing a carried piece moves it into its slot',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(
+          inventory: [_gear('held-1', kiteShield)],
+          equipment: const {},
+        ),
+      ),
+      act: (bloc) => bloc.add(const WearPressed('held-1')),
+      verify: (bloc) {
+        expect(bloc.state.profile.equipment[EquipSlot.offHand]?.id, 'held-1');
+        expect(bloc.state.profile.inventory, isEmpty);
+        expect(bloc.state.notice, isNull);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'wearing what the hero is not carrying says why and changes nothing',
+      build: () => TownBloc(profile: _fresh()),
+      act: (bloc) => bloc.add(const WearPressed('nowhere-1')),
+      verify: (bloc) {
+        expect(bloc.state.notice, 'you are not carrying that');
+        expect(bloc.state.profile.inventory, _fresh().inventory);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'wearing something that is not gear at all says why',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(inventory: [_gear('held-1', healingPotion)]),
+      ),
+      act: (bloc) => bloc.add(const WearPressed('held-1')),
+      verify: (bloc) {
+        expect(bloc.state.notice, 'Healing Potion is not worn');
+        expect(bloc.state.profile.equipment[EquipSlot.offHand], isNull);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a shield is refused while both hands are on the weapon',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(
+          inventory: [_gear('held-1', kiteShield)],
+          equipment: {EquipSlot.mainHand: _gear('worn-1', maul)},
+        ),
+      ),
+      act: (bloc) => bloc.add(const WearPressed('held-1')),
+      verify: (bloc) {
+        expect(bloc.state.notice, 'both hands are on the weapon');
+        expect(bloc.state.profile.equipment[EquipSlot.offHand], isNull);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'taking a piece off stows it in the pack',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(
+          inventory: const [],
+          equipment: {EquipSlot.head: _cap('worn-1')},
+        ),
+      ),
+      act: (bloc) => bloc.add(const TakeOffPressed(EquipSlot.head)),
+      verify: (bloc) {
+        expect(bloc.state.profile.equipment[EquipSlot.head], isNull);
+        expect(bloc.state.profile.inventory.single.id, 'worn-1');
+        expect(bloc.state.notice, isNull);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'taking off an empty slot says why',
+      build: () => TownBloc(profile: _fresh().copyWith(equipment: const {})),
+      act: (bloc) => bloc.add(const TakeOffPressed(EquipSlot.head)),
+      verify: (bloc) => expect(bloc.state.notice, 'nothing is on your head'),
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a full pack refuses the take-off rather than dropping the gear',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(
+          inventory: [
+            for (var index = 0; index < inventoryCap; index++)
+              _cap('held-$index'),
+          ],
+          equipment: {EquipSlot.head: _cap('worn-1')},
+        ),
+      ),
+      act: (bloc) => bloc.add(const TakeOffPressed(EquipSlot.head)),
+      verify: (bloc) {
+        expect(bloc.state.notice, 'your hands are too full to stow it');
+        expect(bloc.state.profile.equipment[EquipSlot.head]?.id, 'worn-1');
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a piece worn in town is worn in the dungeon',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(
+          inventory: [_gear('held-1', kiteShield)],
+          equipment: const {},
+        ),
+      ),
+      act: (bloc) async {
+        bloc.add(const WearPressed('held-1'));
+        await bloc.stream.first;
+        bloc.add(const EnterDungeonPressed());
+      },
+      verify: (bloc) =>
+          expect(bloc.state.run!.equipment[EquipSlot.offHand]?.id, 'held-1'),
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a wear that works clears the notice a refusal left behind',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(
+          inventory: [_gear('held-1', kiteShield)],
+          equipment: const {},
+        ),
+      ),
+      act: (bloc) async {
+        bloc.add(const TakeOffPressed(EquipSlot.chest));
+        await bloc.stream.first;
+        bloc.add(const WearPressed('held-1'));
+      },
+      verify: (bloc) => expect(bloc.state.notice, isNull),
     );
   });
 }

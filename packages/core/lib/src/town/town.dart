@@ -1,7 +1,9 @@
 import 'package:equatable/equatable.dart';
 
 import '../engine/game_state.dart';
+import '../loot/equip_slot.dart';
 import '../loot/item.dart';
+import '../loot/wear.dart';
 import 'profile.dart';
 
 /// Why the town would not do what was asked.
@@ -120,6 +122,46 @@ Transacted withdrawItem(Profile profile, String itemId) {
     ),
     null,
   );
+}
+
+/// Wears the carried item [itemId].
+///
+/// The rule itself lives in [wearRefusal] and [wear], which the dungeon calls
+/// too, so gear behaves the same whether the hero dresses in a shop or in a
+/// corridor — including the displacement that can push the pack one past
+/// [inventoryCap]. No gold changes hands: this is the hero deciding what to
+/// carry, not a transaction with anyone.
+Transacted equipItem(Profile profile, String itemId) {
+  final refusal = wearRefusal(profile.loadout, profile.inventory, itemId);
+  if (refusal != null) return (profile, TownRefusal(refusal));
+  return (
+    _dressed(profile, wear(profile.equipment, profile.inventory, itemId)),
+    null,
+  );
+}
+
+/// Takes the piece in [slot] off and stows it in the pack.
+Transacted unequipItem(Profile profile, EquipSlot slot) {
+  final refusal = takeOffRefusal(profile.equipment, profile.inventory, slot);
+  if (refusal != null) return (profile, TownRefusal(refusal));
+  return (
+    _dressed(profile, takeOff(profile.equipment, profile.inventory, slot)),
+    null,
+  );
+}
+
+/// The profile wearing what [worn] says, with hit points brought inside the
+/// ceiling the new loadout allows.
+///
+/// Both dressing transactions come through here so neither can forget the
+/// clamp. See [clampedToMaxHp] for why the town clamps on both paths where the
+/// dungeon clamps on only one.
+Profile _dressed(Profile profile, Worn worn) {
+  final dressed = profile.copyWith(
+    equipment: worn.equipment,
+    inventory: worn.inventory,
+  );
+  return dressed.copyWith(hero: clampedToMaxHp(dressed.hero, dressed.loadout));
 }
 
 /// Banks [amount] of carried gold, putting it out of death's reach.

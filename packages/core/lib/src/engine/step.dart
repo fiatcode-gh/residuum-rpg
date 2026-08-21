@@ -2,7 +2,7 @@ import '../dungeon/floor.dart';
 import '../dungeon/floor_memory.dart';
 import '../dungeon/flow_field.dart';
 import '../dungeon/fov.dart';
-import '../loot/equip_slot.dart';
+import '../loot/wear.dart';
 import '../loot/drop.dart';
 import '../loot/item.dart';
 import '../loot/loadout.dart';
@@ -97,15 +97,16 @@ import 'position.dart';
       inventory = [...inventory, taken];
       events.add(ItemPickedUp(item: taken));
     case EquipAction(:final itemId):
-      final worn = _equip(loadout.equipment, inventory, itemId, events);
+      final worn = wear(loadout.equipment, inventory, itemId);
+      _announce(worn, events);
       loadout = loadout.withEquipment(worn.equipment);
       inventory = worn.inventory;
     case UnequipAction(:final slot):
-      final taken = loadout.equipment[slot]!;
-      loadout = loadout.withEquipment({...loadout.equipment}..remove(slot));
-      inventory = [...inventory, taken];
-      events.add(ItemUnequipped(item: taken, slot: slot));
-      hero = _clampedToMaxHp(hero, loadout);
+      final worn = takeOff(loadout.equipment, inventory, slot);
+      _announce(worn, events);
+      loadout = loadout.withEquipment(worn.equipment);
+      inventory = worn.inventory;
+      hero = clampedToMaxHp(hero, loadout);
     case DrinkAction(:final itemId):
       final potion = inventory.firstWhere((item) => item.id == itemId);
       final missing = heroMaxHp(hero, loadout) - hero.hp;
@@ -179,27 +180,9 @@ GameEvent? _refuse(GameState state, GameAction action) {
       if (state.inventory.length >= inventoryCap) return const InventoryFull();
       return null;
     case EquipAction(:final itemId):
-      final item = _carried(state, itemId);
-      if (item == null)
-        return const ActionRefused(reason: 'you are not carrying that');
-      final slot = item.base.slot;
-      if (slot == null) {
-        return ActionRefused(reason: '${item.base.name} is not worn');
-      }
-      if (slot == EquipSlot.offHand && state.loadout.wieldsTwoHanded) {
-        return const ActionRefused(reason: 'both hands are on the weapon');
-      }
-      return null;
+      return _refusedBy(wearRefusal(state.loadout, state.inventory, itemId));
     case UnequipAction(:final slot):
-      if (!state.equipment.containsKey(slot)) {
-        return ActionRefused(reason: 'nothing is on your ${slot.name}');
-      }
-      if (state.inventory.length >= inventoryCap) {
-        return const ActionRefused(
-          reason: 'your hands are too full to stow it',
-        );
-      }
-      return null;
+      return _refusedBy(takeOffRefusal(state.equipment, state.inventory, slot));
     case DrinkAction(:final itemId):
       final item = _carried(state, itemId);
       if (item == null)
@@ -221,6 +204,20 @@ Item? _carried(GameState state, String itemId) {
     if (item.id == itemId) return item;
   }
   return null;
+}
+
+GameEvent? _refusedBy(String? reason) =>
+    reason == null ? null : ActionRefused(reason: reason);
+
+/// Announces the pieces a [Worn] moved, in the order the log has to read them.
+void _announce(Worn worn, List<GameEvent> events) {
+  for (final (item, slot) in worn.taken) {
+    events.add(ItemUnequipped(item: item, slot: slot));
+  }
+  final put = worn.put;
+  if (put != null) {
+    events.add(ItemEquipped(item: put.$1, slot: put.$2));
+  }
 }
 
 /// The hero after a swing, and the skills that swing trained.
@@ -288,67 +285,6 @@ _HeroSwing _moveHero(
   final item = rollDrop(table, state.lootRng, 'drop-${state.nextDropNumber}');
   events.add(ItemDropped(item: item, at: defender.position));
   return (defender.position, item);
-}
-
-/// The equipment and inventory after wearing the carried item [itemId].
-class _Worn {
-  const _Worn(this.equipment, this.inventory);
-
-  final Equipment equipment;
-  final List<Item> inventory;
-}
-
-/// Puts the carried item [itemId] in its slot, displacing what it cannot share
-/// a body with.
-///
-/// A two-handed weapon and a shield are the one pair that exclude each other,
-/// and the exclusion is asymmetric on purpose. Equipping the two-hander
-/// **displaces** the shield into the inventory, because the player's intent is
-/// unambiguous — they picked the weapon. Equipping a shield while a two-hander
-/// is held is **refused** instead, because silently dropping the hero's best
-/// weapon to make room for a shield is the kind of help that loses a run.
-_Worn _equip(
-  Equipment equipment,
-  List<Item> inventory,
-  String itemId,
-  List<GameEvent> events,
-) {
-  final item = inventory.firstWhere((carried) => carried.id == itemId);
-  final slot = item.base.slot!;
-  final worn = {...equipment};
-  final carried = [
-    for (final held in inventory)
-      if (held.id != itemId) held,
-  ];
-  final displaced = <EquipSlot>[
-    if (worn.containsKey(slot)) slot,
-    if (item.base.hands == WeaponHands.two &&
-        worn.containsKey(EquipSlot.offHand))
-      EquipSlot.offHand,
-  ];
-  for (final emptied in displaced) {
-    final removed = worn.remove(emptied)!;
-    carried.add(removed);
-    events.add(ItemUnequipped(item: removed, slot: emptied));
-  }
-  worn[slot] = item;
-  events.add(ItemEquipped(item: item, slot: slot));
-  return _Worn(worn, carried);
-}
-
-/// The hero with its hit points brought inside the ceiling [loadout] allows.
-///
-/// Taking off +max-hp gear that was carrying the hero above its own ceiling has
-/// to bring the hit points down with it. The clamp has a floor of one:
-/// undressing must never be a way to die. That floor is defence in depth rather
-/// than a live rule — the hero's own base maximum is twenty and content forbids
-/// a negative max-hp affix, so the clamp can never reach zero — and it stays
-/// because the day an affix subtracts hit points is the day it becomes
-/// load-bearing, and by then nobody will remember to add it.
-Actor _clampedToMaxHp(Actor hero, Loadout loadout) {
-  final ceiling = heroMaxHp(hero, loadout);
-  if (hero.hp <= ceiling) return hero;
-  return hero.copyWith(hp: ceiling < 1 ? 1 : ceiling);
 }
 
 /// The hero after the monsters have had their turns, and the skills they trained.

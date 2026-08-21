@@ -4,19 +4,23 @@ import 'package:residuum_core/core.dart';
 
 import 'event_messages.dart';
 import 'game_bloc.dart';
+import 'item_presentation.dart';
 
 const _ink = Color(0xFFE6EAF0);
 const _dim = Color(0xFF8A919E);
 const _panel = Color(0xFF15181F);
 const _rule = Color(0xFF2A2E38);
 const _mono = TextStyle(fontFamily: 'monospace', fontSize: 13, color: _ink);
+const _monoDim = TextStyle(fontFamily: 'monospace', fontSize: 11, color: _dim);
 
 /// The pack, the six slots, the derived stats and the four skills.
 ///
 /// Nothing on this screen is told apart by colour. Rarity is the tier word in
 /// the item's own name plus a marking column; an empty slot is a dash; skill
-/// progress is a bar's length and a number. The whole screen reads in
-/// greyscale, which is the standing rule and not a preference.
+/// progress is a bar's length and a number. What an item does is a line of
+/// labelled signed numbers, and what wearing it would change is an arrow shape
+/// plus a signed number per stat. The whole screen reads in greyscale, which is
+/// the standing rule and not a preference.
 class InventoryScreen extends StatelessWidget {
   const InventoryScreen({super.key});
 
@@ -28,36 +32,38 @@ class InventoryScreen extends StatelessWidget {
       foregroundColor: _ink,
     ),
     body: BlocBuilder<GameBloc, GameViewState>(
-      builder: (context, state) => ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        children: [
-          _DerivedStats(state: state),
-          const _Heading('Worn'),
-          for (final slot in EquipSlot.values)
-            _SlotRow(slot: slot, item: state.game.equipment[slot]),
-          const _Heading('Carried'),
-          if (state.game.inventory.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                'Nothing.',
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 13,
-                  color: _dim,
-                ),
+      builder: (context, state) {
+        final sections = packSections(state.game.inventory);
+        return ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          children: [
+            _DerivedStats(state: state),
+            const _Heading('Worn'),
+            for (final slot in EquipSlot.values)
+              _SlotRow(slot: slot, item: state.game.equipment[slot]),
+            if (state.game.inventory.isEmpty) ...[
+              const _Heading('Carried'),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('Nothing.', style: _mono),
               ),
-            ),
-          for (final item in state.game.inventory) _CarriedRow(item: item),
-          const _Heading('Skills'),
-          for (final skill in SkillId.values)
-            _SkillRow(
-              skill: skill,
-              state: state.game.skills[skill] ?? const SkillState(),
-            ),
-          const SizedBox(height: 24),
-        ],
-      ),
+            ],
+            for (final section in PackSection.values)
+              if (sections[section]!.isNotEmpty) ...[
+                _Heading(section.title),
+                for (final stack in sections[section]!)
+                  _CarriedRow(stack: stack, equipment: state.game.equipment),
+              ],
+            const _Heading('Skills'),
+            for (final skill in SkillId.values)
+              _SkillRow(
+                skill: skill,
+                state: state.game.skills[skill] ?? const SkillState(),
+              ),
+            const SizedBox(height: 24),
+          ],
+        );
+      },
     ),
   );
 }
@@ -128,11 +134,12 @@ class _SlotRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 88,
             child: Text(
-              _slotLabel(slot),
+              slotLabel(slot),
               style: const TextStyle(
                 fontFamily: 'monospace',
                 fontSize: 13,
@@ -141,13 +148,20 @@ class _SlotRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(
-              worn == null ? '—' : worn.displayName,
-              style: TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 13,
-                color: worn == null ? _dim : _ink,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  worn == null ? '—' : worn.displayName,
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    color: worn == null ? _dim : _ink,
+                  ),
+                ),
+                if (worn != null && statLine(worn).isNotEmpty)
+                  Text(statLine(worn), style: _monoDim),
+              ],
             ),
           ),
           if (worn != null)
@@ -163,41 +177,50 @@ class _SlotRow extends StatelessWidget {
       ),
     );
   }
-
-  static String _slotLabel(EquipSlot slot) => switch (slot) {
-    EquipSlot.mainHand => 'main hand',
-    EquipSlot.offHand => 'off hand',
-    EquipSlot.head => 'head',
-    EquipSlot.chest => 'chest',
-    EquipSlot.hands => 'hands',
-    EquipSlot.feet => 'feet',
-  };
 }
 
-class _CarriedRow extends StatelessWidget {
-  const _CarriedRow({required this.item});
+/// What the six slots are called, in the player's words rather than Dart's.
+String slotLabel(EquipSlot slot) => switch (slot) {
+  EquipSlot.mainHand => 'main hand',
+  EquipSlot.offHand => 'off hand',
+  EquipSlot.head => 'head',
+  EquipSlot.chest => 'chest',
+  EquipSlot.hands => 'hands',
+  EquipSlot.feet => 'feet',
+};
 
-  final Item item;
+class _CarriedRow extends StatelessWidget {
+  const _CarriedRow({required this.stack, required this.equipment});
+
+  final ItemStack stack;
+  final Equipment equipment;
 
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<GameBloc>();
+    final item = stack.item;
+    final slot = item.base.slot;
+    final stats = statLine(item);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 28,
-            child: Text(
-              item.rarity.marking,
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 13,
-                color: _ink,
-              ),
+          SizedBox(width: 28, child: Text(item.rarity.marking, style: _mono)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(stack.label, style: _mono),
+                if (stats.isNotEmpty) Text(stats, style: _monoDim),
+                if (slot != null)
+                  Text(
+                    deltaLine(wornDeltas(item, equipment[slot])),
+                    style: _monoDim,
+                  ),
+              ],
             ),
           ),
-          Expanded(child: Text(item.displayName, style: _mono)),
           if (item.base.isPotion)
             TextButton(
               onPressed: () => bloc.add(DrinkPressed(item.id)),

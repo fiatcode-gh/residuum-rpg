@@ -86,19 +86,24 @@ GameState arenaGame({
   );
 }
 
-Actor ghoul(Position at, {int hp = 10, int attack = 3, int speed = 10}) =>
-    Actor(
-      id: 'ghoul-1',
-      name: 'the ghoul',
-      glyph: 'g',
-      position: at,
-      hp: hp,
-      maxHp: 10,
-      attackMin: attack,
-      attackMax: attack,
-      speed: speed,
-      energy: actThreshold,
-    );
+Actor ghoul(
+  Position at, {
+  String id = 'ghoul-1',
+  int hp = 10,
+  int attack = 3,
+  int speed = 10,
+}) => Actor(
+  id: id,
+  name: 'the ghoul',
+  glyph: 'g',
+  position: at,
+  hp: hp,
+  maxHp: 10,
+  attackMin: attack,
+  attackMax: attack,
+  speed: speed,
+  energy: actThreshold,
+);
 
 GameBloc walker(GameState game) =>
     GameBloc(game: game, stepDelay: Duration.zero);
@@ -279,7 +284,11 @@ void main() {
         ),
       ),
       act: (bloc) => bloc.add(const TileTapped(Position(5, 1))),
-      expect: () => <GameViewState>[],
+      wait: const Duration(milliseconds: 100),
+      verify: (bloc) {
+        expect(bloc.state.isWalking, isFalse);
+        expect(bloc.state.game.hero.position, const Position(1, 1));
+      },
     );
 
     blocTest<GameBloc, GameViewState>(
@@ -313,6 +322,190 @@ void main() {
         expect(bloc.state.game.hero.position, isNot(const Position(12, 4)));
       },
     );
+  });
+
+  group('GameBloc panning', () {
+    test('a fresh crawl starts unpanned', () {
+      // arrange
+      final bloc = walker(arenaGame(heroAt: const Position(3, 2)));
+
+      // act
+      final pan = bloc.state.pan;
+
+      // assert
+      expect(pan, Offset.zero);
+      addTearDown(bloc.close);
+    });
+
+    blocTest<GameBloc, GameViewState>(
+      'a pan accumulates across drags',
+      build: () => walker(arenaGame(heroAt: const Position(3, 2))),
+      act: (bloc) => bloc
+        ..add(const MapPanned(Offset(10, 5)))
+        ..add(const MapPanned(Offset(-4, 6))),
+      verify: (bloc) => expect(bloc.state.pan, const Offset(6, 11)),
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a step snaps the camera back',
+      build: () => walker(arenaGame(heroAt: const Position(3, 2))),
+      act: (bloc) => bloc
+        ..add(const MapPanned(Offset(40, 40)))
+        ..add(const TileTapped(Position(4, 2))),
+      verify: (bloc) {
+        expect(bloc.state.game.hero.position, const Position(4, 2));
+        expect(bloc.state.pan, Offset.zero);
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'reaching into the pack snaps the camera back',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(3, 2),
+          inventory: [_item('kit-1', _sword)],
+        ),
+      ),
+      act: (bloc) => bloc
+        ..add(const MapPanned(Offset(40, 40)))
+        ..add(const EquipPressed('kit-1')),
+      verify: (bloc) => expect(bloc.state.pan, Offset.zero),
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a pan does not cancel a walk in progress',
+      build: () => walker(arenaGame(heroAt: const Position(1, 1))),
+      act: (bloc) async {
+        bloc.add(const TileTapped(Position(5, 3)));
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const MapPanned(Offset(12, 12)));
+      },
+      wait: const Duration(milliseconds: 100),
+      verify: (bloc) =>
+          expect(bloc.state.game.hero.position, const Position(5, 3)),
+    );
+  });
+
+  group('GameBloc under a watching eye', () {
+    blocTest<GameBloc, GameViewState>(
+      'a refused walk says why and takes no step',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(5, 3))],
+        ),
+      ),
+      act: (bloc) => bloc.add(const TileTapped(Position(5, 1))),
+      verify: (bloc) {
+        expect(bloc.state.log, ['Something is watching. You stay put.']);
+        expect(bloc.state.isWalking, isFalse);
+        expect(bloc.state.game.hero.position, const Position(1, 1));
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a walk starts when nothing is in sight',
+      build: () => walker(
+        arenaGame(
+          ascii: twoRooms,
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(12, 4))],
+          explored: everywhereIn(twoRooms),
+        ),
+      ),
+      act: (bloc) => bloc.add(const TileTapped(Position(5, 1))),
+      wait: const Duration(milliseconds: 150),
+      verify: (bloc) {
+        expect(bloc.state.game.hero.position, const Position(5, 1));
+        expect(bloc.state.log, isNot(contains('Something is watching.')));
+      },
+    );
+
+    test('counts only the monsters the hero can see', () {
+      // arrange
+      final bloc = walker(
+        arenaGame(
+          ascii: twoRooms,
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(12, 4))],
+          explored: everywhereIn(twoRooms),
+        ),
+      );
+
+      // act
+      final seen = bloc.state.enemiesInSight;
+
+      // assert
+      expect(seen, 0);
+      addTearDown(bloc.close);
+    });
+
+    test('counts every monster standing in the light', () {
+      // arrange
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [
+            ghoul(const Position(3, 1)),
+            ghoul(const Position(2, 3), id: 'ghoul-2'),
+          ],
+        ),
+      );
+
+      // act
+      final seen = bloc.state.enemiesInSight;
+
+      // assert
+      expect(seen, 2);
+      addTearDown(bloc.close);
+    });
+
+    test('sees nothing in an empty room', () {
+      // arrange
+      final bloc = walker(arenaGame(heroAt: const Position(1, 1)));
+
+      // act
+      final seen = bloc.state.enemiesInSight;
+
+      // assert
+      expect(seen, 0);
+      addTearDown(bloc.close);
+    });
+  });
+
+  group('GameBloc counting potions', () {
+    test('counts the potions in the pack and nothing else', () {
+      // arrange
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          inventory: [
+            _item('kit-1', _potion),
+            _item('kit-2', _sword),
+            _item('kit-3', _potion),
+          ],
+        ),
+      );
+
+      // act
+      final count = bloc.state.potionCount;
+
+      // assert
+      expect(count, 2);
+      addTearDown(bloc.close);
+    });
+
+    test('counts none with an empty pack', () {
+      // arrange
+      final bloc = walker(arenaGame(heroAt: const Position(1, 1)));
+
+      // act
+      final count = bloc.state.potionCount;
+
+      // assert
+      expect(count, 0);
+      addTearDown(bloc.close);
+    });
   });
 
   group('GameBloc descending', () {

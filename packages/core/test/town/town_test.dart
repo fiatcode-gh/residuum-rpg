@@ -18,7 +18,53 @@ const _vigour = Affix(
   maxHp: 6,
 );
 
+const _sword = BaseItem(
+  id: 'iron-sword',
+  name: 'Iron Sword',
+  glyph: ')',
+  slot: EquipSlot.mainHand,
+  hands: WeaponHands.one,
+  attackMin: 3,
+  attackMax: 5,
+);
+
+const _maul = BaseItem(
+  id: 'maul',
+  name: 'Maul',
+  glyph: ')',
+  slot: EquipSlot.mainHand,
+  hands: WeaponHands.two,
+  attackMin: 7,
+  attackMax: 11,
+);
+
+const _shield = BaseItem(
+  id: 'kite-shield',
+  name: 'Kite Shield',
+  glyph: '[',
+  slot: EquipSlot.offHand,
+  armor: 2,
+);
+
+const _potion = BaseItem(
+  id: 'healing-potion',
+  name: 'Healing Potion',
+  glyph: '!',
+  heal: 8,
+);
+
 Item _item(String id) => Item(id: id, base: _cap, rarity: Rarity.common);
+
+Item _gear(String id, BaseItem base, {List<Affix> affixes = const []}) => Item(
+  id: id,
+  base: base,
+  rarity: Rarity.values[affixes.length],
+  affixes: affixes,
+);
+
+List<Item> _filler(int count) => [
+  for (var index = 0; index < count; index++) _item('kit-fill-$index'),
+];
 
 Profile _townie({
   int hp = 20,
@@ -352,6 +398,224 @@ void main() {
       expect(after.bank.single.id, 'vault-1');
       expect(after.equipment[EquipSlot.head]!.id, 'worn-1');
       expect(after.hero.hp, profile.hero.hp);
+    });
+  });
+
+  group('equipItem', () {
+    test('wears a carried piece and empties it out of the pack', () {
+      // arrange
+      final sword = _gear('kit-1', _sword);
+      final profile = _townie(inventory: [sword]);
+
+      // act
+      final (after, refusal) = equipItem(profile, 'kit-1');
+
+      // assert
+      expect(after.equipment[EquipSlot.mainHand], sword);
+      expect(after.inventory, isEmpty);
+      expect(refusal, isNull);
+    });
+
+    test('refuses what the hero is not carrying and changes nothing', () {
+      // arrange
+      final profile = _townie(inventory: [_gear('kit-1', _sword)]);
+
+      // act
+      final (after, refusal) = equipItem(profile, 'kit-2');
+
+      // assert
+      expect(after, profile);
+      expect(refusal?.reason, 'you are not carrying that');
+    });
+
+    test('refuses a piece that is not worn at all', () {
+      // arrange
+      final profile = _townie(inventory: [_gear('kit-1', _potion)]);
+
+      // act
+      final (after, refusal) = equipItem(profile, 'kit-1');
+
+      // assert
+      expect(after, profile);
+      expect(refusal?.reason, 'Healing Potion is not worn');
+    });
+
+    test('refuses a shield while both hands are on the weapon', () {
+      // arrange
+      final profile = _townie(
+        inventory: [_gear('kit-1', _shield)],
+        equipment: {EquipSlot.mainHand: _gear('kit-0', _maul)},
+      );
+
+      // act
+      final (after, refusal) = equipItem(profile, 'kit-1');
+
+      // assert
+      expect(after, profile);
+      expect(refusal?.reason, 'both hands are on the weapon');
+    });
+
+    test('displaces what held the slot back into the pack', () {
+      // arrange
+      final held = _gear('kit-0', _sword);
+      final better = _gear('kit-1', _sword, affixes: [_vigour]);
+      final profile = _townie(
+        inventory: [better],
+        equipment: {EquipSlot.mainHand: held},
+      );
+
+      // act
+      final (after, _) = equipItem(profile, 'kit-1');
+
+      // assert
+      expect(after.equipment[EquipSlot.mainHand], better);
+      expect(after.inventory, [held]);
+    });
+
+    test('mirrors the dungeon and lets a displacement pass the pack cap', () {
+      // arrange
+      final maul = _gear('kit-2', _maul);
+      final profile = _townie(
+        inventory: [maul, ..._filler(inventoryCap - 1)],
+        equipment: {
+          EquipSlot.mainHand: _gear('kit-0', _sword),
+          EquipSlot.offHand: _gear('kit-1', _shield),
+        },
+      );
+
+      // act
+      final (after, refusal) = equipItem(profile, 'kit-2');
+
+      // assert
+      expect(after.inventory, hasLength(inventoryCap + 1));
+      expect(refusal, isNull);
+    });
+
+    test('brings hit points inside the ceiling the new loadout allows', () {
+      // arrange
+      final profile = _townie(
+        hp: 26,
+        inventory: [_gear('kit-1', _cap)],
+        equipment: {
+          EquipSlot.head: _gear('kit-0', _cap, affixes: [_vigour]),
+        },
+      );
+
+      // act
+      final (after, _) = equipItem(profile, 'kit-1');
+
+      // assert
+      expect(after.maxHp, 20);
+      expect(after.hero.hp, 20);
+    });
+
+    test('leaves hit points alone when the ceiling rises', () {
+      // arrange
+      final profile = _townie(
+        hp: 14,
+        inventory: [
+          _gear('kit-1', _cap, affixes: [_vigour]),
+        ],
+      );
+
+      // act
+      final (after, _) = equipItem(profile, 'kit-1');
+
+      // assert
+      expect(after.maxHp, 26);
+      expect(after.hero.hp, 14);
+    });
+  });
+
+  group('unequipItem', () {
+    test('takes the piece off and stows it in the pack', () {
+      // arrange
+      final sword = _gear('kit-1', _sword);
+      final profile = _townie(equipment: {EquipSlot.mainHand: sword});
+
+      // act
+      final (after, refusal) = unequipItem(profile, EquipSlot.mainHand);
+
+      // assert
+      expect(after.equipment, isEmpty);
+      expect(after.inventory, [sword]);
+      expect(refusal, isNull);
+    });
+
+    test('refuses an empty slot and changes nothing', () {
+      // arrange
+      final profile = _townie();
+
+      // act
+      final (after, refusal) = unequipItem(profile, EquipSlot.head);
+
+      // assert
+      expect(after, profile);
+      expect(refusal?.reason, 'nothing is on your head');
+    });
+
+    test('refuses a full pack rather than dropping the gear', () {
+      // arrange
+      final profile = _townie(
+        inventory: _filler(inventoryCap),
+        equipment: {EquipSlot.mainHand: _gear('kit-1', _sword)},
+      );
+
+      // act
+      final (after, refusal) = unequipItem(profile, EquipSlot.mainHand);
+
+      // assert
+      expect(after, profile);
+      expect(refusal?.reason, 'your hands are too full to stow it');
+    });
+
+    test('brings hit points down with the max-hp gear it took off', () {
+      // arrange
+      final profile = _townie(
+        hp: 26,
+        equipment: {
+          EquipSlot.head: _gear('kit-1', _cap, affixes: [_vigour]),
+        },
+      );
+
+      // act
+      final (after, _) = unequipItem(profile, EquipSlot.head);
+
+      // assert
+      expect(after.hero.hp, 20);
+    });
+
+    test('leaves a wounded hero where it was', () {
+      // arrange
+      final profile = _townie(
+        hp: 9,
+        equipment: {
+          EquipSlot.head: _gear('kit-1', _cap, affixes: [_vigour]),
+        },
+      );
+
+      // act
+      final (after, _) = unequipItem(profile, EquipSlot.head);
+
+      // assert
+      expect(after.hero.hp, 9);
+    });
+
+    test('leaves the purse and the vault untouched', () {
+      // arrange
+      final profile = _townie(
+        gold: 40,
+        bankedGold: 15,
+        bank: [_item('vault-1')],
+        equipment: {EquipSlot.mainHand: _gear('kit-1', _sword)},
+      );
+
+      // act
+      final (after, _) = unequipItem(profile, EquipSlot.mainHand);
+
+      // assert
+      expect((after.gold, after.bankedGold), (40, 15));
+      expect(after.bank.single.id, 'vault-1');
     });
   });
 }
