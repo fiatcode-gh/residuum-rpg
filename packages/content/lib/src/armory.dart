@@ -156,13 +156,22 @@ const List<BaseItem> armory = [
   healingPotion,
 ];
 
+/// The base item with this [id], or null when nothing answers to it.
+///
+/// The nullable door exists for the save codec: an id read out of a file written
+/// by an older build is a load failure with a sentence in it, not a crash, so the
+/// codec has to be able to ask without being thrown at.
+BaseItem? baseItemOrNull(String id) {
+  for (final item in armory) {
+    if (item.id == id) return item;
+  }
+  return null;
+}
+
 /// The base item with this [id].
 ///
 /// Throws [ArgumentError] when nothing answers to it, so a typo in a drop table
 /// fails the content validation tests rather than the game.
-BaseItem baseItemById(String id) {
-  for (final item in armory) {
-    if (item.id == id) return item;
-  }
-  throw ArgumentError.value(id, 'id', 'no such base item');
-}
+BaseItem baseItemById(String id) =>
+    baseItemOrNull(id) ??
+    (throw ArgumentError.value(id, 'id', 'no such base item'));

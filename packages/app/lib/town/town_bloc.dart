@@ -70,12 +70,22 @@ final class WithdrawGoldPressed extends TownBlocEvent {
   final int amount;
 }
 
+/// The player has said yes to abandoning the hero, and meant it.
+///
+/// One event, and it is named for the confirmation rather than for the press,
+/// because nothing in the app may abandon a hero without a person having said
+/// yes first. The town's door dispatches nothing; only the dialog does.
+final class AbandonHeroConfirmed extends TownBlocEvent {
+  const AbandonHeroConfirmed();
+}
+
 class TownViewState {
   const TownViewState({
     required this.profile,
     required this.stock,
     this.run,
     this.notice,
+    this.abandoned = false,
   });
 
   final Profile profile;
@@ -89,6 +99,14 @@ class TownViewState {
   /// The last refusal, for the screen to read out. Cleared by the next thing
   /// that works.
   final String? notice;
+
+  /// Whether the hero has been given up, for the session above to act on.
+  ///
+  /// Never carried forward: every other handler builds a fresh [TownViewState]
+  /// without naming this field, so it falls back to false by construction. A
+  /// handler that helpfully passed it along would abandon a hero the player
+  /// never asked about, and no test of that handler would notice.
+  final bool abandoned;
 
   int get gold => profile.gold;
 
@@ -108,11 +126,12 @@ class TownViewState {
 /// hand one over at the door and take one back at the end, which is the same
 /// line `startRun` and `endRun` draw in the rules.
 class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
-  TownBloc({required Profile profile})
+  TownBloc({required Profile profile, String? notice})
     : super(
         TownViewState(
           profile: profile,
           stock: merchantStock(profile.worldSeed, profile.visit),
+          notice: notice,
         ),
       ) {
     on<EnterDungeonPressed>(_onEnterDungeon);
@@ -126,6 +145,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     on<TakeOffPressed>(_onTakeOff);
     on<DepositGoldPressed>(_onDepositGold);
     on<WithdrawGoldPressed>(_onWithdrawGold);
+    on<AbandonHeroConfirmed>(_onAbandonHero);
   }
 
   void _onEnterDungeon(
@@ -200,6 +220,13 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     WithdrawGoldPressed event,
     Emitter<TownViewState> emit,
   ) => emit(_transacted(withdrawGold(state.profile, event.amount)));
+
+  void _onAbandonHero(
+    AbandonHeroConfirmed event,
+    Emitter<TownViewState> emit,
+  ) => emit(
+    TownViewState(profile: state.profile, stock: state.stock, abandoned: true),
+  );
 
   TownViewState _transacted(Transacted result) =>
       _settled(result.$1, result.$2);

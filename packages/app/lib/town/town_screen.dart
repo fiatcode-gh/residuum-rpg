@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../game/game_bloc.dart';
-import '../game/game_screen.dart';
 import 'bank_screen.dart';
 import 'gear_screen.dart';
 import 'inn_screen.dart';
@@ -19,7 +17,18 @@ import 'town_style.dart';
 /// Nothing here is told apart by colour. Carried and banked gold are two
 /// labelled rows in a fixed order, and every refusal is a sentence.
 class TownScreen extends StatelessWidget {
-  const TownScreen({super.key});
+  const TownScreen({
+    required this.onEnterDungeon,
+    required this.onAbandonHero,
+    super.key,
+  });
+
+  /// Starts a crawl. The session owns it, because the session owns the autosaver
+  /// that has to watch it.
+  final Future<void> Function() onEnterDungeon;
+
+  /// Gives the hero up, once a person has said yes.
+  final VoidCallback onAbandonHero;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -64,7 +73,12 @@ class TownScreen extends StatelessWidget {
                 onPressed: () => _open(context, const GearScreen()),
               ),
               const SizedBox(height: 16),
-              _Door(label: 'Enter Dungeon', onPressed: () => _enter(context)),
+              _Door(label: 'Enter Dungeon', onPressed: onEnterDungeon),
+              const SizedBox(height: 8),
+              _Door(
+                label: 'Abandon Hero',
+                onPressed: () => _confirmAbandon(context),
+              ),
             ],
           ),
         ),
@@ -89,29 +103,46 @@ class TownScreen extends StatelessWidget {
     );
   }
 
-  /// Starts the run, then pushes the crawl on top of the town.
+  /// Asks once, in words, before a hero and their world are deleted.
   ///
-  /// The town bloc travels down with the game bloc so that the stairs controls
-  /// and the death overlay have something to hand the finished run back to.
-  /// Popping this route is what returning to town *is*: the town was never
-  /// destroyed, only covered up.
-  static Future<void> _enter(BuildContext context) async {
-    final town = context.read<TownBloc>();
-    town.add(const EnterDungeonPressed());
-    await town.stream.firstWhere((state) => state.run != null);
-    if (!context.mounted) return;
-    final run = town.state.run!;
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => MultiBlocProvider(
-          providers: [
-            BlocProvider.value(value: town),
-            BlocProvider(create: (_) => GameBloc(game: run)),
-          ],
-          child: const GameScreen(),
+  /// Abandoning is the only way a rolled world ends, and closing the app cannot
+  /// undo it: both slots go. So the door does not do it — this does, and only
+  /// after a person has read a sentence and pressed the word in it. The dialog
+  /// is the whole guard, which is why it is checked on a device rather than in a
+  /// test: this package has no widget tests by convention.
+  Future<void> _confirmAbandon(BuildContext context) async {
+    final given = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: const Text(
+          'Abandon this hero?',
+          style: TextStyle(fontFamily: 'monospace'),
         ),
+        content: const Text(
+          'Everything they carried, banked and learned is deleted, and their '
+          'world is gone. A new hero begins in a new world. This cannot be '
+          'undone.',
+          style: TextStyle(fontFamily: 'monospace', fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialog).pop(false),
+            child: const Text(
+              'Keep this hero',
+              style: TextStyle(fontFamily: 'monospace'),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialog).pop(true),
+            child: const Text(
+              'Abandon',
+              style: TextStyle(fontFamily: 'monospace'),
+            ),
+          ),
+        ],
       ),
     );
+    if (given ?? false) onAbandonHero();
   }
 }
 
@@ -119,7 +150,7 @@ class _Door extends StatelessWidget {
   const _Door({required this.label, required this.onPressed});
 
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) => Padding(
