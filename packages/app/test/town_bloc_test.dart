@@ -425,4 +425,67 @@ void main() {
       verify: (bloc) => expect(bloc.state.notice, isNull),
     );
   });
+
+  group('the boot notice', () {
+    test('a report from the save layer is the first thing the town says', () {
+      // arrange
+      const report =
+          'your last save could not be read; an older one was restored';
+
+      // act
+      final bloc = TownBloc(profile: _fresh(), notice: report);
+
+      // assert
+      expect(bloc.state.notice, report);
+      expect(bloc.state.abandoned, isFalse);
+    });
+
+    test('the next thing that works clears it', () async {
+      // arrange
+      final bloc = TownBloc(profile: _rich(), notice: 'something went wrong');
+
+      // act
+      bloc.add(const DepositGoldPressed(10));
+      final after = await bloc.stream.first;
+
+      // assert
+      expect(after.notice, isNull);
+    });
+  });
+
+  group('abandoning the hero', () {
+    test('no other event ever gives a hero up', () async {
+      // arrange
+      final bloc = TownBloc(profile: _rich());
+
+      // act
+      bloc.add(const RestPressed());
+      final rested = await bloc.stream.first;
+      bloc.add(const EnterDungeonPressed());
+      final entered = await bloc.stream.first;
+
+      // assert
+      expect(rested.abandoned, isFalse);
+      expect(entered.abandoned, isFalse);
+    });
+
+    test(
+      'the confirmation gives the hero up and touches nothing else',
+      () async {
+        // arrange
+        final profile = _fresh().copyWith(gold: 44);
+        final bloc = TownBloc(profile: profile);
+
+        // act
+        bloc.add(const AbandonHeroConfirmed());
+        final after = await bloc.stream.first;
+
+        // assert
+        expect(after.abandoned, isTrue);
+        expect(after.profile, profile);
+        expect(after.stock, bloc.state.stock);
+        expect(after.run, isNull);
+      },
+    );
+  });
 }

@@ -1,0 +1,249 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/save/boot.dart';
+import 'package:residuum_app/save/save_files.dart';
+import 'package:residuum_app/save/save_store.dart';
+import 'package:residuum_content/content.dart';
+import 'package:residuum_core/core.dart';
+
+import 'support/memory_save_files.dart';
+
+/// A one-hero document, for seeding the store before a boot.
+SaveDocument _one(Profile profile, {GameState? run}) =>
+    SaveDocument.one(id: 'hero-1', label: 'Hero 1', profile: profile, run: run);
+
+void main() {
+  group('booting', () {
+    test('a fresh install rolls its own world and is not seed one', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+
+      // act
+      final booted = await bootFrom(store, rollWorldSeed: () => 987654321);
+
+      // assert
+      expect(booted.profile.worldSeed, 987654321);
+      expect(booted.profile.worldSeed, isNot(1));
+      expect(booted.run, isNull);
+      expect(booted.notice, isNull);
+    });
+
+    test('a fresh install saves before it is played, so a crash keeps the '
+        'world', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+
+      // act
+      await bootFrom(store, rollWorldSeed: () => 987654321);
+
+      // assert
+      expect(files.contents.containsKey(currentSlot), isTrue);
+      final reread = await bootFrom(store, rollWorldSeed: () => 5);
+      expect(reread.profile.worldSeed, 987654321);
+    });
+
+    test('a saved hero in town boots into town on their own world', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+      await store.save(_one(newProfile(worldSeed: 424242).copyWith(gold: 51)));
+
+      // act
+      final booted = await bootFrom(store, rollWorldSeed: () => 1);
+
+      // assert
+      expect(booted.profile.worldSeed, 424242);
+      expect(booted.profile.gold, 51);
+      expect(booted.run, isNull);
+      expect(booted.notice, isNull);
+    });
+
+    test('a saved crawl boots with the crawl to resume', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+      final profile = newProfile(worldSeed: 909);
+      final run = startDungeonRun(profile);
+      await store.save(_one(profile, run: run));
+
+      // act
+      final booted = await bootFrom(store, rollWorldSeed: () => 1);
+
+      // assert
+      expect(booted.run, isNotNull);
+      expect(booted.run!.rng.state, run.rng.state);
+      expect(booted.run!.hero.position, run.hero.position);
+      expect(booted.run!.visit, run.visit);
+    });
+
+    test('a corrupt save boots the older one and carries the report', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+      await store.save(_one(newProfile(worldSeed: 11).copyWith(gold: 3)));
+      await store.save(_one(newProfile(worldSeed: 11).copyWith(gold: 4)));
+      files.contents[currentSlot] = 'truncated';
+
+      // act
+      final booted = await bootFrom(store, rollWorldSeed: () => 1);
+
+      // assert
+      expect(booted.profile.gold, 3);
+      expect(booted.notice, contains('an older one was restored'));
+    });
+
+    test(
+      'both slots corrupt begins a fresh hero and carries the report',
+      () async {
+        // arrange
+        final files = MemorySaveFiles();
+        final store = SaveStore(files);
+        await store.save(_one(newProfile(worldSeed: 11)));
+        await store.save(_one(newProfile(worldSeed: 11).copyWith(gold: 4)));
+        files.contents[currentSlot] = 'truncated';
+        files.contents[previousSlot] = 'also truncated';
+
+        // act
+        final booted = await bootFrom(store, rollWorldSeed: () => 777);
+
+        // assert
+        expect(booted.profile.worldSeed, 777);
+        expect(booted.profile.gold, 0);
+        expect(booted.notice, contains('a new hero begins'));
+      },
+    );
+
+    test('the clock roll gives something other than seed one', () {
+      // arrange
+      const forbidden = 1;
+
+      // act
+      final rolled = rollWorldSeedFromClock();
+
+      // assert
+      expect(rolled, isNot(forbidden));
+      expect(rolled, greaterThan(0));
+    });
+  });
+
+  group('booting a roster', () {
+    test('the active hero is the one the game opens on', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+      await store.save(
+        SaveDocument(
+          active: 'hero-2',
+          heroes: {
+            'hero-1': SavedHero(
+              label: 'Ilse',
+              profile: newProfile(worldSeed: 111).copyWith(gold: 40),
+            ),
+            'hero-2': SavedHero(
+              label: 'Bram',
+              profile: newProfile(worldSeed: 222).copyWith(gold: 7),
+            ),
+          },
+        ),
+      );
+
+      // act
+      final booted = await bootFrom(store, rollWorldSeed: () => 1);
+
+      // assert
+      expect(booted.document.active, 'hero-2');
+      expect(booted.profile.worldSeed, 222);
+      expect(booted.profile.gold, 7);
+      expect(booted.document.heroes, hasLength(2));
+    });
+
+    test('a fresh install begins with one hero, labelled and filed', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+
+      // act
+      final booted = await bootFrom(store, rollWorldSeed: () => 987654321);
+
+      // assert
+      expect(booted.document.heroes, hasLength(1));
+      expect(booted.document.active, 'hero-987654321');
+      expect(booted.document.hero.label, defaultHeroLabel);
+      expect(booted.profile.worldSeed, 987654321);
+    });
+
+    test('giving a hero up keeps every other hero', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+      final kept = SavedHero(
+        label: 'Ilse',
+        profile: newProfile(worldSeed: 111).copyWith(gold: 40),
+        run: startDungeonRun(newProfile(worldSeed: 111)),
+      );
+      final was = SaveDocument(
+        active: 'hero-2',
+        heroes: {
+          'hero-1': kept,
+          'hero-2': SavedHero(
+            label: 'Bram',
+            profile: newProfile(worldSeed: 222),
+          ),
+        },
+      );
+      await store.save(was);
+
+      // act
+      final after = await abandonActiveHero(
+        store,
+        was,
+        rollWorldSeed: () => 555,
+      );
+
+      // assert
+      expect(after.document.active, 'hero-555');
+      expect(after.document.heroes.keys.toList()..sort(), [
+        'hero-1',
+        'hero-555',
+      ]);
+      expect(after.document.heroes['hero-1']!.profile, kept.profile);
+      expect(after.document.heroes['hero-1']!.run, isNotNull);
+      expect(after.profile.worldSeed, 555);
+    });
+
+    test('a hero given up is written down before being played', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+      final was = SaveDocument.one(
+        id: 'hero-1',
+        label: 'Hero 1',
+        profile: newProfile(worldSeed: 111),
+      );
+      await store.save(was);
+
+      // act
+      await abandonActiveHero(store, was, rollWorldSeed: () => 555);
+      final reread = await bootFrom(store, rollWorldSeed: () => 9);
+
+      // assert
+      expect(reread.document.active, 'hero-555');
+      expect(reread.profile.worldSeed, 555);
+      expect(reread.document.heroes.containsKey('hero-1'), isFalse);
+    });
+
+    test('a hero id is never reused, even inside one millisecond', () {
+      // arrange
+      const taken = ['hero-555', 'hero-555-2'];
+
+      // act
+      final fresh = unusedHeroIdFrom(555, taken);
+
+      // assert
+      expect(heroIdFrom(555), 'hero-555');
+      expect(fresh, 'hero-555-3');
+      expect(unusedHeroIdFrom(556, taken), 'hero-556');
+    });
+  });
+}

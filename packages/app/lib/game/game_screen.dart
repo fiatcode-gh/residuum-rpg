@@ -10,33 +10,54 @@ import 'inventory_screen.dart';
 class GameScreen extends StatelessWidget {
   const GameScreen({super.key});
 
+  /// The crawl, and the refusal that makes the stairs the only way out.
+  ///
+  /// [PopScope] with [PopScope.canPop] false is what stops Android's back
+  /// button popping this route. A pop here would leave the run un-ended: the
+  /// town would show the profile that walked in while the save on disk still
+  /// held the suspended crawl, and the next descent would bump the visit and
+  /// write over it. Suspending is what an interruption is for, so back is not
+  /// an exit and there is nothing to confirm.
+  ///
+  /// The refusal is not silent. `didPop` is false exactly when the system tried
+  /// and was declined — a programmatic pop, which is what `leaveDungeon` does at
+  /// the stairs and at the death overlay, reports true and must say nothing.
+  /// The pack's route is pushed on top of this one and carries no [PopScope] of
+  /// its own, so back closes the pack as it always did.
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      child: BlocBuilder<GameBloc, GameViewState>(
-        builder: (context, state) => Stack(
-          children: [
-            Column(
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: GlyphGrid(
-                      state: state,
-                      onTap: (position) =>
-                          context.read<GameBloc>().add(TileTapped(position)),
-                      onPan: (delta) =>
-                          context.read<GameBloc>().add(MapPanned(delta)),
+  Widget build(BuildContext context) => PopScope<void>(
+    canPop: false,
+    onPopInvokedWithResult: (didPop, _) {
+      if (didPop) return;
+      context.read<GameBloc>().add(const SystemBackPressed());
+    },
+    child: Scaffold(
+      body: SafeArea(
+        child: BlocBuilder<GameBloc, GameViewState>(
+          builder: (context, state) => Stack(
+            children: [
+              Column(
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: GlyphGrid(
+                        state: state,
+                        onTap: (position) =>
+                            context.read<GameBloc>().add(TileTapped(position)),
+                        onPan: (delta) =>
+                            context.read<GameBloc>().add(MapPanned(delta)),
+                      ),
                     ),
                   ),
-                ),
-                _HitPoints(state: state),
-                _Controls(state: state),
-                _MessageLog(log: state.log),
-              ],
-            ),
-            if (state.game.isGameOver) _DeathOverlay(state: state),
-          ],
+                  _HitPoints(state: state),
+                  _Controls(state: state),
+                  _MessageLog(log: state.log),
+                ],
+              ),
+              if (state.game.isGameOver) _DeathOverlay(state: state),
+            ],
+          ),
         ),
       ),
     ),

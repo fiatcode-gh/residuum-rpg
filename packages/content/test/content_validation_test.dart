@@ -606,6 +606,18 @@ void _armouryAndLoot() {
       // assert
       expect(lookUp, throwsArgumentError);
     });
+
+    test('an unknown base item id reads as nothing rather than throwing', () {
+      // arrange
+      const missing = 'mithril-sword';
+
+      // act
+      final found = baseItemOrNull(missing);
+
+      // assert
+      expect(found, isNull);
+      expect(baseItemOrNull(rustySword.id), rustySword);
+    });
   });
 
   group('affix pool', () {
@@ -680,6 +692,18 @@ void _armouryAndLoot() {
 
       // assert
       expect(found, affixes);
+    });
+
+    test('an unknown affix id reads as nothing rather than throwing', () {
+      // arrange
+      const missing = 'of-frost';
+
+      // act
+      final found = affixOrNull(missing);
+
+      // assert
+      expect(found, isNull);
+      expect(affixOrNull(keen.id), keen);
     });
   });
 

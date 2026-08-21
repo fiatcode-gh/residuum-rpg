@@ -65,6 +65,16 @@ final class MapPanned extends GameBlocEvent {
   final Offset delta;
 }
 
+/// The player pressed the system back button while the crawl was on screen.
+///
+/// The crawl has an event for this because the crawl refuses it. Android's back
+/// button is not a door out of the dungeon — the stairs and death are the only
+/// two — so the route declines the pop and dispatches this instead, and the
+/// refusal gets a sentence rather than being a press that does nothing.
+final class SystemBackPressed extends GameBlocEvent {
+  const SystemBackPressed();
+}
+
 /// One step of a walk in progress. Carries the [walkId] it belongs to so a
 /// step left over from a cancelled walk cannot resume it.
 final class AutoWalkAdvanced extends GameBlocEvent {
@@ -169,11 +179,12 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   GameBloc({
     GameState? game,
     int worldSeed = 1,
+    List<String> log = const [],
     this.stepDelay = const Duration(milliseconds: 90),
   }) : super(
          GameViewState(
            game: game ?? newGame(worldSeed: worldSeed),
-           log: const [],
+           log: log,
          ),
        ) {
     on<TileTapped>(_onTileTapped);
@@ -187,6 +198,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     on<DropPressed>(_onDropPressed);
     on<QuickDrinkPressed>(_onQuickDrinkPressed);
     on<MapPanned>(_onMapPanned);
+    on<SystemBackPressed>(_onSystemBackPressed);
   }
 
   /// How long the hero pauses between tiles of a walk. Zero in tests.
@@ -273,6 +285,33 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       pan: state.pan + event.delta,
     ),
   );
+
+  /// Says where the way out is, and stops any walk in progress.
+  ///
+  /// **Leaving is the stairs or it is dying, and this is what keeps that true.**
+  /// A pushed route pops on the system back button by default, which would have
+  /// taken the player to town without ending the run: the town would show the
+  /// profile that walked in while the save still held the crawl, and the next
+  /// descent would bump the visit and write over it. That is progress lost
+  /// through a door the design never opened, so the route declines the pop and
+  /// the log explains why.
+  ///
+  /// A dead hero is told nothing, because the death overlay is already covering
+  /// the screen with the one control that does work. A line about the stairs
+  /// would be advice the player cannot take.
+  void _onSystemBackPressed(
+    SystemBackPressed event,
+    Emitter<GameViewState> emit,
+  ) {
+    if (state.game.isGameOver) return;
+    emit(
+      GameViewState(
+        game: state.game,
+        log: [...state.log, _backRefusal],
+        walkId: state.walkId + 1,
+      ),
+    );
+  }
 
   /// Runs one loot action, cancelling any walk in progress first.
   ///
@@ -368,3 +407,9 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
 /// — until now it refused in silence, which read to the player as a dead tap
 /// rather than a decision the game had made.
 const String _watchedRefusal = 'Something is watching. You stay put.';
+
+/// What the log says when the system back button is pressed in the dungeon.
+///
+/// Phrased as where the exit *is* rather than as what the button is not, so a
+/// player who pressed it by habit learns the rule instead of being told off.
+const String _backRefusal = 'You can only leave at the stairs.';

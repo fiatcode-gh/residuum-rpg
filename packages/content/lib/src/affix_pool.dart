@@ -74,12 +74,20 @@ const List<Affix> armourAffixes = [sturdy, reinforced, ofVigour, ofSwiftness];
 /// Every affix in the game.
 const List<Affix> affixPool = [...weaponAffixes, ...armourAffixes];
 
-/// The affix with this [id].
+/// The affix with this [id], or null when nothing answers to it.
 ///
-/// Throws [ArgumentError] when nothing answers to it.
-Affix affixById(String id) {
+/// The nullable door exists for the save codec, for the same reason
+/// [baseItemOrNull] does: an unknown id out of a save file is a sentence the
+/// player reads, not an exception.
+Affix? affixOrNull(String id) {
   for (final affix in affixPool) {
     if (affix.id == id) return affix;
   }
-  throw ArgumentError.value(id, 'id', 'no such affix');
+  return null;
 }
+
+/// The affix with this [id].
+///
+/// Throws [ArgumentError] when nothing answers to it.
+Affix affixById(String id) =>
+    affixOrNull(id) ?? (throw ArgumentError.value(id, 'id', 'no such affix'));

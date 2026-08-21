@@ -1012,4 +1012,77 @@ void _lootTests() {
       },
     );
   });
+
+  group('the system back button', () {
+    blocTest<GameBloc, GameViewState>(
+      'is refused, and the log says where the way out is',
+      build: () => GameBloc(
+        game: arenaGame(heroAt: const Position(2, 2)),
+        stepDelay: Duration.zero,
+      ),
+      act: (bloc) => bloc.add(const SystemBackPressed()),
+      verify: (bloc) {
+        expect(bloc.state.log, ['You can only leave at the stairs.']);
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'costs no turn and moves nothing',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(2, 2),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+        stepDelay: Duration.zero,
+      ),
+      act: (bloc) => bloc.add(const SystemBackPressed()),
+      verify: (bloc) {
+        expect(bloc.state.game.hero.position, const Position(2, 2));
+        expect(bloc.state.game.hero.energy, actThreshold);
+        expect(bloc.state.game.monsters.single.position, const Position(4, 2));
+        expect(
+          bloc.state.game.rng.state,
+          GameBloc(game: arenaGame(heroAt: const Position(2, 2)))
+              .state
+              .game
+              .rng
+              .state,
+        );
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'says nothing over a death overlay that already says what to do',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(2, 2),
+          heroHp: 0,
+        ).copyWith(isGameOver: true),
+        stepDelay: Duration.zero,
+      ),
+      act: (bloc) => bloc.add(const SystemBackPressed()),
+      verify: (bloc) => expect(bloc.state.log, isEmpty),
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'stops a walk in progress rather than being swallowed by it',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          ascii: twoRooms,
+          explored: everywhereIn(twoRooms),
+        ),
+        stepDelay: Duration.zero,
+      ),
+      act: (bloc) async {
+        bloc.add(const TileTapped(Position(5, 3)));
+        await bloc.stream.first;
+        bloc.add(const SystemBackPressed());
+      },
+      verify: (bloc) {
+        expect(bloc.state.log.last, 'You can only leave at the stairs.');
+        expect(bloc.state.isWalking, isFalse);
+      },
+    );
+  });
 }
