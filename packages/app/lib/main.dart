@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import 'game/game_bloc.dart';
@@ -8,6 +9,7 @@ import 'save/autosaver.dart';
 import 'save/boot.dart';
 import 'save/save_files_io.dart';
 import 'save/save_store.dart';
+import 'town/roster_screen.dart';
 import 'town/town_bloc.dart';
 import 'town/town_screen.dart';
 
@@ -17,12 +19,10 @@ Future<void> main() async {
   runApp(ResiduumApp(store: store, boot: boot));
 }
 
-/// The app, and the one thing it can do that no screen can: start over.
+/// The app, and the one thing it can do that no screen can: play somebody else.
 ///
-/// Stateful because abandoning a hero replaces every bloc in the tree at once.
-/// The generation counter goes into the session's key so the old town and its
-/// autosaver are torn down rather than reused with a new profile pushed through
-/// them.
+/// Stateful because switching, creating or deleting a hero replaces every bloc in
+/// the tree at once.
 class ResiduumApp extends StatefulWidget {
   const ResiduumApp({required this.store, required this.boot, super.key});
 
@@ -50,17 +50,45 @@ class _ResiduumAppState extends State<ResiduumApp> {
       key: ValueKey(_generation),
       store: widget.store,
       boot: _boot,
-      onAbandoned: _startOver,
+      onRoster: _rosterChose,
     ),
   );
 
-  Future<void> _startOver() async {
-    final fresh = await abandonActiveHero(
-      widget.store,
-      _boot.document,
-      rollWorldSeed: rollWorldSeedFromClock,
-    );
-    if (!mounted) return;
+  /// Carries out what the roster answered with, and rebuilds the session onto it.
+  ///
+  /// **The generation counter goes into the session's key so that every bloc and
+  /// the autosaver are torn down rather than re-pointed.** A session handed a
+  /// different hero would still be holding the old hero's town bloc, the old
+  /// autosaver watching it, and the old crawl's log — and the first thing that
+  /// autosaver did would be to write the new hero's document with the old hero's
+  /// profile inside it. Bumping the key makes switching hero the same operation
+  /// as launching the app on that hero, which is the only version of it that has
+  /// one code path.
+  ///
+  /// The [document] comes up from the session rather than being read from
+  /// [_boot], because the boot's copy is as old as the launch: the hero being
+  /// played has spent gold and taken wounds since, and editing the stale copy
+  /// would hand those back on the way out.
+  Future<void> _rosterChose(RosterChoice chosen, SaveDocument document) async {
+    final fresh = switch (chosen) {
+      PlayHero(:final id) => await switchHero(widget.store, document, id),
+      DropHero(:final id) => await deleteHero(widget.store, document, id),
+      MakeHero(:final label, :final replacing) =>
+        replacing == null
+            ? await createHero(
+                widget.store,
+                document,
+                label: label,
+                rollWorldSeed: rollWorldSeedFromClock,
+              )
+            : await replaceOnlyHero(
+                widget.store,
+                document,
+                label: label,
+                rollWorldSeed: rollWorldSeedFromClock,
+              ),
+    };
+    if (fresh == null || !mounted) return;
     setState(() {
       _boot = fresh;
       _generation++;
@@ -78,13 +106,15 @@ class _Session extends StatefulWidget {
   const _Session({
     required this.store,
     required this.boot,
-    required this.onAbandoned,
+    required this.onRoster,
     super.key,
   });
 
   final SaveStore store;
   final Boot boot;
-  final Future<void> Function() onAbandoned;
+
+  /// Carries out what the roster answered with, on the document as it stands.
+  final Future<void> Function(RosterChoice, SaveDocument) onRoster;
 
   @override
   State<_Session> createState() => _SessionState();
@@ -93,6 +123,7 @@ class _Session extends StatefulWidget {
 class _SessionState extends State<_Session> {
   late final TownBloc _town = TownBloc(
     profile: widget.boot.profile,
+    merchant: widget.boot.merchant,
     notice: widget.boot.notice,
   );
   late final Autosaver _saver = Autosaver(widget.store, from: widget.boot);
@@ -125,15 +156,31 @@ class _SessionState extends State<_Session> {
   @override
   Widget build(BuildContext context) => BlocProvider.value(
     value: _town,
-    child: BlocListener<TownBloc, TownViewState>(
-      listenWhen: (before, after) => after.abandoned && !before.abandoned,
-      listener: (_, _) => _abandon(),
-      child: TownScreen(
-        onEnterDungeon: _enterDungeon,
-        onAbandonHero: () => _town.add(const AbandonHeroConfirmed()),
-      ),
-    ),
+    child: TownScreen(onEnterDungeon: _enterDungeon, onOpenRoster: _openRoster),
   );
+
+  /// Opens the roster on the document as it stands, and acts on the answer.
+  ///
+  /// The document comes from the autosaver rather than from the boot, because the
+  /// boot's copy is as old as the launch: the hero being played has spent gold and
+  /// taken wounds since, and the roster would print the numbers they walked in
+  /// with. The autosaver is the one object holding both the roster and the live
+  /// hero, so it is the one that can answer the question.
+  ///
+  /// The saver is closed before anything is written, exactly as giving a hero up
+  /// used to be: the rebuild tears the autosaver down, and a write still queued
+  /// when the document changed underneath it would put the hero who was just left
+  /// back over the hero who was just chosen.
+  Future<void> _openRoster() async {
+    final chosen = await Navigator.of(context).push<RosterChoice>(
+      MaterialPageRoute<RosterChoice>(
+        builder: (_) => RosterScreen(document: _saver.document),
+      ),
+    );
+    if (chosen == null || !mounted) return;
+    await _saver.close();
+    await widget.onRoster(chosen, _saver.document);
+  }
 
   Future<void> _enterDungeon() async {
     _town.add(const EnterDungeonPressed());
@@ -190,11 +237,6 @@ class _SessionState extends State<_Session> {
   /// its lines are sentences. Wording it twice would let the two drift.
   static String _asSentence(String notice) =>
       '${notice[0].toUpperCase()}${notice.substring(1)}.';
-
-  Future<void> _abandon() async {
-    await _saver.close();
-    await widget.onAbandoned();
-  }
 
   static const String _resumed = 'The crawl resumes.';
 }

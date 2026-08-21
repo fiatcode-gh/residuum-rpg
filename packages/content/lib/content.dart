@@ -4,6 +4,7 @@ export 'src/bestiary.dart';
 export 'src/drop_tables.dart';
 export 'src/economy.dart';
 export 'src/new_game.dart';
+export 'src/save/merchant_visit.dart';
 export 'src/save/save_codec.dart';
 export 'src/save/save_read.dart';
 export 'src/spawn_tables.dart';

@@ -116,25 +116,6 @@ void main() {
       await saver.close();
       await town.close();
     });
-
-    test('giving the hero up writes nothing more', () async {
-      // arrange
-      final files = MemorySaveFiles();
-      final profile = newProfile(worldSeed: 5).copyWith(gold: 12);
-      final town = TownBloc(profile: profile);
-      final saver = Autosaver(SaveStore(files), from: _boot(profile))
-        ..watchTown(town);
-
-      // act
-      town.add(const AbandonHeroConfirmed());
-      await town.stream.first;
-      await saver.settled();
-
-      // assert
-      expect(files.contents, isEmpty);
-      await saver.close();
-      await town.close();
-    });
   });
 
   group('autosaving a crawl', () {
@@ -350,5 +331,156 @@ void main() {
       await saver.close();
       await town.close();
     });
+  });
+
+  group('autosaving what the merchant remembers', () {
+    test('a purchase is still gone from the shelf after a relaunch', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+      final profile = newProfile(worldSeed: 5).copyWith(gold: 500);
+      final town = TownBloc(profile: profile);
+      final saver = Autosaver(store, from: _boot(profile))..watchTown(town);
+      final offered = town.state.stock.first.id;
+
+      // act
+      town.add(BuyPressed(offered));
+      await town.stream.first;
+      await saver.settled();
+      final relaunched = await bootFrom(store, rollWorldSeed: () => 1);
+      final second = TownBloc(
+        profile: relaunched.profile,
+        merchant: relaunched.merchant,
+      );
+
+      // assert
+      expect(relaunched.merchant.bought, [offered]);
+      expect(
+        second.state.stock.map((item) => item.id),
+        isNot(contains(offered)),
+      );
+      expect(
+        second.state.profile.inventory.where((item) => item.id == offered),
+        hasLength(1),
+      );
+      await saver.close();
+      await town.close();
+      await second.close();
+    });
+
+    test(
+      'a sale is still on the counter after a relaunch, at its price',
+      () async {
+        // arrange
+        final files = MemorySaveFiles();
+        final store = SaveStore(files);
+        final profile = newProfile(worldSeed: 5).copyWith(
+          gold: 100,
+          inventory: const [
+            Item(id: 'held-1', base: ironSword, rarity: Rarity.common),
+          ],
+        );
+        final town = TownBloc(profile: profile);
+        final saver = Autosaver(store, from: _boot(profile))..watchTown(town);
+
+        // act
+        town.add(const SellPressed('held-1'));
+        await town.stream.first;
+        await saver.settled();
+        final relaunched = await bootFrom(store, rollWorldSeed: () => 1);
+        final second = TownBloc(
+          profile: relaunched.profile,
+          merchant: relaunched.merchant,
+        );
+        second.add(const BuyBackPressed('held-1'));
+        await second.stream.first;
+
+        // assert
+        expect(relaunched.merchant.sold.single.id, 'held-1');
+        expect(second.state.profile.gold, 100);
+        expect(second.state.profile.inventory.single.id, 'held-1');
+        await saver.close();
+        await town.close();
+        await second.close();
+      },
+    );
+
+    test('the hero nobody is playing keeps their own visit state', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final played = newProfile(worldSeed: 222).copyWith(gold: 500);
+      final roster = SaveDocument(
+        active: 'hero-2',
+        heroes: {
+          'hero-1': SavedHero(
+            label: 'Ilse',
+            profile: newProfile(worldSeed: 111),
+            merchant: const MerchantVisit(bought: ['market-0-potion-1']),
+          ),
+          'hero-2': SavedHero(label: 'Bram', profile: played),
+        },
+      );
+      final town = TownBloc(profile: played);
+      final saver = Autosaver(SaveStore(files), from: Boot(document: roster))
+        ..watchTown(town);
+
+      // act
+      town.add(BuyPressed(town.state.stock.first.id));
+      await town.stream.first;
+      await saver.settled();
+
+      // assert
+      final disk = _onDisk(files);
+      expect(disk.heroes['hero-1']!.merchant.bought, ['market-0-potion-1']);
+      expect(disk.heroes['hero-2']!.merchant.bought, hasLength(1));
+      await saver.close();
+      await town.close();
+    });
+
+    test('the visit is cleared on disk when the run ends', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final profile = newProfile(worldSeed: 5).copyWith(gold: 500);
+      final town = TownBloc(profile: profile);
+      final saver = Autosaver(SaveStore(files), from: _boot(profile))
+        ..watchTown(town);
+      town.add(BuyPressed(town.state.stock.first.id));
+      await town.stream.first;
+      town.add(const EnterDungeonPressed());
+      final entered = await town.stream.first;
+
+      // act
+      town.add(RunEnded(entered.run!, died: false));
+      await town.stream.first;
+      await saver.settled();
+
+      // assert
+      expect(_onDisk(files).merchant, MerchantVisit.none);
+      await saver.close();
+      await town.close();
+    });
+
+    test(
+      'the document the autosaver holds is the one it would write',
+      () async {
+        // arrange
+        final files = MemorySaveFiles();
+        final profile = newProfile(worldSeed: 5).copyWith(gold: 500);
+        final town = TownBloc(profile: profile);
+        final saver = Autosaver(SaveStore(files), from: _boot(profile))
+          ..watchTown(town);
+
+        // act
+        town.add(const DepositGoldPressed(120));
+        await town.stream.first;
+        await saver.settled();
+
+        // assert
+        expect(encodeSave(saver.document), files.contents[currentSlot]);
+        expect(saver.document.profile.bankedGold, 120);
+        await saver.close();
+        await town.close();
+      },
+    );
   });
 }

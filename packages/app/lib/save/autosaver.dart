@@ -20,7 +20,8 @@ class Autosaver {
   Autosaver(this._store, {required Boot from})
     : _roster = from.document,
       _profile = from.profile,
-      _run = from.run;
+      _run = from.run,
+      _merchant = from.merchant;
 
   final SaveStore _store;
   final List<StreamSubscription<Object?>> _watching = [];
@@ -30,6 +31,7 @@ class Autosaver {
 
   Profile _profile;
   GameState? _run;
+  MerchantVisit _merchant;
   Future<void> _queue = Future<void>.value();
 
   /// Saves after every town emission.
@@ -40,16 +42,17 @@ class Autosaver {
   /// one that got the test wrong would be a purchase the player paid for and
   /// then lost.
   ///
-  /// A hero who has just been given up is the exception: that state exists to
-  /// tell the session to wipe both slots, so writing it would put the abandoned
-  /// hero straight back on disk.
+  /// What the merchant remembers of the visit is written with the rest of the
+  /// hero, because a purchase that lived only in this bloc would put the whole
+  /// shelf back on the next launch.
+
   void watchTown(TownBloc town) {
     _profile = town.state.profile;
     _watching.add(
       town.stream.listen((state) {
-        if (state.abandoned) return;
         _profile = state.profile;
         _run = state.run;
+        _merchant = state.merchant;
         saveNow();
       }),
     );
@@ -75,20 +78,31 @@ class Autosaver {
     );
   }
 
-  /// Writes the whole roster with the active hero brought up to date.
+  /// The whole roster with the active hero brought up to date: the document as
+  /// it stands right now.
   ///
   /// The active hero's entry is replaced inside the document the session booted
   /// with, rather than a document built from the active hero alone. A save that
   /// wrote only the hero being played would delete every other hero on the
   /// install, once per turn, and nothing on screen would say so.
   ///
+  /// One expression, two readers. This is the only object holding both the roster
+  /// it booted with and the active hero's live profile, crawl and visit, so this
+  /// is where "the document as it stands" is built — and the roster screen reads
+  /// it here rather than assembling a second version that could disagree with
+  /// the one being written to disk.
+  SaveDocument get document =>
+      _roster.replacingActive(_profile, _run, _merchant);
+
+  /// Writes the document down.
+  ///
   /// Queued rather than overlapped. Two writes in flight at once could finish
   /// out of order and leave the older document in the current slot, which is the
   /// one failure a save layer must not have.
   void saveNow() {
-    final document = _roster.replacingActive(_profile, _run);
+    final written = document;
     _queue = _queue.then((_) async {
-      await _store.save(document);
+      await _store.save(written);
     });
   }
 
@@ -96,9 +110,19 @@ class Autosaver {
   Future<void> settled() => _queue;
 
   /// Stops watching. Any write already queued still finishes.
+  ///
+  /// The cancellations are asked for and not waited on, while the queue is waited
+  /// on. That is the whole of what closing has to promise: cancelling a
+  /// subscription stops delivery at once, so no further write can be queued after
+  /// this line, and awaiting the queue is what makes the last write land before
+  /// the caller moves on. Waiting for each cancellation to finish at its source
+  /// adds nothing to either promise — and it costs something real, because a
+  /// bloc's stream completes its cancellation on the event loop rather than in a
+  /// microtask, which no widget test's clock ever reaches. A session rebuild that
+  /// awaited it would deadlock every widget test that switched hero.
   Future<void> close() async {
     for (final subscription in _watching) {
-      await subscription.cancel();
+      unawaited(subscription.cancel());
     }
     _watching.clear();
     await _queue;

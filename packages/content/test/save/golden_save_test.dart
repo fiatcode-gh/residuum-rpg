@@ -16,7 +16,8 @@ const String _goldenTown =
     ',"rarity":"common","affixes":[]}],"bank":[{"id":"drop-1","base'
     '":"iron-sword","rarity":"common","affixes":[]}],"skills":{"arm'
     's":{"level":4,"xp":2},"might":{"level":0,"xp":0},"bulwark":{"l'
-    'evel":0,"xp":0},"fleetfoot":{"level":0,"xp":0}}},"run":null}}}';
+    'evel":0,"xp":0},"fleetfoot":{"level":0,"xp":0}}},"run":null,"m'
+    'erchant":{"bought":[],"sold":[]}}}}';
 
 /// A committed version-1 document with a crawl suspended in it, so the run
 /// block's shape is pinned as tightly as the profile's.
@@ -45,13 +46,18 @@ const String _goldenRun =
     'xp":1},"might":{"level":0,"xp":0},"bulwark":{"level":0,"xp":0}'
     ',"fleetfoot":{"level":0,"xp":0}},"floors":[{"depth":1,"map":"#'
     '##\\n#.#\\n###","monsters":[],"groundItems":[],"explored":[[1,'
-    '1]],"stairsDown":[1,1],"stairsUp":null}]}}}}';
+    '1]],"stairsDown":[1,1],"stairsUp":null}]},"merchant":{"bought"'
+    ':[],"sold":[]}}}}';
 
 /// A committed version-1 document with two heroes in it.
 ///
 /// The roster's own shape is pinned here: that `active` is a written field and
 /// not the first key, and that heroes are written in key order however the map
 /// was assembled. Both are what stop a reorder from silently switching hero.
+///
+/// Ilse carries visit state and Bram does not, so this document pins the whole
+/// of the merchant block — a bought id and a whole item reference — rather than
+/// only the shape two empty lists would show.
 const String _goldenTwoHeroes =
     '{"version":1,"active":"hero-2","heroes":{"hero-1":{"label":"Il'
     'se","profile":{"hp":20,"gold":40,"bankedGold":0,"worldSeed":"1'
@@ -61,15 +67,31 @@ const String _goldenTwoHeroes =
     ']},{"id":"kit-3","base":"healing-potion","rarity":"common","af'
     'fixes":[]}],"bank":[],"skills":{"arms":{"level":0,"xp":0},"mig'
     'ht":{"level":0,"xp":0},"bulwark":{"level":0,"xp":0},"fleetfoot'
-    '":{"level":0,"xp":0}}},"run":null},"hero-2":{"label":"Bram","p'
-    'rofile":{"hp":20,"gold":0,"bankedGold":0,"worldSeed":"222","vi'
-    'sit":0,"equipment":{"mainHand":{"id":"kit-1","base":"rusty-swo'
-    'rd","rarity":"common","affixes":[]}},"inventory":[{"id":"kit-2'
-    '","base":"healing-potion","rarity":"common","affixes":[]},{"id'
-    '":"kit-3","base":"healing-potion","rarity":"common","affixes":'
-    '[]}],"bank":[],"skills":{"arms":{"level":0,"xp":0},"might":{"l'
-    'evel":0,"xp":0},"bulwark":{"level":0,"xp":0},"fleetfoot":{"lev'
-    'el":0,"xp":0}}},"run":null}}}';
+    '":{"level":0,"xp":0}}},"run":null,"merchant":{"bought":["marke'
+    't-0-gear-1"],"sold":[{"id":"drop-3","base":"iron-sword","rarit'
+    'y":"common","affixes":[]}]}},"hero-2":{"label":"Bram","profile'
+    '":{"hp":20,"gold":0,"bankedGold":0,"worldSeed":"222","visit":0'
+    ',"equipment":{"mainHand":{"id":"kit-1","base":"rusty-sword","r'
+    'arity":"common","affixes":[]}},"inventory":[{"id":"kit-2","bas'
+    'e":"healing-potion","rarity":"common","affixes":[]},{"id":"kit'
+    '-3","base":"healing-potion","rarity":"common","affixes":[]}],"'
+    'bank":[],"skills":{"arms":{"level":0,"xp":0},"might":{"level":'
+    '0,"xp":0},"bulwark":{"level":0,"xp":0},"fleetfoot":{"level":0,'
+    '"xp":0}}},"run":null,"merchant":{"bought":[],"sold":[]}}}}';
+
+/// The two heroes of the roster golden, built once because two tests assemble
+/// the same roster in two different orders.
+SavedHero _pinnedIlse() => SavedHero(
+  label: 'Ilse',
+  profile: newProfile(worldSeed: 111).copyWith(gold: 40),
+  merchant: const MerchantVisit(
+    bought: ['market-0-gear-1'],
+    sold: [Item(id: 'drop-3', base: ironSword, rarity: Rarity.common)],
+  ),
+);
+
+SavedHero _pinnedBram() =>
+    SavedHero(label: 'Bram', profile: newProfile(worldSeed: 222));
 
 Profile _pinnedTown() => newProfile(worldSeed: 9007199254740993).copyWith(
   hero: newProfile().hero.copyWith(hp: 14),
@@ -247,22 +269,16 @@ void main() {
       expect(read.heroes['hero-1']!.profile.gold, 40);
       expect(read.heroes['hero-2']!.profile.worldSeed, 222);
       expect(read.profile, read.heroes['hero-2']!.profile);
+      expect(read.heroes['hero-1']!.merchant.bought, ['market-0-gear-1']);
+      expect(read.heroes['hero-1']!.merchant.sold.single.id, 'drop-3');
+      expect(read.heroes['hero-2']!.merchant, MerchantVisit.none);
     });
 
     test('the encoder reproduces it byte for byte', () {
       // arrange
       final document = SaveDocument(
         active: 'hero-2',
-        heroes: {
-          'hero-1': SavedHero(
-            label: 'Ilse',
-            profile: newProfile(worldSeed: 111).copyWith(gold: 40),
-          ),
-          'hero-2': SavedHero(
-            label: 'Bram',
-            profile: newProfile(worldSeed: 222),
-          ),
-        },
+        heroes: {'hero-1': _pinnedIlse(), 'hero-2': _pinnedBram()},
       );
 
       // act
@@ -276,16 +292,7 @@ void main() {
       // arrange
       final backwards = SaveDocument(
         active: 'hero-2',
-        heroes: {
-          'hero-2': SavedHero(
-            label: 'Bram',
-            profile: newProfile(worldSeed: 222),
-          ),
-          'hero-1': SavedHero(
-            label: 'Ilse',
-            profile: newProfile(worldSeed: 111).copyWith(gold: 40),
-          ),
-        },
+        heroes: {'hero-2': _pinnedBram(), 'hero-1': _pinnedIlse()},
       );
 
       // act

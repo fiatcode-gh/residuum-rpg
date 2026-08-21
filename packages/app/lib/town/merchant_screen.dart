@@ -5,12 +5,19 @@ import 'package:residuum_content/content.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
 
-/// The shop: what is for sale above, what the hero is carrying below.
+/// The shop: what is for sale above, what was sold across the counter in the
+/// middle, what the hero is carrying below.
 ///
-/// Two lists in a fixed order, each row naming its own price on its own button,
-/// so there is never a question of which price applies to which side of the
-/// counter. Buying costs twice what selling pays, at every tier, which is why
-/// the two lists can sit on one screen without inviting a loop.
+/// Three lists in a fixed order, each row naming its own price on its own
+/// button, so there is never a question of which price applies to which side of
+/// the counter. The merchant's two lists sit together above the hero's, because
+/// the position of a list is what tells them apart without colour. Buying costs
+/// twice what selling pays, at every tier, which is why the two ends can sit on
+/// one screen without inviting a loop — and buying back costs exactly what the
+/// sale paid, because an undo is not a trade.
+///
+/// The sold list appears only while there is something on it: a heading with
+/// nothing under it is the one row on this screen that would say nothing.
 class MerchantScreen extends StatelessWidget {
   const MerchantScreen({super.key});
 
@@ -35,6 +42,18 @@ class MerchantScreen extends StatelessWidget {
                   ? null
                   : () => bloc.add(BuyPressed(item.id)),
             ),
+          if (state.merchant.sold.isNotEmpty) ...[
+            const Heading('Sold this visit'),
+            for (final item in state.merchant.sold)
+              ItemRow(
+                marking: item.rarity.marking,
+                name: item.displayName,
+                action: 'Buy back ${sellPriceOf(item)}',
+                onPressed: state.gold < sellPriceOf(item)
+                    ? null
+                    : () => bloc.add(BuyBackPressed(item.id)),
+              ),
+          ],
           const Heading('Your pack'),
           if (state.profile.inventory.isEmpty)
             const NothingHere('You are carrying nothing.'),

@@ -437,7 +437,6 @@ void main() {
 
       // assert
       expect(bloc.state.notice, report);
-      expect(bloc.state.abandoned, isFalse);
     });
 
     test('the next thing that works clears it', () async {
@@ -453,39 +452,155 @@ void main() {
     });
   });
 
-  group('abandoning the hero', () {
-    test('no other event ever gives a hero up', () async {
+  group('the merchant remembers this visit', () {
+    test('a hero who already bought does not see it on the shelf', () {
       // arrange
-      final bloc = TownBloc(profile: _rich());
+      final all = merchantStock(4, 0);
 
       // act
-      bloc.add(const RestPressed());
-      final rested = await bloc.stream.first;
-      bloc.add(const EnterDungeonPressed());
-      final entered = await bloc.stream.first;
+      final bloc = TownBloc(
+        profile: _fresh(),
+        merchant: MerchantVisit(bought: [all.first.id]),
+      );
 
       // assert
-      expect(rested.abandoned, isFalse);
-      expect(entered.abandoned, isFalse);
+      expect(
+        bloc.state.stock.map((item) => item.id),
+        isNot(contains(all.first.id)),
+      );
+      expect(bloc.state.stock, hasLength(all.length - 1));
     });
 
-    test(
-      'the confirmation gives the hero up and touches nothing else',
-      () async {
-        // arrange
-        final profile = _fresh().copyWith(gold: 44);
-        final bloc = TownBloc(profile: profile);
-
-        // act
-        bloc.add(const AbandonHeroConfirmed());
-        final after = await bloc.stream.first;
-
-        // assert
-        expect(after.abandoned, isTrue);
-        expect(after.profile, profile);
-        expect(after.stock, bloc.state.stock);
-        expect(after.run, isNull);
+    blocTest<TownBloc, TownViewState>(
+      'buying writes the purchase into the visit',
+      build: () => TownBloc(profile: _rich()),
+      act: (bloc) => bloc.add(BuyPressed(bloc.state.stock.first.id)),
+      verify: (bloc) {
+        expect(bloc.state.merchant.bought, hasLength(1));
+        expect(
+          bloc.state.stock.map((item) => item.id),
+          isNot(contains(bloc.state.merchant.bought.single)),
+        );
       },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a refused purchase remembers nothing',
+      build: () => TownBloc(profile: _fresh()),
+      act: (bloc) => bloc.add(BuyPressed(bloc.state.stock.first.id)),
+      verify: (bloc) {
+        expect(bloc.state.merchant.bought, isEmpty);
+        expect(bloc.state.notice, 'you cannot afford that');
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'selling puts the item on the counter to be bought back',
+      build: () => TownBloc(profile: _rich()),
+      act: (bloc) => bloc.add(const SellPressed('held-1')),
+      verify: (bloc) {
+        expect(bloc.state.merchant.sold.single.id, 'held-1');
+        expect(bloc.state.profile.inventory, isEmpty);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'buying back costs exactly what the sale paid',
+      build: () => TownBloc(profile: _rich()),
+      act: (bloc) async {
+        bloc.add(const SellPressed('held-1'));
+        await bloc.stream.first;
+        bloc.add(const BuyBackPressed('held-1'));
+      },
+      verify: (bloc) {
+        expect(bloc.state.profile.gold, 500);
+        expect(bloc.state.profile.inventory.single.id, 'held-1');
+        expect(bloc.state.merchant.sold, isEmpty);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'buying back is cheaper than buying the same thing off the shelf',
+      build: () => TownBloc(profile: _rich()),
+      act: (bloc) async {
+        bloc.add(const SellPressed('held-1'));
+        await bloc.stream.first;
+        bloc.add(const BuyBackPressed('held-1'));
+      },
+      verify: (bloc) {
+        final paid =
+            500 + sellPriceOf(_cap('held-1')) - bloc.state.profile.gold;
+        expect(paid, sellPriceOf(_cap('held-1')));
+        expect(paid, lessThan(buyPriceOf(_cap('held-1'))));
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'buying back what is not on the counter does nothing',
+      build: () => TownBloc(profile: _rich()),
+      act: (bloc) => bloc.add(const BuyBackPressed('held-1')),
+      verify: (bloc) {
+        expect(bloc.state.merchant.sold, isEmpty);
+        expect(bloc.state.profile.inventory.single.id, 'held-1');
+        expect(bloc.state.profile.gold, 500);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a buy-back the purse cannot cover leaves it on the counter',
+      build: () =>
+          TownBloc(profile: _fresh().copyWith(inventory: [_cap('held-1')])),
+      act: (bloc) async {
+        bloc.add(const SellPressed('held-1'));
+        await bloc.stream.first;
+        bloc.add(DepositGoldPressed(bloc.state.profile.gold));
+        await bloc.stream.first;
+        bloc.add(const BuyBackPressed('held-1'));
+      },
+      verify: (bloc) {
+        expect(bloc.state.notice, 'you cannot afford that');
+        expect(bloc.state.merchant.sold.single.id, 'held-1');
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'coming home clears what the merchant remembered',
+      build: () => TownBloc(profile: _rich()),
+      act: (bloc) async {
+        bloc.add(BuyPressed(bloc.state.stock.first.id));
+        await bloc.stream.first;
+        bloc.add(const SellPressed('held-1'));
+        await bloc.stream.first;
+        bloc.add(const EnterDungeonPressed());
+        await bloc.stream.first;
+        bloc.add(RunEnded(bloc.state.run!, died: false));
+      },
+      verify: (bloc) {
+        expect(bloc.state.merchant, MerchantVisit.none);
+        expect(bloc.state.stock, isNotEmpty);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'walking in keeps the visit, because the shelf has not been rolled again',
+      build: () => TownBloc(profile: _rich()),
+      act: (bloc) async {
+        bloc.add(const SellPressed('held-1'));
+        await bloc.stream.first;
+        bloc.add(const EnterDungeonPressed());
+      },
+      verify: (bloc) => expect(bloc.state.merchant.sold.single.id, 'held-1'),
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a transaction with nothing to do with the shop carries the visit',
+      build: () => TownBloc(profile: _rich()),
+      act: (bloc) async {
+        bloc.add(const SellPressed('held-1'));
+        await bloc.stream.first;
+        bloc.add(const DepositGoldPressed(10));
+      },
+      verify: (bloc) => expect(bloc.state.merchant.sold.single.id, 'held-1'),
     );
   });
 }
