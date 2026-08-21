@@ -214,10 +214,7 @@ void main() {
       ];
 
       // assert
-      expect(
-        drops.map((item) => (item.base.id, item.rarity, item.affixes)).toSet(),
-        hasLength(1),
-      );
+      expect(drops.toSet(), hasLength(1));
     });
 
     test('fighting first cannot reshuffle a later kill\'s drop', () {
