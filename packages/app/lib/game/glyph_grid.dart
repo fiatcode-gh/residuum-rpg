@@ -5,19 +5,27 @@ import 'game_bloc.dart';
 import 'grid_geometry.dart';
 
 class GlyphGrid extends StatelessWidget {
-  const GlyphGrid({required this.state, required this.onTap, super.key});
+  const GlyphGrid({
+    required this.state,
+    required this.onTap,
+    required this.onPan,
+    super.key,
+  });
 
   final GameViewState state;
   final ValueChanged<Position> onTap;
+  final ValueChanged<Offset> onPan;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
       final size = Size(constraints.maxWidth, constraints.maxHeight);
-      final geometry = GridGeometry.fit(
+      final geometry = GridGeometry.camera(
         size,
         state.game.map.width,
         state.game.map.height,
+        state.game.hero.position,
+        state.pan,
       );
       return GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -25,6 +33,7 @@ class GlyphGrid extends StatelessWidget {
           final position = geometry.positionAt(details.localPosition);
           if (position != null) onTap(position);
         },
+        onPanUpdate: (details) => onPan(details.delta),
         child: CustomPaint(
           size: size,
           painter: _GlyphPainter(state: state, geometry: geometry),

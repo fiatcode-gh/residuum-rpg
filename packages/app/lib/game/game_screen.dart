@@ -25,6 +25,8 @@ class GameScreen extends StatelessWidget {
                       state: state,
                       onTap: (position) =>
                           context.read<GameBloc>().add(TileTapped(position)),
+                      onPan: (delta) =>
+                          context.read<GameBloc>().add(MapPanned(delta)),
                     ),
                   ),
                 ),
@@ -85,6 +87,17 @@ class _HitPoints extends StatelessWidget {
               color: Color(0xFFDDE1E7),
             ),
           ),
+          if (state.enemiesInSight > 0) ...[
+            const SizedBox(width: 12),
+            Text(
+              'Engaged ${state.enemiesInSight}',
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 14,
+                color: Color(0xFFDDE1E7),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -105,6 +118,11 @@ class _HitPoints extends StatelessWidget {
 /// that appears exactly when it applies is how the rules explain themselves. The
 /// pack is the exception and is always reachable, because looking at what you
 /// are carrying is not an action and should never be gated.
+///
+/// Labels are short because the row divides by how many controls apply, and on
+/// the stairs with something underfoot that is four ways. 'Drink potion (2)'
+/// ellipsized to 'Drink poti…' there, which threw away the count — the one part
+/// of that label the player cannot get anywhere else.
 class _Controls extends StatelessWidget {
   const _Controls({required this.state});
 
@@ -146,7 +164,7 @@ class _Controls extends StatelessWidget {
               if (potion != null)
                 Expanded(
                   child: _Control(
-                    label: 'Drink potion',
+                    label: 'Drink (${state.potionCount})',
                     onPressed: state.game.isGameOver
                         ? null
                         : () => bloc.add(const QuickDrinkPressed()),
