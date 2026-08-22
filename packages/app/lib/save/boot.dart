@@ -20,8 +20,17 @@ class Boot {
   /// The hero being played.
   Profile get profile => document.profile;
 
-  /// The crawl to drop straight back into, or null to open on the town.
+  /// The crawl this hero has waiting, or null when they have none.
   GameState? get run => document.run;
+
+  /// Whether the hero is standing in [run] rather than camped away from it.
+  ///
+  /// The question `run != null` used to answer by itself. Once a hero can walk
+  /// out at the stairs and leave the crawl standing, a run on disk means either
+  /// "the app died mid-fight" or "there is a dungeon to go back to", and the two
+  /// open opposite screens: guessing wrong either drops a shopping hero into a
+  /// fight or strands a hero in town with one paused.
+  bool get inside => document.inside;
 
   /// What the merchant remembers of the active hero's visit.
   MerchantVisit get merchant => document.merchant;

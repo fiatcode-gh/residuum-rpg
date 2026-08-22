@@ -4,8 +4,14 @@ import 'package:residuum_core/core.dart';
 
 import '../support/pumped_app.dart';
 
-SaveDocument _oneHero(Profile profile, {GameState? run}) =>
-    SaveDocument.one(id: 'hero-1', label: 'Hero 1', profile: profile, run: run);
+SaveDocument _oneHero(Profile profile, {GameState? run, bool inside = false}) =>
+    SaveDocument.one(
+      id: 'hero-1',
+      label: 'Hero 1',
+      profile: profile,
+      run: run,
+      inside: inside,
+    );
 
 void main() {
   group('booting the app', () {
@@ -29,12 +35,14 @@ void main() {
       expect(app.saved!.profile.gold, 30);
     });
 
-    testWidgets('a document with a crawl in it opens in the crawl', (
+    testWidgets('a document the hero is inside opens in the crawl', (
       tester,
     ) async {
       // arrange
       final profile = newProfile(worldSeed: 909);
-      final app = PumpedApp(_oneHero(profile, run: startDungeonRun(profile)));
+      final app = PumpedApp(
+        _oneHero(profile, run: startDungeonRun(profile), inside: true),
+      );
 
       // act
       await app.pump(tester);
@@ -42,6 +50,23 @@ void main() {
       // assert
       expect(find.textContaining('Depth 1/'), findsOneWidget);
       expect(find.text('The crawl resumes.'), findsOneWidget);
+    });
+
+    testWidgets('a document with a crawl the hero left opens in the town', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = startDungeonRun(profile);
+      final app = PumpedApp(_oneHero(suspendRun(profile, camp), run: camp));
+
+      // act
+      await app.pump(tester);
+
+      // assert
+      expect(find.text('RESIDUUM'), findsOneWidget);
+      expect(find.textContaining('Resume the crawl'), findsOneWidget);
+      expect(find.textContaining('Depth'), findsNothing);
     });
 
     testWidgets('a document without one opens in the town', (tester) async {

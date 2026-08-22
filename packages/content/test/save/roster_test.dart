@@ -27,6 +27,7 @@ SaveDocument _twoHeroes() => SaveDocument(
       label: 'Ilse',
       profile: newProfile(worldSeed: 111).copyWith(gold: 40, visit: 2),
       run: deepRun(worldSeed: 111, depth: 3),
+      inside: true,
     ),
     'hero-2': SavedHero(
       label: 'Bram',
@@ -179,7 +180,12 @@ void main() {
       final moved = before.heroes['hero-2']!.profile.copyWith(gold: 777);
 
       // act
-      final after = before.replacingActive(moved, null, MerchantVisit.none);
+      final after = before.replacingActive(
+        moved,
+        null,
+        MerchantVisit.none,
+        inside: false,
+      );
 
       // assert
       expect(after.active, 'hero-2');
@@ -202,6 +208,7 @@ void main() {
         before.profile,
         run,
         MerchantVisit.none,
+        inside: true,
       );
 
       // assert
@@ -302,7 +309,12 @@ void main() {
       const visit = MerchantVisit(bought: ['market-0-potion-1']);
 
       // act
-      final after = before.replacingActive(before.profile, null, visit);
+      final after = before.replacingActive(
+        before.profile,
+        null,
+        visit,
+        inside: false,
+      );
 
       // assert
       expect(after.heroes['hero-2']!.merchant, visit);
@@ -418,6 +430,161 @@ void main() {
       expect(after.heroes, hasLength(1));
       expect(after.profile.gold, 3);
       expect(after.run, isNull);
+    });
+  });
+
+  group('where a hero is standing', () {
+    test('a hero inside their crawl round-trips as inside', () {
+      // arrange
+      final before = _twoHeroes();
+
+      // act
+      final after = _readOrFail(encodeSave(before));
+
+      // assert
+      expect(after.heroes['hero-1']!.inside, isTrue);
+      expect(after.heroes['hero-2']!.inside, isFalse);
+    });
+
+    test('a camped hero keeps their crawl and is not standing in it', () {
+      // arrange
+      final before = SaveDocument(
+        active: 'hero-1',
+        heroes: {
+          'hero-1': SavedHero(
+            label: 'Ilse',
+            profile: newProfile(worldSeed: 111),
+            run: deepRun(worldSeed: 111, depth: 3),
+          ),
+        },
+      );
+
+      // act
+      final after = _readOrFail(encodeSave(before));
+
+      // assert
+      expect(after.heroes['hero-1']!.inside, isFalse);
+      expect(after.heroes['hero-1']!.run!.depth, 3);
+      expect(
+        after.heroes['hero-1']!.run!.rng.state,
+        before.heroes['hero-1']!.run!.rng.state,
+      );
+    });
+
+    test('a hero entry missing its inside field is refused by name', () {
+      // arrange
+      final written =
+          jsonDecode(encodeSave(_twoHeroes())) as Map<String, Object?>;
+      ((written['heroes']! as Map<String, Object?>)['hero-2']!
+              as Map<String, Object?>)
+          .remove('inside');
+
+      // act
+      final reason = _reason(jsonEncode(written));
+
+      // assert
+      expect(reason, contains('inside'));
+    });
+
+    test('an inside that is not true or false is refused by name', () {
+      // arrange
+      final written =
+          jsonDecode(encodeSave(_twoHeroes())) as Map<String, Object?>;
+      ((written['heroes']! as Map<String, Object?>)['hero-2']!
+              as Map<String, Object?>)['inside'] =
+          'yes';
+
+      // act
+      final reason = _reason(jsonEncode(written));
+
+      // assert
+      expect(reason, contains('inside'));
+    });
+
+    test('a hero inside a crawl that is not there is refused by name', () {
+      // arrange
+      final written =
+          jsonDecode(encodeSave(_twoHeroes())) as Map<String, Object?>;
+      ((written['heroes']! as Map<String, Object?>)['hero-2']!
+              as Map<String, Object?>)['inside'] =
+          true;
+
+      // act
+      final reason = _reason(jsonEncode(written));
+
+      // assert
+      expect(reason, contains('inside'));
+      expect(reason, contains('hero-2'));
+    });
+
+    test('bringing the active hero up to date carries where they stand', () {
+      // arrange
+      final before = _twoHeroes();
+      final run = deepRun(worldSeed: 222, depth: 1);
+
+      // act
+      final after = before.replacingActive(
+        before.profile,
+        run,
+        MerchantVisit.none,
+        inside: true,
+      );
+
+      // assert
+      expect(after.heroes['hero-2']!.inside, isTrue);
+      expect(after.heroes['hero-1']!.inside, isTrue);
+      expect(after.heroes['hero-1']!.run!.depth, 3);
+    });
+
+    test('a hero brought home from their crawl is no longer in it', () {
+      // arrange
+      final before = _twoHeroes();
+
+      // act
+      final after = before.replacingActive(
+        before.profile,
+        null,
+        MerchantVisit.none,
+        inside: false,
+      );
+
+      // assert
+      expect(after.heroes['hero-2']!.inside, isFalse);
+      expect(after.heroes['hero-2']!.run, isNull);
+    });
+
+    test('a hero the roster has just made is in town', () {
+      // arrange
+      final before = _twoHeroes();
+
+      // act
+      final added = before.addingHero(
+        id: 'hero-3',
+        label: 'Cato',
+        profile: newProfile(worldSeed: 333),
+      );
+      final replaced = before.replacingActiveWithNewHero(
+        id: 'hero-4',
+        label: 'Dree',
+        profile: newProfile(worldSeed: 444),
+      );
+
+      // assert
+      expect(added.heroes['hero-3']!.inside, isFalse);
+      expect(added.heroes['hero-3']!.run, isNull);
+      expect(replaced.heroes['hero-4']!.inside, isFalse);
+    });
+
+    test('switching hero moves nobody in or out of their crawl', () {
+      // arrange
+      final before = _twoHeroes();
+
+      // act
+      final after = before.playing('hero-1');
+
+      // assert
+      expect(after.hero.inside, isTrue);
+      expect(after.heroes['hero-2']!.inside, isFalse);
     });
   });
 }

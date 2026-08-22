@@ -44,14 +44,38 @@ SaveDocument _onDisk(MemorySaveFiles files) =>
 
 /// A one-hero boot, which is what every test here that is not about the roster
 /// is about.
-Boot _boot(Profile profile, {GameState? run}) => Boot(
+///
+/// [inside] left alone is a hero with no crawl, or one camped away from theirs;
+/// passing it is a hero killed by the task switcher mid-fight.
+Boot _boot(Profile profile, {GameState? run, bool inside = false}) => Boot(
   document: SaveDocument.one(
     id: 'hero-1',
     label: 'Hero 1',
     profile: profile,
     run: run,
+    inside: inside,
   ),
 );
+
+/// The first direction the hero could actually step, so a test can take a turn
+/// without knowing the floor.
+Direction _anyWayOut(GameState run) => Direction.values.firstWhere(
+  (way) => run.map.isWalkable(run.hero.position.step(way)),
+);
+
+/// A store that counts what it was asked to write, so a test can say "one
+/// change, one document" rather than only "the last document is right".
+class _CountingStore extends SaveStore {
+  _CountingStore(super.files);
+
+  int writes = 0;
+
+  @override
+  Future<bool> save(SaveDocument roster) {
+    writes++;
+    return super.save(roster);
+  }
+}
 
 void main() {
   group('autosaving the town', () {
@@ -482,5 +506,183 @@ void main() {
         await town.close();
       },
     );
+  });
+
+  group('autosaving where the hero is standing', () {
+    test('a crawl being played is written as one the hero is in', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final profile = newProfile(worldSeed: 5);
+      final run = startDungeonRun(profile);
+      final game = GameBloc(game: run, stepDelay: Duration.zero);
+      final saver = Autosaver(
+        SaveStore(files),
+        from: _boot(profile, run: run, inside: true),
+      )..watchGame(game);
+
+      // act
+      game.add(TileTapped(run.hero.position.step(_anyWayOut(run))));
+      await game.stream.first;
+      await saver.settled();
+
+      // assert
+      expect(_onDisk(files).inside, isTrue);
+      expect(_onDisk(files).run, isNotNull);
+      await saver.close();
+      await game.close();
+    });
+
+    test('a camp is written as a crawl the hero is not in', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final profile = newProfile(worldSeed: 5);
+      final town = TownBloc(profile: profile);
+      final saver = Autosaver(SaveStore(files), from: _boot(profile))
+        ..watchTown(town);
+      town.add(const EnterDungeonPressed());
+      final entered = await town.stream.first;
+
+      // act
+      town.add(RunSuspended(entered.run!));
+      await town.stream.first;
+      await saver.settled();
+
+      // assert
+      expect(_onDisk(files).inside, isFalse);
+      expect(_onDisk(files).run, isNotNull);
+      expect(_onDisk(files).run!.rng.state, entered.run!.rng.state);
+      await saver.close();
+      await town.close();
+    });
+
+    test('a purchase while camped keeps the camp on disk', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final profile = newProfile(worldSeed: 5).copyWith(gold: 500);
+      final camp = startDungeonRun(profile);
+      final town = TownBloc(profile: profile, suspended: camp);
+      final saver = Autosaver(SaveStore(files), from: _boot(profile, run: camp))
+        ..watchTown(town);
+
+      // act
+      town.add(BuyPressed(town.state.stock.first.id));
+      await town.stream.first;
+      await saver.settled();
+
+      // assert
+      expect(_onDisk(files).run, isNotNull);
+      expect(_onDisk(files).run!.rng.state, camp.rng.state);
+      expect(_onDisk(files).run!.depth, camp.depth);
+      expect(_onDisk(files).inside, isFalse);
+      await saver.close();
+      await town.close();
+    });
+
+    test('a hero in town has no crawl and is not in one', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final profile = newProfile(worldSeed: 5).copyWith(gold: 500);
+      final town = TownBloc(profile: profile);
+      final saver = Autosaver(SaveStore(files), from: _boot(profile))
+        ..watchTown(town);
+
+      // act
+      town.add(const DepositGoldPressed(10));
+      await town.stream.first;
+      await saver.settled();
+
+      // assert
+      expect(_onDisk(files).run, isNull);
+      expect(_onDisk(files).inside, isFalse);
+      await saver.close();
+      await town.close();
+    });
+
+    test('death clears the camp from disk', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final profile = newProfile(worldSeed: 5);
+      final camp = startDungeonRun(profile);
+      final town = TownBloc(profile: profile, suspended: camp);
+      final saver = Autosaver(SaveStore(files), from: _boot(profile, run: camp))
+        ..watchTown(town);
+
+      // act
+      town.add(
+        RunEnded(
+          camp.copyWith(hero: camp.hero.copyWith(hp: 0), isGameOver: true),
+          died: true,
+        ),
+      );
+      await town.stream.first;
+      await saver.settled();
+
+      // assert
+      expect(_onDisk(files).run, isNull);
+      expect(_onDisk(files).inside, isFalse);
+      await saver.close();
+      await town.close();
+    });
+
+    test('resuming writes the crawl the hero is walking back into', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final profile = newProfile(worldSeed: 5).copyWith(gold: 40);
+      final camp = startDungeonRun(profile);
+      final town = TownBloc(profile: profile, suspended: camp);
+      final saver = Autosaver(SaveStore(files), from: _boot(profile, run: camp))
+        ..watchTown(town);
+
+      // act
+      town.add(const ResumeCrawlPressed());
+      await town.stream.first;
+      await saver.settled();
+
+      // assert
+      expect(_onDisk(files).inside, isTrue);
+      expect(_onDisk(files).run!.gold, 40);
+      await saver.close();
+      await town.close();
+    });
+
+    test('leaving and going back down twice writes one document per '
+        'change', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = _CountingStore(files);
+      final profile = newProfile(worldSeed: 5);
+      final camp = _withSomethingToFight(startDungeonRun(profile));
+      final town = TownBloc(profile: profile, suspended: camp);
+      final saver = Autosaver(store, from: _boot(profile, run: camp))
+        ..watchTown(town);
+      final games = <GameBloc>[];
+
+      // act — two full leave-and-return cycles, each opening a fresh game bloc
+      // exactly as the session does, so a stacked writer would show up as extra
+      // documents for the same three changes
+      for (var cycle = 0; cycle < 2; cycle++) {
+        town.add(const ResumeCrawlPressed());
+        final resumed = await town.stream.first;
+        final game = GameBloc(game: resumed.run!, stepDelay: Duration.zero);
+        games.add(game);
+        saver.watchGame(game);
+        game.add(TileTapped(game.state.game.monsters.single.position));
+        await game.stream.first;
+        town.add(RunSuspended(game.state.game));
+        await town.stream.first;
+        await game.close();
+      }
+      await saver.settled();
+
+      // assert — three changes a cycle: going back down, the swing, walking out
+      expect(store.writes, 6);
+      expect(_onDisk(files).inside, isFalse);
+      expect(_onDisk(files).run, isNotNull);
+      await saver.close();
+      await town.close();
+      for (final game in games) {
+        await game.close();
+      }
+    });
   });
 }

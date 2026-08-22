@@ -17,6 +17,9 @@ Profile _rich() => _fresh().copyWith(gold: 500, inventory: [_cap('held-1')]);
 /// A `blocTest` gives `act` and `verify` no other way to share a value.
 List<String> _shelfBefore = const [];
 
+/// The id bought in `act`, for `verify` to look for. Same reason.
+String _boughtId = '';
+
 void main() {
   group('TownBloc', () {
     test('starts in town on a fresh profile with a stocked shelf', () {
@@ -602,5 +605,263 @@ void main() {
       },
       verify: (bloc) => expect(bloc.state.merchant.sold.single.id, 'held-1'),
     );
+  });
+
+  group('leaving the crawl standing', () {
+    blocTest<TownBloc, TownViewState>(
+      'suspending brings the hero home and keeps the crawl',
+      build: () => TownBloc(profile: _fresh()),
+      act: (bloc) async {
+        bloc.add(const EnterDungeonPressed());
+        await bloc.stream.first;
+        final run = bloc.state.run!;
+        bloc.add(
+          RunSuspended(
+            run.copyWith(
+              hero: run.hero.copyWith(hp: 3),
+              inventory: [_cap('loot-1')],
+              depth: 2,
+            ),
+          ),
+        );
+      },
+      verify: (bloc) {
+        expect(bloc.state.run, isNull);
+        expect(bloc.state.suspended!.depth, 2);
+        expect(bloc.state.profile.hero.hp, 3);
+        expect(
+          bloc.state.profile.inventory.map((item) => item.id),
+          contains('loot-1'),
+        );
+        expect(bloc.state.profile.visit, bloc.state.suspended!.visit);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'suspending forgets the visit the merchant remembered',
+      build: () => TownBloc(profile: _rich()),
+      act: (bloc) async {
+        bloc.add(BuyPressed(bloc.state.stock.first.id));
+        await bloc.stream.first;
+        bloc.add(const EnterDungeonPressed());
+        await bloc.stream.first;
+        bloc.add(RunSuspended(bloc.state.run!));
+      },
+      verify: (bloc) {
+        expect(bloc.state.merchant, MerchantVisit.none);
+        expect(bloc.state.suspended, isNotNull);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'the shelf a camped hero shops at is the one their visit rolled',
+      build: () => TownBloc(profile: _fresh()),
+      act: (bloc) async {
+        bloc.add(const EnterDungeonPressed());
+        await bloc.stream.first;
+        bloc.add(RunSuspended(bloc.state.run!));
+      },
+      verify: (bloc) {
+        expect(
+          bloc.state.stock.map((item) => item.id),
+          merchantStock(
+            bloc.state.profile.worldSeed,
+            bloc.state.profile.visit,
+          ).map((item) => item.id),
+        );
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'shopping while camped does not lose the camp',
+      build: () =>
+          TownBloc(profile: _rich(), suspended: startDungeonRun(_rich())),
+      act: (bloc) async {
+        bloc.add(BuyPressed(bloc.state.stock.first.id));
+        await bloc.stream.first;
+        bloc.add(const RestPressed());
+        await bloc.stream.first;
+        bloc.add(const DepositGoldPressed(10));
+      },
+      verify: (bloc) => expect(bloc.state.suspended, isNotNull),
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'selling while camped keeps the camp, streams and all',
+      build: () =>
+          TownBloc(profile: _rich(), suspended: startDungeonRun(_rich())),
+      act: (bloc) => bloc.add(const SellPressed('held-1')),
+      verify: (bloc) {
+        expect(
+          bloc.state.suspended!.rng.state,
+          startDungeonRun(_rich()).rng.state,
+        );
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a refused transaction does not lose the camp either',
+      build: () =>
+          TownBloc(profile: _fresh(), suspended: startDungeonRun(_fresh())),
+      act: (bloc) => bloc.add(const WithdrawGoldPressed(9999)),
+      verify: (bloc) {
+        expect(bloc.state.notice, isNotNull);
+        expect(bloc.state.suspended, isNotNull);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'resuming hands back the crawl with the town business in it',
+      build: () =>
+          TownBloc(profile: _rich(), suspended: startDungeonRun(_fresh())),
+      act: (bloc) async {
+        bloc.add(BuyPressed(bloc.state.stock.first.id));
+        await bloc.stream.first;
+        bloc.add(const ResumeCrawlPressed());
+      },
+      verify: (bloc) {
+        expect(bloc.state.suspended, isNull);
+        expect(bloc.state.run, isNotNull);
+        expect(bloc.state.run!.gold, bloc.state.profile.gold);
+        expect(
+          bloc.state.run!.inventory.map((item) => item.id),
+          bloc.state.profile.inventory.map((item) => item.id),
+        );
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'resuming does not reshuffle the dungeon',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(visit: 1),
+        suspended: startDungeonRun(_fresh()),
+      ),
+      act: (bloc) => bloc.add(const ResumeCrawlPressed()),
+      verify: (bloc) {
+        expect(bloc.state.run!.visit, 1);
+        expect(
+          bloc.state.run!.map.toAscii(),
+          startDungeonRun(_fresh()).map.toAscii(),
+        );
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'resuming a crawl nobody camped in does nothing at all',
+      build: () => TownBloc(profile: _fresh()),
+      act: (bloc) => bloc.add(const ResumeCrawlPressed()),
+      expect: () => [],
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'delving anew gives the camp up and reshuffles',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(visit: 1),
+        suspended: startDungeonRun(_fresh()),
+      ),
+      act: (bloc) => bloc.add(const DelveAnewPressed()),
+      verify: (bloc) {
+        expect(bloc.state.suspended, isNull);
+        expect(bloc.state.run!.visit, 2);
+        expect(bloc.state.run!.depth, 1);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'dying in a resumed crawl leaves no camp behind',
+      build: () =>
+          TownBloc(profile: _fresh(), suspended: startDungeonRun(_fresh())),
+      act: (bloc) async {
+        bloc.add(const ResumeCrawlPressed());
+        await bloc.stream.first;
+        final run = bloc.state.run!;
+        bloc.add(
+          RunEnded(
+            run.copyWith(hero: run.hero.copyWith(hp: 0), isGameOver: true),
+            died: true,
+          ),
+        );
+      },
+      verify: (bloc) {
+        expect(bloc.state.suspended, isNull);
+        expect(bloc.state.run, isNull);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'entering fresh from town leaves no camp behind either',
+      build: () => TownBloc(profile: _fresh()),
+      act: (bloc) => bloc.add(const EnterDungeonPressed()),
+      verify: (bloc) {
+        expect(bloc.state.suspended, isNull);
+        expect(bloc.state.run, isNotNull);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'walking out of a resumed crawl keeps the visit the merchant remembers',
+      build: () {
+        final camp = startDungeonRun(_rich());
+        return TownBloc(profile: suspendRun(_rich(), camp), suspended: camp);
+      },
+      act: (bloc) async {
+        _boughtId = bloc.state.stock.first.id;
+        bloc.add(BuyPressed(_boughtId));
+        await bloc.stream.first;
+        bloc.add(const ResumeCrawlPressed());
+        await bloc.stream.first;
+        bloc.add(RunSuspended(bloc.state.run!));
+      },
+      verify: (bloc) {
+        expect(bloc.state.merchant.bought, [_boughtId]);
+        expect(
+          bloc.state.stock.map((item) => item.id),
+          isNot(contains(_boughtId)),
+        );
+        expect(
+          bloc.state.profile.inventory.where((item) => item.id == _boughtId),
+          hasLength(1),
+        );
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'walking out of a resumed crawl keeps what is on the counter too',
+      build: () {
+        final camp = startDungeonRun(_rich());
+        return TownBloc(profile: suspendRun(_rich(), camp), suspended: camp);
+      },
+      act: (bloc) async {
+        bloc.add(const SellPressed('held-1'));
+        await bloc.stream.first;
+        bloc.add(const ResumeCrawlPressed());
+        await bloc.stream.first;
+        bloc.add(RunSuspended(bloc.state.run!));
+      },
+      verify: (bloc) => expect(bloc.state.merchant.sold.single.id, 'held-1'),
+    );
+
+    test('a crawl to enter and a crawl to go back to are never both '
+        'waiting', () async {
+      // arrange
+      final bloc = TownBloc(
+        profile: _fresh(),
+        suspended: startDungeonRun(_fresh()),
+      );
+      final seen = <(bool, bool)>[];
+
+      // act
+      bloc.add(const ResumeCrawlPressed());
+      final resumed = await bloc.stream.first;
+      bloc.add(RunSuspended(resumed.run!));
+      final camped = await bloc.stream.first;
+      for (final state in [bloc.state, resumed, camped]) {
+        seen.add((state.run != null, state.suspended != null));
+      }
+
+      // assert
+      expect(seen, everyElement(isNot((true, true))));
+      await bloc.close();
+    });
   });
 }
