@@ -248,6 +248,22 @@ final class AttackDodged extends GameEvent with Equatable {
   String toString() => 'AttackDodged($attackerId)';
 }
 
+/// The hero walked off the edge of a road fight and got away.
+///
+/// Only ever emitted in an encounter, because only there is the grid edge
+/// somewhere a hero can stand. It ends the fight where it is: nothing is
+/// resolved, nothing is cleared, and the road the hero was walking is exactly
+/// as long as it was. Getting away is not getting anywhere.
+final class Fled extends GameEvent with Equatable {
+  const Fled();
+
+  @override
+  List<Object?> get props => [];
+
+  @override
+  String toString() => 'Fled()';
+}
+
 /// A skill crossed into a new level by being used.
 final class SkillLevelledUp extends GameEvent with Equatable {
   const SkillLevelledUp({required this.skill, required this.level});

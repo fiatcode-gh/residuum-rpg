@@ -1,3 +1,4 @@
+export 'src/dungeon/encounter_map.dart';
 export 'src/dungeon/floor.dart';
 export 'src/dungeon/floor_map.dart';
 export 'src/dungeon/floor_memory.dart';
@@ -24,3 +25,8 @@ export 'src/skills/skill.dart';
 export 'src/town/profile.dart';
 export 'src/town/run_boundary.dart';
 export 'src/town/town.dart';
+export 'src/world/node.dart';
+export 'src/world/rumor.dart';
+export 'src/world/travel.dart';
+export 'src/world/whereabouts.dart';
+export 'src/world/world_map.dart';

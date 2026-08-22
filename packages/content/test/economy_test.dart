@@ -104,8 +104,8 @@ void main() {
       const worldSeed = 9;
 
       // act
-      final one = merchantStock(worldSeed, 3);
-      final other = merchantStock(worldSeed, 3);
+      final one = merchantStock(worldSeed, 3, stonebridge);
+      final other = merchantStock(worldSeed, 3, stonebridge);
 
       // assert
       expect(
@@ -119,8 +119,8 @@ void main() {
       const worldSeed = 9;
 
       // act
-      final one = merchantStock(worldSeed, 1);
-      final other = merchantStock(worldSeed, 2);
+      final one = merchantStock(worldSeed, 1, stonebridge);
+      final other = merchantStock(worldSeed, 2, stonebridge);
 
       // assert
       expect(
@@ -132,7 +132,8 @@ void main() {
     test('always has potions on the shelf', () {
       // arrange
       final stocks = [
-        for (var visit = 1; visit <= 12; visit++) merchantStock(9, visit),
+        for (var visit = 1; visit <= 12; visit++)
+          merchantStock(9, visit, stonebridge),
       ];
 
       // act
@@ -147,7 +148,7 @@ void main() {
 
     test('every item on the shelf is a real base item with its own id', () {
       // arrange
-      final stock = merchantStock(9, 4);
+      final stock = merchantStock(9, 4, stonebridge);
 
       // act
       final ids = stock.map((item) => item.id).toSet();
@@ -163,7 +164,11 @@ void main() {
       // arrange
       final counts = [
         for (var visit = 1; visit <= 20; visit++)
-          merchantStock(9, visit).where((item) => !item.base.isPotion).length,
+          merchantStock(
+            9,
+            visit,
+            stonebridge,
+          ).where((item) => !item.base.isPotion).length,
       ];
 
       // act
@@ -175,8 +180,8 @@ void main() {
 
     test('two worlds stock different shelves', () {
       // act
-      final one = merchantStock(1, 1);
-      final other = merchantStock(2, 1);
+      final one = merchantStock(1, 1, stonebridge);
+      final other = merchantStock(2, 1, stonebridge);
 
       // assert
       expect(
@@ -188,7 +193,8 @@ void main() {
     test('never stocks a tier the game does not hand out', () {
       // arrange
       final stocks = [
-        for (var visit = 1; visit <= 30; visit++) merchantStock(3, visit),
+        for (var visit = 1; visit <= 30; visit++)
+          merchantStock(3, visit, stonebridge),
       ];
 
       // act
@@ -203,7 +209,7 @@ void main() {
 
     test('the shelf is affordable to a hero who cleared one floor', () {
       // arrange
-      final stock = merchantStock(9, 1);
+      final stock = merchantStock(9, 1, stonebridge);
 
       // act
       final cheapest = stock

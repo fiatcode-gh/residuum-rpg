@@ -9,6 +9,7 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import 'support/memory_save_files.dart';
+import 'support/standing.dart';
 
 /// The crawl [run] would be with something standing next to the hero.
 ///
@@ -47,11 +48,22 @@ SaveDocument _onDisk(MemorySaveFiles files) =>
 ///
 /// [inside] left alone is a hero with no crawl, or one camped away from theirs;
 /// passing it is a hero killed by the task switcher mid-fight.
-Boot _boot(Profile profile, {GameState? run, bool inside = false}) => Boot(
+///
+/// A hero with a crawl stands at the crypt, because the crypt is the only node
+/// with a dungeon under it — so it is the only place a crawl can be entered
+/// from, and a document that said otherwise is one the codec refuses. Tests that
+/// are *about* to enter a dungeon say so with [world].
+Boot _boot(
+  Profile profile, {
+  GameState? run,
+  bool inside = false,
+  Whereabouts? world,
+}) => Boot(
   document: SaveDocument.one(
     id: 'hero-1',
     label: 'Hero 1',
     profile: profile,
+    world: world ?? (run == null ? null : atTheCrypt()),
     run: run,
     inside: inside,
   ),
@@ -104,8 +116,10 @@ void main() {
       // arrange
       final files = MemorySaveFiles();
       final town = TownBloc(profile: newProfile(worldSeed: 5));
-      final saver = Autosaver(SaveStore(files), from: _boot(town.state.profile))
-        ..watchTown(town);
+      final saver = Autosaver(
+        SaveStore(files),
+        from: _boot(town.state.profile, world: atTheCrypt()),
+      )..watchTown(town);
 
       // act
       town.add(const EnterDungeonPressed());
@@ -337,7 +351,11 @@ void main() {
             label: 'Ilse',
             profile: newProfile(worldSeed: 111),
           ),
-          'hero-2': SavedHero(label: 'Bram', profile: played),
+          'hero-2': SavedHero(
+            label: 'Bram',
+            profile: played,
+            world: atTheCrypt(),
+          ),
         },
       );
       final town = TownBloc(profile: played);
@@ -439,7 +457,10 @@ void main() {
           'hero-1': SavedHero(
             label: 'Ilse',
             profile: newProfile(worldSeed: 111),
-            merchant: const MerchantVisit(bought: ['market-0-potion-1']),
+            merchant: MerchantVisit(
+              bought: const ['market-stonebridge-0-potion-1'],
+              town: stonebridge,
+            ),
           ),
           'hero-2': SavedHero(label: 'Bram', profile: played),
         },
@@ -455,7 +476,9 @@ void main() {
 
       // assert
       final disk = _onDisk(files);
-      expect(disk.heroes['hero-1']!.merchant.bought, ['market-0-potion-1']);
+      expect(disk.heroes['hero-1']!.merchant.bought, [
+        'market-stonebridge-0-potion-1',
+      ]);
       expect(disk.heroes['hero-2']!.merchant.bought, hasLength(1));
       await saver.close();
       await town.close();

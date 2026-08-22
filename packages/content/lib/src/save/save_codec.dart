@@ -1,5 +1,8 @@
 import 'dart:convert';
 
+import 'package:residuum_core/core.dart';
+
+import '../world.dart';
 import 'item_codec.dart';
 import 'merchant_visit.dart';
 import 'profile_codec.dart';
@@ -20,6 +23,12 @@ const int saveVersion = 1;
 /// A hero's `run` of null is what having no crawl *is*. It is written out rather
 /// than left out, so an entry always says which of the two states it describes
 /// and a key that went missing is never read as "probably town".
+///
+/// The `world` block is required beside them, and says where in the world the
+/// hero is standing, what day it is for them and what of the map they have
+/// uncovered. Required rather than defaulted, for the reason `merchant` is: this
+/// codec never repairs, so a document written by anything that did not answer
+/// the question is refused rather than quietly told it is standing at home.
 ///
 /// `run` and `inside` are two fields because they are two questions. A hero with
 /// a crawl written down is either standing in it — the app was killed mid-fight —
@@ -46,12 +55,43 @@ Map<String, Object?> _encodeHero(SavedHero hero) => {
   'profile': encodeProfile(hero.profile),
   'run': hero.run == null ? null : encodeRun(hero.run!),
   'inside': hero.inside,
+  'world': _encodeWorld(hero.world),
   'merchant': _encodeMerchant(hero.merchant),
+};
+
+/// Where the hero is in the world, written down.
+///
+/// `journey` is written out as null rather than left out when the hero is
+/// standing still, following `run`: a key that went missing is never read as
+/// "probably not travelling", and an entry always says which of the two states
+/// it describes.
+///
+/// The discovered set is sorted, for the reason the roster's keys and the run's
+/// position sets are: one hero always encodes to one document however the set
+/// happened to be assembled, which is what makes the golden a pin rather than a
+/// coincidence.
+Map<String, Object?> _encodeWorld(Whereabouts world) => {
+  'at': world.at.value,
+  'home': world.home.value,
+  'day': world.day,
+  'discovered': [
+    for (final node
+        in world.discovered.map((node) => node.value).toList()..sort())
+      node,
+  ],
+  'journey': world.journey == null
+      ? null
+      : {
+          'from': world.journey!.from.value,
+          'to': world.journey!.to.value,
+          'daysLeft': world.journey!.daysLeft,
+        },
 };
 
 Map<String, Object?> _encodeMerchant(MerchantVisit merchant) => {
   'bought': [...merchant.bought],
   'sold': encodeItems(merchant.sold),
+  'town': merchant.town?.value,
 };
 
 /// One save document, read back, or the reason it could not be.
@@ -126,13 +166,111 @@ SavedHero _decodeHero(String id, Object? written) {
       'the hero "$id" in the save file is "inside" a crawl it does not have',
     );
   }
+  final world = _decodeWorld(id, written);
+  if (inside && residuumWorld.nodeAt(world.at).kind != NodeKind.dungeon) {
+    throw SaveMalformed(
+      'the hero "$id" in the save file is "inside" a crawl while standing at '
+      '"${world.at.value}", which has no dungeon under it',
+    );
+  }
+  if (inside && world.isTravelling) {
+    throw SaveMalformed(
+      'the hero "$id" in the save file is "inside" a crawl and on the road at '
+      'the same time',
+    );
+  }
   return SavedHero(
     label: stringAt(written, 'label'),
     profile: decodeProfile(written, 'profile'),
+    world: world,
     run: run,
-    merchant: _decodeMerchant(written),
+    merchant: _decodeMerchant(id, written),
     inside: inside,
   );
+}
+
+/// Where the hero stands, from the required block on a hero entry.
+///
+/// **Every id is checked against the world this build ships.** A document naming
+/// a place that does not exist describes a hero standing nowhere, and every rule
+/// that reads a whereabouts — the day's road, the shelf, the place death wakes
+/// them at — would fail somewhere further in with nothing to say. Refusing it
+/// here by name is what keeps that a sentence on the screen.
+///
+/// [Whereabouts] checks the rest for itself, and its complaints are translated
+/// rather than repeated: it is the one that knows a hero cannot stand somewhere
+/// they have not heard of, and stating that twice is how the two copies start to
+/// disagree.
+Whereabouts _decodeWorld(String id, Map<String, Object?> hero) {
+  final written = objectAt(hero, 'world');
+  final at = _node(id, written['at']);
+  final home = _node(id, written['home']);
+  if (residuumWorld.nodeAt(home).kind != NodeKind.town) {
+    throw SaveMalformed(
+      'the hero "$id" in the save file calls "${home.value}" home, which is not '
+      'a town',
+    );
+  }
+  final journey = written['journey'];
+  try {
+    return Whereabouts(
+      at: at,
+      home: home,
+      discovered: {
+        for (final node in listAt(written, 'discovered')) _node(id, node),
+      },
+      day: intAt(written, 'day'),
+      journey: journey == null ? null : _decodeJourney(id, journey),
+    );
+  } on ArgumentError catch (bad) {
+    throw SaveMalformed('the hero "$id" in the save file ${bad.message}');
+  }
+}
+
+Journey _decodeJourney(String id, Object? written) {
+  if (written is! Map<String, Object?>) {
+    throw SaveMalformed(
+      'the road the hero "$id" is on in the save file is not an object',
+    );
+  }
+  final from = _node(id, written['from']);
+  final to = _node(id, written['to']);
+  if (residuumWorld.routeBetween(from, to) == null) {
+    throw SaveMalformed(
+      'the hero "$id" in the save file is on a road from "${from.value}" to '
+      '"${to.value}", which this world does not have',
+    );
+  }
+  try {
+    return Journey(from: from, to: to, daysLeft: intAt(written, 'daysLeft'));
+  } on ArgumentError catch (bad) {
+    throw SaveMalformed('the hero "$id" in the save file ${bad.message}');
+  }
+}
+
+NodeId _node(String id, Object? written) {
+  if (written is! String) {
+    throw SaveMalformed(
+      'a place the hero "$id" names in the save file is not written as text',
+    );
+  }
+  final NodeId node;
+  try {
+    node = NodeId(written);
+  } on ArgumentError {
+    throw SaveMalformed(
+      'the hero "$id" in the save file names a place with no name',
+    );
+  }
+  try {
+    residuumWorld.nodeAt(node);
+  } on ArgumentError {
+    throw SaveMalformed(
+      'the hero "$id" in the save file names "$written", which is nowhere in '
+      'this world',
+    );
+  }
+  return node;
 }
 
 /// What the merchant remembers, from the required block on a hero entry.
@@ -141,12 +279,24 @@ SavedHero _decodeHero(String id, Object? written) {
 /// hero entry has exactly one shape — and a decoder that filled in an empty
 /// visit for a document missing it would be repairing, which this codec does not
 /// do.
-MerchantVisit _decodeMerchant(Map<String, Object?> hero) {
+MerchantVisit _decodeMerchant(String id, Map<String, Object?> hero) {
   final written = objectAt(hero, 'merchant');
-  return MerchantVisit(
-    bought: [for (final id in listAt(written, 'bought')) _boughtId(id)],
-    sold: decodeItems(written, 'sold'),
-  );
+  if (!written.containsKey('town')) {
+    throw SaveMalformed('the save file is missing "town"');
+  }
+  final where = written['town'];
+  final town = where == null ? null : _node(id, where);
+  final bought = [
+    for (final name in listAt(written, 'bought')) _boughtId(name),
+  ];
+  final sold = decodeItems(written, 'sold');
+  if (town == null && (bought.isNotEmpty || sold.isNotEmpty)) {
+    throw SaveMalformed(
+      'the hero "$id" in the save file remembers a shop without remembering '
+      'which town it was in',
+    );
+  }
+  return MerchantVisit(bought: bought, sold: sold, town: town);
 }
 
 String _boughtId(Object? written) {

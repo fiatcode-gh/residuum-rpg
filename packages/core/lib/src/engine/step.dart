@@ -54,6 +54,8 @@ import 'position.dart';
   final refusal = _refuse(state, action);
   if (refusal != null) return (state, [refusal]);
 
+  if (_flees(state, action)) return (state, const [Fled()]);
+
   final events = <GameEvent>[];
   final seenBefore = _visibleMonsterIds(state);
   final monsters = [...state.monsters];
@@ -154,6 +156,22 @@ import 'position.dart';
     events,
   );
 }
+
+/// Whether [action] walks the hero off the edge of a road fight.
+///
+/// **Turn-less, like a refusal and unlike a wall.** Bumping a wall costs a turn
+/// because it is a swing at the world that missed; walking off the edge of an
+/// encounter is the hero leaving, and there is no world left to answer them —
+/// charging a monster phase for it would let the thing the hero ran from get a
+/// free swing at their back after they had gone.
+///
+/// False in a crawl whatever the direction, and unreachable there twice over:
+/// the field is off, and the crypt's border is solid wall so no crawling hero
+/// can stand where this would be asked. See [GameState.isEncounter].
+bool _flees(GameState state, GameAction action) =>
+    state.isEncounter &&
+    action is MoveAction &&
+    !state.map.inBounds(state.hero.position.step(action.direction));
 
 /// Why the rules will not even try [action], or null when they will.
 ///

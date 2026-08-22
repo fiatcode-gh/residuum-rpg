@@ -3,15 +3,35 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../support/pumped_app.dart';
+import '../support/standing.dart';
+import '../support/world_nav.dart';
 
-SaveDocument _oneHero(Profile profile, {GameState? run, bool inside = false}) =>
-    SaveDocument.one(
-      id: 'hero-1',
-      label: 'Hero 1',
-      profile: profile,
-      run: run,
-      inside: inside,
-    );
+SaveDocument _oneHero(
+  Profile profile, {
+  GameState? run,
+  bool inside = false,
+  Whereabouts? world,
+}) => SaveDocument.one(
+  id: 'hero-1',
+  label: 'Hero 1',
+  profile: profile,
+  world: world ?? (run == null ? null : atTheCrypt()),
+  run: run,
+  inside: inside,
+);
+
+/// A hero camped at the crypt who has already walked home to Stonebridge.
+///
+/// The state the town business tests want, and one the game only has now that
+/// the crypt and the town are two places: shopping while camped means walking
+/// back for it, which is the whole of what the overworld charges for the camp.
+SaveDocument _campedAndHome(Profile profile, GameState camp) => _oneHero(
+  suspendRun(profile, camp),
+  run: camp,
+  world: newWhereabouts()
+      .arrivingAt(residuumWorld, cryptNode)
+      .arrivingAt(residuumWorld, stonebridge),
+);
 
 /// A crawl with the hero standing on the stairs down, so the `Leave` control is
 /// on screen without a test having to walk there.
@@ -105,7 +125,9 @@ void main() {
       tester,
     ) async {
       // arrange
-      final app = PumpedApp(_oneHero(newProfile(worldSeed: 909)));
+      final app = PumpedApp(
+        _oneHero(newProfile(worldSeed: 909), world: atTheCrypt()),
+      );
 
       // act
       await app.pump(tester);
@@ -114,6 +136,21 @@ void main() {
       expect(find.text('Enter Dungeon'), findsOneWidget);
       expect(find.textContaining('Resume the crawl'), findsNothing);
       expect(find.text('Delve anew'), findsNothing);
+    });
+
+    testWidgets('the way down is not offered anywhere but the crypt', (
+      tester,
+    ) async {
+      // arrange
+      final app = PumpedApp(_oneHero(newProfile(worldSeed: 909)));
+
+      // act
+      await app.pump(tester);
+
+      // assert
+      expect(find.text('At Stonebridge'), findsOneWidget);
+      expect(find.text('Enter Dungeon'), findsNothing);
+      expect(find.text('Enter Stonebridge'), findsOneWidget);
     });
 
     testWidgets('a camped hero boots into the town, camp and all', (
@@ -137,17 +174,20 @@ void main() {
     ) async {
       // arrange
       final profile = newProfile(worldSeed: 909).copyWith(gold: 500);
-      final app = PumpedApp(_camped(profile, _onTheStairs(profile)));
+      final app = PumpedApp(_campedAndHome(profile, _onTheStairs(profile)));
       await app.pump(tester);
       final carried = profile.inventory.length;
 
       // act
+      await enterTown(tester, 'Stonebridge');
       await tester.tap(find.text('Merchant'));
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('Buy ').first);
       await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();
+      await backToTheWorld(tester);
+      await walkTo(tester, 'The Crypt');
       await tester.tap(find.textContaining('Resume the crawl'));
       await tester.pumpAndSettle();
 
@@ -166,22 +206,44 @@ void main() {
       final profile = newProfile(worldSeed: 909).copyWith(gold: 50);
       final camp = _onTheStairs(profile);
       final wounded = camp.copyWith(hero: camp.hero.copyWith(hp: 5));
-      final app = PumpedApp(_camped(profile, wounded));
+      final app = PumpedApp(_campedAndHome(profile, wounded));
       await app.pump(tester);
 
       // act
+      await enterTown(tester, 'Stonebridge');
       await tester.tap(find.text('Inn'));
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('Rest'));
       await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();
+      await backToTheWorld(tester);
+      await walkTo(tester, 'The Crypt');
       await tester.tap(find.textContaining('Resume the crawl'));
       await tester.pumpAndSettle();
 
       // assert
       expect(find.textContaining('20 / 20'), findsOneWidget);
       expect(app.saved!.run!.hero.hp, 20);
+    });
+
+    testWidgets('walking back to the crypt costs the day it says it will', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final app = PumpedApp(_campedAndHome(profile, _twoDown(profile)));
+      await app.pump(tester);
+
+      // act
+      await walkTo(tester, 'The Crypt');
+
+      // assert
+      expect(find.text('At The Crypt'), findsOneWidget);
+      expect(find.text('Day 1.'), findsOneWidget);
+      expect(app.saved!.world.at, cryptNode);
+      expect(app.saved!.world.day, 1);
+      expect(app.saved!.run!.depth, 2);
     });
 
     testWidgets('resuming puts the hero back where they were standing', (

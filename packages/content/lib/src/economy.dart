@@ -89,25 +89,61 @@ const DropTable marketTable = DropTable(
   maxFloorItems: 0,
 );
 
-/// What the merchant is holding on [visit] of the world [worldSeed] describes.
+/// What the merchant in [town] is holding on [visit] of the world [worldSeed]
+/// describes.
 ///
-/// Deterministic in those two and nothing else, so the shelf is a property of
+/// Deterministic in those three and nothing else, so the shelf is a property of
 /// the world rather than of how the last run went — the same promise the floors
 /// make. The stream is salted off every floor's stream so that a restock can
 /// never reshuffle a floor, and a floor can never reshuffle the shop.
-List<Item> merchantStock(int worldSeed, int visit) {
-  final rng = Rng(floorSeed(worldSeed ^ _marketSalt, _marketDepth, visit));
+///
+/// **Each town rolls its own stock, and the ids say which town's.** Two towns
+/// selling the same iron helm reads wrong and makes the second town pointless to
+/// walk to; the four-day round trip has to buy the player something, and a
+/// different shelf is that something. The town is folded into the seed by
+/// [_townSalt], so Stonebridge and Northgate are two shops on one world rather
+/// than one shop drawn twice.
+///
+/// The town also goes into every stock id. An id names one roll off one shelf,
+/// and the visit alone stopped being enough to say which the moment there were
+/// two shelves: a hero who bought `market-0-gear-1` in one town would have found
+/// it missing from the other's shelf, because what the merchant remembers is a
+/// list of ids and nothing else.
+List<Item> merchantStock(int worldSeed, int visit, NodeId town) {
+  final rng = Rng(
+    floorSeed(worldSeed ^ _marketSalt ^ _townSalt(town), _marketDepth, visit),
+  );
   final gear = rng.rollRange(2, 4);
+  final where = town.value;
   return [
     for (var n = 0; n < stockedPotions; n++)
       Item(
-        id: 'market-$visit-potion-${n + 1}',
+        id: 'market-$where-$visit-potion-${n + 1}',
         base: healingPotion,
         rarity: Rarity.common,
       ),
     for (var n = 0; n < gear; n++)
-      rollDrop(marketTable, rng, 'market-$visit-gear-${n + 1}'),
+      rollDrop(marketTable, rng, 'market-$where-$visit-gear-${n + 1}'),
   ];
+}
+
+/// A number standing for [town] in a seed mix, the same on every build.
+///
+/// Derived from the id's own text rather than read out of a table, so a town
+/// added to the world needs no second edit somewhere else to get a shelf — and
+/// the one that got forgotten would be a town quietly sharing another's stock.
+///
+/// The mix is [floorSeed]'s, for [floorSeed]'s reason: everything is masked so
+/// the arithmetic is exact on a web double as well as a native integer, because
+/// a shared world seed has to describe the same shelves however the game was
+/// compiled.
+int _townSalt(NodeId town) {
+  var hash = 0x811c9dc5;
+  for (final unit in town.value.codeUnits) {
+    hash = ((hash ^ (unit & 0x0fffffff)) & 0x0fffffff) * 0x01000193;
+    hash &= 0x3fffffff;
+  }
+  return hash;
 }
 
 /// Keeps the shop's stream off every floor's stream.

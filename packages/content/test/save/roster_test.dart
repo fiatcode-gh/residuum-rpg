@@ -5,6 +5,7 @@ import 'package:residuum_core/core.dart';
 import 'package:test/test.dart';
 
 import 'support/deep_run.dart';
+import 'support/standing.dart';
 
 SaveDocument _readOrFail(String written) {
   final read = decodeSave(written);
@@ -26,6 +27,7 @@ SaveDocument _twoHeroes() => SaveDocument(
     'hero-1': SavedHero(
       label: 'Ilse',
       profile: newProfile(worldSeed: 111).copyWith(gold: 40, visit: 2),
+      world: atTheCrypt(),
       run: deepRun(worldSeed: 111, depth: 3),
       inside: true,
     ),
@@ -184,6 +186,7 @@ void main() {
         moved,
         null,
         MerchantVisit.none,
+        newWhereabouts(),
         inside: false,
       );
 
@@ -208,6 +211,7 @@ void main() {
         before.profile,
         run,
         MerchantVisit.none,
+        atTheCrypt(),
         inside: true,
       );
 
@@ -244,8 +248,9 @@ void main() {
           'hero-1': SavedHero(
             label: 'Ilse',
             profile: newProfile(worldSeed: 111),
-            merchant: const MerchantVisit(
-              bought: ['market-0-gear-1'],
+            merchant: MerchantVisit(
+              town: stonebridge,
+              bought: ['market-stonebridge-0-gear-1'],
               sold: [
                 Item(id: 'drop-3', base: ironSword, rarity: Rarity.common),
               ],
@@ -262,7 +267,9 @@ void main() {
       final after = _readOrFail(encodeSave(before));
 
       // assert
-      expect(after.heroes['hero-1']!.merchant.bought, ['market-0-gear-1']);
+      expect(after.heroes['hero-1']!.merchant.bought, [
+        'market-stonebridge-0-gear-1',
+      ]);
       expect(after.heroes['hero-1']!.merchant.sold.single.id, 'drop-3');
       expect(
         after.heroes['hero-1']!.merchant.sold.single.displayName,
@@ -306,13 +313,17 @@ void main() {
     test('bringing the active hero up to date carries their visit state', () {
       // arrange
       final before = _twoHeroes();
-      const visit = MerchantVisit(bought: ['market-0-potion-1']);
+      final visit = MerchantVisit(
+        bought: const ['market-stonebridge-0-potion-1'],
+        town: stonebridge,
+      );
 
       // act
       final after = before.replacingActive(
         before.profile,
         null,
         visit,
+        newWhereabouts(),
         inside: false,
       );
 
@@ -527,6 +538,7 @@ void main() {
         before.profile,
         run,
         MerchantVisit.none,
+        atTheCrypt(),
         inside: true,
       );
 
@@ -545,6 +557,7 @@ void main() {
         before.profile,
         null,
         MerchantVisit.none,
+        newWhereabouts(),
         inside: false,
       );
 

@@ -5,6 +5,7 @@ import 'package:residuum_core/core.dart';
 
 import '../game/game_bloc.dart';
 import '../town/town_bloc.dart';
+import '../world/world_bloc.dart';
 import 'boot.dart';
 import 'save_store.dart';
 
@@ -28,7 +29,8 @@ class Autosaver {
       _profile = from.profile,
       _run = from.run,
       _inside = from.inside,
-      _merchant = from.merchant;
+      _merchant = from.merchant,
+      _world = from.world;
 
   final SaveStore _store;
   final List<StreamSubscription<Object?>> _watching = [];
@@ -40,6 +42,7 @@ class Autosaver {
   GameState? _run;
   bool _inside;
   MerchantVisit _merchant;
+  Whereabouts _world;
   Future<void> _queue = Future<void>.value();
 
   /// Saves after every town emission.
@@ -99,6 +102,29 @@ class Autosaver {
     );
   }
 
+  /// Saves after every world emission.
+  ///
+  /// The world block is a day counter, a place and a set of names — small, and
+  /// changed by exactly the things a player would be furious to lose: a day
+  /// walked, a place reached, a rumor paid for. So every emission is written, for
+  /// the reason every town emission is.
+  ///
+  /// **What is deliberately not written is the fight.** A road fight is
+  /// re-derived from the world seed and the day, so there is nothing about one
+  /// worth keeping and nothing here reads `fight`. An app killed mid-fight comes
+  /// back to the same day and the same creatures, freshly stood up. Nothing here
+  /// watches the fight's own bloc either — see `_openRoadFight`.
+  void watchWorld(WorldBloc world) {
+    _world = world.state.world;
+    _watching.add(
+      world.stream.listen((state) {
+        if (state.world == _world) return;
+        _world = state.world;
+        saveNow();
+      }),
+    );
+  }
+
   /// The whole roster with the active hero brought up to date: the document as
   /// it stands right now.
   ///
@@ -112,8 +138,13 @@ class Autosaver {
   /// is where "the document as it stands" is built — and the roster screen reads
   /// it here rather than assembling a second version that could disagree with
   /// the one being written to disk.
-  SaveDocument get document =>
-      _roster.replacingActive(_profile, _run, _merchant, inside: _inside);
+  SaveDocument get document => _roster.replacingActive(
+    _profile,
+    _run,
+    _merchant,
+    _world,
+    inside: _inside,
+  );
 
   /// Writes the document down.
   ///

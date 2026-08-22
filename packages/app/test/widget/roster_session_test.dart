@@ -4,6 +4,8 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../support/pumped_app.dart';
+import '../support/standing.dart';
+import '../support/world_nav.dart';
 
 SaveDocument _twoHeroes({GameState? ilseRun, bool ilseInside = true}) =>
     SaveDocument(
@@ -12,6 +14,7 @@ SaveDocument _twoHeroes({GameState? ilseRun, bool ilseInside = true}) =>
         'hero-1': SavedHero(
           label: 'Ilse',
           profile: newProfile(worldSeed: 111).copyWith(gold: 40),
+          world: ilseRun == null ? null : atTheCrypt(),
           run: ilseRun,
           inside: ilseRun != null && ilseInside,
         ),
@@ -96,12 +99,14 @@ void main() {
       // arrange
       final app = PumpedApp(_twoHeroes());
       await app.pump(tester);
+      await enterTown(tester, 'Stonebridge');
       await tester.tap(find.text('Bank'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Bank all'));
       await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();
+      await backToTheWorld(tester);
 
       // act
       await _openRoster(tester);

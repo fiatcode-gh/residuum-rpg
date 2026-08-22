@@ -1,48 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import '../world/world_bloc.dart';
 import 'bank_screen.dart';
 import 'gear_screen.dart';
 import 'inn_screen.dart';
 import 'merchant_screen.dart';
+import 'tavern_screen.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
 
-/// The town: four doors and a purse.
+/// One town: five doors and a purse.
 ///
 /// A menu rather than a map, which is the design's own choice and not a
 /// shortcut — there is nothing to explore in a town, and a walkable one would
 /// charge the player footsteps for a shop they can already see.
 ///
+/// **Pushed over the world screen, and named in its own title bar.** The way
+/// down is not here any more: entering a dungeon is offered at the dungeon's own
+/// node, so leaving town is the back button and nothing else. The roster moved
+/// to the world screen for a structural reason — see `WorldScreen.onOpenRoster`.
+///
 /// Nothing here is told apart by colour. Carried and banked gold are two
-/// labelled rows in a fixed order, every refusal is a sentence, and the way down
-/// is one door or two labelled ones — never the same door meaning two things.
+/// labelled rows in a fixed order, and every refusal is a sentence.
 class TownScreen extends StatelessWidget {
-  const TownScreen({
-    required this.onEnterDungeon,
-    required this.onResumeCrawl,
-    required this.onDelveAnew,
-    required this.onOpenRoster,
-    super.key,
-  });
-
-  /// Starts a crawl. The session owns it, because the session owns the autosaver
-  /// that has to watch it.
-  final Future<void> Function() onEnterDungeon;
-
-  /// Walks back into the crawl the hero left standing.
-  final Future<void> Function() onResumeCrawl;
-
-  /// Gives that crawl up and walks into one laid out afresh.
-  final Future<void> Function() onDelveAnew;
-
-  /// Opens the roster: every hero on this install, and the three things that can
-  /// be done about them.
-  ///
-  /// The session owns it, because every answer the roster gives ends with the
-  /// whole bloc tree being rebuilt.
-  final Future<void> Function() onOpenRoster;
+  const TownScreen({super.key});
 
   /// The purse at the top, the doors at the bottom, and a scroll between them
   /// when a short screen cannot hold both.
@@ -56,6 +40,16 @@ class TownScreen extends StatelessWidget {
   /// 45 pixels, and a door a player cannot reach is a door that is not there.
   @override
   Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      title: BlocBuilder<TownBloc, TownViewState>(
+        builder: (context, state) => Text(
+          _titleFor(state.town),
+          style: const TextStyle(fontFamily: 'monospace'),
+        ),
+      ),
+      backgroundColor: panel,
+      foregroundColor: ink,
+    ),
     body: SafeArea(
       child: BlocBuilder<TownBloc, TownViewState>(
         builder: (context, state) => LayoutBuilder(
@@ -68,16 +62,6 @@ class TownScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
-                        'RESIDUUM',
-                        style: TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 22,
-                          letterSpacing: 6,
-                          color: ink,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
                       Text(_descentsSoFar(state.profile.visit), style: monoDim),
                       const Divider(color: rule, height: 28),
                       Text(
@@ -104,23 +88,10 @@ class TownScreen extends StatelessWidget {
                         label: 'Gear',
                         onPressed: () => _open(context, const GearScreen()),
                       ),
-                      const SizedBox(height: 16),
-                      if (state.suspended case final GameState camp) ...[
-                        _Door(
-                          label: 'Resume the crawl (depth ${camp.depth})',
-                          onPressed: onResumeCrawl,
-                        ),
-                        _Door(
-                          label: 'Delve anew',
-                          onPressed: () => _confirmDelveAnew(context, camp),
-                        ),
-                      ] else
-                        _Door(
-                          label: 'Enter Dungeon',
-                          onPressed: onEnterDungeon,
-                        ),
-                      const SizedBox(height: 8),
-                      _Door(label: 'Heroes', onPressed: onOpenRoster),
+                      _Door(
+                        label: 'Tavern',
+                        onPressed: () => _open(context, const TavernScreen()),
+                      ),
                     ],
                   ),
                 ),
@@ -140,64 +111,29 @@ class TownScreen extends StatelessWidget {
     _ => 'You have gone down $visit times.',
   };
 
-  /// Asks once, in words, before a crawl the hero could walk back into is given
-  /// up.
+  /// What the title bar calls this town.
   ///
-  /// **Nothing the hero earned is at stake, and the sentence says so.** Walking
-  /// out at the stairs already brought their hit points, gear, training, pack and
-  /// purse home; what dies here is the depth reached and the floors as they
-  /// stand. Saying that plainly is what stops the question reading like a threat
-  /// to a hero — and the depth is named, because it is the one thing being spent
-  /// and the player may well not remember it.
-  ///
-  /// It is asked at all because the loss is invisible until it is too late: a
-  /// silent abandon looks exactly like a resume until the player is standing on
-  /// floor one wondering where their dungeon went.
-  ///
-  /// Both answers are the outcome in words rather than Yes and No, following the
-  /// roster's delete confirmation: a dialog answered by reading one word is a
-  /// dialog that reads in greyscale and reads aloud.
-  Future<void> _confirmDelveAnew(BuildContext context, GameState camp) async {
-    final given = await showDialog<bool>(
-      context: context,
-      builder: (dialog) => AlertDialog(
-        title: const Text(
-          'Delve anew?',
-          style: TextStyle(fontFamily: 'monospace'),
-        ),
-        content: Text(
-          'The crawl waiting at depth ${camp.depth} is given up, and the '
-          'dungeon is laid out afresh from floor one. Everything you carry, '
-          'bank and know comes with you — only the floors are lost.',
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialog).pop(false),
-            child: const Text(
-              'Keep the crawl',
-              style: TextStyle(fontFamily: 'monospace'),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialog).pop(true),
-            child: const Text(
-              'Give it up',
-              style: TextStyle(fontFamily: 'monospace'),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (!(given ?? false) || !context.mounted) return;
-    await onDelveAnew();
-  }
+  /// Read off the world map rather than stored, so a town renamed in content is
+  /// renamed on the screen that draws it and nowhere else has to be told.
+  static String _titleFor(NodeId town) => residuumWorld.nodeAt(town).name;
 
+  /// Pushes one of the town's rooms with both blocs above it.
+  ///
+  /// Both, because the tavern is the one room that touches the world as well as
+  /// the hero — it spends coin to widen the map — and a room that could only
+  /// reach one of them would have to work the other half out for itself.
   static void _open(BuildContext context, Widget screen) {
-    final bloc = context.read<TownBloc>();
+    final town = context.read<TownBloc>();
+    final world = context.read<WorldBloc>();
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => BlocProvider.value(value: bloc, child: screen),
+        builder: (_) => MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: town),
+            BlocProvider.value(value: world),
+          ],
+          child: screen,
+        ),
       ),
     );
   }

@@ -34,6 +34,9 @@ class Boot {
 
   /// What the merchant remembers of the active hero's visit.
   MerchantVisit get merchant => document.merchant;
+
+  /// Where in the world the active hero is, and what they know of it.
+  Whereabouts get world => document.world;
 }
 
 /// The label a hero is offered when nobody has typed one.

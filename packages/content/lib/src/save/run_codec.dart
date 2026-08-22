@@ -17,6 +17,17 @@ import 'save_json.dart';
 /// round-trip of `floors` alone would notice the active floor going missing, so
 /// the map, monsters, litter and lifted fog of the current depth are named here
 /// one by one.
+///
+/// **[GameState.isEncounter] is missing on purpose, and must stay missing.** A
+/// road fight is never written down: it is re-derived from the world seed and
+/// the day counter, both of which the world block already holds for their own
+/// reasons, so an app killed mid-fight comes back to the same day, the same
+/// creatures and a fresh fight rather than to a half-resolved one. What *is*
+/// written is the journey, which is why the hero picks up where they were on
+/// the road. The asymmetry looks like an oversight and is the design: anything
+/// this encoded would be a fight the save could disagree with the world about.
+/// Every run that comes back through [loadRun] is a crawl, and takes the
+/// field's default.
 Map<String, Object?> encodeRun(GameState run) => {
   'depth': run.depth,
   'worldSeed': encodeWide(run.worldSeed),

@@ -2,6 +2,8 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 import 'package:test/test.dart';
 
+import 'support/standing.dart';
+
 /// A committed version-1 document with the hero in town.
 ///
 /// Any change to the format reddens this, which is the whole point: a save
@@ -18,7 +20,9 @@ const String _goldenTown =
     's":{"level":4,"xp":2},"might":{"level":0,"xp":0},"bulwark":{"l'
     'evel":0,"xp":0},"fleetfoot":{"level":0,"xp":0}}},"run":null,'
     '"inside":false,'
-    '"merchant":{"bought":[],"sold":[]}}}}';
+    '"world":{"at":"northgate","home":"northgate","day":30,'
+    '"discovered":["crypt","northgate","stonebridge"],"journey":null},'
+    '"merchant":{"bought":[],"sold":[],"town":null}}}}';
 
 /// A committed version-1 document with a crawl the hero is standing in, so the
 /// run block's shape is pinned as tightly as the profile's.
@@ -53,8 +57,10 @@ const String _goldenRun =
     '##\\n#.#\\n###","monsters":[],"groundItems":[],"explored":[[1,'
     '1]],"stairsDown":[1,1],"stairsUp":null}]},'
     '"inside":true,'
+    '"world":{"at":"crypt","home":"stonebridge","day":0,'
+    '"discovered":["crypt","northgate","stonebridge"],"journey":null},'
     '"merchant":{"bought"'
-    ':[],"sold":[]}}}}';
+    ':[],"sold":[],"town":null}}}}';
 
 /// A committed version-1 document with two heroes in it.
 ///
@@ -63,8 +69,13 @@ const String _goldenRun =
 /// was assembled. Both are what stop a reorder from silently switching hero.
 ///
 /// Ilse carries visit state and Bram does not, so this document pins the whole
-/// of the merchant block — a bought id and a whole item reference — rather than
-/// only the shape two empty lists would show.
+/// of the merchant block — a bought id, a whole item reference and the town the
+/// shelf was rolled for — rather than only the shape two empty lists would show.
+///
+/// Ilse is also two days out of Stonebridge while Bram has never left home, so
+/// between them the two heroes pin both answers the world block can give: a leg
+/// being walked, and standing still. A document where nobody travelled would
+/// leave the journey shape unpinned entirely.
 const String _goldenTwoHeroes =
     '{"version":1,"active":"hero-2","heroes":{"hero-1":{"label":"Il'
     'se","profile":{"hp":20,"gold":40,"bankedGold":0,"worldSeed":"1'
@@ -76,9 +87,13 @@ const String _goldenTwoHeroes =
     'ht":{"level":0,"xp":0},"bulwark":{"level":0,"xp":0},"fleetfoot'
     '":{"level":0,"xp":0}}},"run":null,'
     '"inside":false,'
-    '"merchant":{"bought":["marke'
-    't-0-gear-1"],"sold":[{"id":"drop-3","base":"iron-sword","rarit'
-    'y":"common","affixes":[]}]}},"hero-2":{"label":"Bram","profile'
+    '"world":{"at":"stonebridge","home":"stonebridge","day":30,'
+    '"discovered":["crypt","northgate","stonebridge"],'
+    '"journey":{"from":"stonebridge","to":"northgate","daysLeft":2}},'
+    '"merchant":{"bought":["market-stonebridge-0-gear-1"],'
+    '"sold":[{"id":"drop-3","base":"iron-sword","rarit'
+    'y":"common","affixes":[]}],"town":"stonebridge"}},'
+    '"hero-2":{"label":"Bram","profile'
     '":{"hp":20,"gold":0,"bankedGold":0,"worldSeed":"222","visit":0'
     ',"equipment":{"mainHand":{"id":"kit-1","base":"rusty-sword","r'
     'arity":"common","affixes":[]}},"inventory":[{"id":"kit-2","bas'
@@ -88,16 +103,33 @@ const String _goldenTwoHeroes =
     '0,"xp":0},"bulwark":{"level":0,"xp":0},"fleetfoot":{"level":0,'
     '"xp":0}}},"run":null,'
     '"inside":false,'
-    '"merchant":{"bought":[],"sold":[]}}}}';
+    '"world":{"at":"stonebridge","home":"stonebridge","day":0,'
+    '"discovered":["crypt","stonebridge"],"journey":null},'
+    '"merchant":{"bought":[],"sold":[],"town":null}}}}';
 
-/// The two heroes of the roster golden, built once because two tests assemble
-/// the same roster in two different orders.
+/// Ilse, one of the two heroes of the roster golden, built once because two
+/// tests assemble the same roster in two different orders.
+///
+/// She is on the road, which is the only way the journey block gets pinned.
+///
+/// A hero standing at a node writes `journey: null`, so a document with nobody
+/// travelling would leave the whole shape of a leg unpinned — and a decoder that
+/// read `at` and quietly dropped the legs would keep every golden green while
+/// putting a travelling hero back in the town they set out from.
 SavedHero _pinnedIlse() => SavedHero(
   label: 'Ilse',
   profile: newProfile(worldSeed: 111).copyWith(gold: 40),
-  merchant: const MerchantVisit(
-    bought: ['market-0-gear-1'],
-    sold: [Item(id: 'drop-3', base: ironSword, rarity: Rarity.common)],
+  world: Whereabouts(
+    at: stonebridge,
+    home: stonebridge,
+    discovered: {stonebridge, northgate, cryptNode},
+    day: 30,
+    journey: Journey(from: stonebridge, to: northgate, daysLeft: 2),
+  ),
+  merchant: MerchantVisit(
+    bought: const ['market-stonebridge-0-gear-1'],
+    sold: const [Item(id: 'drop-3', base: ironSword, rarity: Rarity.common)],
+    town: stonebridge,
   ),
 );
 
@@ -190,6 +222,19 @@ GameState _pinnedRun() => GameState(
   nextDropNumber: 4,
 );
 
+/// A hero who has walked the map: living at the second town, thirty days in,
+/// with everywhere uncovered.
+///
+/// Deliberately not [newWhereabouts]. A golden whose world block was the
+/// starting one would pin the default and nothing else, so a decoder that
+/// ignored the block entirely and handed back a fresh hero would look correct.
+Whereabouts _pinnedWhereabouts() => Whereabouts(
+  at: northgate,
+  home: northgate,
+  discovered: {stonebridge, northgate, cryptNode},
+  day: 30,
+);
+
 void main() {
   group('the golden save, hero in town', () {
     test('the committed document decodes to the pinned hero', () {
@@ -204,6 +249,7 @@ void main() {
       expect((read as SaveDocument).profile, _pinnedTown());
       expect(read.run, isNull);
       expect(read.inside, isFalse);
+      expect(read.world, _pinnedWhereabouts());
     });
 
     test('the encoder reproduces it byte for byte', () {
@@ -212,7 +258,12 @@ void main() {
 
       // act
       final written = encodeSave(
-        SaveDocument.one(id: 'hero-1', label: 'Hero 1', profile: profile),
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: profile,
+          world: _pinnedWhereabouts(),
+        ),
       );
 
       // assert
@@ -244,6 +295,7 @@ void main() {
         'Fine Sturdy Leather Cap',
       );
       expect(read.run!.nextDropNumber, 4);
+      expect(read.world, atTheCrypt());
     });
 
     test('the encoder reproduces it byte for byte', () {
@@ -256,6 +308,7 @@ void main() {
           id: 'hero-1',
           label: 'Hero 1',
           profile: newProfile(worldSeed: 77),
+          world: atTheCrypt(),
           run: run,
           inside: true,
         ),
@@ -285,8 +338,15 @@ void main() {
       expect(read.profile, read.heroes['hero-2']!.profile);
       expect(read.heroes['hero-1']!.inside, isFalse);
       expect(read.heroes['hero-2']!.inside, isFalse);
-      expect(read.heroes['hero-1']!.merchant.bought, ['market-0-gear-1']);
+      expect(read.heroes['hero-1']!.merchant.bought, [
+        'market-stonebridge-0-gear-1',
+      ]);
       expect(read.heroes['hero-1']!.merchant.sold.single.id, 'drop-3');
+      expect(read.heroes['hero-1']!.merchant.town, stonebridge);
+      expect(read.heroes['hero-1']!.world.journey!.to, northgate);
+      expect(read.heroes['hero-1']!.world.journey!.daysLeft, 2);
+      expect(read.heroes['hero-1']!.world.day, 30);
+      expect(read.heroes['hero-2']!.world, newWhereabouts());
       expect(read.heroes['hero-2']!.merchant, MerchantVisit.none);
     });
 

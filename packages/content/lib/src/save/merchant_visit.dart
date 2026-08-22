@@ -19,7 +19,11 @@ import 'package:residuum_core/core.dart';
 /// they are cleared when the run ends, at the same moment the shelf is rolled
 /// again.
 class MerchantVisit extends Equatable {
-  const MerchantVisit({this.bought = const [], this.sold = const []});
+  const MerchantVisit({
+    this.bought = const [],
+    this.sold = const [],
+    this.town,
+  });
 
   /// The ids of the stock already taken off the shelf this visit.
   ///
@@ -35,6 +39,22 @@ class MerchantVisit extends Equatable {
   /// name nothing to buy back.
   final List<Item> sold;
 
+  /// Which town's shelf these ids were rolled off, or null when nothing is
+  /// remembered.
+  ///
+  /// **The second half of what makes a remembered purchase mean anything.** The
+  /// visit alone stopped being enough the moment there were two shelves: a
+  /// bought id names one roll off one town's shelf, and carried to the other
+  /// town it names nothing at all. So the block is valid exactly as long as the
+  /// visit *and* this — which is the rule the town bloc enforces on arrival, and
+  /// the reason it can.
+  ///
+  /// Null only when there is nothing to remember. A block that named purchases
+  /// but not the shop they came from would be a list of ids nobody could match
+  /// against a shelf, so the codec refuses that pairing rather than guessing a
+  /// town for it.
+  final NodeId? town;
+
   /// A hero who has not been to the shop this visit.
   static const MerchantVisit none = MerchantVisit();
 
@@ -44,13 +64,13 @@ class MerchantVisit extends Equatable {
       if (!bought.contains(item.id)) item,
   ];
 
-  /// This visit, with the stock item [itemId] bought.
-  MerchantVisit withBought(String itemId) =>
-      MerchantVisit(bought: [...bought, itemId], sold: sold);
+  /// This visit, with the stock item [itemId] bought at [town].
+  MerchantVisit withBought(String itemId, NodeId town) =>
+      MerchantVisit(bought: [...bought, itemId], sold: sold, town: town);
 
-  /// This visit, with [item] sold across the counter.
-  MerchantVisit withSold(Item item) =>
-      MerchantVisit(bought: bought, sold: [...sold, item]);
+  /// This visit, with [item] sold across [town]'s counter.
+  MerchantVisit withSold(Item item, NodeId town) =>
+      MerchantVisit(bought: bought, sold: [...sold, item], town: town);
 
   /// This visit, with the sold item [itemId] bought back.
   MerchantVisit withoutSold(String itemId) => MerchantVisit(
@@ -59,12 +79,14 @@ class MerchantVisit extends Equatable {
       for (final item in sold)
         if (item.id != itemId) item,
     ],
+    town: town,
   );
 
   @override
-  List<Object?> get props => [bought, sold];
+  List<Object?> get props => [bought, sold, town];
 
   @override
   String toString() =>
-      'MerchantVisit(${bought.length} bought, ${sold.length} sold)';
+      'MerchantVisit(${bought.length} bought, ${sold.length} sold'
+      '${town == null ? '' : ' at ${town!.value}'})';
 }
