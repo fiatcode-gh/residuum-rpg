@@ -99,3 +99,96 @@ Profile endRun(Profile entered, GameState state, {required bool died}) {
   final stripped = carried.copyWith(inventory: const [], gold: 0);
   return stripped.copyWith(hero: stripped.hero.copyWith(hp: stripped.maxHp));
 }
+
+/// The profile [entered] became, with [state] left standing where it is.
+///
+/// **A homecoming for the hero, and nothing at all for the dungeon.** Leaving
+/// alive and leaving to come back carry the identical set home — the same hit
+/// points, gear, training, pack, purse and visit [endRun] carries — because what
+/// the hero *is* does not depend on whether they mean to return. What differs is
+/// the other half: [endRun] is the last anyone sees of the crawl, while this
+/// leaves it whole for [resumeRun] to walk back into. Nothing here reads or
+/// alters [state] beyond copying out of it; the caller keeps it, and the caller
+/// is what has to write it down.
+///
+/// Heals nothing, for [endRun]'s reason: the inn is what heals, and a free cure
+/// at the door would make it decoration.
+///
+/// **Afterwards the profile and the crawl agree about the visit**, because the
+/// visit comes home with everything else. That is not bookkeeping — it is the
+/// precondition [resumeRun] needs, and the reason resuming can be well defined
+/// at all.
+///
+/// Must not be called on a game-over state. A dead hero has no camp to walk back
+/// into, and this would bring the corpse home with its pack intact instead of
+/// burning it. The gate belongs to the interface, exactly as it does for
+/// [endRun] — the stairs offer leaving only while the hero is alive — and
+/// stating the contract here rather than asserting it keeps one gate instead of
+/// two that can drift apart.
+Profile suspendRun(Profile entered, GameState state) => entered.copyWith(
+  hero: state.hero,
+  equipment: state.equipment,
+  skills: state.skills,
+  inventory: state.inventory,
+  gold: state.gold,
+  visit: state.visit,
+);
+
+/// The crawl [suspended] was, with [profile] walking back down into it.
+///
+/// **Everything the hero is comes from the profile; everything the dungeon is
+/// comes from the suspended crawl.** Those are exactly the two halves
+/// [suspendRun] separated, put back together the other way round — so a potion
+/// bought while camped is in the pack, a night at the inn shows in the hit
+/// points, and a helm swapped at the gear door is the helm the hero climbs back
+/// down wearing, while the floor, the monsters, the fog, the litter, the clock
+/// and both random streams are the ones the hero walked away from.
+///
+/// The hero is the suspended actor wearing the profile's hit points, rather than
+/// the profile's actor outright. Both read the same today, because nothing in
+/// town moves a hero — but only one of them says which half owns where the hero
+/// is standing, and a town that one day moved a position would teleport the
+/// player instead of reddening a test.
+///
+/// Banked gold stays banked. A vault is not part of a run, which is why it is
+/// not on the state at all, and a resume that carried it down would put the bank
+/// inside the thing dying takes.
+///
+/// **Resuming is not entering, so the visit is not bumped and the dungeon does
+/// not reshuffle** — `loadRun`'s argument about a relaunch, holding for the same
+/// reason about a walk back down the same stairs. [startRun] is what reshuffles,
+/// and giving the camp up to delve anew goes through it like every other entry;
+/// that is what keeps a dungeon that can be left from being a dungeon that is
+/// farmed out and never refills.
+///
+/// Requires `profile.visit == suspended.visit`, which [suspendRun] establishes
+/// and no town transaction disturbs. Stated rather than asserted, for
+/// [suspendRun]'s reason.
+///
+/// Built field by field rather than copied, because [GameState.copyWith] has no
+/// gold: gold rides a run as a passenger and only the town moves it, so the one
+/// door that moves it back in has to say the whole state out loud.
+GameState resumeRun(Profile profile, GameState suspended) => GameState(
+  map: suspended.map,
+  hero: suspended.hero.copyWith(hp: profile.hero.hp),
+  monsters: suspended.monsters,
+  rng: suspended.rng,
+  lootRng: suspended.lootRng,
+  visible: suspended.visible,
+  explored: suspended.explored,
+  buildFloor: suspended.buildFloor,
+  depth: suspended.depth,
+  worldSeed: suspended.worldSeed,
+  visit: suspended.visit,
+  stairsDown: suspended.stairsDown,
+  stairsUp: suspended.stairsUp,
+  gold: profile.gold,
+  isGameOver: suspended.isGameOver,
+  floors: suspended.floors,
+  groundItems: suspended.groundItems,
+  inventory: profile.inventory,
+  equipment: profile.equipment,
+  skills: profile.skills,
+  dropTables: suspended.dropTables,
+  nextDropNumber: suspended.nextDropNumber,
+);

@@ -10,17 +10,24 @@ import 'save_store.dart';
 
 /// Writes the game down whenever it changes.
 ///
-/// It holds the profile and the suspended crawl itself rather than reading them
-/// off either bloc, because at boot there is a crawl to resume and no town
-/// emission to learn it from: a resumed run exists before the town has said
-/// anything at all. Seeding both from the boot document and updating each from
-/// its own bloc is what makes the first save after a relaunch describe the
-/// crawl the player is standing in rather than an empty town.
+/// It holds the profile and the crawl itself rather than reading them off either
+/// bloc, because at boot there is a crawl to resume and no town emission to
+/// learn it from: a resumed run exists before the town has said anything at all.
+/// Seeding both from the boot document and updating each from its own bloc is
+/// what makes the first save after a relaunch describe the crawl the player is
+/// standing in rather than an empty town.
+///
+/// Whether the hero is *in* that crawl is held here for the same reason and read
+/// off the same two sources. It has to be written down rather than worked out,
+/// because a crawl on disk means two opposite things — a hero killed mid-fight,
+/// or a hero who walked out at the stairs and left it standing — and the next
+/// launch opens a different screen for each.
 class Autosaver {
   Autosaver(this._store, {required Boot from})
     : _roster = from.document,
       _profile = from.profile,
       _run = from.run,
+      _inside = from.inside,
       _merchant = from.merchant;
 
   final SaveStore _store;
@@ -31,6 +38,7 @@ class Autosaver {
 
   Profile _profile;
   GameState? _run;
+  bool _inside;
   MerchantVisit _merchant;
   Future<void> _queue = Future<void>.value();
 
@@ -45,13 +53,20 @@ class Autosaver {
   /// What the merchant remembers of the visit is written with the rest of the
   /// hero, because a purchase that lived only in this bloc would put the whole
   /// shelf back on the next launch.
-
+  ///
+  /// The town's two crawl fields answer both questions at once: whichever of
+  /// them holds a crawl is the crawl to write down, and *which* of them holds it
+  /// is whether the hero is standing in it. A crawl to open now is the hero
+  /// walking in; a camp and nothing else is the hero out in town with a dungeon
+  /// waiting. One expression each, and no third piece of state to fall out of
+  /// step with the screen.
   void watchTown(TownBloc town) {
     _profile = town.state.profile;
     _watching.add(
       town.stream.listen((state) {
         _profile = state.profile;
-        _run = state.run;
+        _run = state.run ?? state.suspended;
+        _inside = state.run != null;
         _merchant = state.merchant;
         saveNow();
       }),
@@ -67,12 +82,18 @@ class Autosaver {
   ///
   /// Emissions that leave the game state untouched are skipped, because a
   /// dragged camera is not a turn and the document would be identical.
+  /// A crawl on screen is a hero standing in it, which is the one thing this can
+  /// say that the town cannot. The town's own answer arrives one emission
+  /// earlier — pressing a door is not yet being through it — so this is what
+  /// makes the document true for every turn after the first.
   void watchGame(GameBloc game) {
     _run = game.state.game;
+    _inside = true;
     _watching.add(
       game.stream.listen((state) {
         if (state.game == _run) return;
         _run = state.game;
+        _inside = true;
         saveNow();
       }),
     );
@@ -92,7 +113,7 @@ class Autosaver {
   /// it here rather than assembling a second version that could disagree with
   /// the one being written to disk.
   SaveDocument get document =>
-      _roster.replacingActive(_profile, _run, _merchant);
+      _roster.replacingActive(_profile, _run, _merchant, inside: _inside);
 
   /// Writes the document down.
   ///

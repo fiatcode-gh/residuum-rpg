@@ -17,9 +17,16 @@ const int saveVersion = 1;
 
 /// One save document: every hero, and which of them is being played.
 ///
-/// A hero's `run` of null is what being in town *is*. It is written out rather
+/// A hero's `run` of null is what having no crawl *is*. It is written out rather
 /// than left out, so an entry always says which of the two states it describes
 /// and a key that went missing is never read as "probably town".
+///
+/// `run` and `inside` are two fields because they are two questions. A hero with
+/// a crawl written down is either standing in it — the app was killed mid-fight —
+/// or camped away from it in town, having walked out at the stairs; those boot
+/// into opposite screens, and no amount of reading the run block answers which.
+/// Both are required, so an entry written by anything that did not answer both is
+/// refused rather than guessed at.
 ///
 /// Heroes are written in key order rather than in the map's own order, so one
 /// roster always encodes to one document however it was assembled — the same
@@ -38,6 +45,7 @@ Map<String, Object?> _encodeHero(SavedHero hero) => {
   'label': hero.label,
   'profile': encodeProfile(hero.profile),
   'run': hero.run == null ? null : encodeRun(hero.run!),
+  'inside': hero.inside,
   'merchant': _encodeMerchant(hero.merchant),
 };
 
@@ -111,11 +119,19 @@ SavedHero _decodeHero(String id, Object? written) {
   if (written is! Map<String, Object?>) {
     throw SaveMalformed('the hero "$id" in the save file is not an object');
   }
+  final run = written['run'] == null ? null : loadRun(written, 'run');
+  final inside = boolAt(written, 'inside');
+  if (inside && run == null) {
+    throw SaveMalformed(
+      'the hero "$id" in the save file is "inside" a crawl it does not have',
+    );
+  }
   return SavedHero(
     label: stringAt(written, 'label'),
     profile: decodeProfile(written, 'profile'),
-    run: written['run'] == null ? null : loadRun(written, 'run'),
+    run: run,
     merchant: _decodeMerchant(written),
+    inside: inside,
   );
 }
 

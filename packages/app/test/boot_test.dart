@@ -8,8 +8,14 @@ import 'package:residuum_core/core.dart';
 import 'support/memory_save_files.dart';
 
 /// A one-hero document, for seeding the store before a boot.
-SaveDocument _one(Profile profile, {GameState? run}) =>
-    SaveDocument.one(id: 'hero-1', label: 'Hero 1', profile: profile, run: run);
+SaveDocument _one(Profile profile, {GameState? run, bool inside = false}) =>
+    SaveDocument.one(
+      id: 'hero-1',
+      label: 'Hero 1',
+      profile: profile,
+      run: run,
+      inside: inside,
+    );
 
 void main() {
   group('booting', () {
@@ -374,5 +380,94 @@ void main() {
         expect(reread.document.heroes.containsKey('hero-1'), isFalse);
       },
     );
+  });
+
+  group('booting a hero who has a crawl', () {
+    test('a camped hero boots with their crawl and out of it', () async {
+      // arrange
+      final store = SaveStore(MemorySaveFiles());
+      final profile = newProfile(worldSeed: 424242);
+      await store.save(_one(profile, run: startDungeonRun(profile)));
+
+      // act
+      final booted = await bootFrom(store, rollWorldSeed: () => 1);
+
+      // assert
+      expect(booted.run, isNotNull);
+      expect(booted.inside, isFalse);
+    });
+
+    test('a hero killed mid-crawl boots back inside it', () async {
+      // arrange
+      final store = SaveStore(MemorySaveFiles());
+      final profile = newProfile(worldSeed: 424242);
+      await store.save(
+        _one(profile, run: startDungeonRun(profile), inside: true),
+      );
+
+      // act
+      final booted = await bootFrom(store, rollWorldSeed: () => 1);
+
+      // assert
+      expect(booted.inside, isTrue);
+      expect(booted.run, isNotNull);
+    });
+
+    test('a fresh install is in town, not in a crawl', () async {
+      // arrange
+      final store = SaveStore(MemorySaveFiles());
+
+      // act
+      final booted = await bootFrom(store, rollWorldSeed: () => 987654321);
+
+      // assert
+      expect(booted.run, isNull);
+      expect(booted.inside, isFalse);
+    });
+
+    test('a hero created by the roster is in town', () async {
+      // arrange
+      final store = SaveStore(MemorySaveFiles());
+      final was = _one(newProfile(worldSeed: 111));
+
+      // act
+      final booted = await createHero(
+        store,
+        was,
+        label: 'Ilse',
+        rollWorldSeed: () => 222,
+      );
+
+      // assert
+      expect(booted.inside, isFalse);
+      expect(booted.run, isNull);
+    });
+
+    test('switching to a camped hero boots out of their crawl', () async {
+      // arrange
+      final store = SaveStore(MemorySaveFiles());
+      final camper = newProfile(worldSeed: 111);
+      final was = SaveDocument(
+        active: 'hero-2',
+        heroes: {
+          'hero-1': SavedHero(
+            label: 'Ilse',
+            profile: camper,
+            run: startDungeonRun(camper),
+          ),
+          'hero-2': SavedHero(
+            label: 'Bram',
+            profile: newProfile(worldSeed: 222),
+          ),
+        },
+      );
+
+      // act
+      final booted = await switchHero(store, was, 'hero-1');
+
+      // assert
+      expect(booted.run, isNotNull);
+      expect(booted.inside, isFalse);
+    });
   });
 }

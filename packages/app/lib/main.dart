@@ -96,12 +96,13 @@ class _ResiduumAppState extends State<ResiduumApp> {
   }
 }
 
-/// One hero's session: the town, the autosaver, and both doors into a crawl.
+/// One hero's session: the town, the autosaver, and every door into a crawl.
 ///
-/// Entering the dungeon and resuming a suspended crawl both live here rather
-/// than on the town screen, because both build a [GameBloc] and the autosaver
-/// has to be watching it. Two places that made one would eventually disagree
-/// about whether the crawl was being written down.
+/// Entering the dungeon, walking back into a camp, giving one up, and booting
+/// into a crawl the app was killed inside all live here rather than on the town
+/// screen, because every one of them builds a [GameBloc] and the autosaver has to
+/// be watching it. Two places that made one would eventually disagree about
+/// whether the crawl was being written down.
 class _Session extends StatefulWidget {
   const _Session({
     required this.store,
@@ -121,10 +122,16 @@ class _Session extends StatefulWidget {
 }
 
 class _SessionState extends State<_Session> {
+  /// The town, holding the camp when the hero booted out of their crawl.
+  ///
+  /// The crawl goes to one owner or the other and never both: a hero standing in
+  /// it hands it to the [GameBloc] that opens below, and a hero camped away from
+  /// it hands it to the town, whose door is the only way back.
   late final TownBloc _town = TownBloc(
     profile: widget.boot.profile,
     merchant: widget.boot.merchant,
     notice: widget.boot.notice,
+    suspended: widget.boot.inside ? null : widget.boot.run,
   );
   late final Autosaver _saver = Autosaver(widget.store, from: widget.boot);
 
@@ -139,7 +146,8 @@ class _SessionState extends State<_Session> {
   void initState() {
     super.initState();
     _saver.watchTown(_town);
-    if (widget.boot.run case final GameState run) {
+    if (widget.boot.inside) {
+      final run = widget.boot.run!;
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _openCrawl(run, resumed: true),
       );
@@ -156,7 +164,12 @@ class _SessionState extends State<_Session> {
   @override
   Widget build(BuildContext context) => BlocProvider.value(
     value: _town,
-    child: TownScreen(onEnterDungeon: _enterDungeon, onOpenRoster: _openRoster),
+    child: TownScreen(
+      onEnterDungeon: _enterDungeon,
+      onResumeCrawl: _resumeCrawl,
+      onDelveAnew: _delveAnew,
+      onOpenRoster: _openRoster,
+    ),
   );
 
   /// Opens the roster on the document as it stands, and acts on the answer.
@@ -182,17 +195,46 @@ class _SessionState extends State<_Session> {
     await widget.onRoster(chosen, _saver.document);
   }
 
-  Future<void> _enterDungeon() async {
-    _town.add(const EnterDungeonPressed());
+  Future<void> _enterDungeon() async =>
+      _openAnswer(const EnterDungeonPressed(), resumed: false);
+
+  Future<void> _resumeCrawl() async =>
+      _openAnswer(const ResumeCrawlPressed(), resumed: true);
+
+  Future<void> _delveAnew() async =>
+      _openAnswer(const DelveAnewPressed(), resumed: false);
+
+  /// Presses one of the town's doors and opens whatever crawl it answers with.
+  ///
+  /// Three doors, one shape, because the difference between them is entirely the
+  /// town's business: which crawl comes back is a rule, and all the session has
+  /// to know is that a crawl came back. Waiting on the emission rather than
+  /// reading the state straight after is what makes it the town's answer and not
+  /// a guess about when a bloc has caught up.
+  ///
+  /// [resumed] is not derived from the event, because it says something the event
+  /// does not: whether the log opens with a line explaining itself. Delving anew
+  /// is a fresh crawl the player asked for and has nothing to explain, even
+  /// though it starts from a camp.
+  Future<void> _openAnswer(TownBlocEvent door, {required bool resumed}) async {
+    _town.add(door);
     await _town.stream.firstWhere((state) => state.run != null);
     if (!mounted) return;
-    await _openCrawl(_town.state.run!, resumed: false);
+    await _openCrawl(_town.state.run!, resumed: resumed);
   }
 
   /// Puts the crawl on top of the town.
   ///
   /// The town is never torn down — the crawl is pushed over it — so leaving is
-  /// one pop, which is the architecture `leaveDungeon` documents.
+  /// one pop, which is the architecture `suspendDungeon` documents.
+  ///
+  /// **Every crawl in the app is opened here, and there are now four ways in:**
+  /// booting into one the app was killed inside, walking into a fresh one,
+  /// walking back into a camp, and giving a camp up for a fresh one. They share
+  /// this function because they share the one thing that must not be forgotten —
+  /// the autosaver has to be watching the bloc before the player can take a turn
+  /// in it — and a second place that built a [GameBloc] would eventually be the
+  /// place that forgot.
   ///
   /// The message log does not survive a suspend, because it is view state the
   /// app owns rather than anything the rules produced. A [resumed] crawl
@@ -225,10 +267,18 @@ class _SessionState extends State<_Session> {
   /// the time they walk out of it, ending the run has built a fresh town state
   /// with no notice on it. The log is the only place left to say it, so it says
   /// it.
-  List<String> _openingLog() => [
-    if (widget.boot.notice case final String report) _asSentence(report),
-    _resumed,
-  ];
+  ///
+  /// It says it once. The notice is a fact about the launch, not about this
+  /// crawl, and a hero who walks out and back in twice would otherwise be told
+  /// three times that a save was recovered an hour ago.
+  List<String> _openingLog() {
+    final report = _reported ? null : widget.boot.notice;
+    _reported = true;
+    return [
+      if (report case final String recovered) _asSentence(recovered),
+      _resumed,
+    ];
+  }
 
   /// The town's phrasing, turned into a line of the message log.
   ///
@@ -239,4 +289,6 @@ class _SessionState extends State<_Session> {
       '${notice[0].toUpperCase()}${notice.substring(1)}.';
 
   static const String _resumed = 'The crawl resumes.';
+
+  bool _reported = false;
 }

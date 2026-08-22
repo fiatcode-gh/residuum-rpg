@@ -13,17 +13,19 @@ class GameScreen extends StatelessWidget {
   /// The crawl, and the refusal that makes the stairs the only way out.
   ///
   /// [PopScope] with [PopScope.canPop] false is what stops Android's back
-  /// button popping this route. A pop here would leave the run un-ended: the
-  /// town would show the profile that walked in while the save on disk still
-  /// held the suspended crawl, and the next descent would bump the visit and
-  /// write over it. Suspending is what an interruption is for, so back is not
-  /// an exit and there is nothing to confirm.
+  /// button popping this route. **The stairs are the door, and back is not the
+  /// stairs.** Walking out is now a decision made at a landing — the hero climbs
+  /// out and the dungeon waits — and a pop from the middle of a floor is not
+  /// that decision: it would put the hero in town from wherever they happened to
+  /// be standing, mid-fight and mid-corridor, and make the one place the crawl
+  /// can be left mean nothing. An interruption is what closing the app is for,
+  /// and that already suspends everything exactly as it stands.
   ///
   /// The refusal is not silent. `didPop` is false exactly when the system tried
-  /// and was declined — a programmatic pop, which is what `leaveDungeon` does at
-  /// the stairs and at the death overlay, reports true and must say nothing.
-  /// The pack's route is pushed on top of this one and carries no [PopScope] of
-  /// its own, so back closes the pack as it always did.
+  /// and was declined — a programmatic pop, which is what [suspendDungeon] does
+  /// at the stairs and [leaveDungeon] at the death overlay, reports true and
+  /// must say nothing. The pack's route is pushed on top of this one and carries
+  /// no [PopScope] of its own, so back closes the pack as it always did.
   @override
   Widget build(BuildContext context) => PopScope<void>(
     canPop: false,
@@ -222,7 +224,7 @@ class _Controls extends StatelessWidget {
                 Expanded(
                   child: _Control(
                     label: 'Leave',
-                    onPressed: () => leaveDungeon(context, state, died: false),
+                    onPressed: () => suspendDungeon(context, state),
                   ),
                 ),
             ],
@@ -238,12 +240,33 @@ class _Controls extends StatelessWidget {
 /// The town was never torn down — entering the dungeon pushed the crawl on top
 /// of it — so coming home is one pop and one event, and there is exactly one
 /// place in the app that does it.
+///
+/// This is the ending, and the death overlay is the only thing that reaches it.
+/// [suspendDungeon] is the other way out, and the difference between them is the
+/// whole of this unit: dying is over, and leaving is not.
 void leaveDungeon(
   BuildContext context,
   GameViewState state, {
   required bool died,
 }) {
   context.read<TownBloc>().add(RunEnded(state.game, died: died));
+  Navigator.of(context).pop();
+}
+
+/// Walks the hero out at the stairs and uncovers the town, leaving the crawl
+/// standing.
+///
+/// Structurally [leaveDungeon]: one pop and one event, from one place in the app,
+/// because the town was never torn down. What differs is what the town is told —
+/// and only the town decides what it means. Here the hero comes home and the
+/// dungeon keeps its floors, its monsters, its fog and both its random streams,
+/// waiting on the town's door to be pressed again.
+///
+/// Offered only where `canLeave` is, which is a stairs landing with a living
+/// hero. That gate is also `suspendRun`'s precondition, so the one place that
+/// calls it is the one place that cannot break it.
+void suspendDungeon(BuildContext context, GameViewState state) {
+  context.read<TownBloc>().add(RunSuspended(state.game));
   Navigator.of(context).pop();
 }
 

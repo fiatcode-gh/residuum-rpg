@@ -5,20 +5,22 @@ import 'package:residuum_core/core.dart';
 
 import '../support/pumped_app.dart';
 
-SaveDocument _twoHeroes({GameState? ilseRun}) => SaveDocument(
-  active: 'hero-2',
-  heroes: {
-    'hero-1': SavedHero(
-      label: 'Ilse',
-      profile: newProfile(worldSeed: 111).copyWith(gold: 40),
-      run: ilseRun,
-    ),
-    'hero-2': SavedHero(
-      label: 'Bram',
-      profile: newProfile(worldSeed: 222).copyWith(gold: 7),
-    ),
-  },
-);
+SaveDocument _twoHeroes({GameState? ilseRun, bool ilseInside = true}) =>
+    SaveDocument(
+      active: 'hero-2',
+      heroes: {
+        'hero-1': SavedHero(
+          label: 'Ilse',
+          profile: newProfile(worldSeed: 111).copyWith(gold: 40),
+          run: ilseRun,
+          inside: ilseRun != null && ilseInside,
+        ),
+        'hero-2': SavedHero(
+          label: 'Bram',
+          profile: newProfile(worldSeed: 222).copyWith(gold: 7),
+        ),
+      },
+    );
 
 Future<void> _openRoster(WidgetTester tester) async {
   await tester.tap(find.text('Heroes'));
@@ -44,7 +46,7 @@ void main() {
       expect(app.saved!.active, 'hero-1');
     });
 
-    testWidgets('switching to a suspended hero lands in their crawl', (
+    testWidgets('switching to a hero killed mid-crawl lands in their crawl', (
       tester,
     ) async {
       // arrange
@@ -61,6 +63,31 @@ void main() {
       // assert
       expect(find.textContaining('Depth 1/'), findsOneWidget);
       expect(app.saved!.active, 'hero-1');
+    });
+
+    testWidgets('switching to a camped hero lands in their town, camp kept', (
+      tester,
+    ) async {
+      // arrange
+      final app = PumpedApp(
+        _twoHeroes(
+          ilseRun: startDungeonRun(newProfile(worldSeed: 111)),
+          ilseInside: false,
+        ),
+      );
+      await app.pump(tester);
+
+      // act
+      await _openRoster(tester);
+      await tester.tap(find.text('Ilse'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(find.text('RESIDUUM'), findsOneWidget);
+      expect(find.textContaining('Resume the crawl'), findsOneWidget);
+      expect(app.saved!.active, 'hero-1');
+      expect(app.saved!.run, isNotNull);
+      expect(app.saved!.inside, isFalse);
     });
 
     testWidgets('switching away carries what the hero spent since booting', (

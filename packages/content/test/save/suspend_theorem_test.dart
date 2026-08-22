@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:residuum_content/content.dart';
+import 'package:residuum_content/src/save/run_codec.dart';
 import 'package:residuum_core/core.dart';
 import 'package:test/test.dart';
 
@@ -61,6 +64,17 @@ GameState _suspendAndResume(GameState run) {
 
 GameState _standing(GameState from, Position? at) =>
     from.copyWith(hero: from.hero.copyWith(position: at));
+
+/// The crawl as bytes. [GameState] has no `operator==`, so the codec is the
+/// equality instrument — and it is the right one, because the bytes are exactly
+/// what a resume has to reproduce for a relaunch to be the same game.
+///
+/// A test that plays a crawl and its resumed self has to build the crawl twice.
+/// `resumeRun` carries the generators by reference, exactly as `copyWith` does
+/// and for the documented reason, so playing the original first would advance
+/// the very stream the resumed state is about to draw from — and the divergence
+/// would look like a broken resume rather than a shared object.
+String _asBytes(GameState run) => jsonEncode(encodeRun(run));
 
 void main() {
   group('the suspend theorem', () {
@@ -220,6 +234,68 @@ void main() {
         livePlayed.monsters.map((m) => (m.id, m.position, m.hp, m.energy)),
       );
       expect(resumedPlayed.floors.keys.toList()..sort(), [2]);
+    });
+  });
+
+  group('the identity theorem', () {
+    test('suspending and resuming with no town business between them leaves '
+        'the crawl untouched', () {
+      // arrange
+      final live = deepRun(worldSeed: 4242, depth: 3);
+      final entered = newProfile(worldSeed: 4242);
+
+      // act
+      final resumed = resumeRun(suspendRun(entered, live), live);
+
+      // assert
+      expect(_asBytes(resumed), _asBytes(live));
+    });
+
+    test('the crawl it hands back plays out exactly as the one it left', () {
+      // arrange
+      final live = deepRun(worldSeed: 99, depth: 2);
+      final twin = deepRun(worldSeed: 99, depth: 2);
+      final resumed = resumeRun(
+        suspendRun(newProfile(worldSeed: 99), twin),
+        twin,
+      );
+
+      // act
+      final (livePlayed, liveEvents) = _play(live);
+      final (resumedPlayed, resumedEvents) = _play(resumed);
+
+      // assert
+      expect(resumedEvents, liveEvents);
+      expect(_asBytes(resumedPlayed), _asBytes(livePlayed));
+    });
+
+    test('a camp written to disk and then walked back into is still the same '
+        'crawl', () {
+      // arrange
+      final live = deepRun(worldSeed: 777, depth: 2);
+      final camped = suspendRun(newProfile(worldSeed: 777), live);
+
+      // act
+      final resumed = resumeRun(camped, _suspendAndResume(live));
+
+      // assert
+      expect(_asBytes(resumed), _asBytes(live));
+    });
+
+    test('town business is the one thing the theorem does not cover', () {
+      // arrange
+      final live = deepRun(worldSeed: 4242, depth: 3);
+      final shopped = suspendRun(
+        newProfile(worldSeed: 4242),
+        live,
+      ).copyWith(gold: 9999);
+
+      // act
+      final resumed = resumeRun(shopped, live);
+
+      // assert
+      expect(_asBytes(resumed), isNot(_asBytes(live)));
+      expect(resumed.gold, 9999);
     });
   });
 }

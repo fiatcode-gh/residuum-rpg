@@ -25,6 +25,7 @@ class SavedHero extends Equatable {
     required this.profile,
     this.run,
     this.merchant = MerchantVisit.none,
+    this.inside = false,
   });
 
   /// What the roster calls this hero.
@@ -33,11 +34,15 @@ class SavedHero extends Equatable {
   /// The hero as they stand between runs, or as they stood walking in.
   final Profile profile;
 
-  /// The crawl to drop this hero straight back into, or null in town.
+  /// The crawl this hero has waiting for them, or null when they have none.
   ///
   /// **Per hero, not per document.** Every hero is somewhere: one may be
   /// suspended three floors down while another is in town, and a save that held
   /// only one run between them would have to end somebody's crawl to switch.
+  ///
+  /// Having a crawl and standing in it are two facts, and [inside] is the other
+  /// one. A hero who walked out at the stairs still has all of this and is not
+  /// in it.
   final GameState? run;
 
   /// What the merchant remembers of this hero's current visit.
@@ -47,19 +52,51 @@ class SavedHero extends Equatable {
   /// item on this hero's shelf — or take it off.
   final MerchantVisit merchant;
 
+  /// Whether this hero is standing in their [run] right now.
+  ///
+  /// **Explicit, not derived.** A discriminator does exist in the arithmetic —
+  /// mid-crawl the profile's visit is one behind the run's, and after a suspend
+  /// they are equal — and it is rejected on purpose. That equality is a
+  /// consequence of two rules that have nothing to say to each other, so a
+  /// contract resting on it would break silently the day either rule moved:
+  /// whoever changed one would have no way to know they had also changed where
+  /// every hero on the install was standing.
+  ///
+  /// False in town whether or not a crawl is waiting, which is the distinction
+  /// [run] could never draw alone. `run != null` used to mean one thing — the
+  /// app died mid-fight, so put the player back in the fight — and once a hero
+  /// can walk out at the stairs and leave the crawl standing it means two, with
+  /// opposite answers: one boots into the dungeon and the other into the town.
+  final bool inside;
+
   /// This hero, brought up to date.
+  ///
+  /// [inside] is named rather than a fourth thing in a row, because a bare
+  /// `true` at a call site says nothing about which of a hero's several facts it
+  /// is answering.
   SavedHero broughtUpToDate(
     Profile profile,
     GameState? run,
-    MerchantVisit merchant,
-  ) => SavedHero(label: label, profile: profile, run: run, merchant: merchant);
+    MerchantVisit merchant, {
+    required bool inside,
+  }) => SavedHero(
+    label: label,
+    profile: profile,
+    run: run,
+    merchant: merchant,
+    inside: inside,
+  );
 
   @override
-  List<Object?> get props => [label, profile, run, merchant];
+  List<Object?> get props => [label, profile, run, merchant, inside];
 
   @override
-  String toString() =>
-      'SavedHero($label, ${run == null ? 'in town' : 'in a crawl'})';
+  String toString() => 'SavedHero($label, ${_whereabouts()})';
+
+  String _whereabouts() {
+    if (run == null) return 'in town';
+    return inside ? 'in a crawl' : 'camped away from a crawl';
+  }
 }
 
 /// One save, decoded: every hero this install has, and which one is being played.
@@ -83,8 +120,16 @@ final class SaveDocument extends SaveRead {
     required String label,
     required Profile profile,
     GameState? run,
+    bool inside = false,
   }) : active = id,
-       heroes = {id: SavedHero(label: label, profile: profile, run: run)};
+       heroes = {
+         id: SavedHero(
+           label: label,
+           profile: profile,
+           run: run,
+           inside: inside,
+         ),
+       };
 
   /// The id of the hero being played. Always a key of [heroes].
   final String active;
@@ -101,8 +146,11 @@ final class SaveDocument extends SaveRead {
   /// The active hero's profile — what booting reads.
   Profile get profile => hero.profile;
 
-  /// The active hero's suspended crawl, or null when they are in town.
+  /// The active hero's crawl, or null when they have none waiting.
   GameState? get run => hero.run;
+
+  /// Whether the active hero is standing in their [run] rather than in town.
+  bool get inside => hero.inside;
 
   /// What the merchant remembers of the active hero's visit.
   MerchantVisit get merchant => hero.merchant;
@@ -114,13 +162,19 @@ final class SaveDocument extends SaveRead {
   SaveDocument replacingActive(
     Profile profile,
     GameState? run,
-    MerchantVisit merchant,
-  ) => SaveDocument(
+    MerchantVisit merchant, {
+    required bool inside,
+  }) => SaveDocument(
     active: active,
     heroes: {
       for (final entry in heroes.entries)
         entry.key: entry.key == active
-            ? entry.value.broughtUpToDate(profile, run, merchant)
+            ? entry.value.broughtUpToDate(
+                profile,
+                run,
+                merchant,
+                inside: inside,
+              )
             : entry.value,
     },
   );

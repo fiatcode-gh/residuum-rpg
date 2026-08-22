@@ -16,11 +16,16 @@ const String _goldenTown =
     ',"rarity":"common","affixes":[]}],"bank":[{"id":"drop-1","base'
     '":"iron-sword","rarity":"common","affixes":[]}],"skills":{"arm'
     's":{"level":4,"xp":2},"might":{"level":0,"xp":0},"bulwark":{"l'
-    'evel":0,"xp":0},"fleetfoot":{"level":0,"xp":0}}},"run":null,"m'
-    'erchant":{"bought":[],"sold":[]}}}}';
+    'evel":0,"xp":0},"fleetfoot":{"level":0,"xp":0}}},"run":null,'
+    '"inside":false,'
+    '"merchant":{"bought":[],"sold":[]}}}}';
 
-/// A committed version-1 document with a crawl suspended in it, so the run
-/// block's shape is pinned as tightly as the profile's.
+/// A committed version-1 document with a crawl the hero is standing in, so the
+/// run block's shape is pinned as tightly as the profile's.
+///
+/// `inside` is true here and false in the other two, so the three goldens
+/// between them pin both answers to the question a run block alone cannot
+/// answer.
 const String _goldenRun =
     '{"version":1,"active":"hero-1","heroes":{"hero-1":{"label":"He'
     'ro 1","profile":{"hp":20,"gold":0,"bankedGold":0,"worldSeed":"'
@@ -46,7 +51,9 @@ const String _goldenRun =
     'xp":1},"might":{"level":0,"xp":0},"bulwark":{"level":0,"xp":0}'
     ',"fleetfoot":{"level":0,"xp":0}},"floors":[{"depth":1,"map":"#'
     '##\\n#.#\\n###","monsters":[],"groundItems":[],"explored":[[1,'
-    '1]],"stairsDown":[1,1],"stairsUp":null}]},"merchant":{"bought"'
+    '1]],"stairsDown":[1,1],"stairsUp":null}]},'
+    '"inside":true,'
+    '"merchant":{"bought"'
     ':[],"sold":[]}}}}';
 
 /// A committed version-1 document with two heroes in it.
@@ -67,7 +74,9 @@ const String _goldenTwoHeroes =
     ']},{"id":"kit-3","base":"healing-potion","rarity":"common","af'
     'fixes":[]}],"bank":[],"skills":{"arms":{"level":0,"xp":0},"mig'
     'ht":{"level":0,"xp":0},"bulwark":{"level":0,"xp":0},"fleetfoot'
-    '":{"level":0,"xp":0}}},"run":null,"merchant":{"bought":["marke'
+    '":{"level":0,"xp":0}}},"run":null,'
+    '"inside":false,'
+    '"merchant":{"bought":["marke'
     't-0-gear-1"],"sold":[{"id":"drop-3","base":"iron-sword","rarit'
     'y":"common","affixes":[]}]}},"hero-2":{"label":"Bram","profile'
     '":{"hp":20,"gold":0,"bankedGold":0,"worldSeed":"222","visit":0'
@@ -77,7 +86,9 @@ const String _goldenTwoHeroes =
     '-3","base":"healing-potion","rarity":"common","affixes":[]}],"'
     'bank":[],"skills":{"arms":{"level":0,"xp":0},"might":{"level":'
     '0,"xp":0},"bulwark":{"level":0,"xp":0},"fleetfoot":{"level":0,'
-    '"xp":0}}},"run":null,"merchant":{"bought":[],"sold":[]}}}}';
+    '"xp":0}}},"run":null,'
+    '"inside":false,'
+    '"merchant":{"bought":[],"sold":[]}}}}';
 
 /// The two heroes of the roster golden, built once because two tests assemble
 /// the same roster in two different orders.
@@ -192,6 +203,7 @@ void main() {
       expect(read, isA<SaveDocument>());
       expect((read as SaveDocument).profile, _pinnedTown());
       expect(read.run, isNull);
+      expect(read.inside, isFalse);
     });
 
     test('the encoder reproduces it byte for byte', () {
@@ -218,6 +230,7 @@ void main() {
 
       // assert
       expect(read.profile, newProfile(worldSeed: 77));
+      expect(read.inside, isTrue);
       expect(read.run!.depth, 2);
       expect(read.run!.visit, 1);
       expect(read.run!.map.toAscii(), '#####\n#.>.#\n#####');
@@ -244,6 +257,7 @@ void main() {
           label: 'Hero 1',
           profile: newProfile(worldSeed: 77),
           run: run,
+          inside: true,
         ),
       );
 
@@ -269,6 +283,8 @@ void main() {
       expect(read.heroes['hero-1']!.profile.gold, 40);
       expect(read.heroes['hero-2']!.profile.worldSeed, 222);
       expect(read.profile, read.heroes['hero-2']!.profile);
+      expect(read.heroes['hero-1']!.inside, isFalse);
+      expect(read.heroes['hero-2']!.inside, isFalse);
       expect(read.heroes['hero-1']!.merchant.bought, ['market-0-gear-1']);
       expect(read.heroes['hero-1']!.merchant.sold.single.id, 'drop-3');
       expect(read.heroes['hero-2']!.merchant, MerchantVisit.none);
