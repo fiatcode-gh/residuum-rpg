@@ -67,6 +67,7 @@ GameState crawl({
   Map<SkillId, SkillState> skills = untrainedSkills,
   Map<int, DropTable> dropTables = const {},
   int nextDropNumber = 1,
+  bool isEncounter = false,
 }) {
   final map = FloorMap.parse(ascii);
   final visible = computeFov(map, heroAt, fovRadius);
@@ -96,5 +97,6 @@ GameState crawl({
     skills: skills,
     dropTables: dropTables,
     nextDropNumber: nextDropNumber,
+    isEncounter: isEncounter,
   );
 }

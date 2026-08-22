@@ -47,9 +47,9 @@ void main() {
 
       // act
       final after = visit
-          .withBought('a')
-          .withSold(_gear('kept'))
-          .withSold(_gear('taken'))
+          .withBought('a', stonebridge)
+          .withSold(_gear('kept'), stonebridge)
+          .withSold(_gear('taken'), stonebridge)
           .withoutSold('taken');
 
       // assert
@@ -59,8 +59,12 @@ void main() {
 
     test('two visits with the same lists are the same value', () {
       // arrange
-      final one = MerchantVisit.none.withSold(_gear('a')).withBought('b');
-      final other = MerchantVisit.none.withSold(_gear('a')).withBought('b');
+      final one = MerchantVisit.none
+          .withSold(_gear('a'), stonebridge)
+          .withBought('b', stonebridge);
+      final other = MerchantVisit.none
+          .withSold(_gear('a'), stonebridge)
+          .withBought('b', stonebridge);
 
       // act
       final same = one == other;

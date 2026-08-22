@@ -6,6 +6,7 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import 'support/memory_save_files.dart';
+import 'support/standing.dart';
 
 /// A one-hero document, for seeding the store before a boot.
 SaveDocument _one(Profile profile, {GameState? run, bool inside = false}) =>
@@ -13,6 +14,7 @@ SaveDocument _one(Profile profile, {GameState? run, bool inside = false}) =>
       id: 'hero-1',
       label: 'Hero 1',
       profile: profile,
+      world: run == null ? null : atTheCrypt(),
       run: run,
       inside: inside,
     );
@@ -278,7 +280,10 @@ void main() {
               label: 'Ilse',
               profile: newProfile(worldSeed: 111),
               run: suspended,
-              merchant: const MerchantVisit(bought: ['market-0-potion-1']),
+              merchant: MerchantVisit(
+                bought: const ['market-stonebridge-0-potion-1'],
+                town: stonebridge,
+              ),
             ),
             'hero-2': SavedHero(
               label: 'Bram',
@@ -296,7 +301,7 @@ void main() {
         expect(after.document.active, 'hero-1');
         expect(after.profile.worldSeed, 111);
         expect(after.run!.rng.state, suspended.rng.state);
-        expect(after.merchant.bought, ['market-0-potion-1']);
+        expect(after.merchant.bought, ['market-stonebridge-0-potion-1']);
         expect(reread.document.active, 'hero-1');
       },
     );

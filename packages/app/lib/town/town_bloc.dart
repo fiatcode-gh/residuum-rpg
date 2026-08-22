@@ -40,6 +40,37 @@ final class DelveAnewPressed extends TownBlocEvent {
   const DelveAnewPressed();
 }
 
+/// A road fight is over, and the hero is coming home from it.
+final class EncounterEnded extends TownBlocEvent {
+  const EncounterEnded(this.state, {required this.died});
+
+  final GameState state;
+  final bool died;
+}
+
+/// The hero asked at the tavern, and core has answered.
+///
+/// Carries the whole of [Rumored] so this bloc takes the half that is its own —
+/// the purse — while the world takes the half that is its own. Neither works out
+/// the other's, and the rule itself lives in `buyRumor` where both halves are
+/// decided together.
+final class RumorBought extends TownBlocEvent {
+  const RumorBought(this.told);
+
+  final Rumored told;
+}
+
+/// The hero walked into a town, which may or may not be the one they left.
+///
+/// Sent by the world, because the world is where the hero's whereabouts live.
+/// The town's business is what arriving *means* for the shop, which is the
+/// whole of the handler.
+final class ArrivedInTown extends TownBlocEvent {
+  const ArrivedInTown(this.town);
+
+  final NodeId town;
+}
+
 final class BuyPressed extends TownBlocEvent {
   const BuyPressed(this.itemId);
 
@@ -103,6 +134,7 @@ class TownViewState {
   const TownViewState({
     required this.profile,
     required this.stock,
+    required this.town,
     this.merchant = MerchantVisit.none,
     this.run,
     this.suspended,
@@ -110,6 +142,14 @@ class TownViewState {
   });
 
   final Profile profile;
+
+  /// Which town's doors these are.
+  ///
+  /// The shelf is rolled per town, so every screen under this bloc is drawing
+  /// one particular shop and this is which. It is told to the bloc rather than
+  /// read off the world, because the hero's whereabouts belong to the world and
+  /// two owners of one fact is how the two of them start to disagree.
+  final NodeId town;
 
   /// What the merchant is still holding this visit.
   final List<Item> stock;
@@ -176,15 +216,14 @@ class TownViewState {
 class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
   TownBloc({
     required Profile profile,
+    NodeId? town,
     MerchantVisit merchant = MerchantVisit.none,
     String? notice,
     GameState? suspended,
   }) : super(
-         TownViewState(
+         _opening(
            profile: profile,
-           stock: merchant.stillOnTheShelf(
-             merchantStock(profile.worldSeed, profile.visit),
-           ),
+           town: town ?? newWhereabouts().at,
            merchant: merchant,
            suspended: suspended,
            notice: notice,
@@ -205,7 +244,35 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     on<TakeOffPressed>(_onTakeOff);
     on<DepositGoldPressed>(_onDepositGold);
     on<WithdrawGoldPressed>(_onWithdrawGold);
+    on<ArrivedInTown>(_onArrivedInTown);
+    on<RumorBought>(_onRumorBought);
+    on<EncounterEnded>(_onEncounterEnded);
   }
+
+  /// The state a town opens on: this town's shelf, less what is already bought.
+  ///
+  /// [town] falls back to where a fresh hero stands rather than being required,
+  /// because seventy-odd rule tests build a bloc to ask one question about gold
+  /// and none of them is about which town it is. The wiring that matters — the
+  /// session telling the bloc where the hero actually is — is an integration
+  /// fact, and it is pinned by a widget test rather than by making every
+  /// unrelated test say so.
+  static TownViewState _opening({
+    required Profile profile,
+    required NodeId town,
+    required MerchantVisit merchant,
+    required GameState? suspended,
+    required String? notice,
+  }) => TownViewState(
+    profile: profile,
+    town: town,
+    stock: merchant.stillOnTheShelf(
+      merchantStock(profile.worldSeed, profile.visit, town),
+    ),
+    merchant: merchant,
+    suspended: suspended,
+    notice: notice,
+  );
 
   void _onEnterDungeon(
     EnterDungeonPressed event,
@@ -213,6 +280,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
   ) => emit(
     TownViewState(
       profile: state.profile,
+      town: state.town,
       stock: state.stock,
       merchant: state.merchant,
       run: startDungeonRun(state.profile),
@@ -231,7 +299,8 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     emit(
       TownViewState(
         profile: home,
-        stock: merchantStock(home.worldSeed, home.visit),
+        town: state.town,
+        stock: merchantStock(home.worldSeed, home.visit, state.town),
       ),
     );
   }
@@ -262,8 +331,9 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     emit(
       TownViewState(
         profile: home,
+        town: state.town,
         stock: merchant.stillOnTheShelf(
-          merchantStock(home.worldSeed, home.visit),
+          merchantStock(home.worldSeed, home.visit, state.town),
         ),
         merchant: merchant,
         suspended: event.state,
@@ -282,6 +352,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
       emit(
         TownViewState(
           profile: state.profile,
+          town: state.town,
           stock: state.stock,
           merchant: state.merchant,
           run: resumeRun(state.profile, camp),
@@ -306,11 +377,83 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
       emit(
         TownViewState(
           profile: state.profile,
+          town: state.town,
           stock: state.stock,
           merchant: state.merchant,
           run: startDungeonRun(state.profile),
         ),
       );
+
+  /// Brings the hero home off the road, alive or otherwise.
+  ///
+  /// **`endRun`, the same door a crawl comes home through** — which is what makes
+  /// `endRun(died: false)` a reachable door again after the leave unit left death
+  /// as the only thing coming through it. Walking off the edge and killing the
+  /// last creature both arrive here alive, carrying whatever was picked up
+  /// mid-fight; dying arrives here having lost the pack and the purse and woken
+  /// whole, which is the same price a crawl charges.
+  ///
+  /// **The visit does not move, so nothing about the shop or the camp does.** A
+  /// road fight is not an entry, `startRoadEncounter` carries the profile's own
+  /// visit through, and `endRun` brings that same number home — so the shelf the
+  /// hero was shopping at is still theirs and a camp waiting at the crypt is
+  /// still resumable. Both ride through on the carry list rather than by luck.
+  ///
+  /// **The camp survives a death on the road.** Dying costs the pack and the
+  /// purse; a dungeon standing at the crypt with the hero's name on it is
+  /// progress they made, not goods they were carrying, and they did not die in
+  /// it.
+  void _onEncounterEnded(EncounterEnded event, Emitter<TownViewState> emit) =>
+      emit(
+        _settled(endRun(state.profile, event.state, died: event.died), null),
+      );
+
+  /// Pays for what the tavern said, or says why the purse could not.
+  ///
+  /// The profile comes from core already debited, which is [RunEnded]'s shape
+  /// the other way round: there, this bloc hands a state to `endRun` and takes
+  /// the profile back; here the caller has already been to `buyRumor` because
+  /// the answer had to be split between two owners, and this takes the half that
+  /// is a hero. A refusal leaves the profile exactly as it went in, because that
+  /// is what core returns on one.
+  void _onRumorBought(RumorBought event, Emitter<TownViewState> emit) =>
+      emit(_settled(event.told.profile, event.told.refusal));
+
+  /// Opens the shop of the town the hero just walked into.
+  ///
+  /// **Arriving at the other town clears what the merchant remembered, and
+  /// arriving back at the same one does not.** That is the D36 rule with the
+  /// town added to it: the visit block is valid exactly as long as the visit
+  /// *and* the town it was rolled for. What the merchant remembers is a list of
+  /// stock ids, and those ids name rolls off one particular shelf — carry them
+  /// to the other town and they name nothing there, so a bought item would come
+  /// back for sale while it sat in the hero's pack.
+  ///
+  /// Walking home to the town a resumed crawl started from keeps the shelf, and
+  /// that is the other half of the same pair: the visit did not move and neither
+  /// did the town, so nothing about the shop has changed.
+  ///
+  /// The camp is carried through, because arriving somewhere is not giving up a
+  /// dungeon.
+  void _onArrivedInTown(ArrivedInTown event, Emitter<TownViewState> emit) {
+    final elsewhere = event.town != state.town;
+    final merchant = elsewhere ? MerchantVisit.none : state.merchant;
+    emit(
+      TownViewState(
+        profile: state.profile,
+        town: event.town,
+        stock: merchant.stillOnTheShelf(
+          merchantStock(
+            state.profile.worldSeed,
+            state.profile.visit,
+            event.town,
+          ),
+        ),
+        merchant: merchant,
+        suspended: state.suspended,
+      ),
+    );
+  }
 
   /// Takes an item off the shelf, and writes down that it is gone.
   ///
@@ -335,7 +478,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
         after,
         null,
         stock: _without(state.stock, event.itemId),
-        merchant: state.merchant.withBought(event.itemId),
+        merchant: state.merchant.withBought(event.itemId, state.town),
       ),
     );
   }
@@ -353,7 +496,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
         after,
         refusal,
         merchant: refusal == null
-            ? state.merchant.withSold(carried)
+            ? state.merchant.withSold(carried, state.town)
             : state.merchant,
       ),
     );
@@ -432,6 +575,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     MerchantVisit? merchant,
   }) => TownViewState(
     profile: profile,
+    town: state.town,
     stock: stock ?? state.stock,
     merchant: merchant ?? state.merchant,
     suspended: state.suspended,

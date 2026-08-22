@@ -179,7 +179,15 @@ void main() {
         expect(bloc.state.profile.inventory.length, 2);
         expect(
           bloc.state.stock.map((item) => item.id),
-          isNot(contains('market-0-potion-1')),
+          isNot(contains('market-stonebridge-0-potion-1')),
+        );
+        expect(
+          merchantStock(
+            bloc.state.profile.worldSeed,
+            bloc.state.profile.visit,
+            bloc.state.town,
+          ).map((item) => item.id),
+          contains('market-stonebridge-0-potion-1'),
         );
       },
     );
@@ -455,15 +463,205 @@ void main() {
     });
   });
 
+  group('coming home off the road', () {
+    blocTest<TownBloc, TownViewState>(
+      'brings back what was picked up out there',
+      build: () => TownBloc(profile: _rich()),
+      act: (bloc) {
+        final fight = startRoadEncounter(bloc.state.profile, day: 4);
+        bloc.add(
+          EncounterEnded(
+            fight.copyWith(
+              inventory: [
+                ...fight.inventory,
+                const Item(id: 'road-1', base: leatherCap, rarity: Rarity.fine),
+              ],
+            ),
+            died: false,
+          ),
+        );
+      },
+      verify: (bloc) => expect(
+        bloc.state.profile.inventory.map((item) => item.id),
+        contains('road-1'),
+      ),
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'dying out there costs the pack and the purse and nothing else',
+      build: () => TownBloc(profile: _rich()),
+      act: (bloc) => bloc.add(
+        EncounterEnded(
+          startRoadEncounter(bloc.state.profile, day: 4),
+          died: true,
+        ),
+      ),
+      verify: (bloc) {
+        expect(bloc.state.profile.gold, 0);
+        expect(bloc.state.profile.inventory, isEmpty);
+        expect(bloc.state.profile.equipment, isNotEmpty);
+        expect(bloc.state.profile.hero.hp, bloc.state.profile.maxHp);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'dying out there leaves the camp standing at the crypt',
+      build: () => TownBloc(
+        profile: _rich(),
+        suspended: startDungeonRun(_rich()).copyWith(depth: 3),
+      ),
+      act: (bloc) => bloc.add(
+        EncounterEnded(
+          startRoadEncounter(bloc.state.profile, day: 4),
+          died: true,
+        ),
+      ),
+      verify: (bloc) {
+        expect(bloc.state.suspended, isNotNull);
+        expect(bloc.state.suspended!.depth, 3);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'walking away from a fight leaves the camp standing too',
+      build: () => TownBloc(
+        profile: _rich(),
+        suspended: startDungeonRun(_rich()).copyWith(depth: 2),
+      ),
+      act: (bloc) => bloc.add(
+        EncounterEnded(
+          startRoadEncounter(bloc.state.profile, day: 4),
+          died: false,
+        ),
+      ),
+      verify: (bloc) => expect(bloc.state.suspended!.depth, 2),
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'never moves the visit, so a camp stays resumable',
+      build: () {
+        final camped = suspendRun(_rich(), startDungeonRun(_rich()));
+        return TownBloc(profile: camped, suspended: startDungeonRun(_rich()));
+      },
+      act: (bloc) => bloc.add(
+        EncounterEnded(
+          startRoadEncounter(bloc.state.profile, day: 4),
+          died: false,
+        ),
+      ),
+      verify: (bloc) =>
+          expect(bloc.state.profile.visit, bloc.state.suspended!.visit),
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'leaves the shelf and what the merchant remembers alone',
+      build: () => TownBloc(profile: _rich()),
+      act: (bloc) async {
+        bloc.add(BuyPressed(bloc.state.stock.first.id));
+        await bloc.stream.first;
+        bloc.add(
+          EncounterEnded(
+            startRoadEncounter(bloc.state.profile, day: 4),
+            died: false,
+          ),
+        );
+      },
+      verify: (bloc) {
+        expect(bloc.state.merchant.bought, hasLength(1));
+        expect(bloc.state.town, stonebridge);
+      },
+    );
+  });
+
+  group('walking into a town', () {
+    blocTest<TownBloc, TownViewState>(
+      'the other town puts a different shelf on the counter',
+      build: () => TownBloc(profile: _rich(), town: stonebridge),
+      act: (bloc) => bloc.add(ArrivedInTown(northgate)),
+      verify: (bloc) {
+        expect(bloc.state.town, northgate);
+        expect(
+          bloc.state.stock.map((item) => item.id),
+          merchantStock(
+            bloc.state.profile.worldSeed,
+            bloc.state.profile.visit,
+            northgate,
+          ).map((item) => item.id),
+        );
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'the other town forgets what this one remembered',
+      build: () => TownBloc(profile: _rich(), town: stonebridge),
+      act: (bloc) async {
+        bloc.add(BuyPressed(bloc.state.stock.first.id));
+        await bloc.stream.first;
+        bloc.add(ArrivedInTown(northgate));
+      },
+      verify: (bloc) {
+        expect(bloc.state.merchant, MerchantVisit.none);
+        expect(bloc.state.stock, hasLength(greaterThan(0)));
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'coming back to the same town remembers everything it did',
+      build: () => TownBloc(profile: _rich(), town: stonebridge),
+      act: (bloc) async {
+        bloc.add(BuyPressed(bloc.state.stock.first.id));
+        await bloc.stream.first;
+        bloc.add(ArrivedInTown(stonebridge));
+      },
+      verify: (bloc) {
+        expect(bloc.state.merchant.bought, hasLength(1));
+        expect(
+          bloc.state.stock.map((item) => item.id),
+          isNot(contains(bloc.state.merchant.bought.single)),
+        );
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a bought item stays bought while the hero is away and back',
+      build: () => TownBloc(profile: _rich(), town: stonebridge),
+      act: (bloc) async {
+        bloc.add(BuyPressed(bloc.state.stock.first.id));
+        await bloc.stream.first;
+        bloc.add(ArrivedInTown(northgate));
+        await bloc.stream.first;
+        bloc.add(ArrivedInTown(stonebridge));
+      },
+      verify: (bloc) {
+        expect(bloc.state.town, stonebridge);
+        expect(bloc.state.merchant, MerchantVisit.none);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'arriving anywhere leaves the camp exactly where it is',
+      build: () => TownBloc(
+        profile: _rich(),
+        town: stonebridge,
+        suspended: startDungeonRun(_rich()),
+      ),
+      act: (bloc) => bloc.add(ArrivedInTown(northgate)),
+      verify: (bloc) {
+        expect(bloc.state.suspended, isNotNull);
+        expect(bloc.state.run, isNull);
+      },
+    );
+  });
+
   group('the merchant remembers this visit', () {
     test('a hero who already bought does not see it on the shelf', () {
       // arrange
-      final all = merchantStock(4, 0);
+      final all = merchantStock(4, 0, stonebridge);
 
       // act
       final bloc = TownBloc(
         profile: _fresh(),
-        merchant: MerchantVisit(bought: [all.first.id]),
+        merchant: MerchantVisit(bought: [all.first.id], town: stonebridge),
       );
 
       // assert
@@ -667,6 +865,7 @@ void main() {
           merchantStock(
             bloc.state.profile.worldSeed,
             bloc.state.profile.visit,
+            bloc.state.town,
           ).map((item) => item.id),
         );
       },

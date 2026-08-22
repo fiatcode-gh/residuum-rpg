@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
+import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 const arena = '''
@@ -108,7 +109,93 @@ Actor ghoul(
 GameBloc walker(GameState game) =>
     GameBloc(game: game, stepDelay: Duration.zero);
 
+/// A road fight with the hero standing wherever the test wants them.
+GameBloc _roadFight({required Position heroAt}) {
+  final fight = startRoadEncounter(newProfile(worldSeed: 909), day: 4);
+  return GameBloc(
+    game: fight.copyWith(hero: fight.hero.copyWith(position: heroAt)),
+    stepDelay: Duration.zero,
+  );
+}
+
 void main() {
+  group('walking off the edge of a road fight', () {
+    test('is offered only from the outermost ring', () {
+      // arrange
+      final inland = _roadFight(heroAt: const Position(7, 5));
+
+      // act
+      final canFlee = inland.state.canFlee;
+
+      // assert
+      expect(canFlee, isFalse);
+      expect(inland.state.wayOut, isNull);
+    });
+
+    test('names the edge the hero is standing on', () {
+      // arrange
+      final ways = {
+        const Position(0, 5): Direction.west,
+        Position(encounterWidth - 1, 5): Direction.east,
+        const Position(7, 0): Direction.north,
+        Position(7, encounterHeight - 1): Direction.south,
+      };
+
+      // act
+      final found = {
+        for (final at in ways.keys) at: _roadFight(heroAt: at).state.wayOut,
+      };
+
+      // assert
+      expect(found, ways);
+    });
+
+    test('gets the hero away', () {
+      // arrange
+      final bloc = _roadFight(heroAt: const Position(0, 5));
+
+      // act
+      bloc.add(const FleePressed());
+
+      // assert
+      return expectLater(
+        bloc.stream.first.then((state) => state.hasFled),
+        completion(isTrue),
+      );
+    });
+
+    test('is never offered in a crawl, wherever the hero stands', () {
+      // arrange
+      final crawl = GameBloc(
+        game: startDungeonRun(newProfile(worldSeed: 909)),
+        stepDelay: Duration.zero,
+      );
+
+      // act
+      final canFlee = crawl.state.canFlee;
+
+      // assert
+      expect(canFlee, isFalse);
+    });
+
+    test('is not offered to a dead hero', () {
+      // arrange
+      final fight = startRoadEncounter(newProfile(worldSeed: 909), day: 4);
+      final dead = GameBloc(
+        game: fight
+            .copyWith(hero: fight.hero.copyWith(position: const Position(0, 5)))
+            .copyWith(isGameOver: true),
+        stepDelay: Duration.zero,
+      );
+
+      // act
+      final canFlee = dead.state.canFlee;
+
+      // assert
+      expect(canFlee, isFalse);
+    });
+  });
+
   _lootTests();
   group('GameBloc', () {
     test('starts a fresh crawl on depth one with an empty log', () {

@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:residuum_core/core.dart';
 
+import '../world.dart';
 import 'merchant_visit.dart';
 
 /// What reading a save document produced: the document, or why there is none.
@@ -20,13 +21,19 @@ sealed class SaveRead {
 /// A hero who has never been named still has one, so the roster never has a
 /// blank row to explain.
 class SavedHero extends Equatable {
-  const SavedHero({
+  /// [world] falls back to where a fresh hero stands, for the reason [merchant]
+  /// falls back to an empty visit: the field is required in the *document* and
+  /// defaulted in *code*, so a hero built in a test that has nothing to say
+  /// about the map does not have to say something anyway. The codec never uses
+  /// the fallback — it refuses a document that left the block out.
+  SavedHero({
     required this.label,
     required this.profile,
+    Whereabouts? world,
     this.run,
     this.merchant = MerchantVisit.none,
     this.inside = false,
-  });
+  }) : world = world ?? newWhereabouts();
 
   /// What the roster calls this hero.
   final String label;
@@ -51,6 +58,15 @@ class SavedHero extends Equatable {
   /// shop that remembered one purchase for everybody would put another hero's
   /// item on this hero's shelf — or take it off.
   final MerchantVisit merchant;
+
+  /// Where in the world this hero is, what day it is for them, and what of the
+  /// map they have uncovered.
+  ///
+  /// **Per hero, like everything else here.** Two heroes are two journeys: one
+  /// may be a day out of Northgate on their fortieth day while another has never
+  /// left the town they started in, and a world block shared between them would
+  /// teleport whoever was not being played.
+  final Whereabouts world;
 
   /// Whether this hero is standing in their [run] right now.
   ///
@@ -77,24 +93,27 @@ class SavedHero extends Equatable {
   SavedHero broughtUpToDate(
     Profile profile,
     GameState? run,
-    MerchantVisit merchant, {
+    MerchantVisit merchant,
+    Whereabouts world, {
     required bool inside,
   }) => SavedHero(
     label: label,
     profile: profile,
+    world: world,
     run: run,
     merchant: merchant,
     inside: inside,
   );
 
   @override
-  List<Object?> get props => [label, profile, run, merchant, inside];
+  List<Object?> get props => [label, profile, world, run, merchant, inside];
 
   @override
-  String toString() => 'SavedHero($label, ${_whereabouts()})';
+  String toString() => 'SavedHero($label, ${_standing()})';
 
-  String _whereabouts() {
-    if (run == null) return 'in town';
+  String _standing() {
+    if (world.isTravelling) return 'on the road';
+    if (run == null) return 'at ${world.at.value}';
     return inside ? 'in a crawl' : 'camped away from a crawl';
   }
 }
@@ -119,6 +138,8 @@ final class SaveDocument extends SaveRead {
     required String id,
     required String label,
     required Profile profile,
+    Whereabouts? world,
+    MerchantVisit merchant = MerchantVisit.none,
     GameState? run,
     bool inside = false,
   }) : active = id,
@@ -126,7 +147,9 @@ final class SaveDocument extends SaveRead {
          id: SavedHero(
            label: label,
            profile: profile,
+           world: world,
            run: run,
+           merchant: merchant,
            inside: inside,
          ),
        };
@@ -155,6 +178,9 @@ final class SaveDocument extends SaveRead {
   /// What the merchant remembers of the active hero's visit.
   MerchantVisit get merchant => hero.merchant;
 
+  /// Where in the world the active hero is, and what they have uncovered of it.
+  Whereabouts get world => hero.world;
+
   /// This document with the active hero moved on, and every other hero as it was.
   ///
   /// The whole roster is rewritten on every save, so this is what keeps a hero
@@ -162,7 +188,8 @@ final class SaveDocument extends SaveRead {
   SaveDocument replacingActive(
     Profile profile,
     GameState? run,
-    MerchantVisit merchant, {
+    MerchantVisit merchant,
+    Whereabouts world, {
     required bool inside,
   }) => SaveDocument(
     active: active,
@@ -173,6 +200,7 @@ final class SaveDocument extends SaveRead {
                 profile,
                 run,
                 merchant,
+                world,
                 inside: inside,
               )
             : entry.value,

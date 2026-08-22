@@ -50,6 +50,7 @@ class GameState {
     Map<SkillId, SkillState> skills = untrainedSkills,
     Map<int, DropTable> dropTables = const {},
     this.nextDropNumber = 1,
+    this.isEncounter = false,
   }) : monsters = List.unmodifiable(monsters),
        visible = Set.unmodifiable(visible),
        explored = Set.unmodifiable(explored),
@@ -153,6 +154,27 @@ class GameState {
   /// The number the next kill's item id is built from.
   final int nextDropNumber;
 
+  /// Whether this is a fight on the road rather than a crawl in the dungeon.
+  ///
+  /// **It changes exactly one rule: a step off the grid is fleeing rather than
+  /// a bumped wall.** That is the whole of it. Nothing else in `step` reads
+  /// this, and nothing else should — an encounter is the same engine on smaller
+  /// ground, and a field that started forking combat or the monster phase would
+  /// make two games out of one.
+  ///
+  /// **Inert in a crawl, and pinned so.** A crawl's border is solid wall by
+  /// construction — the generator insets every room one tile inside its leaf
+  /// and corridors only join room centres — so a crawling hero can never stand
+  /// on the grid edge and never reach the branch this field guards. Turning it
+  /// on for a crawl therefore changes nothing observable, which is a stated
+  /// property rather than an accident: the flee rule is safe to add to the one
+  /// `step` both worlds share precisely because the crypt cannot get to it.
+  ///
+  /// **Never written to a save file.** An encounter is re-derived from the world
+  /// and the day, so there is nothing to restore; a decoded crawl gets the
+  /// default of false. See `encodeRun` for why that asymmetry is deliberate.
+  final bool isEncounter;
+
   /// The gear and training every effective hero stat derives from.
   Loadout get loadout => Loadout(equipment: equipment, skills: skills);
 
@@ -208,5 +230,6 @@ class GameState {
     skills: skills ?? this.skills,
     dropTables: dropTables,
     nextDropNumber: nextDropNumber ?? this.nextDropNumber,
+    isEncounter: isEncounter,
   );
 }

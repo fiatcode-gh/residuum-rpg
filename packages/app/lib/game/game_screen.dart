@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
 
 import '../town/town_bloc.dart';
+import '../world/world_bloc.dart';
 import 'game_bloc.dart';
 import 'glyph_grid.dart';
 import 'inventory_screen.dart';
@@ -33,32 +34,38 @@ class GameScreen extends StatelessWidget {
       if (didPop) return;
       context.read<GameBloc>().add(const SystemBackPressed());
     },
-    child: Scaffold(
-      body: SafeArea(
-        child: BlocBuilder<GameBloc, GameViewState>(
-          builder: (context, state) => Stack(
-            children: [
-              Column(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: GlyphGrid(
-                        state: state,
-                        onTap: (position) =>
-                            context.read<GameBloc>().add(TileTapped(position)),
-                        onPan: (delta) =>
-                            context.read<GameBloc>().add(MapPanned(delta)),
+    child: BlocListener<GameBloc, GameViewState>(
+      listenWhen: (before, after) => !before.hasFled && after.hasFled,
+      listener: (context, state) =>
+          leaveEncounter(context, state, EncounterEnding.fled),
+      child: Scaffold(
+        body: SafeArea(
+          child: BlocBuilder<GameBloc, GameViewState>(
+            builder: (context, state) => Stack(
+              children: [
+                Column(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: GlyphGrid(
+                          state: state,
+                          onTap: (position) => context.read<GameBloc>().add(
+                            TileTapped(position),
+                          ),
+                          onPan: (delta) =>
+                              context.read<GameBloc>().add(MapPanned(delta)),
+                        ),
                       ),
                     ),
-                  ),
-                  _HitPoints(state: state),
-                  _Controls(state: state),
-                  _MessageLog(log: state.log),
-                ],
-              ),
-              if (state.game.isGameOver) _DeathOverlay(state: state),
-            ],
+                    _HitPoints(state: state),
+                    _Controls(state: state),
+                    _MessageLog(log: state.log),
+                  ],
+                ),
+                if (state.game.isGameOver) _DeathOverlay(state: state),
+              ],
+            ),
           ),
         ),
       ),
@@ -103,7 +110,9 @@ class _HitPoints extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            'Depth ${state.depth}/$deepestDepth',
+            state.isEncounter
+                ? 'The road'
+                : 'Depth ${state.depth}/$deepestDepth',
             style: const TextStyle(
               fontFamily: 'monospace',
               fontSize: 14,
@@ -206,6 +215,22 @@ class _Controls extends StatelessWidget {
                   ),
                 ),
               ),
+              if (state.canFlee)
+                Expanded(
+                  child: _Control(
+                    label: 'Flee',
+                    onPressed: () =>
+                        context.read<GameBloc>().add(const FleePressed()),
+                  ),
+                ),
+              if (state.isRoadClear)
+                Expanded(
+                  child: _Control(
+                    label: 'Move on',
+                    onPressed: () =>
+                        leaveEncounter(context, state, EncounterEnding.cleared),
+                  ),
+                ),
               if (state.canAscend)
                 Expanded(
                   child: _Control(
@@ -267,6 +292,31 @@ void leaveDungeon(
 /// calls it is the one place that cannot break it.
 void suspendDungeon(BuildContext context, GameViewState state) {
   context.read<TownBloc>().add(RunSuspended(state.game));
+  Navigator.of(context).pop();
+}
+
+/// Ends a road fight and uncovers the world screen under it.
+///
+/// Structurally [leaveDungeon]: one pop from one place in the app, because the
+/// world was never torn down. What differs is that a fight has two owners to
+/// tell rather than one. The hero is the town's — [endRun] brings them home with
+/// whatever they picked up, or without what dying costs — and the journey is the
+/// world's, which picks it back up from the same leg or ends it at the hero's own
+/// front door.
+///
+/// All three endings come through here, which is the point of it. Walking off
+/// the edge, killing the last creature and dying are three different sentences
+/// and one shape, and a second place that ended a fight would eventually be the
+/// place that told only one of the two blocs.
+void leaveEncounter(
+  BuildContext context,
+  GameViewState state,
+  EncounterEnding ending,
+) {
+  context.read<TownBloc>().add(
+    EncounterEnded(state.game, died: ending == EncounterEnding.died),
+  );
+  context.read<WorldBloc>().add(RoadFightOver(ending));
   Navigator.of(context).pop();
 }
 
@@ -351,8 +401,10 @@ class _DeathOverlay extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           FilledButton(
-            onPressed: () => leaveDungeon(context, state, died: true),
-            child: const Text('Return to town'),
+            onPressed: () => state.isEncounter
+                ? leaveEncounter(context, state, EncounterEnding.died)
+                : leaveDungeon(context, state, died: true),
+            child: Text(state.isEncounter ? 'Wake at home' : 'Return to town'),
           ),
         ],
       ),

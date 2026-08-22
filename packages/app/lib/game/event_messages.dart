@@ -41,6 +41,7 @@ String? describeEvent(
     'You drink ${item.displayName} and recover $healed.',
   SkillLevelledUp(:final skill, :final level) =>
     '${_skillName(skill)} rises to $level.',
+  Fled() => 'You break off and get away.',
   GameOver() => null,
 };
 

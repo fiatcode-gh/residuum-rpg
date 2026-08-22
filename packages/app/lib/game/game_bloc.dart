@@ -75,6 +75,17 @@ final class SystemBackPressed extends GameBlocEvent {
   const SystemBackPressed();
 }
 
+/// The player pressed the control that walks off the edge of a road fight.
+///
+/// **A control rather than a tap, because a tap cannot say this.** Movement is
+/// tapping the tile you want, and `positionAt` refuses anything off the grid —
+/// so there is no tile to tap on the far side of the edge and the flee rule was
+/// unreachable by touch. The rule in `step` is unchanged: this dispatches the
+/// same outward [MoveAction] a tap would have, if a tap could have.
+final class FleePressed extends GameBlocEvent {
+  const FleePressed();
+}
+
 /// One step of a walk in progress. Carries the [walkId] it belongs to so a
 /// step left over from a cancelled walk cannot resume it.
 final class AutoWalkAdvanced extends GameBlocEvent {
@@ -90,6 +101,7 @@ class GameViewState {
     this.autoPath = const [],
     this.walkId = 0,
     this.pan = Offset.zero,
+    this.hasFled = false,
   });
 
   final GameState game;
@@ -111,7 +123,54 @@ class GameViewState {
   /// notice.
   final Offset pan;
 
+  /// Whether the hero has just walked off the edge of a road fight.
+  ///
+  /// A fact about the last turn rather than about the state, which is why it is
+  /// here and not on [GameState]: the rules said "they are gone", and it is the
+  /// interface's job to notice and close the screen. It cannot be worked out
+  /// from the state, because fleeing changes nothing about the board — that is
+  /// the whole of what fleeing is.
+  final bool hasFled;
+
   int get depth => game.depth;
+
+  /// Whether this is a fight on the road rather than a crawl.
+  bool get isEncounter => game.isEncounter;
+
+  /// The way off the grid from where the hero stands, or null when there is
+  /// none.
+  ///
+  /// Null everywhere in a crawl, because a crawl's border is solid wall and no
+  /// hero can stand on it. On a road it is null anywhere but the outermost ring,
+  /// which is what makes fleeing cost the walk out to the edge.
+  ///
+  /// A corner answers with one of its two edges rather than both. Stepping off
+  /// either one is the same act, and offering a choice would be asking the
+  /// player a question with one answer.
+  Direction? get wayOut {
+    if (!game.isEncounter || game.isGameOver) return null;
+    final at = game.hero.position;
+    if (at.x <= 0) return Direction.west;
+    if (at.x >= game.map.width - 1) return Direction.east;
+    if (at.y <= 0) return Direction.north;
+    if (at.y >= game.map.height - 1) return Direction.south;
+    return null;
+  }
+
+  /// Whether the hero is standing where they could walk away from this fight.
+  bool get canFlee => wayOut != null;
+
+  /// Whether a road fight is won and the hero is free to walk on.
+  ///
+  /// Not an automatic ending. A cleared fight leaves whatever the creatures
+  /// dropped lying on the ground, and popping the screen the moment the last one
+  /// fell would take the loot with it.
+  ///
+  /// The control it draws says `Move on` rather than anything longer: three
+  /// controls share one row, and a device pass found the fuller wording
+  /// ellipsised down to nonsense.
+  bool get isRoadClear =>
+      game.isEncounter && !game.isGameOver && game.monsters.isEmpty;
 
   bool get isWalking => autoPath.isNotEmpty;
 
@@ -199,6 +258,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     on<QuickDrinkPressed>(_onQuickDrinkPressed);
     on<MapPanned>(_onMapPanned);
     on<SystemBackPressed>(_onSystemBackPressed);
+    on<FleePressed>(_onFleePressed);
   }
 
   /// How long the hero pauses between tiles of a walk. Zero in tests.
@@ -286,6 +346,16 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     ),
   );
 
+  /// Walks off the edge of the road, which ends the fight.
+  ///
+  /// The direction comes from where the hero is standing, so this is the same
+  /// outward step the rules already answer to — nothing new is decided here.
+  /// Silent when the hero is not on the edge, because then the control is not on
+  /// screen and the event is a press nobody made.
+  void _onFleePressed(FleePressed event, Emitter<GameViewState> emit) {
+    if (state.wayOut case final Direction out) _act(MoveAction(out), emit);
+  }
+
   /// Says where the way out is, and stops any walk in progress.
   ///
   /// **Leaving is the stairs or it is dying, and this is what keeps that true.**
@@ -307,7 +377,10 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     emit(
       GameViewState(
         game: state.game,
-        log: [...state.log, _backRefusal],
+        log: [
+          ...state.log,
+          state.game.isEncounter ? _roadBackRefusal : _backRefusal,
+        ],
         walkId: state.walkId + 1,
       ),
     );
@@ -327,6 +400,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         game: after,
         log: [...state.log, ..._describe(before, events)],
         walkId: state.walkId + 1,
+        hasFled: events.contains(const Fled()),
       ),
     );
   }
@@ -374,6 +448,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       game: after,
       log: [...state.log, ..._describe(before, events)],
       walkId: state.walkId,
+      hasFled: events.contains(const Fled()),
     );
   }
 
@@ -413,3 +488,19 @@ const String _watchedRefusal = 'Something is watching. You stay put.';
 /// Phrased as where the exit *is* rather than as what the button is not, so a
 /// player who pressed it by habit learns the rule instead of being told off.
 const String _backRefusal = 'You can only leave at the stairs.';
+
+/// What a road fight opens its log with.
+///
+/// Said out loud because it has to be learnt once and cannot be guessed: the
+/// way out of a fight is the edge of the ground it is fought on, and nothing on
+/// the screen shows an edge until the hero walks near one.
+const String roadOpeningLog =
+    'Something is on the road. Walk to any edge to get away, or stand and '
+    'fight.';
+
+/// What the log says when the system back button is pressed in a road fight.
+///
+/// A different sentence because a different door: there are no stairs on a road,
+/// and the way out is any edge of the ground the hero is standing on.
+const String _roadBackRefusal =
+    'You can only leave by walking off the edge of the road.';

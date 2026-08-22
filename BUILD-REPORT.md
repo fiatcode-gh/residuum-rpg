@@ -1,450 +1,397 @@
-# Build report — unit `m3-leave`, story M3L "The suspend door"
+# Build report — unit `m3-world`, story M3W "The overworld"
 
-Every identifier, count and line of output below is pasted from a command run in
-this session. Nothing here is typed from memory.
+Every count, line of output and identifier below is pasted from a command run
+in this session. Nothing is typed from memory.
 
 ## 1. Where the work is
 
 ```
 $ pwd
-/var/home/dhemas/Development/Projects/fiatcode/residuum-rpg/.worktrees/m3-leave
+/var/home/dhemas/Development/Projects/fiatcode/residuum-rpg/.worktrees/m3-world
 
-$ git log --oneline main..m3-leave
-3a0c890 fix: walking out of a resumed crawl keeps the shelf it was shopping at
-a02e058 test: a crawl laid out afresh does not claim to be resumed
-34b40ff test: the purse the hero spent in town goes back down with them
-f45dbd5 test: the carry test can see the gold it names
-0f35caf feat: a way out of the crawl, and two ways back in
-4caa81c feat: the autosaver writes down which side of the stairs the hero is on
-6c8247a feat: the town holds the crawl the hero camped in
-3ba0422 feat: the save document says whether a hero is in their crawl
-9b1e706 test: the identity theorem, byte for byte through the codec
-f79837d feat: walking back into the crawl the hero left
-4638bf0 feat: a door out of the dungeon that leaves the dungeon standing
-b94f63a test: characterize what leaving a crawl alive carries home (C1)
-
-$ git status --porcelain
-(clean)
+$ git log --oneline main..m3-world
+ebe3802 fix: say Move on, because the fuller wording ellipsised to nonsense
+d112d4f fix: give a journey a way to carry on after the app was killed on it
+5cadaa6 fix: give the way out of a road fight a control, because a tap cannot say it
+ed1ac5c test: pin what a road fight leaves behind and what it hands over
+832bbd9 test: tell waking at home apart from waking where you set out
+b70d7de feat: the world is the screen the game opens on
+04899ae feat: the save document says where in the world the hero is
+d2ab28a feat: each town keeps its own shelf, and the ids say whose
+02887af feat: two towns, a crypt, and roads with something on them
+ca1d25c feat: open ground to be ambushed on, and an edge to run off
+8999939 docs: say why the day counter and the leg are two numbers
+9abf403 docs: mirror the M3W build report as it stands at the pause
+b4aafc5 feat: a world to walk around in, in days
+b71f911 test: pin the crypt, the boot fork and the shelf before the world arrives
 ```
 
-Base `f7bd6b1`. Nothing under `docs/epic/` is committed:
+Branch `m3-world`, base `844376f`. The parent repository received nothing.
+
+## 2. C1–C3 against UNMODIFIED code — commit `b71f911`
+
+All three sets were written and run against the tree as it stood at `844376f`,
+before a single production file was touched.
+
+Baseline first, measured here:
 
 ```
-$ git log main..HEAD --name-only --pretty=format: | grep "docs/epic"
-(nothing under docs/epic)
+core     00:02 +408: All tests passed!
+content  00:05 +225: All tests passed!
+app      00:10 +264: All tests passed!
 ```
 
-Screenshots for the AVD run are left outside git at
-`/var/home/dhemas/Development/Projects/fiatcode/residuum-rpg/docs/epic/m3-leave-shots/`.
-This file replaces M3H's build report, which stays in git history at `f7bd6b1`.
+408 + 225 + 264 = **897**, matching the architect's figure exactly.
+`flutter analyze`: `No issues found! (ran in 3.7s)`.
 
-## 2. The characterization tests passed against UNMODIFIED code
-
-Run before the first change to any production file.
-
-**C1** — new, `packages/core/test/town/suspend_run_test.dart`, group
-`characterization: what leaving alive carries (C1)`. The existing
-`run_boundary_test.dart` already pins hp, inventory, bank, gold, skills and
-visit for `endRun(died: false)`; what it did **not** pin is the two facts this
-unit's design turns on. Added only those:
+Then with C1–C3 added, still no production change:
 
 ```
-$ cd packages/core && flutter test test/town/suspend_run_test.dart
-00:00 +2: All tests passed!
+core     00:01 +413: All tests passed!     (408 + 5 from C1)
+content  00:05 +234: All tests passed!     (225 + 6 from C2 + 3 from C3)
+app      00:05 +264: All tests passed!     (unchanged)
 ```
 
-The two tests are `the hero that comes home is the one that stood in the dungeon`
-(position and energy travel, not just hp) and `gear worn in the dungeon comes
-home worn`.
+- **C1** `core/test/dungeon/generator_characterization_test.dart`. The generator
+  tests that existed checked that one seed builds the same floor *twice* — a
+  statement about determinism, not about *which* floor, so a change that moved
+  every layout in the game would have kept all of them green. C1 adds byte
+  literals pasted from real `generateFloor` output (seed 90210 depth 2, seed 7
+  depth 4), the hero/stairs/monster placements, and widens the border sweep from
+  5 floors to 2000.
+- **C2** `content/test/save/world_characterization_test.dart`. The M3L boot fork
+  pinned at the *document* rather than at the screen, so the navigation rework
+  could not move it.
+- **C3** `content/test/merchant_shelf_characterization_test.dart`. Today's shelf
+  for three fixed `(worldSeed, visit)` pairs, in ids and display names.
 
-**C2** — the machinery being reused, unmodified:
+**C3's re-pin** rode the salt commit `d2ab28a`, with the old shelf written out in
+full in the test's own dartdoc — same table, same weights, same number of draws,
+one more term in the seed. The commit argues it.
 
-```
-$ cd packages/content && flutter test test/save/suspend_theorem_test.dart
-00:00 +6: All tests passed!
+## 3. All three suites, and the baseline
 
-$ cd packages/app && flutter test test/widget/boot_wiring_test.dart
-00:03 +3: All tests passed!
-```
-
-No characterization test failed at base, so nothing was worked around.
-
-## 3. The three suites against the baseline
-
-**The baseline was re-measured in this worktree before the first change**, at
-`f7bd6b1`, and it matched the architect's fresh 2026-08-22 measurement exactly:
-
-```
-core:    00:02 +395: All tests passed!
-content: 00:05 +212: All tests passed!
-app:     00:09 +222: All tests passed!
-```
-
-395 + 212 + 222 = **829**, as stated in the spec.
-
-At `3a0c890`:
+| suite | baseline @ `844376f` | now | delta |
+|---|---|---|---|
+| core | 408 | **515** | +107 |
+| content | 225 | **300** | +75 |
+| app | 264 | **338** | +74 |
+| **total** | **897** | **1153** | **+256** |
 
 ```
-core:    +408: All tests passed!
-content: +225: All tests passed!
-app:     +264: All tests passed!
+core     00:02 +515: All tests passed!
+content  00:05 +300: All tests passed!
+app      00:08 +338: All tests passed!
 ```
 
-408 + 225 + 264 = **897**. Net **+68** (+13 core, +13 content, +42 app). No test
-was deleted anywhere in this unit — section 13.
+### Per-file relocation audit (owed to the architect)
 
-## 4. Survivability
+The unit retires the town's Enter Dungeon door, moves the M3L fork to the crypt
+node, and lands boot on the world screen. Name-level diff of every file whose
+assertions pressed that surface:
+
+| file | tests before | tests after | removed | renamed | added |
+|---|---|---|---|---|---|
+| `widget/suspend_door_test.dart` | 13 | 15 | **0** | 0 | 2 |
+| `widget/boot_wiring_test.dart` | 4 | 4 | **0** | 2 | 0 |
+| `widget/roster_session_test.dart` | 9 | 9 | **0** | 0 | 0 |
+| `town_bloc_test.dart` | 57 | 68 | **0** | 0 | 11 |
+
+**No assertion was dropped.** The two renames are in `boot_wiring_test.dart`,
+where "opens in the town" became "opens on the world" — the same fact, at its
+new landing. Every other test kept its exact name, which is what makes it a
+relocation rather than a rewrite.
+
+## 4. Survivability — EXACTLY unchanged
+
+Re-measured after every commit that could have touched a draw order. The final
+run:
 
 ```
-$ cd packages/content && flutter test test/survivability_test.dart
-survivability: 24/40 won (60.0%), stalled 0, died at 1:1 2:9 3:6 5:24
 greedy build: 24/40 won; fleetfoot-first build: 7/40 won
-00:07 +5: All tests passed!
+survivability: 24/40 won (60.0%), stalled 0, died at 1:1 2:9 3:6 5:24
 ```
 
-Exactly the required lines, and identical to the pre-change measurement in this
-worktree. The bot never suspends, so the band is blind to this unit by design
-(D15/D35) — see mutation row 2, where dropping a carry leaves it at 24/40.
-
-## 5. Analyzer, formatter
+## 5. analyze and format
 
 ```
 $ flutter analyze
-No issues found! (ran in 3.7s)
+No issues found! (ran in 2.8s)
 
-$ dart format --set-exit-if-changed .
-Formatted 125 files (0 changed) in 0.34 seconds.
+$ dart format .
+Formatted 138 files (0 changed)
 ```
 
-## 6. The full mutation table
+Clean at every commit, not only at the end.
 
-Every row applied to **committed** code, run, reverted; the tree was verified
-clean before and after each row by the harness, which aborts on either failure
-(`TREE NOT CLEAN` / `REVERT CLEAN`). Rows are the spec's 1–8 plus thirteen
-extensions.
+## 6. The mutation table
 
-| # | Mutation | Went RED | Stayed GREEN (control) |
+Run on COMMITTED code. Each row was applied, the affected suites run, the
+failing test names recorded, and the edit reverted with `git checkout --`.
+
+| # | Mutation | Result | What reddened |
 |---|---|---|---|
-| 1 | `resumeRun` keeps the suspended inventory | core `the town business the hero did while camped comes down too`; widget `a potion bought while camped is in the resumed pack` (`+5 -1`) | identity theorem `+10: All tests passed!` — **the theorem alone cannot guard injection**, exactly as the spec predicted |
-| 2 | `suspendRun` stops carrying gold home | core `the town business…`, `banked gold stays in the vault rather than going down` (`+11 -2`); content theorem 3 tests red (`+7 -3`) | **survivability stays `24/40 won (60.0%)… 1:1 2:9 3:6 5:24`** and `7/40`. See the finding in section 11 — the spec's "core carry test" cannot redden this row even in principle |
-| 3 | revert the `_settled` carry (the landmine) | app bloc `shopping while camped does not lose the camp`, `selling while camped keeps the camp, streams and all`, `a refused transaction does not lose the camp either`, `resuming hands back the crawl with the town business in it` (`+45 -4`); autosaver `a purchase while camped keeps the camp on disk`; widget `a potion bought while camped…`, `a night at the inn while camped…` | `core +408`, `content +225` — both suites entirely green; the pin lives in the app layer |
-| 4 | boot treats `inside: false` as true | ten widget tests, led by `a document with a crawl the hero left opens in the town`, `switching to a camped hero lands in their town, camp kept`, `a camped hero boots into the town, camp and all` (`+33 -10`) | `a document the hero is inside opens in the crawl` stayed green — **the app-kill-mid-crawl path did not regress** |
-| 5 | codec defaults a missing `inside` to false | `a hero entry missing its inside field is refused by name`, `an inside that is not true or false is refused by name` (`+126 -2`) | all three golden decode tests green |
-| 6 | codec accepts `inside: true` with `run: null` | `a hero inside a crawl that is not there is refused by name` (`+127 -1`) | rest of the content save suite green |
-| 7 | `RunSuspended` keeps the merchant block | `suspending forgets the visit the merchant remembered` (`+54 -1`) | rest of the town bloc suite green |
-| 8 | delve-anew resumes instead of entering fresh | bloc `delving anew gives the camp up and reshuffles`; widget `confirming reshuffles into a fresh crawl on floor one` | the resume-path tests stayed green |
-| 9 (ext) | `resumeRun` takes the profile's hero whole, position and all | core `the dungeon is exactly where it was left` (`+12 -1`) | theorem `+10` green, widget `+13` green — **one test guards this choice, deliberately**: it is only observable the day something in town moves a hero |
-| 10 (ext) | `resumeRun` keeps the suspended gold | core `the town business…`, `a night at the inn shows in the hit points that go back down`; theorem `town business is the one thing the theorem does not cover` | **widget `+13` green — a real gap.** Closed in `34b40ff`; the row then reddens `a potion bought while camped is in the resumed pack` too |
-| 11 (ext) | the autosaver calls every hero inside their crawl | **17 tests** across `autosaver_test.dart` (`+10 -13`) and `widget/` (`+39 -4`) — the malformed `inside: true` + `run: null` pair makes the codec refuse the document outright | — |
-| 12 (ext) | the autosaver never learns the camp (`_run = state.run`) | autosaver `a camp is written as a crawl the hero is not in`, `a purchase while camped keeps the camp on disk`, `leaving and going back down twice writes one document per change`; widget `leaving lands in town with the crawl left standing` | **town bloc suite `+55` entirely green** — the landmine has two independent layers and each needs its own row (row 3 is the bloc carry, this is the saver's read) |
-| 13 (ext) | delving anew is silent, no confirmation | `delving anew asks first, and a refusal keeps the camp`, `the question says what is lost and what is not`, `confirming reshuffles…` (`+10 -3`) | — |
-| 14 (ext) | the stairs `Leave` control ends the run again | widget `leaving lands in town with the crawl left standing`, `the town then offers going back down, at the depth left` (`+41 -2`) | `game_bloc_test.dart +55` green — the back-button guard is untouched |
-| 15 (ext) | a fresh delve claims to be a resume in its log | **NOTHING — `+43: All tests passed!`** Reported as a gap, closed in `a02e058`; the row then reddens `confirming reshuffles into a fresh crawl on floor one` |
-| 16 (ext) | suspending goes through `endRun(died: false)` instead of `suspendRun` | **NOTHING — bloc `+55`, widget `+43`, autosaver `+23` all green.** A truthful weak row; see section 11 | — |
-| 17 (ext) | `watchGame` stops skipping unchanged states | `a change that is not a game-state change writes nothing` (`+22 -1`) | the write-count test stayed green |
-| 18 (ext) | `watchGame` stacks a second writer | `a change that is not a game-state change writes nothing` only | **the write-count test stayed green** — and that is the mechanism finding: a stacked writer is neutralised by the identity skip, because the first listener has already updated `_run` |
-| 19 (ext) | a stacked writer **and** no identity skip | `a change that is not a game-state change writes nothing` **and** `leaving and going back down twice writes one document per change` (`+21 -2`) | — proves the write-count instrument has teeth |
-| 20 (ext) | suspending clears the merchant block unconditionally — the D36 defect | `walking out of a resumed crawl keeps the visit the merchant remembers`, `… keeps what is on the counter too` (`+54 -2`) | `suspending forgets the visit the merchant remembered` green, and `autosaver_test.dart +23` green |
-| 21 (ext) | suspending never clears the merchant block | `suspending forgets the visit the merchant remembered` (`+56 -1`) | the two new tests green |
+| 1 | `beginTravel` ignores the discovered gate | **RED** | core `travel_test`: *a place the hero has not heard of is refused*; app `world_bloc_test`: *…refused in the rules own words*. Arrival-adjacency tests stayed green (the control). |
+| 2 | travel day forgets `day++` | **RED** | core 9 tests (day-advance, arrival, traveler, determinism, *the day walked is the day rolled*); app 16 (walk-completes, journey-written-down, fight rows). |
+| 3 | encounter chance short-circuited to quiet | **RED** | core 5 (*a named world and day is a fight, every time it is asked*, fight-costs-the-day, two-days-decided-apart); app 10. Quiet-day test stayed green. |
+| 4 | `Fled` branch dropped | **RED** | core `step_flee_test`: *is fleeing, in every direction there is*, *costs no turn at all*; app: *pressing it closes the fight*. **Crypt border tests stayed green** — the control the spec predicted. |
+| 5 | encounter-mode default flipped true | **PARTLY WEAK — see below** | core **GREEN**, content **GREEN**, app **RED (8)**. |
+| 6 | arrival adjacency-reveal dropped | **RED** | core `whereabouts_test` + `travel_test`; app `world_bloc_test`. Rumor tests green. |
+| 7 | tavern rumor may reveal a discovered node | **RED** | core 3, content 1 (*once the map is uncovered there is nothing left to sell*), app 1. |
+| 8 | town salt dropped from `merchantStock` | **RED** | content 7 (all four C3 pins + all three shelves-differ tests); app 1 (*the other town is holding different things*). Survivability stayed green — the shelf is not a balance lever. |
+| 9 | merchant block survives a town change | **RED** | app 3: *the other town forgets what this one remembered*, *a bought item stays bought while the hero is away and back*, *what one town remembers the other one does not*. The same-town keep test stayed green — the D36 pair's other half. |
+| 10 | road death wakes at the current node | **GREEN, then RED — a real hole** | See below. |
+| 11 | codec defaults a missing world block | **RED** | content: *a document without one is refused by name*. Goldens green (they carry it). |
+| 12 | en-route legs encoded, decoder reads `at` only | **RED** | content 5 (incl. the two-hero golden); app 3. |
 
-Rows 20 and 21 are the pair the architect asked for after D36: each half of the
-conditional is pinned by its own row, and neither test can cover for the other.
+### Row 5 is *less* weak than the spec predicted — and that is the finding
 
-## 7. The scope of the diff
+The spec expected "nothing reddens via crawls". Core and content are indeed
+**GREEN**, which is the proof it wanted: the flee branch is unreachable from a
+crawl, because no crawling hero can stand on the grid edge (2000 floors swept,
+zero leaks). But the **app reddened on 8 tests**, and for a reason worth
+recording: the field is not invisible to the interface. It decides whether the
+readout says `Depth 1/5` or `The road`, and which sentence the back button
+refuses with. So:
+
+> The flee **rule** is inert in a crawl and the crypt suite proves it. The
+> **field** is not silent — flipping it is caught by the interface even though
+> the rules cannot reach it.
+
+That is a stronger position than the spec assumed, and it means the default
+cannot be flipped unnoticed.
+
+### Row 10 found a genuine gap in my own tests
+
+Applied to committed code, row 10 came back **GREEN**. The reason: a travelling
+hero's `at` is the *origin of the leg*, and every journey my tests walked began
+at a town — which was also `home`. Both answers named the same node, so the
+assertion could not see the difference.
+
+The crypt is the one place a hero can set out from that is not a town, so a
+journey beginning there is the only one where the two are different nodes. Fixed
+in `832bbd9`; both tests now also assert the two wrong candidates are *not* the
+answer. Re-run:
 
 ```
-$ git diff main --stat -- packages/core/lib
- packages/core/lib/src/town/run_boundary.dart | 93 ++++++++++++++++++++++++++++
- 1 file changed, 93 insertions(+)
+=== ROW 10 (re-run after the fix): road death wakes at the current node
+   app      RED (2):
+      - world_bloc_test.dart: ... dying wakes the hero at the town they slept in, not where they set out
+      - world_screen_test.dart: ... dying wakes the hero at home, stripped of what they carried
+```
 
-$ git diff main --stat -- packages/content/lib
- packages/content/lib/src/save/save_codec.dart | 20 ++++++-
- packages/content/lib/src/save/save_read.dart  | 76 +++++++++++++++++++++++----
- 2 files changed, 83 insertions(+), 13 deletions(-)
+### Extensions (9 rows) — two more holes found
 
-$ git diff main --stat -- '**/pubspec.yaml'
+| # | Mutation | Result | What reddened |
+|---|---|---|---|
+| E1 | **Rider 2**: road wrapper bumps the visit | **RED** | content: *does not bump the visit*; app: *never moves the visit, so a camp stays resumable*. (The app half was green until `ed1ac5c` added it.) |
+| E2 | **Rider 1**: autosaver watches the road fight | **RED** | app: *writes nothing at all to disk while it is in flight*. Ruling 4 is a red test, not a comment. |
+| E3 | encounter ground may wall its own border | **RED** (goldens only) | The *validator* caught it and the bounded retry re-rolled — which is the safety net working. Only the golden layouts moved. |
+| E3b | …and the border check removed from the validator too | **RED** | *catches a wall sitting on the way out* + both goldens. The validator is load-bearing, not decorative. |
+| E4 | hero may land on the edge | **RED** | core 4 (*never within a step or two of the way out*, the validator's own test, both goldens); content 1. |
+| E5 | `roadSeed` ignores the day | **RED** | core 2 (two-days-decided-apart, day-walked-is-day-rolled); app 3. |
+| E6 | discovered set encoded in reverse | **RED** | content 5 — all three golden encoders plus the roster key-order test. |
+| E7 | world screen reads the camp once instead of watching it | **RED** | app: *the town then offers going back down, at the depth left*. This is the defect I actually hit while building; the row proves the fix is pinned. |
+| E8 | death on the road burns the camp | **GREEN, then RED** | Nothing asserted decision 6b. Fixed in `ed1ac5c`; now reddens 3 tests. |
+| E9 | road drop table keyed where nothing looks | **GREEN, then RED** | Nothing asserted a road kill drops *anything*. Fixed in `ed1ac5c`; now reddens *is sometimes something*. |
+
+Three rows (10, E8, E9) found real gaps. All three are fixed and re-run red.
+
+## 7. Diff scope
+
+```
+$ git diff main --name-only -- packages/core/lib
+packages/core/lib/core.dart
+packages/core/lib/src/dungeon/encounter_map.dart
+packages/core/lib/src/engine/event.dart
+packages/core/lib/src/engine/game_state.dart
+packages/core/lib/src/engine/step.dart
+packages/core/lib/src/world/node.dart
+packages/core/lib/src/world/rumor.dart
+packages/core/lib/src/world/travel.dart
+packages/core/lib/src/world/whereabouts.dart
+packages/core/lib/src/world/world_map.dart
+```
+
+Exactly the sanctioned list: `world/`, `dungeon/encounter_map.dart`, the flee
+rule in `engine/`, and `core.dart` exports.
+
+```
+$ git diff main --numstat -- packages/core/lib/src/engine/step.dart
+18	0	packages/core/lib/src/engine/step.dart
+```
+
+Eighteen lines added, none removed: one branch in the body and one documented
+predicate. `step.dart` gained the flee rule and nothing else.
+
+Forbidden files — `git diff main --name-only` over `spawn_tables`, `drop_tables`,
+`bestiary`, `armory`, `affix_pool`, `new_game`, `generator.dart`,
+`generator_test.dart`, `generator_items_test.dart`, and every `pubspec`:
+
+```
+(empty)
+```
+
+`new_game.dart` is byte-untouched, so `floorSeed`, `buildFloor`,
+`residuumDungeon` and `startDungeonRun` are too. No pubspec change; no new
+dependency; no save-version bump.
+
+## 8. Hygiene
+
+```
+=== real body comments (// not ///) in 29 changed production files ===
+(empty)
+=== trailing // comments in changed production files ===
+(empty)
+=== unseeded Random( in core/content lib ===
 (none)
-
-$ git diff main --stat -- packages/app/lib
- packages/app/lib/game/game_screen.dart |  43 ++++++--
- packages/app/lib/main.dart             |  82 ++++++++++++---
- packages/app/lib/save/autosaver.dart   |  39 +++++--
- packages/app/lib/save/boot.dart        |  11 +-
- packages/app/lib/town/town_bloc.dart   | 132 +++++++++++++++++++++++-
- packages/app/lib/town/town_screen.dart | 182 +++++++++++++++++++++++++--------
- 6 files changed, 408 insertions(+), 81 deletions(-)
-
-$ git diff main --name-only -- '*bestiary*' '*spawn_tables*' '*drop_tables*' \
-    '*armory*' '*affix_pool*' '*economy*' '*new_game*' '*generator*' \
-    '*step.dart' '*floor*'
-(none touched)
-```
-
-Core is one file — `town/run_boundary.dart` — and needed no export change, because
-`core.dart:25` already exports that file wholesale. Content is confined to
-`src/save/`. No dependency added or moved. No save-version bump: this is the
-sanctioned in-place v1 reshape, and **the first shipped build freezes v1.**
-
-## 8. Hygiene greps
-
-```
-$ git diff main --name-only -- 'packages/*/lib/*' | xargs grep -n "^\s*//[^/]" | grep -v "// ignore"
+=== rumor synonyms (gossip|hearsay|scuttlebutt|whisper) ===
 (none)
-
-$ grep -rn "Random(" packages/*/lib packages/*/test
+=== British 'rumour' anywhere ===
 (none)
-
-$ grep -rn "dart:io\|DateTime" packages/core/lib packages/content/lib
-(none)
-
-$ grep -rn "DateTime.now" packages/app/lib
-packages/app/lib/save/boot.dart:151:int rollWorldSeedFromClock() => DateTime.now().millisecondsSinceEpoch;
 ```
 
-The one clock read is unchanged from M3S and is the sanctioned unseeded roll. Both
-new test files are arrange/act/assert throughout, one of each per test:
+Arrange/act/assert: every new test file has `// assert` on every test. `//
+arrange` is absent only where there is nothing to set up (a pure-function test
+over a literal), and `// act` only where the assertion *is* the act.
 
-```
-packages/core/test/town/suspend_run_test.dart: 13 arrange / 13 act / 13 assert / 13 tests
-packages/app/test/widget/suspend_door_test.dart: 13 arrange / 13 act / 13 assert / 13 tests
-```
+**Language note:** `rumor` and `traveler` are spelled as the spec spells them,
+against the codebase's British `armour`/`colour`. The spec is binding on its own
+nouns; existing words are untouched.
 
-## 9. AVD acceptance on `Pixel_10`
+## 9. AVD acceptance — `Pixel_10`, pinned to `emulator-5554`
 
-Pinned to `emulator-5554` throughout. **No physical device was attached** —
-`adb devices -l` listed nothing before the emulator was launched, and
-`emulator -list-avds` printed only `Pixel_10`. Debug APK installed with
-`adb -s emulator-5554 install -r`, storage cleared with `pm clear` at the start,
-killed between relaunches with `am force-stop`, every tap sent with
-`adb -s emulator-5554 shell input tap`. Screen `1080x2424`. 53 screenshots in
-`docs/epic/m3-leave-shots/`.
+`adb devices -l` showed one device, `emulator-5554`; **no physical phone was
+attached at any point**, and every command was pinned to the emulator serial.
 
-| Definition-of-done item | Shot | What it shows |
-|---|---|---|
-| Platform back button in the crawl | `03` | Declined, log reads `You can only leave at the stairs.` |
-| Leave at the stairs on device | `14`, `17` | `Descend >` and `Leave` on the landing; pressing Leave lands in town at `Health 12 / 20` — the wound came home, nothing healed |
-| The town door forks | `17` | `Resume the crawl (depth 2)` and `Delve anew` replace `Enter Dungeon` |
-| App-kill mid-crawl → the crawl | `15`, `16` | `inside: true` on disk; relaunch opens `Depth 2/5` with `The crawl resumes.` — unchanged behaviour |
-| App-kill while camped → town, camp intact | `18` | `inside: false` with the run block present; relaunch opens the town with the fork |
-| Shop while camped | `19`–`24` | Sold two potions, bought one back at the price paid; the camp survived every transaction |
-| Inn while camped | `26`, `27` | Rested 12/20 → 20/20 for 12 gold; the camp's own hero stayed at 12 hp |
-| Resume, verify depth and position | `29` | `Depth 2/5`, `20 / 20` — the inn heal flowed in — position `(3,3)` and `rngState` unchanged |
-| Delve-anew confirmation | `34`, `35` | The question names depth 2 and what is not lost; `Keep the crawl` leaves the camp at depth 2 |
-| Delve anew confirmed | `36` | Fresh `Depth 1/5`, run visit `1 → 2`, gold and gear carried in, empty log |
-| Die → camp cleared, penalty as today | `46`, `47`, `48` | `You died.`; after `Return to town` the disk has `run: null`, `inside: false`, pack burned, carried gold `10 → 0`, worn `mainHand` kept, woken at `20 / 20` |
-| Greyscale | `g1`–`g5` | Town fork, delve dialog, stairs controls, merchant while camped, town after death |
+Saves were pushed as real documents produced by the shipped `encodeSave`, not
+hand-written, via `run-as com.example.residuum_app`. 26 screenshots plus 6
+greyscale conversions are in
+`/var/home/dhemas/Development/Projects/fiatcode/residuum-rpg/docs/epic/m3-world-shots/`
+(gitignored, durable, outside the worktree).
 
-The document on disk was read back at each step with
-`adb -s emulator-5554 shell run-as com.example.residuum_app cat …/app_flutter/save.json`.
-Two pasted states, before and after pressing Leave:
+| # | Definition-of-done item | Shot | Result |
+|---|---|---|---|
+| 1 | boot to world | `01-boot-world` | `RESIDUUM` / `At Stonebridge` / `Day 0.`; `[T]`, `(D)`, `[?]` all present |
+| 2 | town is a pushed screen, five doors | `03-town-five-doors` | titled `Stonebridge`, back arrow, Merchant/Bank/Inn/Gear/**Tavern**; no Enter Dungeon, no Heroes |
+| 3 | tavern rumor reveals the second town | `05`,`06`,`07` | `Ask 15` → gold 400→**385**, `[?]` row becomes `[T] Northgate`, rumor line in the log |
+| 4 | platform back button | `07` | two `keyevent 4` presses walked tavern→town→world |
+| 5 | travel is confirmed before a day is spent | `08-travel-confirm` | `Walk to The Crypt?` / `One day on the road…` / Stay here / Set out |
+| 6 | a combat encounter on the road | `09-road-fight` | opened over the world; readout says **`The road`**, not a depth; no stairs controls |
+| 7 | **flee by edge** | `10`,`11` | `Flee` appears only at the edge; walking out cost **20→12 HP**; returned to the world, journey intact |
+| 8 | a cleared fight | `24`,`25` | `Move on` appears when the ground is clear; log *The road is yours again.* |
+| 9 | the fight costs the day and none of the distance | `11`,`25` | log reads, bottom-up: set out → *Day 1. Something comes out of the scrub.* → got away → *Day 2. …You reach The Crypt.* — **D40 visible in play** |
+| 10 | death on the road wakes at home with the penalty | `19`,`20` | overlay button says **`Wake at home`**; woke at **Stonebridge** having set out from **the crypt**; carried 250→**0**, banked **75 kept**, health restored |
+| 11 | camp fork at the crypt node | `12`,`13`,`14` | `Resume the crawl (depth 3)` + `Delve anew`; the M3L confirmation verbatim; resume lands at depth 3 |
+| 12 | both towns' shelves visibly different | `21`,`23` | world 909 Stonebridge: *Rare Sturdy Reinforced Leather Cap*, *Common Kite Shield*. Northgate: *Fine Maul of Fury*, *Common Iron Sword*. **Both match the C3 unit pins exactly.** |
+| 13 | app-kill en route → journey resumes | `16` | `On the road to Northgate` / `Day 7. 2 days still to walk.` |
+| 14 | app-kill mid-crawl → crawl (regression) | `15` | boots into the crawl, `Depth 1/5`, *The crawl resumes.* |
+| 15 | greyscale reading of every changed screen | `grey/` | see below |
 
-```
-inside: True
-run depth: 2   run visit: 1
-profile visit: 0   profile hp: 20   run hero hp: 12
-```
+### Greyscale
 
-```
-inside: False
-run present: True  depth: 2  visit: 1
-run hero pos: (3, 3)
-profile visit: 1  profile hp: 12
-run rngState: -1755059432890562300
-```
+Six changed screens converted with `magick -colorspace Gray`. Every distinction
+survives: `[T]` / `(D)` / `[?]` are bracket shapes plus a letter; "— you are
+here" is a phrase; a disabled control reads `Here` / `Unknown` as a word as well
+as being darker; rarity markings are `·` / `+` / `++`; on the fight screen the
+hero, wolf and rat are told apart by glyph (`@`, `w`, `r`) rather than hue.
 
-The second is the whole unit in six lines: the hero came home wounded, the crawl
-stayed where it was, and `profile visit` became equal to `run visit` — the
-invariant `resumeRun` needs, established by the act of leaving.
+### The AVD pass found three defects that every test had missed
 
-**Greyscale verdict.** All five changed screens read. On the town the two dungeon
-doors are told apart by their words and by a number (`Resume the crawl (depth 2)`
-against `Delve anew`), separated from the shop doors by a gap. The delve-anew
-dialog is a sentence, and its two answers are the outcomes in words — `Keep the
-crawl` and `Give it up` — never Yes and No. On the merchant the three lists are
-told apart by their headings and their fixed order, rarity is a glyph (`·`, `※`),
-and a price the purse cannot cover is a dim button, which survives the conversion
-as value contrast rather than hue.
+This is the section the pass exists for.
 
-**One setup step was not ordinary play, and it is small.** To reach the death
-with a bounded number of taps I force-stopped the app and edited the real save
-file twice: once to emulate pressing Leave (copying the run's carry set into the
-profile exactly as `suspendRun` does, plus a wound), and once to set the hero to
-1 hit point and place a dire wolf on the walkable tile beside them. Both are
-states ordinary play produces; what was authored is the *situation*, and the
-death, the overlay, the penalty and the clearing of the camp are all real play
-through the real code path. Everything else in the table above was played.
+1. **The flee rule was unreachable by touch** (`5cadaa6`). Fleeing is a step off
+   the edge; movement is tapping a tile; `GridGeometry.positionAt` returns null
+   for any offset outside the grid. There is no tile to tap on the far side of an
+   edge, so no player could ever flee. Twelve core tests and one app test were
+   green — and the app test dispatched `TileTapped(Position(-1, 5))`, a value the
+   real tap handler *cannot produce*. It was a false green about something
+   nobody could do. Fixed with a `Flee` control offered on the outermost ring,
+   which keeps the price the hero-inset exists to charge; the rule in `step` is
+   untouched. The false-green test is gone, replaced by five that press a real
+   control from all four edges and check it is absent inland, in a crawl, and
+   for a dead hero.
+2. **A journey could not be continued after an app-kill** (`d112d4f`). The world
+   block restored correctly, and then nothing walked the hero: every Walk button
+   is refused while travelling, so the screen offered no way forward at all. A
+   `Walk on` control now appears exactly when the hero is on a road and nothing
+   is walking them — a press rather than automatic, because continuing by itself
+   would spend days the instant the app opened.
+3. **Two wording flaws** (`5cadaa6`, `ebe3802`). The travel dialog opened with a
+   lowercase `one day on the road.`; and `Back to the road` ellipsised to
+   `Back to the ro…` with three controls sharing the row — now `Move on`.
 
 ## 10. What the tests cannot prove
 
-- **The defect in section 11 item 1 was found by the device pass, not by any
-  test.** That is the most important line in this report. 895 tests were green,
-  the mutation table was complete, and a hero who walked out of a resumed crawl
-  still got their purchase resurrected. Two bloc tests now cover it and two
-  mutation rows pin it, but nothing in the suite pointed at it first — a person
-  pressing buttons did.
-- **Look and feel.** Golden images are forbidden, so nothing asserts layout,
-  spacing, or legibility at a real font scale. The widget tests did catch a
-  hard layout failure — the fork overflowed a 600-pixel column by 45 pixels —
-  but only because overflow throws. A screen that merely read badly would pass.
-- **A real disk.** Every save test uses `MemorySaveFiles`. The AVD run exercised
-  the real `IoSaveFiles` path, but only in the happy case.
-- **The write race.** Still the open hazard M3H recorded: with a map for a disk
-  every write completes effectively instantly, so no test forces the interleaving
-  that would lose a switch. Follow-up 21 (a stallable fake save-files) is what
-  would pin it, and it is still not this unit.
-- **Repeated in-session cycles beyond two.** The write count was measured over
-  two full leave-and-resume cycles (six documents for six changes). Nothing says
-  the twentieth cycle behaves the same, though rows 18 and 19 explain *why* it
-  does: the identity skip, not the closing of blocs, is what makes a stale
-  subscription harmless.
-- **`resumeRun`'s hero choice.** Taking the position from the suspended block
-  rather than the profile is guarded by exactly one test, because today nothing
-  in town moves a hero. It is a guard against a future change, and row 9 is the
-  proof that it is a guard at all.
-- **The gold carry in both doors is unobservable.** See section 11 item 3.
-- **Two heroes camped at once.** The document supports it and the codec
-  round-trips it, but no device run had two camped heroes, because switching
-  away from a camped hero and back is several minutes of tapping.
+- **Whether the road's pricing is any good.** Fifteen, twenty-five and thirty per
+  day, one and two-day roads, and a four-day round trip to the second shelf are
+  numbers with arguments behind them, not measurements. The survivability bot
+  never travels, so the pin is blind to the road exactly as it is blind to the
+  inn (recon finding 12). A road-survivability instrument is logged as a
+  follow-up.
+- **Whether an ambush is winnable often enough to be worth standing for.** I
+  cleared one on the emulator with a strong hand-built hero and fled another at
+  8 HP. Two data points are an anecdote.
+- **Whether discovery feels like discovery** with exactly one place to find. The
+  `[?]` row makes the tavern legible; whether one hidden town is enough of a
+  world is a judgement the second and third dungeons (M3D) will settle.
+- **Flow-field and field-of-view cost on open ground.** The recon flagged this as
+  unmeasured and it still is. The encounter map is 15x11, which is smaller than
+  every crawl floor, so the risk is low — but low is not measured.
+- **Any device but this one.** One emulator, one API level, one screen size. The
+  three-control row that ellipsised is exactly the class of thing a narrower
+  screen breaks again.
+- **Real play.** Every acceptance run above was driven by `adb input tap` against
+  saves I wrote. Nobody has played this for fun.
 
-## 11. Every spec claim I checked and found wrong
+## 11. Spec claims checked, and what was wrong
 
-1. **"`RunSuspended` … clears the merchant visit block (the visit id changed)."**
-   Wrong in half the cases, and destructively so. The visit changes only when the
-   hero entered by the door that bumps it. Resuming bumps nothing, so a hero who
-   walks back into a camp and out again comes home to the same shelf with the
-   record of it wiped — `merchantStock(worldSeed, visit)` rolls the identical
-   shelf and the purchase is for sale again while it sits in the pack. Measured
-   on the device: bought `market-1-gear-1`, resumed, left, and the merchant
-   screen showed `Common Iron Helm  Buy 8` under FOR SALE with
-   `Common Iron Helm  Sell 4` under YOUR PACK (shot `31`). Buying it twice would
-   put two rows under one id, where M3H established that a sale pays for one and
-   destroys both. Fixed in `3a0c890`, pre-declared, accepted as **D36**. Rows 20
-   and 21 pin both halves.
-2. **"Carries … hp, equipment, skills, inventory, gold, visit."** The carry is
-   the whole `Actor`, not hp: `endRun` does `hero: state.hero`, so position and
-   energy come home too and always have. `suspendRun` copies the same six fields
-   for exactness; `resumeRun` therefore injects
-   `suspended.hero.copyWith(hp: profile.hero.hp)`. Verified by the architect at
-   `run_boundary.dart:90-96`.
-3. **Mutation row 2's expected red is unreachable.** The spec expects "core carry
-   test" to redden when `suspendRun` stops carrying gold. It cannot, and the
-   reason is a finding in its own right: **a run's gold is always exactly what
-   walked in.** `GameState.copyWith` has no gold parameter, and `gold` appears
-   nowhere in `engine/`, `dungeon/`, `loot/` or `skills/` except as a field and a
-   passthrough. So `gold: state.gold` in both `endRun` and `suspendRun` is
-   correct, defensive, and unobservable in any reachable state. The row does go
-   red — through the identity theorem and the `resumeRun` tests, where a
-   synthesized `deepRun` has a gold that differs from its profile's — but never
-   through a carry test. My own carry test passed the row by arithmetic at first
-   (fixture gold was zero); strengthened in `f45dbd5` and reported rather than
-   quietly fixed.
-4. **`GameState.copyWith` has no gold slot**, so `resumeRun` constructs a full
-   `GameState`. Pre-declared; verified by the architect at `:170`/`:202`.
-5. **The identity theorem is feasible, and for a reason worth writing down.**
-   `encodeEquipment` and `encodeSkills` iterate `EquipSlot.values` and
-   `SkillId.values`, so map insertion order cannot leak into the bytes. Only
-   `inventory` is order-bearing, and it is copied wholesale.
-6. **`resumeRun` carries the generators by reference**, exactly as `copyWith`
-   does and for the documented reason. A theorem test that plays the original
-   crawl before the resumed one therefore has to build the crawl twice — the
-   first play advances the very stream the second is about to draw from. Caught
-   by the theorem going red on its first run; the reason is recorded in the test
-   file so the next reader does not diagnose it as a broken resume.
-7. **The visit invariant has no violating path**, checked rather than assumed.
-   Town transactions never touch the visit; delve-anew clears the camp in the
-   same emission that bumps it; a hero switch moves profile, run and visit as one
-   entry. My own widget fixtures violated it before I noticed, which is how I
-   learned it is load-bearing: delve-anew's reshuffle counts from
-   `profile.visit`, so a hand-built camp with a stale profile visit made a fresh
-   delve fail to bump. The fixture helper now builds camps through `suspendRun`.
-8. **The autosaver transition claim, measured rather than predicted.** The spec
-   allows "either value for at most one emission". With `inside` read off the
-   town's two crawl fields there is no wrong window at all: every one of the six
-   transitions — enter, leave, resume, delve anew, death, transaction while
-   camped — writes the correct pair on its own emission. Rows 11 and 12 are the
-   pins.
-9. **The stacked-writer hazard is real but already neutralised, and not by what
-   the recon supposed.** The recon points at `close()` clearing subscriptions
-   wholesale. Rows 18 and 19 show the actual mechanism: a second listener on the
-   same bloc is suppressed by the `state.game == _run` identity skip, because the
-   first has already updated `_run`. Removing the skip alone does not double-write
-   either; only removing both does. Measured: two full leave-and-resume cycles
-   produce **6 documents for 6 changes**.
-10. **Row 16 is a weak row, flagged not hidden.** Making `RunSuspended` call
-    `endRun(died: false)` instead of `suspendRun` reddens nothing anywhere,
-    because the spec is right that the two carry identical sets — they are the
-    same six lines. Nothing at the bloc layer can tell the doors apart, and that
-    is correct: the whole difference is what *else* the handler does, which rows
-    3 and 7 pin.
-11. **The town screen overflowed once the door forked** — 45 pixels on a
-    600-pixel column, thrown by the rendering library and caught by the new
-    widget test. The column now scrolls when it does not fit and keeps the doors
-    at the bottom when it does. Not in the spec; a door a player cannot reach is
-    a door that is not there.
-12. **Delve-anew carries the merchant block forward while bumping the visit**,
-    and that is left alone on purpose. It is exactly what `EnterDungeonPressed`
-    has always done, and coming home always clears when the visit moved, so the
-    stale block is never readable by a player. Making delve-anew differ from the
-    entering door for no observable gain would be the worse choice.
+| Claim | Verdict |
+|---|---|
+| "Baseline 897 stays green" | **SPEC DEFECT**, owned by the architect. The unit is *required* to retire the surface ~20 widget tests press. Ruling: it meant no behaviour regresses and no assertion is dropped. The audit in section 3 discharges it. |
+| The one-pop-home shape survives the reshape | **TRUE.** `leaveDungeon`/`suspendDungeon` read `TownBloc` off the crawl route's own provider, not by inheritance, so they needed no change at all. |
+| The navigation rework is otherwise safe | **NO — worker-found defect.** A generation bump swaps the route under `home:` but does not clear routes pushed on top of it, so a roster reached through a pushed town would leave the new hero's world under the old hero's route holding closed blocs. Fix approved: Heroes moved to the world screen. Invariant stated at `_rosterChose`, pinned by a widget test. |
+| The flee rule is inert in crawls because the border is solid | **TRUE and structural**, verified 2000 floors / 0 leaks — but see row 5: inert in the *rules*, not invisible to the *interface*. |
+| "Flee by stepping off any map edge" is reachable | **NO — see section 9, defect 1.** A tap cannot express an off-grid position. The rule was right and unusable. |
+| `(worldSeed ^ travelSalt, day)` might correlate floors with road encounters | **NO.** All four seed families — travel days, ambush ground, ambush fight, crypt floors — proved pairwise disjoint over 2000 days and 2000 visits across eight world seeds, in a committed content test. |
+| C3 has an indirectly-pinned shelf somewhere | **YES**, and it would have rotted silently: `town_bloc_test.dart:181` asserted `isNot(contains('market-0-potion-1'))`, and once ids carry a town that id stops existing, so the assertion would have passed by naming nothing. Re-pinned to a real id *and* given a positive half. |
 
-## 12. Which execution phases ran, and which were skipped
+## 12. Which execution phases ran
 
-Ran: recon reading (spec, recon, build prompt and every file they name, read in
-full); a written plan via the `writing-plans` skill, committed at
-`docs/superpowers/plans/2026-08-22-m3l-leave.md`; pre-declaration of nine shape
-items and two spec corrections to the architect **before any code**, all
-approved; strict test-first execution of twelve commits; the 21-row mutation
-table against committed code; the AVD acceptance; a second pre-declaration
-mid-flight when the device run found a defect; this report.
+Written plan → C1–C3 characterization against unmodified code → strict red/green
+per unit of behaviour → mutation table on committed code with extensions → AVD
+acceptance → this report. Every commit's exit state was green, analyze-clean and
+format-clean.
 
-**Skipped: per-task reviewer subagents.** The build prompt permits the skip and
-asks for the argument. The D9 precedent is that the mutation table carries the
-adversarial load, and it did: 21 rows ran, thirteen of them extensions I added
-where I thought the spec's eight were blind, and three of those thirteen (rows
-10, 15, 18) changed the code or the tests. But the honest addition this unit
-makes to that precedent is that **the table was not enough**. The defect in
-section 11 item 1 survived 895 green tests and a complete table, and only the
-device pass found it — because it needed a sequence no test author had thought
-to write down. A reading reviewer would not have found it either; what found it
-was pressing the buttons in an order the spec did not anticipate. That is an
-argument for keeping the AVD pass mandatory, not for adding reviewers.
+**Skipped: write-capable subagents.** The D9 precedent, argued rather than
+assumed — a subagent that needs a permission nobody is present to grant stalls
+silently, and the mutation table plus the AVD pass carry the adversarial load
+better than a reviewer reading a diff would. Between them they found six real
+defects (three test gaps, three interface defects), which is the evidence for the
+choice rather than a claim about it.
 
-Also skipped: `superpowers:brainstorming`, because the design was settled in
-ledger entries D34 and D35 and written into the spec; there was nothing to
-explore, only shape to pre-declare and two claims to correct.
+## 13. Decisions recorded
 
-## 13. Deleted tests
+Nine shape decisions were pre-declared before any code and all nine approved;
+two riders came back and both are discharged (E1, E2). Two further decisions were
+raised at the pause and locked as **D40**: a road fight costs the day and none of
+the distance, and `beginTravel` refuses a discovered-but-non-adjacent
+destination. Both arguments now live in the dartdoc of each half of the pair
+they constrain.
 
-**None.** No test was deleted or weakened in this unit. Two existing widget
-fixtures changed meaning rather than being removed — `boot_wiring_test.dart`'s
-crawl document and `roster_session_test.dart`'s Ilse both now say `inside: true`,
-which is what they always meant (a hero killed mid-crawl), and each gained a
-camped counterpart beside it so the pair pins both answers. One existing test was
-strengthened, not weakened (`f45dbd5`, section 11 item 3).
+Custody, as declared: `TownBloc` is the single home of `Profile`; `WorldBloc` is
+the single home of `Whereabouts`. The one transaction that moves both — a rumor
+bought with coin — is one core function returning both halves, dispatched to its
+two owners in one synchronous pair.
 
-## Follow-ups to log
+## 14. Follow-ups logged, not done
 
-- Hero rename after creation (carried from M3H).
-- Roster ordering, most-recently-played first (carried from M3H).
-- A way out of a crawl that suspends rather than ends it — **resolved by this
-  unit.** M3H recorded that switching to a suspended hero had no in-game route
-  to it; the stairs `Leave` control is that route, and shot `18` is a camped hero
-  reached by ordinary play.
-- Follow-up 19, the message log dropping on resume: now highly visible, since an
-  in-session resume shows `The crawl resumes.` on every return. Left alone as the
-  recorded design choice, and the boot notice is no longer repeated on every
-  resume (it is a fact about the launch, said once).
-- Follow-up 20 restated: no version bump here, and **the first shipped build
-  freezes v1.**
-- Follow-up 21, a stallable fake save-files, still open and still the only way to
-  pin the close-before-rebuild await.
-- **New:** the interim inn-heal easing is now reachable and was exercised on the
-  device — suspend, rest for 12 gold, resume at full health, with no travel cost
-  and no risk. Accepted per D34; M3W's travel days are what price it.
-- **New:** nothing bounds the sold-back list within a visit, and a camped hero can
-  now shop repeatedly without the visit ever rolling over. It still clears when
-  the visit moves, so it cannot grow without bound, but the ceiling is higher
-  than it was before this unit.
-- **New (D36 consequence):** the merchant visit block is valid exactly as long as
-  the visit is. Every future door between town and dungeon must answer whether it
-  moved the visit. M3W's travel doors are the next place this class would bite.
+- Caravan and shrine encounter mechanics (deferred by the spec).
+- A road-survivability instrument, per section 10.
+- M3D: per-node floor salts, dungeon identity in the run block, themed
+  bestiaries and palettes, light bottom-floor bosses and guaranteed rares.
+- The three-control row on the road is one word from ellipsising again on a
+  narrower screen; a wrapping or two-row control strip would end the class.
+- Old documents without a `world` block demote to the corrupt fallback and then
+  a fresh hero. Acceptable while unshipped, and stated here because it is the
+  one migration this reshape does not do.

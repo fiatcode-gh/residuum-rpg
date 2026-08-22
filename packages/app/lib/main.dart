@@ -12,6 +12,8 @@ import 'save/save_store.dart';
 import 'town/roster_screen.dart';
 import 'town/town_bloc.dart';
 import 'town/town_screen.dart';
+import 'world/world_bloc.dart';
+import 'world/world_screen.dart';
 
 Future<void> main() async {
   final store = SaveStore(IoSaveFiles());
@@ -69,6 +71,14 @@ class _ResiduumAppState extends State<ResiduumApp> {
   /// [_boot], because the boot's copy is as old as the launch: the hero being
   /// played has spent gold and taken wounds since, and editing the stale copy
   /// would hand those back on the way out.
+  ///
+  /// **The roster must be pushed only over the navigator's bottom route, and
+  /// this is why.** Bumping the generation swaps the session under `home:`, and
+  /// a generation bump does not clear routes pushed on top of it — so a roster
+  /// reached through a pushed screen would leave the new hero's world sitting
+  /// underneath the old hero's route, holding blocs that [_SessionState.dispose]
+  /// has just closed. The Heroes door therefore lives on the world screen, which
+  /// *is* the bottom route, and nowhere else.
   Future<void> _rosterChose(RosterChoice chosen, SaveDocument document) async {
     final fresh = switch (chosen) {
       PlayHero(:final id) => await switchHero(widget.store, document, id),
@@ -129,11 +139,32 @@ class _SessionState extends State<_Session> {
   /// it hands it to the town, whose door is the only way back.
   late final TownBloc _town = TownBloc(
     profile: widget.boot.profile,
+    town: _townFor(widget.boot.world),
     merchant: widget.boot.merchant,
     notice: widget.boot.notice,
     suspended: widget.boot.inside ? null : widget.boot.run,
   );
+
+  /// Where the hero is in the world, and every day they spend walking it.
+  ///
+  /// Beside the town rather than under it. The town owns the hero and this owns
+  /// the map; the two are told apart everywhere, and the places one press moves
+  /// both — a rumor, a fight ending — hand each half to its owner.
+  late final WorldBloc _world = WorldBloc(
+    world: widget.boot.world,
+    worldSeed: widget.boot.profile.worldSeed,
+  );
   late final Autosaver _saver = Autosaver(widget.store, from: widget.boot);
+
+  /// The town whose shelf the hero should be looking at.
+  ///
+  /// A hero standing on a road or at the crypt is at no town, and the shop they
+  /// last stood in is the honest answer — it is the one whose remembered
+  /// purchases are still theirs. `home` is exactly that: the last town stood in.
+  static NodeId _townFor(Whereabouts world) =>
+      residuumWorld.nodeAt(world.at).kind == NodeKind.town
+      ? world.at
+      : world.home;
 
   /// Attaches the autosaver to the town before anything can be pressed.
   ///
@@ -146,6 +177,7 @@ class _SessionState extends State<_Session> {
   void initState() {
     super.initState();
     _saver.watchTown(_town);
+    _saver.watchWorld(_world);
     if (widget.boot.inside) {
       final run = widget.boot.run!;
       WidgetsBinding.instance.addPostFrameCallback(
@@ -158,19 +190,95 @@ class _SessionState extends State<_Session> {
   void dispose() {
     _saver.close();
     _town.close();
+    _world.close();
     super.dispose();
   }
 
+  /// The world screen, with a fight opened over it whenever the road produces
+  /// one, and the town told whenever the hero walks into one.
+  ///
+  /// Both listeners live here rather than on the screen because both are about
+  /// what happens *between* blocs, which is the session's whole job. The screen
+  /// draws; this wires.
   @override
-  Widget build(BuildContext context) => BlocProvider.value(
-    value: _town,
-    child: TownScreen(
-      onEnterDungeon: _enterDungeon,
-      onResumeCrawl: _resumeCrawl,
-      onDelveAnew: _delveAnew,
-      onOpenRoster: _openRoster,
+  Widget build(BuildContext context) => MultiBlocProvider(
+    providers: [
+      BlocProvider.value(value: _town),
+      BlocProvider.value(value: _world),
+    ],
+    child: MultiBlocListener(
+      listeners: [
+        BlocListener<WorldBloc, WorldViewState>(
+          listenWhen: (before, after) =>
+              before.fight == null && after.fight != null,
+          listener: (context, state) => _openRoadFight(state.world.day),
+        ),
+        BlocListener<WorldBloc, WorldViewState>(
+          listenWhen: (before, after) => before.world.at != after.world.at,
+          listener: (context, state) {
+            if (residuumWorld.nodeAt(state.world.at).kind == NodeKind.town) {
+              _town.add(ArrivedInTown(state.world.at));
+            }
+          },
+        ),
+      ],
+      child: WorldScreen(
+        onEnterTown: _enterTown,
+        onEnterDungeon: _enterDungeon,
+        onResumeCrawl: _resumeCrawl,
+        onDelveAnew: _delveAnew,
+        onOpenRoster: _openRoster,
+      ),
     ),
   );
+
+  /// Pushes the town over the world.
+  ///
+  /// The world is never torn down, so leaving town is one pop — the same shape
+  /// the crawl has used since it was first pushed over something.
+  Future<void> _enterTown() => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: _town),
+          BlocProvider.value(value: _world),
+        ],
+        child: const TownScreen(),
+      ),
+    ),
+  );
+
+  /// Opens the fight the road produced on [day], over the world screen.
+  ///
+  /// **The autosaver is deliberately not watching it.** A road fight is never
+  /// written down: it is re-derived from the world seed and the day counter, both
+  /// of which the world block already holds, so an app killed mid-fight comes
+  /// back to the same day and a fresh fight rather than to a half-resolved one.
+  /// That is the one crawl in the app that `_openCrawl` must not be used for, and
+  /// this is why there are two functions rather than a flag on one.
+  ///
+  /// The fight's own bloc is closed when the route comes back, exactly as a
+  /// crawl's is.
+  Future<void> _openRoadFight(int day) async {
+    final fight = GameBloc(
+      game: startRoadEncounter(_town.state.profile, day: day),
+      log: const [roadOpeningLog],
+    );
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: _town),
+            BlocProvider.value(value: _world),
+            BlocProvider.value(value: fight),
+          ],
+          child: const GameScreen(),
+        ),
+      ),
+    );
+    await fight.close();
+  }
 
   /// Opens the roster on the document as it stands, and acts on the answer.
   ///
@@ -250,6 +358,7 @@ class _SessionState extends State<_Session> {
         builder: (_) => MultiBlocProvider(
           providers: [
             BlocProvider.value(value: _town),
+            BlocProvider.value(value: _world),
             BlocProvider.value(value: game),
           ],
           child: const GameScreen(),
