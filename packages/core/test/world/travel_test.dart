@@ -3,6 +3,14 @@ import 'package:test/test.dart';
 
 import 'support/small_world.dart';
 
+/// The danger every road of [smallWorld] carries, which is what `travelOneDay`
+/// used to read off the route itself.
+///
+/// Named once rather than repeated, so the tests that are about *whether* a day
+/// is a fight can go on being about the seed while the tests that are about the
+/// number say so out loud.
+const int _danger = 20;
+
 /// A hero one road-day out of the home town, bound for the crypt.
 Whereabouts _onTheRoad() {
   final (where, _) = beginTravel(atHome(), smallWorld(), crypt);
@@ -19,6 +27,7 @@ Whereabouts _walk(Whereabouts from, int days, {int travelSeed = 1}) {
       smallWorld(),
       travelSeed: travelSeed,
       travelerChance: 0,
+      danger: _danger,
     ).whereabouts;
   }
   return where;
@@ -138,6 +147,7 @@ void main() {
         smallWorld(),
         travelSeed: 1,
         travelerChance: 0,
+        danger: _danger,
       );
 
       // assert
@@ -149,8 +159,13 @@ void main() {
       final where = atHome();
 
       // act
-      RoadDay walk() =>
-          travelOneDay(where, smallWorld(), travelSeed: 1, travelerChance: 0);
+      RoadDay walk() => travelOneDay(
+        where,
+        smallWorld(),
+        travelSeed: 1,
+        travelerChance: 0,
+        danger: _danger,
+      );
 
       // assert
       expect(walk, throwsStateError);
@@ -166,6 +181,7 @@ void main() {
         smallWorld(),
         travelSeed: _quietSeedToTheCrypt,
         travelerChance: 0,
+        danger: _danger,
       );
 
       // assert
@@ -175,7 +191,7 @@ void main() {
       expect(walked.whereabouts.isTravelling, isFalse);
     });
 
-    test('arriving uncovers what the place is next to', () {
+    test('arriving uncovers nothing the hero had not already heard of', () {
       // arrange
       final where = _onTheRoad();
 
@@ -185,10 +201,11 @@ void main() {
         smallWorld(),
         travelSeed: _quietSeedToTheCrypt,
         travelerChance: 0,
+        danger: _danger,
       );
 
       // assert
-      expect(walked.whereabouts.discovered, contains(ridge));
+      expect(walked.whereabouts.discovered, where.discovered);
     });
 
     test('a day short of the end is not an arrival', () {
@@ -202,6 +219,7 @@ void main() {
         smallWorld(),
         travelSeed: _quietSeedToRidge,
         travelerChance: 0,
+        danger: _danger,
       );
 
       // assert
@@ -222,6 +240,7 @@ void main() {
         smallWorld(),
         travelSeed: _dangerousSeedToTheCrypt,
         travelerChance: 0,
+        danger: _danger,
       );
 
       // assert
@@ -238,6 +257,7 @@ void main() {
         smallWorld(),
         travelSeed: _dangerousSeedToTheCrypt,
         travelerChance: 0,
+        danger: _danger,
       );
 
       // assert
@@ -256,6 +276,7 @@ void main() {
         smallWorld(),
         travelSeed: _dangerousSeedToTheCrypt,
         travelerChance: 0,
+        danger: _danger,
       );
 
       // assert
@@ -287,6 +308,7 @@ void main() {
           map,
           travelSeed: 12345,
           travelerChance: 0,
+          danger: 0,
         );
         events.add(walked.event);
         walking = walked.whereabouts;
@@ -294,6 +316,42 @@ void main() {
 
       // assert
       expect(events, everyElement(isA<QuietDay>()));
+    });
+
+    test('the danger handed in decides, not the one written on the route', () {
+      // arrange — the route the hero is on carries a danger of twenty, and the
+      // day's roll is forty-five, so the route's own number would keep the day
+      // quiet and the number handed in must be what makes it a fight
+      final where = _onTheRoad();
+
+      // act
+      final walked = travelOneDay(
+        where,
+        smallWorld(),
+        travelSeed: _quietSeedToTheCrypt,
+        travelerChance: 0,
+        danger: 100,
+      );
+
+      // assert
+      expect(walked.event, isA<DangerMet>());
+    });
+
+    test('a danger of nothing keeps a dangerous road quiet', () {
+      // arrange
+      final where = _onTheRoad();
+
+      // act
+      final walked = travelOneDay(
+        where,
+        smallWorld(),
+        travelSeed: _dangerousSeedToTheCrypt,
+        travelerChance: 0,
+        danger: 0,
+      );
+
+      // assert
+      expect(walked.event, isNot(isA<DangerMet>()));
     });
 
     test('a traveler tells the hero of somewhere they had not heard of', () {
@@ -306,12 +364,37 @@ void main() {
         smallWorld(),
         travelSeed: _talkativeSeedToTheCrypt,
         travelerChance: 100,
+        danger: _danger,
       );
 
       // assert
       expect(walked.event, isA<TravelerMet>());
       expect((walked.event as TravelerMet).told, ridge);
       expect(walked.whereabouts.discovered, contains(ridge));
+    });
+
+    test('walking somewhere leaves its neighbours for a traveler to name', () {
+      // arrange
+      final walkedIn = atHome().arrivingAt(smallWorld(), crypt);
+      final setOut = Whereabouts(
+        at: crypt,
+        home: walkedIn.home,
+        discovered: walkedIn.discovered,
+        journey: Journey(from: crypt, to: harbour, daysLeft: 1),
+      );
+
+      // act
+      final walked = travelOneDay(
+        setOut,
+        smallWorld(),
+        travelSeed: _talkativeSeedToTheCrypt,
+        travelerChance: 100,
+        danger: _danger,
+      );
+
+      // assert
+      expect(walked.event, isA<TravelerMet>());
+      expect((walked.event as TravelerMet).told, ridge);
     });
 
     test('a traveler with nothing left to tell is just a quiet day', () {
@@ -329,6 +412,7 @@ void main() {
         smallWorld(),
         travelSeed: _talkativeSeedToTheCrypt,
         travelerChance: 100,
+        danger: _danger,
       );
 
       // assert
@@ -347,12 +431,14 @@ void main() {
         smallWorld(),
         travelSeed: 4242,
         travelerChance: 25,
+        danger: _danger,
       );
       final again = travelOneDay(
         where,
         smallWorld(),
         travelSeed: 4242,
         travelerChance: 25,
+        danger: _danger,
       );
 
       // assert
@@ -368,6 +454,7 @@ void main() {
         smallWorld(),
         travelSeed: 4242,
         travelerChance: 25,
+        danger: _danger,
       );
 
       // act
@@ -382,6 +469,7 @@ void main() {
         smallWorld(),
         travelSeed: 4242,
         travelerChance: 25,
+        danger: _danger,
       );
 
       // assert
@@ -413,6 +501,7 @@ void main() {
           map,
           travelSeed: 777,
           travelerChance: 0,
+          danger: _danger,
         );
         seen.add(walked.event.runtimeType.toString());
         walking = walked.whereabouts;
@@ -434,6 +523,7 @@ void main() {
             smallWorld(),
             travelSeed: seed,
             travelerChance: 0,
+            danger: _danger,
           ).event.runtimeType.toString(),
       };
 
@@ -458,13 +548,20 @@ void main() {
       );
 
       // act
-      final first = travelOneDay(start, map, travelSeed: 31, travelerChance: 0);
+      final first = travelOneDay(
+        start,
+        map,
+        travelSeed: 31,
+        travelerChance: 0,
+        danger: _danger,
+      );
       final laterStart = start.onDay(5, journey: start.journey);
       final later = travelOneDay(
         laterStart,
         map,
         travelSeed: 31,
         travelerChance: 0,
+        danger: _danger,
       );
 
       // assert

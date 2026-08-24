@@ -15,6 +15,7 @@ SaveDocument _one(Profile profile, {GameState? run}) => SaveDocument.one(
   profile: profile,
   run: run,
   dungeon: run == null ? null : cryptNode,
+  campDay: run == null ? null : 0,
 );
 
 void main() {

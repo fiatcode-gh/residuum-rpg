@@ -40,8 +40,8 @@ const Map<int, DropTable> dropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 4,
-    maxFloorItems: 6,
+    minFloorItems: 2,
+    maxFloorItems: 3,
   ),
   2: DropTable(
     items: [
@@ -69,12 +69,12 @@ const Map<int, DropTable> dropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 4,
-    maxFloorItems: 6,
+    minFloorItems: 2,
+    maxFloorItems: 3,
   ),
   3: DropTable(
     items: [
-      Weighted(healingPotion, 14),
+      Weighted(healingPotion, 30),
       Weighted(rustySword, 0),
       Weighted(ironSword, 4),
       Weighted(warAxe, 5),
@@ -98,12 +98,12 @@ const Map<int, DropTable> dropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 4,
-    maxFloorItems: 6,
+    minFloorItems: 2,
+    maxFloorItems: 3,
   ),
   4: DropTable(
     items: [
-      Weighted(healingPotion, 14),
+      Weighted(healingPotion, 30),
       Weighted(rustySword, 0),
       Weighted(ironSword, 2),
       Weighted(warAxe, 6),
@@ -127,12 +127,12 @@ const Map<int, DropTable> dropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 4,
-    maxFloorItems: 6,
+    minFloorItems: 2,
+    maxFloorItems: 3,
   ),
   5: DropTable(
     items: [
-      Weighted(healingPotion, 14),
+      Weighted(healingPotion, 30),
       Weighted(rustySword, 0),
       Weighted(ironSword, 1),
       Weighted(warAxe, 6),
@@ -156,8 +156,8 @@ const Map<int, DropTable> dropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 4,
-    maxFloorItems: 6,
+    minFloorItems: 2,
+    maxFloorItems: 3,
   ),
 };
 

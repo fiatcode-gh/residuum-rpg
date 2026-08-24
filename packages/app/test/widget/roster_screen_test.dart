@@ -11,6 +11,7 @@ SaveDocument _twoHeroes() => SaveDocument(
       profile: newProfile(worldSeed: 111).copyWith(gold: 40, visit: 2),
       run: startDungeonRunAt(cryptNode, newProfile(worldSeed: 111)),
       dungeon: cryptNode,
+      campDay: 0,
     ),
     'hero-2': SavedHero(
       label: 'Bram',
@@ -282,6 +283,7 @@ void main() {
             .copyWith(gold: 40, bankedGold: 90, visit: 2),
         run: startDungeonRunAt(cryptNode, newProfile(worldSeed: 111)),
         dungeon: cryptNode,
+        campDay: 0,
       );
 
       // act

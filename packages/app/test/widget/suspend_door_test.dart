@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -19,6 +20,7 @@ SaveDocument _oneHero(
   world: world ?? (run == null ? null : atTheCrypt()),
   run: run,
   dungeon: run == null ? null : (dungeon ?? cryptNode),
+  campDay: run == null || inside ? null : 0,
   inside: inside,
 );
 
@@ -46,6 +48,20 @@ GameState _onTheStairs(Profile profile) {
 /// A camp two floors down, standing on the stairs, so the depth the door offers
 /// is a number a test can tell apart from the depth a fresh delve opens on.
 GameState _twoDown(Profile profile) => _onTheStairs(profile).copyWith(depth: 2);
+
+/// A crawl standing on the bottom floor's own stairs, where leaving is ending.
+///
+/// The stairs up rather than down, because a bottom floor has no stairs down —
+/// which is exactly what makes it the bottom.
+GameState _atTheBottom(Profile profile) {
+  final run = startDungeonRunAt(cryptNode, profile);
+  return run.copyWith(
+    depth: deepestDepth,
+    hero: run.hero.copyWith(position: run.stairsDown),
+    stairsUp: run.stairsDown,
+    stairsDown: null,
+  );
+}
 
 /// A document with the hero camped away from [camp].
 ///
@@ -119,7 +135,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.text('Resume the crawl (depth 2)'), findsOneWidget);
+      expect(find.text('Resume the crawl (depth 2 of 5)'), findsOneWidget);
       expect(find.text('Enter The Crypt'), findsNothing);
     });
   });
@@ -169,7 +185,7 @@ void main() {
 
       // assert
       expect(find.text('RESIDUUM'), findsOneWidget);
-      expect(find.text('Resume the crawl (depth 2)'), findsOneWidget);
+      expect(find.text('Resume the crawl (depth 2 of 5)'), findsOneWidget);
       expect(find.textContaining('Depth'), findsNothing);
     });
 
@@ -301,7 +317,7 @@ void main() {
 
       // assert
       expect(find.text('RESIDUUM'), findsOneWidget);
-      expect(find.text('Resume the crawl (depth 2)'), findsOneWidget);
+      expect(find.text('Resume the crawl (depth 2 of 5)'), findsOneWidget);
       expect(app.saved!.run!.depth, 2);
     });
 
@@ -343,6 +359,107 @@ void main() {
       expect(app.saved!.run!.depth, 1);
       expect(app.saved!.inside, isTrue);
       expect(find.text('The crawl resumes.'), findsNothing);
+    });
+  });
+
+  group('leaving from the bottom floor', () {
+    testWidgets('the control and the line both say the delve is done', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+
+      // act
+      final app = PumpedApp(
+        _oneHero(profile, run: _atTheBottom(profile), inside: true),
+      );
+      await app.pump(tester);
+
+      // assert
+      expect(find.text(doneControl), findsOneWidget);
+      expect(find.text(doneAtTheBottom), findsOneWidget);
+      expect(find.text('Leave'), findsNothing);
+    });
+
+    testWidgets('it asks before it spends the delve', (tester) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final app = PumpedApp(
+        _oneHero(profile, run: _atTheBottom(profile), inside: true),
+      );
+      await app.pump(tester);
+
+      // act
+      await tester.tap(find.text(doneControl));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(
+        find.text('The delve is done. Leave with your spoils?'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('staying down there keeps the crawl exactly as it was', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final app = PumpedApp(
+        _oneHero(profile, run: _atTheBottom(profile), inside: true),
+      );
+      await app.pump(tester);
+
+      // act
+      await tester.tap(find.text(doneControl));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Stay down here'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(find.text(doneControl), findsOneWidget);
+      expect(app.saved!.inside, isTrue);
+      expect(app.saved!.run, isNotNull);
+    });
+
+    testWidgets('leaving with them ends the run and leaves no camp', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final app = PumpedApp(
+        _oneHero(profile, run: _atTheBottom(profile), inside: true),
+      );
+      await app.pump(tester);
+
+      // act
+      await tester.tap(find.text(doneControl));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Leave with them'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(find.text('Enter The Crypt'), findsOneWidget);
+      expect(find.textContaining('Resume the crawl'), findsNothing);
+      expect(app.saved!.run, isNull);
+      expect(app.saved!.campDay, isNull);
+      expect(app.saved!.inside, isFalse);
+    });
+
+    testWidgets('a floor above the bottom still only suspends', (tester) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+
+      // act
+      final app = PumpedApp(
+        _oneHero(profile, run: _twoDown(profile), inside: true),
+      );
+      await app.pump(tester);
+
+      // assert
+      expect(find.text('Leave'), findsOneWidget);
+      expect(find.text(doneControl), findsNothing);
+      expect(find.text(doneAtTheBottom), findsNothing);
     });
   });
 

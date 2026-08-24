@@ -5,6 +5,15 @@ import 'package:test/test.dart';
 /// A hero at the start of everything, for the assembly tests.
 Profile _fresh({int worldSeed = 909}) => newProfile(worldSeed: worldSeed);
 
+/// What stood on the road on [day], as one line a golden can be written as.
+String _fingerprint(int day) => startRoadEncounter(_fresh(), day: day).monsters
+    .map(
+      (monster) =>
+          '${monster.id}@${monster.position.x},'
+          '${monster.position.y}',
+    )
+    .join(' ');
+
 void main() {
   group('the world the game ships', () {
     test('is two towns and three dungeons', () {
@@ -282,27 +291,35 @@ void main() {
   });
 
   group('what walks the roads', () {
-    test('is only creatures the bestiary has', () {
+    test('is nothing out of any dungeon\'s deep floors', () {
       // act
-      final ids = roadSpawnTable.entries.map((entry) => entry.creatureId);
+      final names = {
+        for (final route in residuumWorld.routes)
+          for (final creature in roadTableFor(route).creatures) creature.id,
+      };
 
       // assert
-      for (final id in ids) {
-        expect(() => creatureById(id), returnsNormally);
-      }
+      expect(names, {'rat', 'wolf', 'crab', 'drowned', 'hound', 'deserter'});
+      expect(names, isNot(contains('ghoul')));
+      expect(names, isNot(contains('skeleton')));
+      expect(names, isNot(contains('wight')));
+      expect(names, isNot(contains('hag')));
+      expect(names, isNot(contains('eel')));
+      expect(names, isNot(contains('man-at-arms')));
     });
 
-    test('is nothing out of the crypt', () {
+    test('is never a boss', () {
+      // arrange
+      final bosses = {for (final dungeon in themedDungeons) dungeon.boss.id};
+
       // act
-      final ids = roadSpawnTable.entries
-          .map((entry) => entry.creatureId)
-          .toSet();
+      final names = {
+        for (final route in residuumWorld.routes)
+          for (final creature in roadTableFor(route).creatures) creature.id,
+      };
 
       // assert
-      expect(ids, {'rat', 'wolf'});
-      expect(ids, isNot(contains('ghoul')));
-      expect(ids, isNot(contains('skeleton')));
-      expect(ids, isNot(contains('wight')));
+      expect(names.intersection(bosses), isEmpty);
     });
 
     test('is a smaller pack than the shallowest floor of the crypt', () {
@@ -310,15 +327,212 @@ void main() {
       final floorOne = spawnTableFor(1);
 
       // assert
-      expect(roadSpawnTable.maxCount, lessThan(floorOne.maxCount));
+      for (final route in residuumWorld.routes) {
+        expect(roadTableFor(route).maxCount, lessThan(floorOne.maxCount));
+      }
     });
 
     test('every entry carries a weight worth drawing', () {
       // act
-      final weights = roadSpawnTable.entries.map((entry) => entry.weight);
+      final weights = [
+        for (final route in residuumWorld.routes)
+          for (final entry in roadTableFor(route).entries) entry.weight,
+      ];
 
       // assert
       expect(weights, everyElement(greaterThan(0)));
+    });
+
+    test('the two spurs off Northgate bring their own dungeon with them', () {
+      // act
+      final shore = roadTableFor(
+        residuumWorld.routeBetween(northgate, seaCave)!,
+      );
+      final garrison = roadTableFor(
+        residuumWorld.routeBetween(northgate, ruinedKeep)!,
+      );
+
+      // assert
+      expect(shore.creatures.map((one) => one.id), ['crab', 'drowned']);
+      expect(garrison.creatures.map((one) => one.id), ['hound', 'deserter']);
+    });
+
+    test('the three roads between towns and the crypt stay lowland', () {
+      // act
+      final lowland = [
+        residuumWorld.routeBetween(stonebridge, cryptNode)!,
+        residuumWorld.routeBetween(stonebridge, northgate)!,
+        residuumWorld.routeBetween(northgate, cryptNode)!,
+      ];
+
+      // assert
+      for (final route in lowland) {
+        expect(roadTableFor(route), same(lowlandRoadTable));
+      }
+    });
+
+    test('a road is the same road walked either way', () {
+      // act
+      final out = roadTableFor(residuumWorld.routeBetween(northgate, seaCave)!);
+      final back = roadTableFor(
+        Route(from: seaCave, to: northgate, days: 1, danger: 30),
+      );
+
+      // assert
+      expect(back, same(out));
+    });
+  });
+
+  group('how dangerous a road is for the hero walking it', () {
+    test('an untrained hero pays the road its own price and no more', () {
+      // arrange
+      final route = residuumWorld.routeBetween(stonebridge, cryptNode)!;
+
+      // act
+      final danger = dangerOn(route, _fresh());
+
+      // assert
+      expect(danger, route.danger);
+    });
+
+    test('every eight levels the hero has trained is another notch', () {
+      // arrange
+      final route = residuumWorld.routeBetween(stonebridge, cryptNode)!;
+      final trained = _fresh().copyWith(
+        skills: const {
+          SkillId.arms: SkillState(level: 5),
+          SkillId.might: SkillState(level: 5),
+          SkillId.bulwark: SkillState(level: 6),
+          SkillId.fleetfoot: SkillState(),
+        },
+      );
+
+      // act
+      final danger = dangerOn(route, trained);
+
+      // assert
+      expect(danger, route.danger + 2);
+    });
+
+    test('the notch stops climbing so the map stays crossable', () {
+      // arrange
+      final route = residuumWorld.routeBetween(northgate, ruinedKeep)!;
+      final veteran = _fresh().copyWith(
+        skills: const {
+          SkillId.arms: SkillState(level: 100),
+          SkillId.might: SkillState(level: 100),
+          SkillId.bulwark: SkillState(level: 100),
+          SkillId.fleetfoot: SkillState(level: 100),
+        },
+      );
+
+      // act
+      final danger = dangerOn(route, veteran);
+
+      // assert
+      expect(danger, route.danger + roadTierCap);
+    });
+
+    test('the roads keep their order however far the hero has come', () {
+      // arrange
+      final trained = _fresh().copyWith(
+        skills: const {
+          SkillId.arms: SkillState(level: 9),
+          SkillId.might: SkillState(),
+          SkillId.bulwark: SkillState(),
+          SkillId.fleetfoot: SkillState(),
+        },
+      );
+
+      // act
+      final home = dangerOn(
+        residuumWorld.routeBetween(stonebridge, cryptNode)!,
+        trained,
+      );
+      final keep = dangerOn(
+        residuumWorld.routeBetween(northgate, ruinedKeep)!,
+        trained,
+      );
+
+      // assert
+      expect(home, lessThan(keep));
+    });
+  });
+
+  group('a fight on a themed road', () {
+    test('stands up the keep\'s garrison and nothing lowland', () {
+      // arrange
+      final road = residuumWorld.routeBetween(northgate, ruinedKeep)!;
+
+      // act
+      final names = {
+        for (var day = 1; day <= 40; day++)
+          ...startRoadEncounter(
+            _fresh(),
+            day: day,
+            road: road,
+          ).monsters.map((monster) => monster.name),
+      };
+
+      // assert
+      expect(names, {'the kennel hound', 'the deserter'});
+    });
+
+    test('stands up the tide\'s leavings on the sea-cave road', () {
+      // arrange
+      final road = residuumWorld.routeBetween(northgate, seaCave)!;
+
+      // act
+      final names = {
+        for (var day = 1; day <= 40; day++)
+          ...startRoadEncounter(
+            _fresh(),
+            day: day,
+            road: road,
+          ).monsters.map((monster) => monster.name),
+      };
+
+      // assert
+      expect(names, {'the shore crab', 'the drowned sailor'});
+    });
+
+    test('is fought on the same ground the lowland road would have used', () {
+      // arrange
+      final road = residuumWorld.routeBetween(northgate, ruinedKeep)!;
+
+      // act
+      final themed = startRoadEncounter(_fresh(), day: 9, road: road);
+      final lowland = startRoadEncounter(_fresh(), day: 9);
+
+      // assert — the cast changes and the ground does not, because the layout
+      // is drawn before the creatures are
+      expect(themed.map.toAscii(), lowland.map.toAscii());
+      expect(
+        themed.monsters.map((monster) => monster.position),
+        lowland.monsters.map((monster) => monster.position),
+      );
+    });
+  });
+
+  group('the lowland roads, byte for byte', () {
+    test('stand up the same creatures on the same tiles as they always did', () {
+      // arrange — read off the shipped derivation before the roads were themed,
+      // so a themed table that quietly reshuffled the old three would redden
+      // this rather than sliding under the count and the name assertions
+      const pinned = {
+        1: 'wolf-1@8,4 rat-2@1,5',
+        2: 'rat-1@0,3 rat-2@3,10 rat-3@3,0',
+        3: 'rat-1@7,1 wolf-2@1,4 rat-3@0,7',
+        4: 'rat-1@3,5 wolf-2@9,5 rat-3@8,7',
+        5: 'rat-1@9,7 rat-2@2,4 rat-3@12,8',
+        6: 'rat-1@5,6 wolf-2@5,2',
+      };
+
+      // act
+      final stood = {for (var day = 1; day <= 6; day++) day: _fingerprint(day)};
+
+      // assert
+      expect(stood, pinned);
     });
   });
 

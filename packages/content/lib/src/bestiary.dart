@@ -70,7 +70,7 @@ const CreatureSpec giantRat = CreatureSpec(
   attackMin: 1,
   attackMax: 2,
   speed: 10,
-  dropChance: 25,
+  dropChance: 35,
 );
 
 /// Twice the hero's speed: it closes corridors before you can back out of them.
@@ -82,7 +82,7 @@ const CreatureSpec direWolf = CreatureSpec(
   attackMin: 2,
   attackMax: 3,
   speed: 20,
-  dropChance: 30,
+  dropChance: 40,
 );
 
 const CreatureSpec ghoul = CreatureSpec(
@@ -93,7 +93,7 @@ const CreatureSpec ghoul = CreatureSpec(
   attackMin: 2,
   attackMax: 4,
   speed: 10,
-  dropChance: 40,
+  dropChance: 50,
   pierce: 1,
 );
 
@@ -106,8 +106,8 @@ const CreatureSpec skeleton = CreatureSpec(
   attackMin: 3,
   attackMax: 5,
   speed: 5,
-  dropChance: 50,
-  pierce: 3,
+  dropChance: 60,
+  pierce: 6,
 );
 
 const CreatureSpec wight = CreatureSpec(
@@ -118,8 +118,8 @@ const CreatureSpec wight = CreatureSpec(
   attackMin: 4,
   attackMax: 6,
   speed: 10,
-  dropChance: 60,
-  pierce: 4,
+  dropChance: 70,
+  pierce: 6,
 );
 
 /// Every creature in the game, in the order they are first met.

@@ -144,6 +144,7 @@ class _SessionState extends State<_Session> {
     notice: widget.boot.notice,
     suspended: widget.boot.inside ? null : widget.boot.run,
     dungeon: widget.boot.dungeon,
+    campDay: widget.boot.campDay,
   );
 
   /// Where the hero is in the world, and every day they spend walking it.
@@ -154,6 +155,7 @@ class _SessionState extends State<_Session> {
   late final WorldBloc _world = WorldBloc(
     world: widget.boot.world,
     worldSeed: widget.boot.profile.worldSeed,
+    dangerFor: (route) => dangerOn(route, _town.state.profile),
   );
   late final Autosaver _saver = Autosaver(widget.store, from: widget.boot);
 
@@ -213,7 +215,7 @@ class _SessionState extends State<_Session> {
         BlocListener<WorldBloc, WorldViewState>(
           listenWhen: (before, after) =>
               before.fight == null && after.fight != null,
-          listener: (context, state) => _openRoadFight(state.world.day),
+          listener: (context, state) => _openRoadFight(state.fight!),
         ),
         BlocListener<WorldBloc, WorldViewState>(
           listenWhen: (before, after) => before.world.at != after.world.at,
@@ -250,7 +252,11 @@ class _SessionState extends State<_Session> {
     ),
   );
 
-  /// Opens the fight the road produced on [day], over the world screen.
+  /// Opens the fight the road produced, over the world screen.
+  ///
+  /// [met] carries the road it happened on, which is what says who is on it: the
+  /// two spurs off Northgate bring their own dungeon's creatures out onto them,
+  /// and the three lowland roads do not.
   ///
   /// **The autosaver is deliberately not watching it.** A road fight is never
   /// written down: it is re-derived from the world seed and the day counter, both
@@ -261,9 +267,13 @@ class _SessionState extends State<_Session> {
   ///
   /// The fight's own bloc is closed when the route comes back, exactly as a
   /// crawl's is.
-  Future<void> _openRoadFight(int day) async {
+  Future<void> _openRoadFight(DangerMet met) async {
     final fight = GameBloc(
-      game: startRoadEncounter(_town.state.profile, day: day),
+      game: startRoadEncounter(
+        _town.state.profile,
+        day: _world.state.world.day,
+        road: met.road,
+      ),
       log: const [roadOpeningLog],
     );
     if (!mounted) return;
@@ -308,8 +318,11 @@ class _SessionState extends State<_Session> {
   Future<void> _enterDungeon(NodeId node) async =>
       _openAnswer(EnterDungeonPressed(node), resumed: false, dungeon: node);
 
-  Future<void> _resumeCrawl(NodeId node) async =>
-      _openAnswer(const ResumeCrawlPressed(), resumed: true, dungeon: node);
+  Future<void> _resumeCrawl(NodeId node) async => _openAnswer(
+    ResumeCrawlPressed(day: _world.state.world.day),
+    resumed: true,
+    dungeon: node,
+  );
 
   Future<void> _delveAnew(NodeId node) async =>
       _openAnswer(DelveAnewPressed(node), resumed: false, dungeon: node);

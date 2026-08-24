@@ -7,9 +7,14 @@ import 'package:residuum_core/core.dart';
 import 'support/standing.dart';
 
 /// A world bloc on the shipped map, walking with no pause between days.
-WorldBloc _bloc({Whereabouts? world, int worldSeed = 909}) => WorldBloc(
+WorldBloc _bloc({
+  Whereabouts? world,
+  int worldSeed = 909,
+  int Function(Route)? dangerFor,
+}) => WorldBloc(
   world: world ?? newWhereabouts(),
   worldSeed: worldSeed,
+  dangerFor: dangerFor,
   dayDelay: Duration.zero,
 );
 
@@ -83,12 +88,34 @@ void main() {
     );
 
     blocTest<WorldBloc, WorldViewState>(
-      'arriving uncovers what the place is next to',
+      'a road nobody made dangerous is walked without a fight',
+      build: () => _bloc(dangerFor: (route) => 0),
+      act: (bloc) => bloc.add(TravelRequested(cryptNode)),
+      wait: const Duration(milliseconds: 10),
+      verify: (bloc) {
+        expect(bloc.state.fight, isNull);
+        expect(bloc.state.at, cryptNode);
+      },
+    );
+
+    blocTest<WorldBloc, WorldViewState>(
+      'a road the hero has made dangerous is a fight on the first day',
+      build: () => _bloc(dangerFor: (route) => 100),
+      act: (bloc) => bloc.add(TravelRequested(cryptNode)),
+      wait: const Duration(milliseconds: 10),
+      verify: (bloc) {
+        expect(bloc.state.fight, isNotNull);
+        expect(bloc.state.fight!.road.to, cryptNode);
+      },
+    );
+
+    blocTest<WorldBloc, WorldViewState>(
+      'walking to the crypt uncovers nothing on the far side of it',
       build: _bloc,
       act: (bloc) => bloc.add(TravelRequested(cryptNode)),
       wait: const Duration(milliseconds: 10),
       verify: (bloc) =>
-          expect(bloc.state.world.discovered, contains(northgate)),
+          expect(bloc.state.world.discovered, {stonebridge, cryptNode}),
     );
 
     blocTest<WorldBloc, WorldViewState>(
@@ -251,6 +278,17 @@ void main() {
       expect(offered!.reveals, northgate);
     });
 
+    test('walking to the crypt leaves the tavern something to sell', () {
+      // arrange
+      final bloc = _bloc(world: atTheCrypt());
+
+      // act
+      final offered = bloc.state.rumorOnOffer(rumorPool);
+
+      // assert
+      expect(offered!.reveals, northgate);
+    });
+
     test('offers nothing once the map is uncovered', () {
       // arrange
       final bloc = _bloc(world: _knowingAll());
@@ -277,7 +315,10 @@ void main() {
       ),
       verify: (bloc) {
         expect(bloc.state.world.discovered, contains(northgate));
-        expect(bloc.state.log.single, rumorPool.first.line);
+        expect(bloc.state.log, [
+          rumorPool.first.line,
+          'Northgate is on your map now.',
+        ]);
       },
     );
 

@@ -18,6 +18,7 @@ SaveDocument _oneHero(
   GameState? run,
   NodeId? dungeon,
   bool inside = false,
+  int campDay = 0,
 }) => SaveDocument.one(
   id: 'hero-1',
   label: 'Hero 1',
@@ -25,8 +26,21 @@ SaveDocument _oneHero(
   world: world,
   run: run,
   dungeon: run == null ? null : (dungeon ?? cryptNode),
+  campDay: run == null || inside ? null : campDay,
   inside: inside,
 );
+
+/// A hero standing at the crypt on [day], which is what a camp's age is
+/// measured against.
+Whereabouts _atTheCryptOn(int day) {
+  final walked = newWhereabouts().arrivingAt(residuumWorld, cryptNode);
+  return Whereabouts(
+    at: walked.at,
+    home: walked.home,
+    discovered: walked.discovered,
+    day: day,
+  );
+}
 
 /// A hero who has heard of everywhere, standing at home.
 Whereabouts _knowingAll() => newWhereabouts()
@@ -577,7 +591,7 @@ void main() {
       expect(home.run!.depth, 3);
       expect(app.saved!.run!.depth, 3);
       expect(app.saved!.inside, isFalse);
-      expect(find.text('Resume the crawl (depth 3)'), findsOneWidget);
+      expect(find.text('Resume the crawl (depth 3 of 5)'), findsOneWidget);
     });
   });
 
@@ -876,9 +890,119 @@ void main() {
       await app.pump(tester);
 
       // assert
-      expect(find.text('Resume the crawl (depth 3)'), findsOneWidget);
+      expect(
+        find.text('Resume the crawl (depth 3 of ${camp.deepest})'),
+        findsOneWidget,
+      );
       expect(find.text('Delve anew'), findsOneWidget);
       expect(find.text('Enter The Sea-Cave'), findsNothing);
+    });
+
+    testWidgets('a camp three days old is lost, and the door is a plain one', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = startDungeonRunAt(cryptNode, profile).copyWith(depth: 3);
+
+      // act
+      final app = PumpedApp(
+        _oneHero(
+          suspendRun(profile, camp),
+          world: _atTheCryptOn(7),
+          run: camp,
+          dungeon: cryptNode,
+          campDay: 4,
+        ),
+      );
+      await app.pump(tester);
+
+      // assert
+      expect(
+        find.textContaining('the camp at The Crypt is lost'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Resume the crawl'), findsNothing);
+      expect(find.text('Delve anew'), findsNothing);
+      expect(find.text('Enter The Crypt'), findsOneWidget);
+    });
+
+    testWidgets('a camp two days old is warned about, and still there', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = startDungeonRunAt(cryptNode, profile).copyWith(depth: 3);
+
+      // act
+      final app = PumpedApp(
+        _oneHero(
+          suspendRun(profile, camp),
+          world: _atTheCryptOn(6),
+          run: camp,
+          dungeon: cryptNode,
+          campDay: 4,
+        ),
+      );
+      await app.pump(tester);
+
+      // assert
+      expect(
+        find.text('One more day and the camp is overrun.'),
+        findsOneWidget,
+      );
+      expect(find.text('Resume the crawl (depth 3 of 5)'), findsOneWidget);
+    });
+
+    testWidgets('a camp one day old is neither warned about nor lost', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = startDungeonRunAt(cryptNode, profile).copyWith(depth: 3);
+
+      // act
+      final app = PumpedApp(
+        _oneHero(
+          suspendRun(profile, camp),
+          world: _atTheCryptOn(5),
+          run: camp,
+          dungeon: cryptNode,
+          campDay: 4,
+        ),
+      );
+      await app.pump(tester);
+
+      // assert
+      expect(find.textContaining('overrun'), findsNothing);
+      expect(find.text('Resume the crawl (depth 3 of 5)'), findsOneWidget);
+    });
+
+    testWidgets('walking into a lost camp bumps the visit as any entry does', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = startDungeonRunAt(cryptNode, profile).copyWith(depth: 3);
+      final app = PumpedApp(
+        _oneHero(
+          suspendRun(profile, camp),
+          world: _atTheCryptOn(7),
+          run: camp,
+          dungeon: cryptNode,
+          campDay: 4,
+        ),
+      );
+      await app.pump(tester);
+
+      // act
+      await tester.tap(find.text('Enter The Crypt'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(app.saved!.run!.depth, 1);
+      expect(app.saved!.run!.visit, camp.visit + 1);
+      expect(app.saved!.campDay, isNull);
     });
 
     testWidgets('a camp somewhere else is never offered a resume here', (

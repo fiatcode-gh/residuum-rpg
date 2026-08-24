@@ -57,6 +57,7 @@ GameState _suspendAndResume(GameState run) {
         profile: newProfile(worldSeed: run.worldSeed),
         run: run,
         dungeon: cryptNode,
+        campDay: 0,
       ),
     ),
   );

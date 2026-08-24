@@ -17,6 +17,7 @@ SaveDocument _twoHeroes({GameState? ilseRun, bool ilseInside = true}) =>
           world: ilseRun == null ? null : atTheCrypt(),
           run: ilseRun,
           dungeon: ilseRun == null ? null : cryptNode,
+          campDay: ilseRun == null || ilseInside ? null : 0,
           inside: ilseRun != null && ilseInside,
         ),
         'hero-2': SavedHero(

@@ -736,6 +736,91 @@ Item _item(String id, BaseItem base, {Rarity rarity = Rarity.common}) =>
     Item(id: id, base: base, rarity: rarity);
 
 void _lootTests() {
+  group('the beats a delve is worth', () {
+    blocTest<GameBloc, GameViewState>(
+      'arriving where there is nothing below says so',
+      build: () => walker(
+        arenaGame(
+          ascii: twoRooms,
+          heroAt: const Position(11, 3),
+          stairsDown: const Position(11, 3),
+          depth: deepestDepth - 1,
+          buildFloor: deeperFloor,
+        ),
+      ),
+      act: (bloc) => bloc.add(const DescendPressed()),
+      verify: (bloc) => expect(bloc.state.log.last, bottomOfTheDelve),
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'arriving with a floor still under it says nothing extra',
+      build: () => walker(
+        arenaGame(
+          ascii: twoRooms,
+          heroAt: const Position(11, 3),
+          stairsDown: const Position(11, 3),
+          buildFloor: deeperFloor,
+        ),
+      ),
+      act: (bloc) => bloc.add(const DescendPressed()),
+      verify: (bloc) => expect(bloc.state.log, ['You descend to depth 2.']),
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'killing what holds the bottom is a moment, not another kill',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(2, 1), id: 'boss-crypt', hp: 1)],
+        ),
+      ),
+      act: (bloc) => bloc.add(const TileTapped(Position(2, 1))),
+      verify: (bloc) => expect(
+        bloc.state.log.last,
+        'The ghoul is slain. The delve is yours.',
+      ),
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'killing anything else is just a kill',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(2, 1), hp: 1)],
+        ),
+      ),
+      act: (bloc) => bloc.add(const TileTapped(Position(2, 1))),
+      verify: (bloc) => expect(
+        bloc.state.log,
+        isNot(contains(contains('The delve is yours'))),
+      ),
+    );
+
+    test('a road fight is never at the bottom of anything', () {
+      // arrange
+      final bloc = _roadFight(heroAt: const Position(3, 3));
+
+      // act
+      final bottom = bloc.state.isAtTheBottom;
+
+      // assert
+      expect(bottom, isFalse);
+    });
+
+    test('the deepest floor of a delve is its bottom', () {
+      // arrange
+      final bloc = walker(
+        arenaGame(heroAt: const Position(1, 1), depth: deepestDepth),
+      );
+
+      // act
+      final bottom = bloc.state.isAtTheBottom;
+
+      // assert
+      expect(bottom, isTrue);
+    });
+  });
+
   group('GameBloc picking things up', () {
     blocTest<GameBloc, GameViewState>(
       'takes what is underfoot and says so',

@@ -161,15 +161,21 @@ const int _roadDepth = 0;
 /// one.
 ///
 /// The day is decided by [roadSeed] on the day being walked, so the same world
-/// on the same day always decides the same way. The route's own danger is the
-/// only thing the world map contributes, which is what lets a long road be a
-/// dangerous one without content pricing that twice.
+/// on the same day always decides the same way.
 ///
 /// [travelerChance] is a parameter rather than a constant for [generateFloor]'s
 /// reason about monster counts: how talkative the roads are is a content number,
 /// while what a traveler *does* is a rule. The traveler is skipped when the hero
 /// has already heard of everywhere, and the day is quiet instead — there is no
 /// such thing as being told something you know.
+///
+/// **[danger] arrives as a value rather than being read off the route, and that
+/// is what lets the road scale with the hero.** How dangerous a road is now
+/// depends on who is walking it as well as on which road it is — and who is
+/// walking it is a [Profile], which core must never see. So content works the
+/// number out from the route and the hero together and hands it in, exactly as
+/// it hands in [travelerChance]. The route is still what the fight is drawn
+/// from, because which creatures are on a road is a fact about the road.
 ///
 /// Requires a hero who is actually on a road. Throws [StateError] otherwise,
 /// because a hero standing in a town has no day to walk and a caller asking for
@@ -180,6 +186,7 @@ RoadDay travelOneDay(
   WorldMap map, {
   required int travelSeed,
   required int travelerChance,
+  required int danger,
 }) {
   final leg = where.journey;
   if (leg == null) {
@@ -195,7 +202,7 @@ RoadDay travelOneDay(
   final day = where.day + 1;
   final rng = Rng(roadSeed(travelSeed, day));
 
-  if (rng.rollRange(1, 100) <= road.danger) {
+  if (rng.rollRange(1, 100) <= danger) {
     return RoadDay(
       whereabouts: where.onDay(day, journey: leg),
       event: DangerMet(road),

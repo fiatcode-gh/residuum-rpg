@@ -12,6 +12,14 @@ import 'loadout.dart';
 /// an `ActionRefused` and the town wraps it in a `TownRefusal`, so the rule and
 /// the words it refuses in have one home while each context keeps its own
 /// answer type.
+///
+/// **What a swap would displace is counted before anything moves.** Wearing a
+/// two-hander over a weapon and a shield spends one carried item and returns
+/// two, so a full pack would end one over [inventoryCap] — and the refusal names
+/// the full pack rather than letting the swap through. The count comes from the
+/// same expression [wear] carries the pieces out with, because a refusal that
+/// counted displacements its own way would eventually refuse a swap the swap
+/// would have allowed.
 String? wearRefusal(Loadout loadout, List<Item> inventory, String itemId) {
   final item = _find(inventory, itemId);
   if (item == null) return 'you are not carrying that';
@@ -20,8 +28,20 @@ String? wearRefusal(Loadout loadout, List<Item> inventory, String itemId) {
   if (slot == EquipSlot.offHand && loadout.wieldsTwoHanded) {
     return 'both hands are on the weapon';
   }
+  if (inventory.length - 1 + _displacedBy(loadout.equipment, item).length >
+      inventoryCap) {
+    return 'your pack is too full for what that would displace';
+  }
   return null;
 }
+
+List<EquipSlot> _displacedBy(Equipment equipment, Item item) => [
+  if (equipment.containsKey(item.base.slot!)) item.base.slot!,
+  if (item.base.hands == WeaponHands.two &&
+      item.base.slot != EquipSlot.offHand &&
+      equipment.containsKey(EquipSlot.offHand))
+    EquipSlot.offHand,
+];
 
 /// Why the rules will not take the piece in [slot] off, or null when they will.
 String? takeOffRefusal(
@@ -72,15 +92,14 @@ class Worn {
 /// the hero's best weapon to make room for a shield is the kind of help that
 /// loses a run.
 ///
-/// **A displacement can push the pack past [inventoryCap], and that is preserved
-/// behaviour rather than an oversight.** Wearing a two-hander over a weapon and
-/// a shield spends one carried item and returns two, so a full pack ends one
-/// over the cap. Nothing here checks for it, in either the dungeon or the town.
-/// It is left alone because a rule fixed in one context and not the other is
-/// worse than a rule that is wrong in both: the pack cap would then mean
-/// different things depending on which screen the player was looking at.
-/// Fixing it at all is a decision about the cap, not about wearing, and belongs
-/// to whoever owns the cap.
+/// **A displacement can no longer push the pack past [inventoryCap].** Wearing a
+/// two-hander over a weapon and a shield spends one carried item and returns
+/// two, so a full pack used to end one over the cap in the dungeon and in the
+/// town alike. [wearRefusal] now counts what would come off before anything
+/// does, and refuses naming the full pack — in both contexts at once, which is
+/// the only way the fix was ever worth making: a cap that meant one thing in a
+/// corridor and another in a shop would be worse than a cap that was wrong in
+/// both.
 Worn wear(Equipment equipment, List<Item> inventory, String itemId) {
   final item = inventory.firstWhere((carried) => carried.id == itemId);
   final slot = item.base.slot!;
@@ -89,12 +108,7 @@ Worn wear(Equipment equipment, List<Item> inventory, String itemId) {
     for (final held in inventory)
       if (held.id != itemId) held,
   ];
-  final emptying = <EquipSlot>[
-    if (worn.containsKey(slot)) slot,
-    if (item.base.hands == WeaponHands.two &&
-        worn.containsKey(EquipSlot.offHand))
-      EquipSlot.offHand,
-  ];
+  final emptying = _displacedBy(equipment, item);
   final taken = <(Item, EquipSlot)>[];
   for (final emptied in emptying) {
     final removed = worn.remove(emptied)!;
@@ -131,14 +145,13 @@ Worn takeOff(Equipment equipment, List<Item> inventory, EquipSlot slot) {
 /// because the day an affix subtracts hit points is the day it becomes
 /// load-bearing, and by then nobody will remember to add it.
 ///
-/// **Where this is called from is asymmetric, and the asymmetry is inherited
-/// rather than chosen.** The dungeon clamps when the hero takes a piece off and
-/// does not when it puts one on, so a dungeon swap into an occupied slot that
-/// lowers the ceiling leaves the hero above it. The town clamps on both paths.
-/// The dungeon's behaviour is frozen for this milestone — changing it would move
-/// balance the seeded runs are measured against — while the town is new surface
-/// that would otherwise print "24 / 20" at the player. Both are pinned by test.
-/// Unifying them is a ruling about balance, not about wearing.
+/// **Every path that dresses the hero calls this, and that is one rule with one
+/// home.** The dungeon used to clamp on taking a piece off and not on putting
+/// one on, so a corridor swap into an occupied slot that lowered the ceiling
+/// left the hero standing above it while the same swap in a shop did not. The
+/// asymmetry was inherited rather than chosen and it is gone: hit points mean
+/// the same thing on both screens, which is what stops the player being shown
+/// "24 / 20" by whichever door they happened to use.
 Actor clampedToMaxHp(Actor hero, Loadout loadout) {
   final ceiling = heroMaxHp(hero, loadout);
   if (hero.hp <= ceiling) return hero;

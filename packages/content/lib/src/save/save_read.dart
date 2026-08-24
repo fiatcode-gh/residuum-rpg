@@ -41,12 +41,20 @@ class SavedHero extends Equatable {
     this.dungeon,
     this.merchant = MerchantVisit.none,
     this.inside = false,
+    this.campDay,
   }) : world = world ?? newWhereabouts() {
     if ((run == null) != (dungeon == null)) {
       throw ArgumentError.value(
         dungeon,
         'dungeon',
         'a hero has a crawl and a dungeon, or neither',
+      );
+    }
+    if ((campDay == null) == _isCamped) {
+      throw ArgumentError.value(
+        campDay,
+        'campDay',
+        'a hero has a camp and the day they pitched it, or neither',
       );
     }
   }
@@ -117,6 +125,25 @@ class SavedHero extends Equatable {
   /// opposite answers: one boots into the dungeon and the other into the town.
   final bool inside;
 
+  /// The day the hero walked out at the stairs and left the crawl standing, or
+  /// null exactly when there is no camp.
+  ///
+  /// **A stamp, not a countdown.** Residue refills a wound while nobody is
+  /// standing in it, so a camp has a shelf life — and the honest way to write
+  /// that down is when it was made, against [Whereabouts.day], rather than how
+  /// long it has left. A counter would have to be decremented by somebody, and
+  /// the only thing that moves the world's day is a day walked on the road;
+  /// every other screen would either forget or double-count.
+  ///
+  /// Null exactly when [_isCamped] is false, which is the invariant the
+  /// constructor refuses on. A hero standing *inside* their crawl has not
+  /// pitched anything — they never left it — and a hero with no crawl at all has
+  /// nothing to lose.
+  final int? campDay;
+
+  /// Whether this hero has a crawl waiting that they are not standing in.
+  bool get _isCamped => run != null && !inside;
+
   /// This hero, brought up to date.
   ///
   /// [inside] is named rather than a fourth thing in a row, because a bare
@@ -129,6 +156,7 @@ class SavedHero extends Equatable {
     Whereabouts world, {
     required bool inside,
     required NodeId? dungeon,
+    required int? campDay,
   }) => SavedHero(
     label: label,
     profile: profile,
@@ -137,6 +165,7 @@ class SavedHero extends Equatable {
     dungeon: dungeon,
     merchant: merchant,
     inside: inside,
+    campDay: campDay,
   );
 
   @override
@@ -148,6 +177,7 @@ class SavedHero extends Equatable {
     dungeon,
     merchant,
     inside,
+    campDay,
   ];
 
   @override
@@ -185,6 +215,7 @@ final class SaveDocument extends SaveRead {
     GameState? run,
     NodeId? dungeon,
     bool inside = false,
+    int? campDay,
   }) : active = id,
        heroes = {
          id: SavedHero(
@@ -195,6 +226,7 @@ final class SaveDocument extends SaveRead {
            dungeon: dungeon,
            merchant: merchant,
            inside: inside,
+           campDay: campDay,
          ),
        };
 
@@ -222,6 +254,9 @@ final class SaveDocument extends SaveRead {
   /// Whether the active hero is standing in their [run] rather than in town.
   bool get inside => hero.inside;
 
+  /// The day the active hero pitched their camp, or null when they have none.
+  int? get campDay => hero.campDay;
+
   /// What the merchant remembers of the active hero's visit.
   MerchantVisit get merchant => hero.merchant;
 
@@ -239,6 +274,7 @@ final class SaveDocument extends SaveRead {
     Whereabouts world, {
     required bool inside,
     required NodeId? dungeon,
+    required int? campDay,
   }) => SaveDocument(
     active: active,
     heroes: {
@@ -251,6 +287,7 @@ final class SaveDocument extends SaveRead {
                 world,
                 inside: inside,
                 dungeon: dungeon,
+                campDay: campDay,
               )
             : entry.value,
     },

@@ -59,12 +59,21 @@ String encodeSave(SaveDocument document) {
 /// exactly when `run` is null, and written out rather than left out for the
 /// reason `run` itself is — a key that went missing is never read as "probably
 /// the crypt".
+///
+/// `campDay` sits directly after `inside` for the reason `dungeon` sits after
+/// `run`: it is the camp's other half. `run` says there is a crawl, `inside`
+/// says whether the hero is standing in it, and this says what day they walked
+/// out — the three are read together and a reader scanning the document finds
+/// them together. Null exactly when the hero is not camped, and written out
+/// rather than left out, so a key that went missing is never read as "probably
+/// pitched today".
 Map<String, Object?> _encodeHero(SavedHero hero) => {
   'label': hero.label,
   'profile': encodeProfile(hero.profile),
   'run': hero.run == null ? null : encodeRun(hero.run!),
   'dungeon': hero.dungeon?.value,
   'inside': hero.inside,
+  'campDay': hero.campDay,
   'world': _encodeWorld(hero.world),
   'merchant': _encodeMerchant(hero.merchant),
 };
@@ -190,6 +199,7 @@ SavedHero _decodeHero(String id, Object? written) {
       'the hero "$id" in the save file is "inside" a crawl it does not have',
     );
   }
+  final campDay = _decodeCampDay(id, written, camped: run != null && !inside);
   final world = _decodeWorld(id, written);
   if (inside && residuumWorld.nodeAt(world.at).kind != NodeKind.dungeon) {
     throw SaveMalformed(
@@ -211,7 +221,51 @@ SavedHero _decodeHero(String id, Object? written) {
     dungeon: dungeon,
     merchant: _decodeMerchant(id, written),
     inside: inside,
+    campDay: campDay,
   );
+}
+
+/// The day the hero pitched their camp, from the required key beside `inside`.
+///
+/// **Required, and required to agree with the camp.** The whole of what the key
+/// is for is answering how long the camp has stood, so a document that left it
+/// out describes a camp of unknown age — and a decoder that filled in today
+/// would hand the player a fresh camp every time they relaunched, which is the
+/// one thing the expiry rule exists to stop. A day written down for a hero with
+/// no camp is the same fault the other way round, and is refused rather than
+/// ignored, because this codec never repairs.
+int? _decodeCampDay(
+  String id,
+  Map<String, Object?> hero, {
+  required bool camped,
+}) {
+  if (!hero.containsKey('campDay')) {
+    throw SaveMalformed('the save file is missing "campDay"');
+  }
+  final written = hero['campDay'];
+  if (written == null) {
+    if (camped) {
+      throw SaveMalformed(
+        'the hero "$id" in the save file has a camp without saying what day '
+        'it was pitched',
+      );
+    }
+    return null;
+  }
+  if (!camped) {
+    throw SaveMalformed(
+      'the hero "$id" in the save file names the day a camp was pitched '
+      'without having one',
+    );
+  }
+  final day = intAt(hero, 'campDay');
+  if (day < 0) {
+    throw SaveMalformed(
+      'the hero "$id" in the save file pitched a camp on day $day, and the '
+      'world starts on day zero',
+    );
+  }
+  return day;
 }
 
 /// Which dungeon the hero's crawl is in, from the required key beside it.

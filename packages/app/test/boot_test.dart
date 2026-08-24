@@ -9,16 +9,21 @@ import 'support/memory_save_files.dart';
 import 'support/standing.dart';
 
 /// A one-hero document, for seeding the store before a boot.
-SaveDocument _one(Profile profile, {GameState? run, bool inside = false}) =>
-    SaveDocument.one(
-      id: 'hero-1',
-      label: 'Hero 1',
-      profile: profile,
-      world: run == null ? null : atTheCrypt(),
-      run: run,
-      dungeon: run == null ? null : cryptNode,
-      inside: inside,
-    );
+SaveDocument _one(
+  Profile profile, {
+  GameState? run,
+  bool inside = false,
+  int campDay = 0,
+}) => SaveDocument.one(
+  id: 'hero-1',
+  label: 'Hero 1',
+  profile: profile,
+  world: run == null ? null : atTheCrypt(),
+  run: run,
+  dungeon: run == null ? null : cryptNode,
+  inside: inside,
+  campDay: run == null || inside ? null : campDay,
+);
 
 void main() {
   group('booting', () {
@@ -285,6 +290,7 @@ void main() {
               profile: newProfile(worldSeed: 111),
               run: suspended,
               dungeon: cryptNode,
+              campDay: 0,
               merchant: MerchantVisit(
                 bought: const ['market-stonebridge-0-potion-1'],
                 town: stonebridge,
@@ -467,6 +473,7 @@ void main() {
             profile: camper,
             run: startDungeonRunAt(cryptNode, camper),
             dungeon: cryptNode,
+            campDay: 0,
           ),
           'hero-2': SavedHero(
             label: 'Bram',

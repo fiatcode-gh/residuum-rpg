@@ -164,14 +164,23 @@ class Whereabouts extends Equatable {
 
   /// This, with the hero standing at [node], off any road.
   ///
-  /// **Arriving is what uncovers the map.** Every place one road from here is
-  /// heard of on arrival, so walking somewhere is always worth something even
-  /// when nothing happened on the way. A town arrived at also becomes [home],
-  /// because home is wherever the hero last had a bed.
+  /// **Arriving uncovers nothing beyond the place arrived at.** Walking is
+  /// travel, not cartography: a hero who reaches the crypt has learnt where the
+  /// crypt is — which they had to know to set out — and has learnt nothing about
+  /// what lies past it, because standing at a door does not read a map. The
+  /// tavern is what sells the map, and a traveler met on the road is what gives
+  /// one away; those are the two doors to a new place and there are no others.
+  /// The rows of question marks on the world screen are the standing invitation
+  /// to use them.
+  ///
+  /// [node] is unioned in rather than assumed present because the set is what
+  /// [Whereabouts] validates [at] against, and a caller may put the hero
+  /// somewhere the union is the only reason they may stand. A town arrived at
+  /// also becomes [home], because home is wherever the hero last had a bed.
   Whereabouts arrivingAt(WorldMap map, NodeId node) => Whereabouts(
     at: node,
     home: map.nodeAt(node).kind == NodeKind.town ? node : home,
-    discovered: {...discovered, node, ...map.adjacentTo(node)},
+    discovered: {...discovered, node},
     day: day,
   );
 

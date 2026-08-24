@@ -472,7 +472,7 @@ void main() {
       expect(after.inventory, [held]);
     });
 
-    test('mirrors the dungeon and lets a displacement pass the pack cap', () {
+    test('mirrors the dungeon and refuses a displacement past the cap', () {
       // arrange
       final maul = _gear('kit-2', _maul);
       final profile = _townie(
@@ -487,8 +487,12 @@ void main() {
       final (after, refusal) = equipItem(profile, 'kit-2');
 
       // assert
-      expect(after.inventory, hasLength(inventoryCap + 1));
-      expect(refusal, isNull);
+      expect(after, profile);
+      expect(
+        refusal?.reason,
+        'your pack is too full for what that would '
+        'displace',
+      );
     });
 
     test('brings hit points inside the ceiling the new loadout allows', () {

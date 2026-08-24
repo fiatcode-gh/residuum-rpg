@@ -69,6 +69,18 @@ void main() {
       expect(told.rumor!.reveals, isNot(crypt));
     });
 
+    test('walking somewhere leaves the tavern something to sell', () {
+      // arrange
+      final profile = _withGold(50);
+      final where = atHome().arrivingAt(smallWorld(), crypt);
+
+      // act
+      final told = buyRumor(profile, where, _pool(), 10);
+
+      // assert
+      expect(told.rumor!.reveals, ridge);
+    });
+
     test('a tavern with nothing left to tell charges nothing', () {
       // arrange
       final profile = _withGold(50);

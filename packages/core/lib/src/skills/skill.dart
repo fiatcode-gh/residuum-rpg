@@ -15,8 +15,8 @@ const int maxSkillLevel = 100;
 /// Strictly rising, so the twentieth level of a skill is a real investment and
 /// the first is nearly free. Linear rather than exponential because the whole
 /// curve has to be walkable inside a five-floor crawl: at one point per
-/// trigger, reaching level five costs eighty hits, which is roughly a full
-/// descent's worth of swinging.
+/// trigger, reaching level five costs forty hits — four, six, eight, ten and
+/// twelve — which is roughly a full descent's worth of swinging.
 int xpToNext(int level) => 4 + 2 * level;
 
 /// How far one skill has come.

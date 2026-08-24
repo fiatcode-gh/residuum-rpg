@@ -94,7 +94,7 @@ void main() {
       expect(after.home, where.home);
     });
 
-    test('arriving reveals what the place is next to', () {
+    test('arriving reveals the place arrived at and nothing beyond it', () {
       // arrange
       final where = atHome();
 
@@ -103,8 +103,23 @@ void main() {
 
       // assert
       expect(after.at, crypt);
-      expect(after.discovered, {harbour, crypt, ridge});
+      expect(after.discovered, {harbour, crypt});
       expect(after.isTravelling, isFalse);
+    });
+
+    test('arriving somewhere unheard of is what puts it on the map', () {
+      // arrange
+      final where = Whereabouts(
+        at: harbour,
+        home: harbour,
+        discovered: {harbour},
+      );
+
+      // act
+      final after = where.arrivingAt(smallWorld(), crypt);
+
+      // assert
+      expect(after.discovered, {harbour, crypt});
     });
 
     test('arriving in a town makes it the place the hero wakes at', () {
