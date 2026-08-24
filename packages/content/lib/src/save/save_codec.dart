@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:residuum_core/core.dart';
 
+import '../dungeons.dart';
 import '../world.dart';
 import 'item_codec.dart';
 import 'merchant_visit.dart';
@@ -50,10 +51,19 @@ String encodeSave(SaveDocument document) {
   });
 }
 
+/// One hero, written down.
+///
+/// `dungeon` sits directly after `run` because it is the run's other half: the
+/// two are written and read as a pair, and a reader scanning the document finds
+/// the place named beside the crawl rather than three keys away from it. Null
+/// exactly when `run` is null, and written out rather than left out for the
+/// reason `run` itself is — a key that went missing is never read as "probably
+/// the crypt".
 Map<String, Object?> _encodeHero(SavedHero hero) => {
   'label': hero.label,
   'profile': encodeProfile(hero.profile),
   'run': hero.run == null ? null : encodeRun(hero.run!),
+  'dungeon': hero.dungeon?.value,
   'inside': hero.inside,
   'world': _encodeWorld(hero.world),
   'merchant': _encodeMerchant(hero.merchant),
@@ -159,7 +169,21 @@ SavedHero _decodeHero(String id, Object? written) {
   if (written is! Map<String, Object?>) {
     throw SaveMalformed('the hero "$id" in the save file is not an object');
   }
-  final run = written['run'] == null ? null : loadRun(written, 'run');
+  final dungeon = _decodeDungeon(id, written);
+  final crawling = written['run'] != null;
+  if (crawling && dungeon == null) {
+    throw SaveMalformed(
+      'the hero "$id" in the save file has a crawl without saying which '
+      'dungeon it is in',
+    );
+  }
+  if (!crawling && dungeon != null) {
+    throw SaveMalformed(
+      'the hero "$id" in the save file names a dungeon it has no crawl in: '
+      '"${dungeon.value}"',
+    );
+  }
+  final run = crawling ? loadRun(written, 'run', dungeon: dungeon!) : null;
   final inside = boolAt(written, 'inside');
   if (inside && run == null) {
     throw SaveMalformed(
@@ -184,9 +208,37 @@ SavedHero _decodeHero(String id, Object? written) {
     profile: decodeProfile(written, 'profile'),
     world: world,
     run: run,
+    dungeon: dungeon,
     merchant: _decodeMerchant(id, written),
     inside: inside,
   );
+}
+
+/// Which dungeon the hero's crawl is in, from the required key beside it.
+///
+/// **Required, and checked against the world this build ships.** The id is what
+/// picks the floor builder a resumed crawl walks on down through, so a document
+/// naming a place that is not here — or naming a town, which has nothing under
+/// it — describes a crawl whose second floor cannot be laid out at all. That
+/// would surface as a crash on the stairs, several screens after the mistake.
+/// Refusing it here by name is what keeps it a sentence on the town screen.
+///
+/// Whether it agrees with `run` is the caller's check rather than this one's,
+/// because the answer is about the pair and this only knows one half.
+NodeId? _decodeDungeon(String id, Map<String, Object?> hero) {
+  if (!hero.containsKey('dungeon')) {
+    throw SaveMalformed('the save file is missing "dungeon"');
+  }
+  final written = hero['dungeon'];
+  if (written == null) return null;
+  final node = _node(id, written);
+  if (!isDungeonNode(node)) {
+    throw SaveMalformed(
+      'the hero "$id" in the save file is crawling "${node.value}", which has '
+      'no dungeon under it',
+    );
+  }
+  return node;
 }
 
 /// Where the hero stands, from the required block on a hero entry.

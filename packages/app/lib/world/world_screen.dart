@@ -30,14 +30,14 @@ class WorldScreen extends StatelessWidget {
   /// Opens the town the hero is standing in.
   final Future<void> Function() onEnterTown;
 
-  /// Walks into a dungeon laid out afresh.
-  final Future<void> Function() onEnterDungeon;
+  /// Walks into the dungeon under a node, laid out afresh.
+  final Future<void> Function(NodeId) onEnterDungeon;
 
   /// Walks back into the crawl the hero left standing.
-  final Future<void> Function() onResumeCrawl;
+  final Future<void> Function(NodeId) onResumeCrawl;
 
-  /// Gives that crawl up and walks into one laid out afresh.
-  final Future<void> Function() onDelveAnew;
+  /// Gives that crawl up and walks into the one under a node, laid out afresh.
+  final Future<void> Function(NodeId) onDelveAnew;
 
   /// Opens the roster.
   ///
@@ -263,9 +263,9 @@ class _Here extends StatelessWidget {
 
   final WorldViewState state;
   final Future<void> Function() onEnterTown;
-  final Future<void> Function() onEnterDungeon;
-  final Future<void> Function() onResumeCrawl;
-  final Future<void> Function() onDelveAnew;
+  final Future<void> Function(NodeId) onEnterDungeon;
+  final Future<void> Function(NodeId) onResumeCrawl;
+  final Future<void> Function(NodeId) onDelveAnew;
   final Future<void> Function() onOpenRoster;
 
   @override
@@ -314,7 +314,7 @@ class _Here extends StatelessWidget {
       builder: (context, town) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ..._dungeonDoors(context, town.suspended),
+          ..._dungeonDoors(context, node, town),
           const SizedBox(height: 8),
           WorldDoor(label: 'Heroes', onPressed: onOpenRoster),
         ],
@@ -322,29 +322,57 @@ class _Here extends StatelessWidget {
     );
   }
 
-  /// The way down, which is one door or the M3L fork.
+  /// The way down, which is one door or the M3L fork, depending on where the
+  /// camp is.
   ///
-  /// The fork moved here from the town because entering a dungeon is only
-  /// offered at the dungeon's own node now. The words and the confirmation are
-  /// the town's, unchanged: what is being decided did not change, only where the
-  /// hero stands while deciding it.
+  /// **A hero has one run slot, and that is a fact about the save document
+  /// rather than a choice this screen made.** So there are three cases and not
+  /// two. No camp at all: one door in. A camp under the hero's own feet: the
+  /// fork, resume or give it up. A camp somewhere else entirely: entering here
+  /// is still offered, because a hero who walked two days to the keep should not
+  /// be turned away at the gate — but it costs the camp, and the question says
+  /// which camp before it takes it.
+  ///
+  /// **Resume is never offered away from the camp's own node**, because walking
+  /// back into a crawl means walking back down the stairs the hero climbed out
+  /// of, and those stairs are somewhere else. A Resume button at the sea-cave
+  /// that dropped the hero into the crypt would be teleportation with a
+  /// reassuring label.
   ///
   /// The camp is *watched* rather than read once. It is the town's fact and it
   /// changes while this screen is on top — walking out at the stairs pops back to
   /// here and hands the town a camp in the same breath — so a screen that read it
   /// at build time would come back from a crawl still offering to enter one.
-  List<Widget> _dungeonDoors(BuildContext context, GameState? camp) {
+  List<Widget> _dungeonDoors(
+    BuildContext context,
+    WorldNode node,
+    TownViewState town,
+  ) {
+    final camp = town.suspended;
     if (camp == null) {
-      return [WorldDoor(label: 'Enter Dungeon', onPressed: onEnterDungeon)];
+      return [
+        WorldDoor(
+          label: 'Enter ${node.name}',
+          onPressed: () => onEnterDungeon(node.id),
+        ),
+      ];
+    }
+    if (town.dungeon == node.id) {
+      return [
+        WorldDoor(
+          label: 'Resume the crawl (depth ${camp.depth})',
+          onPressed: () => onResumeCrawl(node.id),
+        ),
+        WorldDoor(
+          label: 'Delve anew',
+          onPressed: () => _confirmDelveAnew(context, node, camp),
+        ),
+      ];
     }
     return [
       WorldDoor(
-        label: 'Resume the crawl (depth ${camp.depth})',
-        onPressed: onResumeCrawl,
-      ),
-      WorldDoor(
-        label: 'Delve anew',
-        onPressed: () => _confirmDelveAnew(context, camp),
+        label: 'Enter ${node.name}',
+        onPressed: () => _confirmAbandon(context, node, town, camp),
       ),
     ];
   }
@@ -355,40 +383,87 @@ class _Here extends StatelessWidget {
   /// Verbatim the town's question, for the reason the fork itself is: nothing
   /// about the decision changed when it moved node, and rewording it would let
   /// two copies of one sentence drift.
-  Future<void> _confirmDelveAnew(BuildContext context, GameState camp) async {
-    final given = await showDialog<bool>(
-      context: context,
-      builder: (dialog) => AlertDialog(
-        title: const Text(
-          'Delve anew?',
-          style: TextStyle(fontFamily: 'monospace'),
-        ),
-        content: Text(
+  Future<void> _confirmDelveAnew(
+    BuildContext context,
+    WorldNode node,
+    GameState camp,
+  ) async {
+    final given = await _ask(
+      context,
+      title: 'Delve anew?',
+      body:
           'The crawl waiting at depth ${camp.depth} is given up, and the '
           'dungeon is laid out afresh from floor one. Everything you carry, '
           'bank and know comes with you — only the floors are lost.',
+      keep: 'Keep the crawl',
+      give: 'Give it up',
+    );
+    if (!given || !context.mounted) return;
+    await onDelveAnew(node.id);
+  }
+
+  /// Asks before a camp in *another* dungeon is thrown away to enter this one.
+  ///
+  /// **It names the camp's dungeon, because that is the whole of what the
+  /// player needs to decide.** "This abandons your camp" could mean the crawl
+  /// they walked out of an hour ago or the one they left three towns back, and
+  /// the depth alone does not say which place it is at.
+  Future<void> _confirmAbandon(
+    BuildContext context,
+    WorldNode node,
+    TownViewState town,
+    GameState camp,
+  ) async {
+    final map = context.read<WorldBloc>().map;
+    final camped = map.nodeAt(town.dungeon!).name;
+    final given = await _ask(
+      context,
+      title: 'Enter ${node.name}?',
+      body:
+          'This abandons your camp at $camped, waiting at depth '
+          '${camp.depth}. A hero keeps one crawl, so walking into this one '
+          'gives that one up. Everything you carry, bank and know comes with '
+          'you — only those floors are lost.',
+      keep: 'Keep the crawl',
+      give: 'Give it up',
+    );
+    if (!given || !context.mounted) return;
+    await onEnterDungeon(node.id);
+  }
+
+  /// One yes-or-no question, drawn the way this screen draws them.
+  ///
+  /// The two doors that cost a camp ask the same shape of question, so they ask
+  /// it through one function — a second copy is how the buttons start to
+  /// disagree about which way round they read.
+  static Future<bool> _ask(
+    BuildContext context, {
+    required String title,
+    required String body,
+    required String keep,
+    required String give,
+  }) async {
+    final answer = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: Text(title, style: const TextStyle(fontFamily: 'monospace')),
+        content: Text(
+          body,
           style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialog).pop(false),
-            child: const Text(
-              'Keep the crawl',
-              style: TextStyle(fontFamily: 'monospace'),
-            ),
+            child: Text(keep, style: const TextStyle(fontFamily: 'monospace')),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialog).pop(true),
-            child: const Text(
-              'Give it up',
-              style: TextStyle(fontFamily: 'monospace'),
-            ),
+            child: Text(give, style: const TextStyle(fontFamily: 'monospace')),
           ),
         ],
       ),
     );
-    if (!(given ?? false) || !context.mounted) return;
-    await onDelveAnew();
+    return answer ?? false;
   }
 }
 

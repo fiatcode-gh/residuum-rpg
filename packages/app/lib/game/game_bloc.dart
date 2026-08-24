@@ -239,6 +239,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     GameState? game,
     int worldSeed = 1,
     List<String> log = const [],
+    this.dungeon,
     this.stepDelay = const Duration(milliseconds: 90),
   }) : super(
          GameViewState(
@@ -263,6 +264,16 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
 
   /// How long the hero pauses between tiles of a walk. Zero in tests.
   final Duration stepDelay;
+
+  /// Which dungeon this crawl is in, or null on a road fight.
+  ///
+  /// **On the bloc rather than on [GameViewState], and that is deliberate.**
+  /// It cannot change for as long as this bloc lives — a crawl does not move
+  /// dungeon — while every handler builds a fresh view state by construction, so
+  /// a field there would have to be carried through each of them and the first
+  /// one that forgot would quietly rename the place on the screen. A run
+  /// constant belongs beside [stepDelay].
+  final NodeId? dungeon;
 
   void _onTileTapped(TileTapped event, Emitter<GameViewState> emit) {
     final game = state.game;

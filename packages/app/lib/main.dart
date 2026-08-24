@@ -143,6 +143,7 @@ class _SessionState extends State<_Session> {
     merchant: widget.boot.merchant,
     notice: widget.boot.notice,
     suspended: widget.boot.inside ? null : widget.boot.run,
+    dungeon: widget.boot.dungeon,
   );
 
   /// Where the hero is in the world, and every day they spend walking it.
@@ -180,8 +181,9 @@ class _SessionState extends State<_Session> {
     _saver.watchWorld(_world);
     if (widget.boot.inside) {
       final run = widget.boot.run!;
+      final dungeon = widget.boot.dungeon!;
       WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _openCrawl(run, resumed: true),
+        (_) => _openCrawl(run, resumed: true, dungeon: dungeon),
       );
     }
   }
@@ -303,14 +305,14 @@ class _SessionState extends State<_Session> {
     await widget.onRoster(chosen, _saver.document);
   }
 
-  Future<void> _enterDungeon() async =>
-      _openAnswer(const EnterDungeonPressed(), resumed: false);
+  Future<void> _enterDungeon(NodeId node) async =>
+      _openAnswer(EnterDungeonPressed(node), resumed: false, dungeon: node);
 
-  Future<void> _resumeCrawl() async =>
-      _openAnswer(const ResumeCrawlPressed(), resumed: true);
+  Future<void> _resumeCrawl(NodeId node) async =>
+      _openAnswer(const ResumeCrawlPressed(), resumed: true, dungeon: node);
 
-  Future<void> _delveAnew() async =>
-      _openAnswer(const DelveAnewPressed(), resumed: false);
+  Future<void> _delveAnew(NodeId node) async =>
+      _openAnswer(DelveAnewPressed(node), resumed: false, dungeon: node);
 
   /// Presses one of the town's doors and opens whatever crawl it answers with.
   ///
@@ -324,17 +326,27 @@ class _SessionState extends State<_Session> {
   /// does not: whether the log opens with a line explaining itself. Delving anew
   /// is a fresh crawl the player asked for and has nothing to explain, even
   /// though it starts from a camp.
-  Future<void> _openAnswer(TownBlocEvent door, {required bool resumed}) async {
+  Future<void> _openAnswer(
+    TownBlocEvent door, {
+    required bool resumed,
+    required NodeId dungeon,
+  }) async {
     _town.add(door);
     await _town.stream.firstWhere((state) => state.run != null);
     if (!mounted) return;
-    await _openCrawl(_town.state.run!, resumed: resumed);
+    await _openCrawl(_town.state.run!, resumed: resumed, dungeon: dungeon);
   }
 
   /// Puts the crawl on top of the town.
   ///
   /// The town is never torn down — the crawl is pushed over it — so leaving is
   /// one pop, which is the architecture `suspendDungeon` documents.
+  ///
+  /// [dungeon] is passed rather than read off the town, because the town's own
+  /// answer is one emission behind on the boot path: a hero killed mid-crawl is
+  /// put back into it before the town has said anything at all. It comes from
+  /// the boot document there and from the door pressed everywhere else, which
+  /// are the same two sources the autosaver reads.
   ///
   /// **Every crawl in the app is opened here, and there are now four ways in:**
   /// booting into one the app was killed inside, walking into a fresh one,
@@ -349,8 +361,16 @@ class _SessionState extends State<_Session> {
   /// therefore opens with one line saying so, rather than with a history it
   /// would have to invent; a crawl being entered for the first time opens on an
   /// empty log, because nothing has happened in it yet.
-  Future<void> _openCrawl(GameState run, {required bool resumed}) async {
-    final game = GameBloc(game: run, log: resumed ? _openingLog() : const []);
+  Future<void> _openCrawl(
+    GameState run, {
+    required bool resumed,
+    required NodeId dungeon,
+  }) async {
+    final game = GameBloc(
+      game: run,
+      dungeon: dungeon,
+      log: resumed ? _openingLog() : const [],
+    );
     _saver.watchGame(game);
     if (!mounted) return;
     await Navigator.of(context).push(

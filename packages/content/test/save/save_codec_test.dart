@@ -25,7 +25,13 @@ Map<String, Object?> _asMap(String written) =>
 
 /// A one-hero document, which is what every single-hero test here is about.
 String _save(Profile profile, {GameState? run}) => encodeSave(
-  SaveDocument.one(id: 'hero-1', label: 'Hero 1', profile: profile, run: run),
+  SaveDocument.one(
+    id: 'hero-1',
+    label: 'Hero 1',
+    profile: profile,
+    run: run,
+    dungeon: run == null ? null : cryptNode,
+  ),
 );
 
 Map<String, Object?> _heroBlock(Map<String, Object?> document) =>

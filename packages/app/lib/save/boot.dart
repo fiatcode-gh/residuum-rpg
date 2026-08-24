@@ -23,6 +23,9 @@ class Boot {
   /// The crawl this hero has waiting, or null when they have none.
   GameState? get run => document.run;
 
+  /// Which dungeon that crawl is in, or null when there is none.
+  NodeId? get dungeon => document.dungeon;
+
   /// Whether the hero is standing in [run] rather than camped away from it.
   ///
   /// The question `run != null` used to answer by itself. Once a hero can walk

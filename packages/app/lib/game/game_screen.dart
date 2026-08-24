@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../town/town_bloc.dart';
@@ -50,6 +51,7 @@ class GameScreen extends StatelessWidget {
                         padding: const EdgeInsets.all(8),
                         child: GlyphGrid(
                           state: state,
+                          palette: paletteFor(context.read<GameBloc>().dungeon),
                           onTap: (position) => context.read<GameBloc>().add(
                             TileTapped(position),
                           ),
@@ -88,7 +90,8 @@ class _HitPoints extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(
         children: [
-          Expanded(
+          SizedBox(
+            width: 56,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(3),
               child: LinearProgressIndicator(
@@ -100,39 +103,65 @@ class _HitPoints extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Text(
-            '$shown / $ceiling  ${_condition(fraction)}',
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 14,
-              color: Color(0xFFDDE1E7),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            state.isEncounter
-                ? 'The road'
-                : 'Depth ${state.depth}/$deepestDepth',
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 14,
-              color: Color(0xFFDDE1E7),
-            ),
-          ),
-          if (state.enemiesInSight > 0) ...[
-            const SizedBox(width: 12),
-            Text(
-              'Engaged ${state.enemiesInSight}',
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 14,
-                color: Color(0xFFDDE1E7),
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _line(shown, ceiling, fraction, context, state),
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 14,
+                  color: Color(0xFFDDE1E7),
+                ),
               ),
             ),
-          ],
+          ),
         ],
       ),
     );
+  }
+
+  /// The whole status line as one string, so it can be scaled as one thing.
+  ///
+  /// **Four texts in a row became one, and the reason is a device pass.** The
+  /// row used to be a stretched bar and three fixed labels, which fitted while
+  /// the middle one read `Depth 3/5`. Naming the dungeon made it fifteen
+  /// characters longer, and a floor with something in sight overflowed a phone
+  /// by sixty-four pixels — the widget tests never saw it, because their surface
+  /// is wider than a phone is.
+  ///
+  /// One string inside a scale-down box shrinks instead of clipping, which keeps
+  /// every word on screen. Nothing is ellipsised: the M2 device pass already
+  /// found that a truncated label throws away exactly the part the player cannot
+  /// get anywhere else.
+  static String _line(
+    int shown,
+    int ceiling,
+    double fraction,
+    BuildContext context,
+    GameViewState state,
+  ) {
+    final engaged = state.enemiesInSight > 0
+        ? '  Engaged ${state.enemiesInSight}'
+        : '';
+    return '$shown / $ceiling  ${_condition(fraction)}  '
+        '${_whereabouts(context, state)}$engaged';
+  }
+
+  /// Where the hero is standing, in words and a depth.
+  ///
+  /// **The dungeon is named, because there are three of them now.** A hero
+  /// three floors down needs to know three floors down *what* — the crypt and
+  /// the keep are opposite ends of the world and a bare "Depth 3/5" reads the
+  /// same in both. A road fight keeps "The road", which is the whole of where
+  /// it is.
+  static String _whereabouts(BuildContext context, GameViewState state) {
+    if (state.isEncounter) return 'The road';
+    final depth = 'depth ${state.depth}/$deepestDepth';
+    final node = context.read<GameBloc>().dungeon;
+    if (node == null) return 'Depth ${state.depth}/$deepestDepth';
+    return '${residuumWorld.nodeAt(node).name} — $depth';
   }
 
   static String _condition(double fraction) {

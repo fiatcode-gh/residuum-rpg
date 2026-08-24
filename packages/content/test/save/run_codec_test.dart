@@ -1,10 +1,12 @@
+import 'package:residuum_content/content.dart';
 import 'package:residuum_content/src/save/run_codec.dart';
 import 'package:residuum_core/core.dart';
 import 'package:test/test.dart';
 
 import 'support/deep_run.dart';
 
-GameState _reread(GameState run) => loadRun({'run': encodeRun(run)}, 'run');
+GameState _reread(GameState run) =>
+    loadRun({'run': encodeRun(run)}, 'run', dungeon: cryptNode);
 
 void main() {
   group('run codec', () {

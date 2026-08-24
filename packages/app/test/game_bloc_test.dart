@@ -167,7 +167,7 @@ void main() {
     test('is never offered in a crawl, wherever the hero stands', () {
       // arrange
       final crawl = GameBloc(
-        game: startDungeonRun(newProfile(worldSeed: 909)),
+        game: startDungeonRunAt(cryptNode, newProfile(worldSeed: 909)),
         stepDelay: Duration.zero,
       );
 

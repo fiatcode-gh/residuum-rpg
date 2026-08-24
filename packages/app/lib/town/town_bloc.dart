@@ -6,8 +6,17 @@ sealed class TownBlocEvent {
   const TownBlocEvent();
 }
 
+/// The hero is walking into the dungeon under [node].
+///
+/// **The node travels with the press, because nothing downstream can work it
+/// out.** The town bloc is keyed on a *town* — that is whose shelf it is
+/// drawing — and a hero standing at a dungeon is at no town at all, so the one
+/// place that knows which dungeon is being entered is the screen the hero
+/// pressed it from.
 final class EnterDungeonPressed extends TownBlocEvent {
-  const EnterDungeonPressed();
+  const EnterDungeonPressed(this.node);
+
+  final NodeId node;
 }
 
 /// The run is over, one way or the other.
@@ -35,9 +44,16 @@ final class ResumeCrawlPressed extends TownBlocEvent {
   const ResumeCrawlPressed();
 }
 
-/// The hero is giving that crawl up for a dungeon laid out afresh.
+/// The hero is giving that crawl up for the dungeon under [node], laid out
+/// afresh.
+///
+/// [node] need not be the camp's own dungeon: pressing this at another node is
+/// how a hero abandons a camp to enter somewhere else, and the world screen asks
+/// them first.
 final class DelveAnewPressed extends TownBlocEvent {
-  const DelveAnewPressed();
+  const DelveAnewPressed(this.node);
+
+  final NodeId node;
 }
 
 /// A road fight is over, and the hero is coming home from it.
@@ -138,6 +154,7 @@ class TownViewState {
     this.merchant = MerchantVisit.none,
     this.run,
     this.suspended,
+    this.dungeon,
     this.notice,
   });
 
@@ -186,6 +203,19 @@ class TownViewState {
   /// null; both doors out of a camp set that and leave this null.
   final GameState? suspended;
 
+  /// Which dungeon [run] or [suspended] is a crawl of, or null when there is
+  /// neither.
+  ///
+  /// **Carried by every handler that carries either of them, and the two must
+  /// never drift apart.** The save document requires a crawl and a place
+  /// together, so a handler that kept the camp and dropped this would write a
+  /// document the decoder refuses — and the player would find out on the next
+  /// launch, with a fallback notice and no crawl. It is the same carry list
+  /// [suspended] is on, for higher stakes.
+  ///
+  /// Never a town, and never set while both crawl fields are null.
+  final NodeId? dungeon;
+
   /// The last refusal, for the screen to read out. Cleared by the next thing
   /// that works.
   final String? notice;
@@ -220,12 +250,14 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     MerchantVisit merchant = MerchantVisit.none,
     String? notice,
     GameState? suspended,
+    NodeId? dungeon,
   }) : super(
          _opening(
            profile: profile,
            town: town ?? newWhereabouts().at,
            merchant: merchant,
            suspended: suspended,
+           dungeon: dungeon,
            notice: notice,
          ),
        ) {
@@ -262,6 +294,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     required NodeId town,
     required MerchantVisit merchant,
     required GameState? suspended,
+    required NodeId? dungeon,
     required String? notice,
   }) => TownViewState(
     profile: profile,
@@ -271,6 +304,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     ),
     merchant: merchant,
     suspended: suspended,
+    dungeon: dungeon,
     notice: notice,
   );
 
@@ -283,7 +317,8 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
       town: state.town,
       stock: state.stock,
       merchant: state.merchant,
-      run: startDungeonRun(state.profile),
+      run: startDungeonRunAt(event.node, state.profile),
+      dungeon: event.node,
     ),
   );
 
@@ -337,6 +372,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
         ),
         merchant: merchant,
         suspended: event.state,
+        dungeon: state.dungeon,
       ),
     );
   }
@@ -356,6 +392,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
           stock: state.stock,
           merchant: state.merchant,
           run: resumeRun(state.profile, camp),
+          dungeon: state.dungeon,
         ),
       );
     }
@@ -369,8 +406,13 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
   /// worked for. What it costs is the depth reached, which is why the interface
   /// asks first rather than why this refuses.
   ///
-  /// `startDungeonRun` bumps the visit by construction, and that bump **is** the
-  /// reshuffle. It is the whole reason this door exists: with resuming as the
+  /// **The camp given up may be somebody else's dungeon.** Entering anywhere
+  /// gives up the one camp a hero has, because one run slot per hero is a fact
+  /// about the save format rather than a choice the interface made — and the
+  /// world screen is where that is said out loud, before the press gets here.
+  ///
+  /// `startDungeonRunAt` bumps the visit by construction, and that bump **is**
+  /// the reshuffle. It is the whole reason this door exists: with resuming as the
   /// only way back down, floors would be emptied once and never refill, and the
   /// farming loop the economy rests on would quietly die.
   void _onDelveAnew(DelveAnewPressed event, Emitter<TownViewState> emit) =>
@@ -380,7 +422,8 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
           town: state.town,
           stock: state.stock,
           merchant: state.merchant,
-          run: startDungeonRun(state.profile),
+          run: startDungeonRunAt(event.node, state.profile),
+          dungeon: event.node,
         ),
       );
 
@@ -451,6 +494,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
         ),
         merchant: merchant,
         suspended: state.suspended,
+        dungeon: state.dungeon,
       ),
     );
   }
@@ -579,6 +623,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     stock: stock ?? state.stock,
     merchant: merchant ?? state.merchant,
     suspended: state.suspended,
+    dungeon: state.dungeon,
     notice: refusal?.reason,
   );
 

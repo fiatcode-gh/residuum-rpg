@@ -19,6 +19,7 @@ const String _goldenTown =
     '":"iron-sword","rarity":"common","affixes":[]}],"skills":{"arm'
     's":{"level":4,"xp":2},"might":{"level":0,"xp":0},"bulwark":{"l'
     'evel":0,"xp":0},"fleetfoot":{"level":0,"xp":0}}},"run":null,'
+    '"dungeon":null,'
     '"inside":false,'
     '"world":{"at":"northgate","home":"northgate","day":30,'
     '"discovered":["crypt","northgate","stonebridge"],"journey":null},'
@@ -56,6 +57,7 @@ const String _goldenRun =
     ',"fleetfoot":{"level":0,"xp":0}},"floors":[{"depth":1,"map":"#'
     '##\\n#.#\\n###","monsters":[],"groundItems":[],"explored":[[1,'
     '1]],"stairsDown":[1,1],"stairsUp":null}]},'
+    '"dungeon":"crypt",'
     '"inside":true,'
     '"world":{"at":"crypt","home":"stonebridge","day":0,'
     '"discovered":["crypt","northgate","stonebridge"],"journey":null},'
@@ -86,6 +88,7 @@ const String _goldenTwoHeroes =
     'fixes":[]}],"bank":[],"skills":{"arms":{"level":0,"xp":0},"mig'
     'ht":{"level":0,"xp":0},"bulwark":{"level":0,"xp":0},"fleetfoot'
     '":{"level":0,"xp":0}}},"run":null,'
+    '"dungeon":null,'
     '"inside":false,'
     '"world":{"at":"stonebridge","home":"stonebridge","day":30,'
     '"discovered":["crypt","northgate","stonebridge"],'
@@ -102,6 +105,7 @@ const String _goldenTwoHeroes =
     'bank":[],"skills":{"arms":{"level":0,"xp":0},"might":{"level":'
     '0,"xp":0},"bulwark":{"level":0,"xp":0},"fleetfoot":{"level":0,'
     '"xp":0}}},"run":null,'
+    '"dungeon":null,'
     '"inside":false,'
     '"world":{"at":"stonebridge","home":"stonebridge","day":0,'
     '"discovered":["crypt","stonebridge"],"journey":null},'
@@ -310,6 +314,7 @@ void main() {
           profile: newProfile(worldSeed: 77),
           world: atTheCrypt(),
           run: run,
+          dungeon: cryptNode,
           inside: true,
         ),
       );

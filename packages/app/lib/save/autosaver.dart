@@ -28,6 +28,7 @@ class Autosaver {
     : _roster = from.document,
       _profile = from.profile,
       _run = from.run,
+      _dungeon = from.dungeon,
       _inside = from.inside,
       _merchant = from.merchant,
       _world = from.world;
@@ -40,6 +41,10 @@ class Autosaver {
 
   Profile _profile;
   GameState? _run;
+
+  /// Which dungeon [_run] is a crawl of, held for [_run]'s reason: at boot
+  /// there is a crawl to resume and no town emission to learn its place from.
+  NodeId? _dungeon;
   bool _inside;
   MerchantVisit _merchant;
   Whereabouts _world;
@@ -69,6 +74,7 @@ class Autosaver {
       town.stream.listen((state) {
         _profile = state.profile;
         _run = state.run ?? state.suspended;
+        _dungeon = state.dungeon;
         _inside = state.run != null;
         _merchant = state.merchant;
         saveNow();
@@ -144,6 +150,7 @@ class Autosaver {
     _merchant,
     _world,
     inside: _inside,
+    dungeon: _dungeon,
   );
 
   /// Writes the document down.
