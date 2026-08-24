@@ -160,6 +160,21 @@ void main() {
   });
 
   group('resumeRun', () {
+    test('walks back down into a delve of the same depth', () {
+      // arrange
+      final camped = startRun(
+        _townie(),
+        dungeon: _shuffling(),
+        deepest: (visit) => 7,
+      );
+
+      // act
+      final resumed = resumeRun(suspendRun(_townie(), camped), camped);
+
+      // assert
+      expect(resumed.deepest, 7);
+    });
+
     test('the town business the hero did while camped comes down too', () {
       // arrange
       final camped = suspendRun(_townie(), _run());

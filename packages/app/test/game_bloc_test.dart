@@ -198,6 +198,31 @@ void main() {
 
   _lootTests();
   group('GameBloc', () {
+    test("reports the delve's own depth, not the crypt's five", () {
+      // arrange
+      const worldSeed = 4242;
+      final run = startDungeonRunAt(seaCave, newProfile(worldSeed: worldSeed));
+
+      // act
+      final view = GameViewState(game: run, log: const []);
+
+      // assert
+      expect(view.deepest, delveDepth(seaCave, worldSeed, run.visit));
+      expect(view.deepest, 6);
+      expect(view.deepest, isNot(deepestDepth));
+    });
+
+    test("reports the crypt's five for a crypt crawl", () {
+      // arrange
+      final run = startDungeonRunAt(cryptNode, newProfile(worldSeed: 4242));
+
+      // act
+      final view = GameViewState(game: run, log: const []);
+
+      // assert
+      expect(view.deepest, deepestDepth);
+    });
+
     test('starts a fresh crawl on depth one with an empty log', () {
       // arrange
       final bloc = GameBloc();
@@ -626,6 +651,22 @@ void main() {
             .having((s) => s.depth, 'depth', 2)
             .having((s) => s.game.hero.position, 'hero', const Position(1, 1))
             .having((s) => s.log, 'log', ['You descend to depth 2.']),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'walking a floor down does not shrink the delve the hero is in',
+      build: () {
+        final delve = startDungeonRunAt(seaCave, newProfile(worldSeed: 4242));
+        return walker(
+          delve.copyWith(hero: delve.hero.copyWith(position: delve.stairsDown)),
+        );
+      },
+      act: (bloc) => bloc.add(const DescendPressed()),
+      expect: () => [
+        isA<GameViewState>()
+            .having((s) => s.depth, 'depth', 2)
+            .having((s) => s.deepest, 'deepest', 6),
       ],
     );
 

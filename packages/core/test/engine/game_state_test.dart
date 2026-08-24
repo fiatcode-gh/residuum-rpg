@@ -12,6 +12,19 @@ const _room = '''
 Floor _noFloorBelow(int depth) =>
     throw StateError('this crawl was not meant to descend');
 
+const _hero = Actor(
+  id: 'hero',
+  name: 'you',
+  glyph: '@',
+  position: Position(1, 1),
+  hp: 20,
+  maxHp: 20,
+  attackMin: 3,
+  attackMax: 5,
+  speed: 10,
+  energy: actThreshold,
+);
+
 void main() {
   group('Actor', () {
     test('is alive while it has hit points', () {
@@ -261,6 +274,46 @@ void main() {
       expect(next.visible, visible);
       expect(next.explored, explored);
       expect(next.isGameOver, isFalse);
+    });
+
+    test('carries the delve\'s own depth across a copy, like the seed', () {
+      // arrange
+      final state = GameState(
+        map: FloorMap.parse('###\n#.#\n###'),
+        hero: _hero,
+        monsters: const [],
+        rng: Rng(1),
+        lootRng: Rng(2),
+        buildFloor: _noFloorBelow,
+        visible: const {},
+        explored: const {},
+        worldSeed: 909,
+        deepest: 7,
+      );
+
+      // act
+      final moved = state.copyWith(depth: 4);
+
+      // assert
+      expect(moved.deepest, 7);
+      expect(moved.worldSeed, 909);
+    });
+
+    test('bottoms out at the crypt\'s five when nobody names a depth', () {
+      // arrange
+      final state = GameState(
+        map: FloorMap.parse('###\n#.#\n###'),
+        hero: _hero,
+        monsters: const [],
+        rng: Rng(1),
+        lootRng: Rng(2),
+        buildFloor: _noFloorBelow,
+        visible: const {},
+        explored: const {},
+      );
+
+      // assert
+      expect(state.deepest, deepestDepth);
     });
 
     test(

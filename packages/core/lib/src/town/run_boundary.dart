@@ -1,5 +1,6 @@
 import '../dungeon/floor.dart';
 import '../dungeon/fov.dart';
+import '../dungeon/generator.dart';
 import '../engine/energy.dart';
 import '../engine/game_state.dart';
 import '../engine/rng.dart';
@@ -12,6 +13,16 @@ import 'profile.dart';
 /// never changes. Walking in is the one moment it does, so entry needs one more
 /// layer: hand the dungeon a visit and it hands back that reshuffle's floors.
 typedef Dungeon = FloorBuilder Function(int visit);
+
+/// How deep the delve goes on a given visit.
+///
+/// **A function of the visit rather than a number, and [Dungeon]'s shape for
+/// [Dungeon]'s reason.** Entering is the one moment the visit changes and
+/// [startRun] is where that bump lives, so a caller who had to name the visit
+/// in order to name the depth would be keeping a second copy of the bump rule
+/// — and the first copy to drift would hand out a depth rolled for a delve
+/// nobody made, while looking exactly like one that had not drifted.
+typedef DelveDepth = int Function(int visit);
 
 /// The crawl a [profile] begins by walking into the dungeon.
 ///
@@ -32,13 +43,18 @@ typedef Dungeon = FloorBuilder Function(int visit);
 /// it, and the first one that forgot would replay the same five floors forever
 /// while looking exactly like the ones that did not.
 ///
-/// [dropTables] and [lootSeedSalt] come from content for the same reason the
-/// dungeon does: core has the rules, content has the numbers.
+/// [dropTables], [lootSeedSalt] and [deepest] come from content for the same
+/// reason the dungeon does: core has the rules, content has the numbers.
+///
+/// Leaving [deepest] unsaid lays the crawl out to [deepestDepth], which is the
+/// crypt's fixed bottom and what every caller got before delves rolled their
+/// own.
 GameState startRun(
   Profile profile, {
   required Dungeon dungeon,
   Map<int, DropTable> dropTables = const {},
   int lootSeedSalt = 0,
+  DelveDepth? deepest,
 }) {
   final visit = profile.visit + 1;
   final buildFloor = dungeon(visit);
@@ -59,6 +75,7 @@ GameState startRun(
     depth: 1,
     worldSeed: profile.worldSeed,
     visit: visit,
+    deepest: deepest == null ? deepestDepth : deepest(visit),
     stairsDown: floor.stairsDown,
     stairsUp: floor.stairsUp,
     groundItems: floor.groundItems,
@@ -180,6 +197,7 @@ GameState resumeRun(Profile profile, GameState suspended) => GameState(
   depth: suspended.depth,
   worldSeed: suspended.worldSeed,
   visit: suspended.visit,
+  deepest: suspended.deepest,
   stairsDown: suspended.stairsDown,
   stairsUp: suspended.stairsUp,
   gold: profile.gold,

@@ -1044,6 +1044,43 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('reads the same total after a camp is written and read', (
+      tester,
+    ) async {
+      // arrange — a camp two floors into a sea-cave that rolled six, taken
+      // through the store so the total comes back off `loadRun` rather than off
+      // the state the test built
+      await _onAPhone(tester);
+      const worldSeed = 4242;
+      final profile = newProfile(worldSeed: worldSeed);
+      final delve = startDungeonRunAt(seaCave, profile);
+      final camp = delve.copyWith(
+        hero: delve.hero.copyWith(position: delve.stairsDown),
+        depth: 2,
+      );
+      final written = encodeSave(
+        _oneHero(
+          suspendRun(profile, camp),
+          world: _atTheSeaCave(),
+          run: camp,
+          dungeon: seaCave,
+        ),
+      );
+      final app = PumpedApp(decodeSave(written) as SaveDocument);
+      await app.pump(tester);
+
+      // act
+      await tester.tap(find.textContaining('Resume the crawl'));
+      await tester.pumpAndSettle();
+
+      // assert — the document is decoded before it is pumped, because
+      // `PumpedApp` boots the object it is handed: pumping the built camp
+      // straight in would never reach `loadRun`, and the total the codec
+      // recomputes is exactly what this test is about
+      expect(delveDepth(seaCave, worldSeed, camp.visit), 6);
+      expect(find.textContaining('The Sea-Cave — depth 2/6'), findsOneWidget);
+    });
+
     testWidgets('says the hit points, the condition and the place at once', (
       tester,
     ) async {
@@ -1070,7 +1107,8 @@ void main() {
       // assert
       expect(line, contains('20 / 20'));
       expect(line, contains('Steady'));
-      expect(line, contains('The Sea-Cave — depth 1/5'));
+      expect(line, contains('The Sea-Cave — depth 1/4'));
+      expect(delveDepth(seaCave, 909, 1), 4);
     });
   });
 }

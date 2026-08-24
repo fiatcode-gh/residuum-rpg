@@ -27,6 +27,8 @@ class ThemedDungeon {
     required this.dropTables,
     required this.boss,
     required this.trophyTable,
+    required this.shallowestDelve,
+    required this.deepestDelve,
   });
 
   /// The place on the world map this is under.
@@ -44,6 +46,18 @@ class ThemedDungeon {
   /// What the boss is guarding: one item, rare or better, every time.
   final DropTable trophyTable;
 
+  /// The fewest floors a delve here can lay out.
+  ///
+  /// The band's ends rather than a lowest and a width, because every question
+  /// anyone asks of it — is this roll legal, does this dungeon have a table for
+  /// that depth — is asked about an end. [delveDepth] is the only thing that
+  /// wants the width, and it works it out.
+  final int shallowestDelve;
+
+  /// The most floors a delve here can lay out, and so the deepest depth this
+  /// dungeon needs a spawn and a drop table for.
+  final int deepestDelve;
+
   /// What the message log and the screens call this place.
   String get name => residuumWorld.nodeAt(node).name;
 }
@@ -56,6 +70,8 @@ final ThemedDungeon theSeaCave = ThemedDungeon(
   dropTables: seaCaveDropTables,
   boss: drownedCaptain,
   trophyTable: seaCaveTrophyTable,
+  shallowestDelve: 4,
+  deepestDelve: 6,
 );
 
 /// The ruined keep, two days east of Northgate and the longest walk in the
@@ -67,6 +83,8 @@ final ThemedDungeon theRuinedKeep = ThemedDungeon(
   dropTables: ruinedKeepDropTables,
   boss: fallenCastellan,
   trophyTable: ruinedKeepTrophyTable,
+  shallowestDelve: 5,
+  deepestDelve: 7,
 );
 
 /// Every dungeon with a theme of its own, which is every one but the crypt.
@@ -108,6 +126,56 @@ int dungeonSalt(NodeId node) {
   return hash;
 }
 
+/// The slot a delve's depth is mixed at.
+///
+/// **The market's purpose-slot trick, at a number no floor can be.** The roll
+/// comes off the same salted seed the dungeon's own floors come off, so the slot
+/// is the only thing keeping it out of floor one's stream — and it has to stay
+/// clear of every depth a dungeon could ever have rather than only of the seven
+/// this build lays out. The road's two slots are one and two and the market's is
+/// zero, so a fourth literal here keeps all four apart even if two salts were
+/// ever to collide.
+///
+/// Public because the disjointness proof is a test's to make, exactly as
+/// [floorSeed] and [dungeonSalt] are public so the floor streams can be shown
+/// not to collide rather than said not to.
+const int depthSlot = 0x0DEE;
+
+/// How many floors a delve into the dungeon at [node] lays out, on the world
+/// [worldSeed] describes and the [visit] this is.
+///
+/// **Derived, and never written down.** The depth is a pure function of the
+/// dungeon, the world seed and the visit, and the save already holds all three
+/// for their own reasons — so [loadRun] recomputes it exactly as it recomputes
+/// the floor builder and the drop tables, and the save document does not gain a
+/// key. Rolling it off the crawl's own generator instead would need a new key,
+/// would move every golden, and would let the depth draw perturb the floor
+/// streams; drawing it here costs none of that.
+///
+/// **Uniform over the dungeon's band, and nothing cleverer.** A cave that is
+/// usually five floors and occasionally four teaches the player to expect five;
+/// three depths at a third each is what makes reading the total in the HUD worth
+/// doing.
+///
+/// At [cryptNode] this returns [deepestDepth] without touching the mix at all —
+/// [dungeonFor]'s early return, for [dungeonFor]'s reason. The crypt is fixed at
+/// five and its floors have to stay identical by construction rather than by
+/// arithmetic, and a crypt that reached this expression and came back with five
+/// anyway would be identity by luck.
+///
+/// Throws [ArgumentError] at a node with nothing under it, so a town id that
+/// reached here is a fault with a sentence rather than a delve of no floors.
+int delveDepth(NodeId node, int worldSeed, int visit) {
+  if (node == cryptNode) return deepestDepth;
+  final themed = themedDungeonAt(node);
+  if (themed == null) {
+    throw ArgumentError.value(node, 'node', 'has no dungeon under it');
+  }
+  final span = themed.deepestDelve - themed.shallowestDelve + 1;
+  return themed.shallowestDelve +
+      floorSeed(worldSeed ^ dungeonSalt(node), depthSlot, visit) % span;
+}
+
 /// How the dungeon at [node] lays its floors out on the world [worldSeed]
 /// describes.
 ///
@@ -124,6 +192,12 @@ int dungeonSalt(NodeId node) {
 /// ambush all follow: identity goes in by exclusive-or, not as a fourth
 /// parameter.
 ///
+/// **A themed delve's depth is rolled once per visit, here.** [delveDepth] is
+/// asked as the visit's floor builder is made and the answer is closed over, so
+/// every floor of one delve is laid out against one bottom. The crypt reaches
+/// none of this: it returns above, and the roll it never made is the reason its
+/// goldens and its asserted twenty-four wins in forty can go on being the proof.
+///
 /// Throws [ArgumentError] at a node with nothing under it, so a town id that
 /// reached here is a fault with a sentence rather than an empty dungeon.
 Dungeon dungeonFor(NodeId node, int worldSeed) {
@@ -132,8 +206,16 @@ Dungeon dungeonFor(NodeId node, int worldSeed) {
   if (themed == null) {
     throw ArgumentError.value(node, 'node', 'has no dungeon under it');
   }
-  return (visit) =>
-      (depth) => themedFloor(themed, depth, worldSeed: worldSeed, visit: visit);
+  return (visit) {
+    final deepest = delveDepth(node, worldSeed, visit);
+    return (depth) => themedFloor(
+      themed,
+      depth,
+      worldSeed: worldSeed,
+      visit: visit,
+      deepest: deepest,
+    );
+  };
 }
 
 /// What a crawl in the dungeon at [node] draws its kill drops from.
@@ -188,6 +270,15 @@ int lootSaltFor(NodeId node) =>
 ///   and the litter the floor would have had is still exactly where it was, with
 ///   the trophy on the tile after it.
 ///
+/// **[deepest] is the delve's own bottom and the check against it is `==`, not
+/// `>=`.** A seven-floor keep read with a greater-or-equal against the crypt's
+/// five would crown a castellan on five, on six and on seven, and lay three
+/// trophies — three bottoms in one delve, which is no bottom at all. The floor
+/// knows its own depth; the one thing it cannot work out is where the delve
+/// stops, so that arrives as a parameter and it is required: [dungeonFor] is the
+/// only thing that builds a themed floor, and a default here would be a wrong
+/// bottom waiting for the second caller.
+///
 /// [Floor.stairsUp] is left off here exactly as [buildFloor] leaves it off, and
 /// `step` supplies the arrival tile in its place. Preserved rather than fixed:
 /// the two builders have to behave the same way, and correcting one of them
@@ -197,11 +288,12 @@ Floor themedFloor(
   int depth, {
   required int worldSeed,
   required int visit,
+  required int deepest,
 }) {
   final seed = floorSeed(worldSeed ^ dungeonSalt(dungeon.node), depth, visit);
   final table = dungeonSpawnTableFor(dungeon.spawnTables, depth);
   final drops = dungeonDropTableFor(dungeon.dropTables, depth);
-  final bottom = depth >= deepestDepth;
+  final bottom = depth == deepest;
   final rng = Rng(seed);
   final count = table.rollCount(rng);
   final itemCount = rollFloorItemCount(drops, rng);
@@ -210,6 +302,7 @@ Floor themedFloor(
     depth,
     monsterCount: count,
     itemCount: bottom ? itemCount + 1 : itemCount,
+    deepest: deepest,
   );
   final monsters = <Actor>[];
   for (final spawn in generated.monsterSpawns) {
@@ -275,4 +368,5 @@ GameState startDungeonRunAt(NodeId node, Profile profile) => startRun(
   dungeon: dungeonFor(node, profile.worldSeed),
   dropTables: dropTablesFor(node),
   lootSeedSalt: lootSaltFor(node),
+  deepest: (visit) => delveDepth(node, profile.worldSeed, visit),
 );

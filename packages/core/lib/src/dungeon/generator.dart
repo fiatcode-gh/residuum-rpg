@@ -47,7 +47,7 @@ class GeneratedFloor {
 
   final List<Position> monsterSpawns;
 
-  /// Null exactly on the deepest floor.
+  /// Null exactly on the deepest floor of this delve.
   final Position? stairsDown;
 
   /// Where the hero arrives from the floor above, and the way back up.
@@ -67,13 +67,30 @@ class GeneratedFloor {
 }
 
 /// Reports what is wrong with a generated floor, or null when it is sound.
+///
+/// The delve's own deepest floor comes in as a parameter rather than being read
+/// off a constant, and it is required rather than defaulted: a validator that
+/// cannot see where the bottom is has no way to tell a floor missing its stairs
+/// from the one floor that is meant to be without them, and one that could
+/// quietly ignore the answer is the silent dead end this seam exists to make
+/// impossible.
 typedef FloorProblem =
-    String? Function(GeneratedFloor floor, int depth, int monsterCount);
+    String? Function(
+      GeneratedFloor floor,
+      int depth,
+      int monsterCount,
+      int deepest,
+    );
 
 /// How many times [generateFloor] may re-roll before giving up.
 const int maxGenerationAttempts = 8;
 
-/// The deepest floor of the dungeon. Only this floor has no way down.
+/// The crypt's deepest floor, and the bottom every delve that does not roll one
+/// of its own is laid out to.
+///
+/// The crypt is fixed at five and always was. A themed delve rolls its own
+/// depth, hands it to [generateFloor], and never touches this — which is what
+/// keeps the crypt's floors identical by construction rather than by arithmetic.
 const int deepestDepth = 5;
 
 /// Builds the floor for [depth] from [seed], guaranteed sound or not at all.
@@ -101,6 +118,14 @@ const int deepestDepth = 5;
 /// [itemCount] cannot reshuffle a layout or a spawn a player already shared the
 /// seed for.
 ///
+/// [deepest] is how many floors the delve this one belongs to laid out, and it
+/// is the honest input rather than a boolean is-this-the-bottom flag: the floor
+/// knows its own depth already, so the one thing it cannot work out for itself
+/// is where the delve stops. It defaults to [deepestDepth] because the crypt is
+/// the dungeon that does not roll, and a default that reproduces the crypt is
+/// what lets the characterization goldens go on being the proof that nothing
+/// moved.
+///
 /// [findProblem] is the seam that makes the retry contract testable — the
 /// shipped validator does not fail on real seeds, so a test can only reach the
 /// retry path by supplying its own.
@@ -109,22 +134,29 @@ GeneratedFloor generateFloor(
   int depth, {
   required int monsterCount,
   int itemCount = 0,
+  int deepest = deepestDepth,
   FloorProblem findProblem = describeFloorProblem,
 }) {
   var problem = 'no attempt was made';
   for (var attempt = 0; attempt < maxGenerationAttempts; attempt++) {
-    final floor = _attemptFloor(seed + attempt, depth, monsterCount, itemCount);
+    final floor = _attemptFloor(
+      seed + attempt,
+      depth,
+      monsterCount,
+      itemCount,
+      deepest,
+    );
     if (floor == null) {
       problem = 'not enough room for $monsterCount monsters';
       continue;
     }
-    final found = findProblem(floor, depth, monsterCount);
+    final found = findProblem(floor, depth, monsterCount, deepest);
     if (found == null) return floor;
     problem = found;
   }
   throw StateError(
-    'could not generate a sound floor for depth $depth from seed $seed '
-    'in $maxGenerationAttempts attempts: $problem',
+    'could not generate a sound floor for depth $depth of a $deepest-floor '
+    'delve from seed $seed in $maxGenerationAttempts attempts: $problem',
   );
 }
 
@@ -132,16 +164,22 @@ GeneratedFloor generateFloor(
 ///
 /// Checks, in order: the hero stands on walkable ground; every walkable tile is
 /// reachable from the hero; the stairs down exist, are reachable and are
-/// somewhere else on depths above [deepestDepth] and are absent on it; the
-/// stairs up exist and are reachable everywhere below depth one, are absent on
-/// depth one, and are never the stairs down; and the monster spawns are the
-/// right number, distinct, reachable, clear of the hero and the stairs, and —
-/// the point of the whole rule — none of them is already in sight when the hero
-/// arrives.
+/// somewhere else on every floor above [deepest] and are absent on [deepest]
+/// itself; the stairs up exist and are reachable everywhere below depth one,
+/// are absent on depth one, and are never the stairs down; and the monster
+/// spawns are the right number, distinct, reachable, clear of the hero and the
+/// stairs, and — the point of the whole rule — none of them is already in sight
+/// when the hero arrives.
+///
+/// **Both stairs refusals name the depth and the delve's bottom.** A floor deep
+/// in a long delve and the bottom of a short one are the same number, so a
+/// sentence with only one of them in it leaves the reader unable to tell which
+/// half is wrong.
 String? describeFloorProblem(
   GeneratedFloor floor,
   int depth,
   int monsterCount,
+  int deepest,
 ) {
   final map = floor.map;
   if (!map.isWalkable(floor.heroSpawn)) {
@@ -158,10 +196,14 @@ String? describeFloorProblem(
   }
 
   final stairs = floor.stairsDown;
-  if (depth >= deepestDepth) {
-    if (stairs != null) return 'depth $depth is the bottom and has stairs down';
+  if (depth >= deepest) {
+    if (stairs != null) {
+      return 'depth $depth is the bottom of a $deepest-floor delve and has '
+          'stairs down';
+    }
   } else if (stairs == null) {
-    return 'depth $depth has no stairs down';
+    return 'depth $depth has no stairs down, and this delve bottoms out at '
+        '$deepest';
   } else if (!reachable.contains(stairs)) {
     return 'the stairs at $stairs cannot be walked to';
   } else if (stairs == floor.heroSpawn) {
@@ -210,6 +252,7 @@ GeneratedFloor? _attemptFloor(
   int depth,
   int monsterCount,
   int itemCount,
+  int deepest,
 ) {
   final rng = Rng(seed);
   final width = 24 + (depth - 1) * 2;
@@ -242,7 +285,7 @@ GeneratedFloor? _attemptFloor(
   final inSight = computeFov(bare, heroSpawn, fovRadius);
 
   Position? stairsDown;
-  if (depth < deepestDepth) {
+  if (depth < deepest) {
     stairsDown = _farthestRoomCentre(rooms, distances);
     if (stairsDown == null) return null;
     tiles[stairsDown.y][stairsDown.x] = Tile.stairsDown;

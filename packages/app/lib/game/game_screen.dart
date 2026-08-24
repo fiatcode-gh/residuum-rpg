@@ -156,11 +156,17 @@ class _HitPoints extends StatelessWidget {
   /// the keep are opposite ends of the world and a bare "Depth 3/5" reads the
   /// same in both. A road fight keeps "The road", which is the whole of where
   /// it is.
+  ///
+  /// **The total is the delve's own, not a constant.** A themed delve rolls how
+  /// deep it goes, so "depth 3/6" and "depth 3/5" are two different places to be
+  /// standing and the second number is the only thing that says which. It also
+  /// tells the player how much is left, which is the whole reason to print a
+  /// total at all.
   static String _whereabouts(BuildContext context, GameViewState state) {
     if (state.isEncounter) return 'The road';
-    final depth = 'depth ${state.depth}/$deepestDepth';
+    final depth = 'depth ${state.depth}/${state.deepest}';
     final node = context.read<GameBloc>().dungeon;
-    if (node == null) return 'Depth ${state.depth}/$deepestDepth';
+    if (node == null) return 'Depth ${state.depth}/${state.deepest}';
     return '${residuumWorld.nodeAt(node).name} — $depth';
   }
 
