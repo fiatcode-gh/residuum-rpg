@@ -6,6 +6,18 @@ import 'package:test/test.dart';
 const int _pinnedSeed = 4242;
 const int _pinnedVisit = 1;
 
+/// How deep each delve at the pin runs.
+///
+/// **Not five, and that is the point of the numbers.** A delve rolls its own
+/// bottom from the world seed, the dungeon and the visit, and at this pin the
+/// cave rolls six floors and the keep seven — so the bottom-floor goldens below
+/// are readings off depth six and depth seven, and the boss stands on the rolled
+/// floor rather than on the crypt's fifth. Asserted rather than assumed, so a
+/// roll that moved would redden here and name itself instead of quietly
+/// re-pointing four goldens at other floors.
+const int _seaCaveDeepest = 6;
+const int _ruinedKeepDeepest = 7;
+
 /// The sea-cave's first floor, pasted from a real run.
 ///
 /// **A whole floor rather than a checksum**, for the reason the crypt's
@@ -30,29 +42,34 @@ const String _seaCaveFirst =
     '##......################\n'
     '########################';
 
-/// The sea-cave's bottom floor: no way down, seven rolled creatures and the
-/// captain on the last spawn.
+/// The sea-cave's bottom floor: depth six, no way down, eight rolled creatures
+/// and the captain on the last spawn.
+///
+/// Thirty-four tiles by twenty-one, which is the size formula read at depth six
+/// rather than at five — the floor a rolled bottom deeper than the crypt's
+/// actually is.
 const String _seaCaveBottom =
-    '################################\n'
-    '###################....#########\n'
-    '##.....############....#########\n'
-    '##.....############....#########\n'
-    '##.....##..............####...##\n'
-    '##..<..##....#####............##\n'
-    '##...........#####.....####...##\n'
-    '##.....##....#####.#############\n'
-    '#########....#####.#############\n'
-    '###########.######.#############\n'
-    '###########.######.#############\n'
-    '###########.####....##........##\n'
-    '#########.....##..............##\n'
-    '###....##.....##....##........##\n'
-    '###....##.....########........##\n'
-    '###....##.....########........##\n'
-    '###...........########........##\n'
-    '###....##.....########........##\n'
-    '###....##.....########........##\n'
-    '################################';
+    '##################################\n'
+    '#......###...####....##...###....#\n'
+    '#...<..###...####....##..........#\n'
+    '#....................##...###....#\n'
+    '####.#####...####....###.#########\n'
+    '####.#####..#######.####.#########\n'
+    '####.#####..#######.####.#########\n'
+    '####.####.....####...###.#########\n'
+    '##....###.....####...###.#########\n'
+    '##............####...##...########\n'
+    '##....###.....####...##...###....#\n'
+    '###.#####.....####...##..........#\n'
+    '###.######.#######.#####.####....#\n'
+    '###.######.#######.#####.######.##\n'
+    '##...####...####....####.######.##\n'
+    '##..........####....###....####.##\n'
+    '##...####...####....###.........##\n'
+    '##...###########...........##....#\n'
+    '##...###########....#########....#\n'
+    '################....#########....#\n'
+    '##################################';
 
 /// The keep's first floor.
 const String _ruinedKeepFirst =
@@ -73,28 +90,35 @@ const String _ruinedKeepFirst =
     '#.......##....##########\n'
     '########################';
 
-/// The keep's bottom floor: eight rolled creatures and the castellan.
+/// The keep's bottom floor: depth seven, ten rolled creatures and the
+/// castellan.
+///
+/// Thirty-six by twenty-two, the deepest floor this build can lay out. The camera
+/// clamps to the map edge, so a floor wider than the screen is a floor the player
+/// pans across rather than a floor that breaks.
 const String _ruinedKeepBottom =
-    '################################\n'
-    '######################...##....#\n'
-    '#############.....####...##....#\n'
-    '#####...#####.....####...##....#\n'
-    '#####.<.#####..................#\n'
-    '#####...#####.....####...##....#\n'
-    '#####.#######.....####...##....#\n'
-    '#####.#######.....#####.########\n'
-    '#####.#########..######.########\n'
-    '#####.#########..#####...#######\n'
-    '#####.#########..#####...##...##\n'
-    '#####.#########..#####........##\n'
-    '#####.#########..#####...##...##\n'
-    '#........######..#####.######.##\n'
-    '#........####......###.######.##\n'
-    '#........####......##...#####.##\n'
-    '#..................##...###....#\n'
-    '#........####......##...###....#\n'
-    '#........####......##...###....#\n'
-    '################################';
+    '####################################\n'
+    '#.....###################....##....#\n'
+    '#..<..###......###.....##....##....#\n'
+    '#..............###.....##..........#\n'
+    '#########......###.....##....##....#\n'
+    '############.#####.....####.#####.##\n'
+    '############.#####.....####.#####.##\n'
+    '############.#####.....##....###...#\n'
+    '############.#####.....##....###...#\n'
+    '#######.......######.####..........#\n'
+    '##...##.......######.####....###...#\n'
+    '##............######.######.#####.##\n'
+    '##............######.######.#####.##\n'
+    '##..###.......######.####....####.##\n'
+    '##..###.......#####...###....##....#\n'
+    '#...######.########...###....##....#\n'
+    '#...######.########...###..........#\n'
+    '#...#####.......###..........##....#\n'
+    '#...#####.......###...###....##....#\n'
+    '#########.............###....#######\n'
+    '#########.......####################\n'
+    '####################################';
 
 /// Who stands where, in the order the spawn list rolled them.
 ///
@@ -109,14 +133,15 @@ const List<String> _seaCaveFirstSpawns = [
 ];
 
 const List<String> _seaCaveBottomSpawns = [
-  'hag-1@24,15',
-  'drowned-2@13,17',
-  'hag-3@18,13',
-  'hag-4@11,17',
-  'hag-5@21,3',
-  'hag-6@11,16',
-  'hag-7@13,13',
-  'boss-sea-cave@23,12',
+  'hag-1@3,15',
+  'hag-2@19,15',
+  'hag-3@20,1',
+  'hag-4@20,10',
+  'drowned-5@29,10',
+  'drowned-6@23,15',
+  'drowned-7@26,15',
+  'drowned-8@16,19',
+  'boss-sea-cave@18,18',
 ];
 
 const List<String> _ruinedKeepFirstSpawns = [
@@ -127,15 +152,17 @@ const List<String> _ruinedKeepFirstSpawns = [
 ];
 
 const List<String> _ruinedKeepBottomSpawns = [
-  'man-at-arms-1@22,3',
-  'deserter-2@23,5',
-  'man-at-arms-3@17,4',
-  'deserter-4@4,14',
-  'man-at-arms-5@28,18',
-  'deserter-6@23,11',
-  'man-at-arms-7@28,6',
-  'man-at-arms-8@2,15',
-  'boss-ruined-keep@30,18',
+  'man-at-arms-1@33,4',
+  'man-at-arms-2@27,9',
+  'deserter-3@9,14',
+  'deserter-4@31,15',
+  'man-at-arms-5@13,2',
+  'man-at-arms-6@3,10',
+  'man-at-arms-7@7,9',
+  'man-at-arms-8@13,14',
+  'man-at-arms-9@7,14',
+  'man-at-arms-10@13,17',
+  'boss-ruined-keep@28,1',
 ];
 
 /// What is lying on each pinned floor, in reading order across the map.
@@ -153,11 +180,11 @@ const List<String> _seaCaveFirstLitter = [
 ];
 
 const List<String> _seaCaveBottomLitter = [
-  'floor-5-2 Fine Reinforced Leather Cap',
-  'floor-5-3 Common Iron Greaves',
-  'floor-5-4 Common Iron Greaves',
-  'floor-5-1 Fine Iron Helm of Vigour',
-  'trophy-sea-cave Rare Keen War Axe of Fury',
+  'floor-6-1 Epic Reinforced Sturdy Kite Shield of Swiftness',
+  'trophy-sea-cave Rare Sturdy Mail Hauberk of Vigour',
+  'floor-6-4 Common Healing Potion',
+  'floor-6-2 Rare Reinforced Sturdy Iron Helm',
+  'floor-6-3 Epic Sturdy Kite Shield of Vigour of Swiftness',
 ];
 
 const List<String> _ruinedKeepFirstLitter = [
@@ -170,12 +197,12 @@ const List<String> _ruinedKeepFirstLitter = [
 ];
 
 const List<String> _ruinedKeepBottomLitter = [
-  'floor-5-1 Rare Sturdy Mail Hauberk of Swiftness',
-  'floor-5-5 Rare Sturdy Reinforced Iron Greaves',
-  'floor-5-2 Epic Sturdy Reinforced Mail Hauberk of Vigour',
-  'floor-5-3 Common Healing Potion',
-  'floor-5-4 Epic Reinforced Sturdy Iron Helm of Vigour',
-  'trophy-ruined-keep Epic Reinforced Sturdy Mail Hauberk of Swiftness',
+  'floor-7-3 Rare Reinforced Iron Gauntlets of Swiftness',
+  'floor-7-4 Common Healing Potion',
+  'trophy-ruined-keep Rare Sturdy Iron Helm of Vigour',
+  'floor-7-2 Fine Keen Maul',
+  'floor-7-1 Common Healing Potion',
+  'floor-7-5 Fine Reinforced Iron Gauntlets',
 ];
 
 /// What the bosses are standing over, named in full.
@@ -183,12 +210,16 @@ const List<String> _ruinedKeepBottomLitter = [
 /// The whole display name rather than the rarity alone, because a trophy is
 /// item, tier and affixes together and any one of them moving is the loot
 /// stream having moved.
-const String _seaCaveTrophy = 'Rare Keen War Axe of Fury';
-const String _ruinedKeepTrophy =
-    'Epic Reinforced Sturdy Mail Hauberk of Swiftness';
+const String _seaCaveTrophy = 'Rare Sturdy Mail Hauberk of Vigour';
+const String _ruinedKeepTrophy = 'Rare Sturdy Iron Helm of Vigour';
 
-Floor _pinnedFloor(ThemedDungeon dungeon, int depth) =>
-    themedFloor(dungeon, depth, worldSeed: _pinnedSeed, visit: _pinnedVisit);
+Floor _pinnedFloor(ThemedDungeon dungeon, int depth) => themedFloor(
+  dungeon,
+  depth,
+  worldSeed: _pinnedSeed,
+  visit: _pinnedVisit,
+  deepest: delveDepth(dungeon.node, _pinnedSeed, _pinnedVisit),
+);
 
 List<String> _spawnsOf(Floor floor) => [
   for (final monster in floor.monsters)
@@ -234,11 +265,12 @@ void main() {
 
     test('lays out the bottom floor, captain and trophy included', () {
       // act
-      final floor = _pinnedFloor(theSeaCave, deepestDepth);
+      final floor = _pinnedFloor(theSeaCave, _seaCaveDeepest);
 
       // assert
+      expect(delveDepth(seaCave, _pinnedSeed, _pinnedVisit), _seaCaveDeepest);
       expect(floor.map.toAscii(), _seaCaveBottom);
-      expect(floor.heroSpawn, const Position(4, 5));
+      expect(floor.heroSpawn, const Position(4, 2));
       expect(floor.stairsDown, isNull);
       expect(_spawnsOf(floor), _seaCaveBottomSpawns);
       expect(_trophyOn(floor, seaCave), _seaCaveTrophy);
@@ -261,11 +293,15 @@ void main() {
 
     test('lays out the bottom floor, castellan and trophy included', () {
       // act
-      final floor = _pinnedFloor(theRuinedKeep, deepestDepth);
+      final floor = _pinnedFloor(theRuinedKeep, _ruinedKeepDeepest);
 
       // assert
+      expect(
+        delveDepth(ruinedKeep, _pinnedSeed, _pinnedVisit),
+        _ruinedKeepDeepest,
+      );
       expect(floor.map.toAscii(), _ruinedKeepBottom);
-      expect(floor.heroSpawn, const Position(6, 4));
+      expect(floor.heroSpawn, const Position(3, 2));
       expect(floor.stairsDown, isNull);
       expect(_spawnsOf(floor), _ruinedKeepBottomSpawns);
       expect(_trophyOn(floor, ruinedKeep), _ruinedKeepTrophy);

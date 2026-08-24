@@ -83,8 +83,14 @@ const List<CreatureSpec> seaCaveBestiary = [
 ///
 /// The crypt's shape with the cave's cast: counts slide up as the floors get
 /// bigger, and each creature fades in and out over its own band so no floor is
-/// one monster on repeat. The eel spans the whole cave because a fast thing is
-/// what makes a corridor a decision at every depth.
+/// one monster on repeat. The eel runs the shallow half because a fast thing is
+/// what makes a corridor a decision, and the deep floors are the hag's — by six
+/// the sailor is nearly gone and a delve that rolled its way down there is
+/// walking into a coven.
+///
+/// **Depth six exists because the cave can roll four, five or six floors.** A
+/// delve draws its own bottom, so the table has to cover every depth the roll
+/// can reach or a six-deep cave would throw on arrival.
 const Map<int, DungeonSpawnTable> seaCaveSpawnTables = {
   1: DungeonSpawnTable(
     minCount: 4,
@@ -123,6 +129,11 @@ const Map<int, DungeonSpawnTable> seaCaveSpawnTables = {
     maxCount: 10,
     entries: [Weighted(drownedSailor, 2), Weighted(brineHag, 3)],
   ),
+  6: DungeonSpawnTable(
+    minCount: 9,
+    maxCount: 11,
+    entries: [Weighted(drownedSailor, 1), Weighted(brineHag, 4)],
+  ),
 };
 
 /// What each depth of the sea-cave can give up.
@@ -130,9 +141,10 @@ const Map<int, DungeonSpawnTable> seaCaveSpawnTables = {
 /// **One notch richer than the crypt at the same depth**, which is the theme's
 /// whole payment: the cave is a crypt graduate's next stop, the creatures hit
 /// harder and pierce deeper, and the rarity curve is the crypt's own curve read
-/// one floor further down. Depth five goes past the crypt's bottom because there
-/// is no sixth crypt floor to copy — it continues the same slide rather than
-/// inventing a new one.
+/// one floor further down. Depths five and six go past the crypt's bottom
+/// because there is no sixth or seventh crypt floor to copy — they continue the
+/// same slide rather than inventing a new one, one step per floor: five off
+/// Common, one off Fine, two onto Rare, four onto Epic.
 const Map<int, DropTable> seaCaveDropTables = {
   1: DropTable(
     items: [
@@ -272,6 +284,35 @@ const Map<int, DropTable> seaCaveDropTables = {
       Weighted(Rarity.fine, 33),
       Weighted(Rarity.rare, 28),
       Weighted(Rarity.epic, 14),
+      Weighted(Rarity.legendary, 0),
+    ],
+    weaponAffixes: weaponAffixes,
+    armourAffixes: armourAffixes,
+    minFloorItems: 3,
+    maxFloorItems: 5,
+  ),
+  6: DropTable(
+    items: [
+      Weighted(healingPotion, 9),
+      Weighted(rustySword, 0),
+      Weighted(ironSword, 0),
+      Weighted(warAxe, 6),
+      Weighted(greatsword, 7),
+      Weighted(maul, 6),
+      Weighted(kiteShield, 6),
+      Weighted(ironHelm, 6),
+      Weighted(leatherCap, 0),
+      Weighted(mailHauberk, 11),
+      Weighted(leatherJerkin, 0),
+      Weighted(ironGauntlets, 5),
+      Weighted(ironGreaves, 6),
+      Weighted(leatherBoots, 0),
+    ],
+    rarities: [
+      Weighted(Rarity.common, 20),
+      Weighted(Rarity.fine, 32),
+      Weighted(Rarity.rare, 30),
+      Weighted(Rarity.epic, 18),
       Weighted(Rarity.legendary, 0),
     ],
     weaponAffixes: weaponAffixes,

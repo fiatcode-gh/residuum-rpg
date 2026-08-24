@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:residuum_content/content.dart';
 import 'package:residuum_content/src/save/run_codec.dart';
 import 'package:residuum_core/core.dart';
@@ -8,8 +10,64 @@ import 'support/deep_run.dart';
 GameState _reread(GameState run) =>
     loadRun({'run': encodeRun(run)}, 'run', dungeon: cryptNode);
 
+/// The world seed whose sea-cave visit one rolls six floors rather than five.
+const int _deepCaveSeed = 4242;
+
+/// A camp in the sea-cave on the visit the door bumps to.
+GameState _caveCamp() =>
+    startDungeonRunAt(seaCave, newProfile(worldSeed: _deepCaveSeed));
+
 void main() {
   group('run codec', () {
+    test('a camp in a deep delve comes back knowing where its bottom is', () {
+      // arrange
+      final camped = _caveCamp();
+      final rolled = delveDepth(seaCave, _deepCaveSeed, camped.visit);
+
+      // act
+      final back = loadRun({'run': encodeRun(camped)}, 'run', dungeon: seaCave);
+
+      // assert
+      expect(rolled, isNot(deepestDepth));
+      expect(camped.deepest, rolled);
+      expect(back.deepest, rolled);
+      expect(back.buildFloor(rolled).stairsDown, isNull);
+      expect(back.buildFloor(rolled - 1).stairsDown, isNotNull);
+    });
+
+    test(
+      'writes no key for the bottom, because the world says where it is',
+      () {
+        // arrange
+        final camped = _caveCamp();
+
+        // act
+        final written = jsonEncode(encodeRun(camped));
+
+        // assert
+        expect(camped.deepest, 6);
+        expect(written, isNot(contains('deepest')));
+      },
+    );
+
+    test('a crypt camp comes back on the crypt\'s fixed five', () {
+      // arrange
+      final camped = startDungeonRunAt(
+        cryptNode,
+        newProfile(worldSeed: _deepCaveSeed),
+      );
+
+      // act
+      final back = loadRun(
+        {'run': encodeRun(camped)},
+        'run',
+        dungeon: cryptNode,
+      );
+
+      // assert
+      expect(back.deepest, deepestDepth);
+    });
+
     test('every plain field of a deep run round-trips', () {
       // arrange
       final before = deepRun();

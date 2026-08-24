@@ -16,6 +16,7 @@ enum _Build {
 class _Outcome {
   const _Outcome({
     required this.depth,
+    required this.deepest,
     required this.alive,
     required this.ranOut,
     required this.turns,
@@ -23,6 +24,15 @@ class _Outcome {
   });
 
   final int depth;
+
+  /// How deep the delve this run was played in went.
+  ///
+  /// Read off the opening state rather than off a constant, because a themed
+  /// delve rolls its own bottom: a bot that stopped at the crypt's five would
+  /// count a seven-deep keep as won two floors early, and would walk a four-deep
+  /// cave in circles forever looking for a sixth floor that was never laid.
+  final int deepest;
+
   final bool alive;
 
   /// Whether the run hit the turn budget rather than finishing either way.
@@ -31,7 +41,7 @@ class _Outcome {
   final int turns;
   final Map<SkillId, SkillState> skills;
 
-  bool get won => depth >= deepestDepth && alive;
+  bool get won => depth >= deepest && alive;
 }
 
 /// The most turns one run is allowed before it counts as a loss.
@@ -61,10 +71,22 @@ const Map<int, int> _cryptDepths = {1: 1, 2: 9, 3: 6, 5: 24};
 /// Pinned beside the band for the crypt's reason, and the ordering test below is
 /// the other half: the band alone would let the cave drift past the keep and
 /// call it balanced.
-const Map<int, int> _seaCaveDepths = {3: 5, 5: 35};
+///
+/// **The keys are final depths in a variable band, not floors of one fixed
+/// dungeon.** A delve rolls four, five or six floors, so a run that ends at four
+/// may have won a four-floor cave or died on the fourth floor of a six-floor
+/// one, and only the win count separates them. The old pin — `{3: 5, 5: 35}` —
+/// died with the roll rather than with a regression: every cave used to be five
+/// floors deep, so every winner keyed at five.
+const Map<int, int> _seaCaveDepths = {3: 5, 4: 15, 5: 9, 6: 11};
 
 /// Where the forty keep runs end, with the same gear.
-const Map<int, int> _keepDepths = {2: 6, 3: 3, 5: 31};
+///
+/// The old pin was `{2: 6, 3: 3, 5: 31}`. The win count came back to
+/// thirty-one, which is arithmetic rather than evidence: twenty-four of the
+/// forty delves got deeper and the runs redistributed across three bottoms to
+/// the same total. The histogram is the figure that shows it.
+const Map<int, int> _keepDepths = {2: 6, 3: 3, 5: 14, 6: 8, 7: 9};
 
 /// Plays one crawl on [worldSeed] with a fixed policy and reports what happened.
 ///
@@ -143,7 +165,7 @@ _Outcome _botPlay(GameState opening, _Build build) {
 
   while (turns < _turnBudget) {
     if (game.isGameOver) break;
-    if (game.depth >= deepestDepth) break;
+    if (game.depth >= opening.deepest) break;
     turns++;
 
     final action = _decide(game, build);
@@ -160,6 +182,7 @@ _Outcome _botPlay(GameState opening, _Build build) {
 
   return _Outcome(
     depth: game.depth,
+    deepest: opening.deepest,
     alive: !game.isGameOver,
     ranOut: turns >= _turnBudget,
     turns: turns,
@@ -396,7 +419,7 @@ void main() {
       expect(stalled, 0, reason: 'the bot stalled rather than played');
       expect(rate, greaterThanOrEqualTo(0.50), reason: 'still unfair: $rate');
       expect(rate, lessThanOrEqualTo(0.95), reason: 'trivial: $rate');
-      expect(wins, 35, reason: 'the sea-cave moved');
+      expect(wins, 34, reason: 'the sea-cave moved');
       expect(_depthsReached(outcomes), _seaCaveDepths);
     });
 

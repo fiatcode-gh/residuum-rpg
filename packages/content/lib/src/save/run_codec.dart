@@ -69,6 +69,13 @@ Map<String, Object?> encodeRun(GameState run) => {
 /// once there is more than one dungeon neither can be answered from the state
 /// alone. The node lives one level up, beside the run on the hero, and the
 /// caller that reads it there hands it down.
+///
+/// **How deep the delve goes joins that list, and is recomputed rather than
+/// read.** `delveDepth` is a pure function of the node, the world seed and the
+/// visit, and all three are here — so the save document carries no total, gains
+/// no key, and cannot come back disagreeing with the world about how deep a
+/// place is. A crawl killed in a six-floor sea-cave walks back into a six-floor
+/// sea-cave because the world says six, not because the file remembered.
 GameState loadRun(
   Map<String, Object?> from,
   String key, {
@@ -89,6 +96,7 @@ GameState loadRun(
     depth: intAt(written, 'depth'),
     worldSeed: worldSeed,
     visit: visit,
+    deepest: delveDepth(dungeon, worldSeed, visit),
     stairsDown: decodeNullablePosition(written, 'stairsDown'),
     stairsUp: decodeNullablePosition(written, 'stairsUp'),
     gold: intAt(written, 'gold'),

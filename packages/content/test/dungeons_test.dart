@@ -4,23 +4,46 @@ import 'package:test/test.dart';
 
 const List<int> _sweptSeeds = [1, 5, 77, 909, 4242, 123456, 1755800000000];
 const List<int> _sweptVisits = [0, 1, 2, 7];
-const List<int> _allDepths = [1, 2, 3, 4, 5];
+const List<int> _cryptDepths = [1, 2, 3, 4, 5];
 
 /// A mid-progression hero, for the tests that need a door walked through.
 Profile _hero({int worldSeed = 909}) => newProfile(worldSeed: worldSeed);
 
+/// How deep the delve the tests below walk goes.
+int _rolled(ThemedDungeon dungeon, {int worldSeed = 909, int visit = 1}) =>
+    delveDepth(dungeon.node, worldSeed, visit);
+
+/// The depths that delve actually has, one to its rolled bottom.
+List<int> _depthsOf(ThemedDungeon dungeon, {int worldSeed = 909}) => [
+  for (var depth = 1; depth <= _rolled(dungeon, worldSeed: worldSeed); depth++)
+    depth,
+];
+
+/// Every depth the dungeon has a table for, whatever any one delve rolls.
+List<int> _tabledDepthsOf(ThemedDungeon dungeon) => [
+  for (var depth = 1; depth <= dungeon.deepestDelve; depth++) depth,
+];
+
 /// Every floor seed one dungeon can produce over the standing sweep.
 Set<int> _streamOf(NodeId node, int worldSeed) {
   final salted = node == cryptNode ? worldSeed : worldSeed ^ dungeonSalt(node);
+  final themed = themedDungeonAt(node);
+  final lowest = themed == null ? deepestDepth : themed.deepestDelve;
   return {
-    for (var depth = 1; depth <= deepestDepth; depth++)
+    for (var depth = 1; depth <= lowest; depth++)
       for (var visit = 0; visit < 2000; visit++)
         floorSeed(salted, depth, visit),
   };
 }
 
 Floor _floorOf(ThemedDungeon dungeon, int depth, {int worldSeed = 909}) =>
-    themedFloor(dungeon, depth, worldSeed: worldSeed, visit: 1);
+    themedFloor(
+      dungeon,
+      depth,
+      worldSeed: worldSeed,
+      visit: 1,
+      deepest: _rolled(dungeon, worldSeed: worldSeed),
+    );
 
 void main() {
   group('the salt a dungeon is filed under', () {
@@ -55,7 +78,7 @@ void main() {
   group('dungeonFor', () {
     test('hands the crypt back exactly what residuumDungeon builds', () {
       // arrange
-      const depths = _allDepths;
+      const depths = _cryptDepths;
 
       // act
       final mismatches = <String>[];
@@ -106,6 +129,200 @@ void main() {
       expect(isDungeonNode(ruinedKeep), isTrue);
       expect(isDungeonNode(stonebridge), isFalse);
       expect(isDungeonNode(northgate), isFalse);
+    });
+  });
+
+  group('how deep a delve goes', () {
+    test('is the same depth every time for one world, dungeon and visit', () {
+      // act
+      final once = delveDepth(seaCave, 4242, 3);
+      final twice = delveDepth(seaCave, 4242, 3);
+
+      // assert
+      expect(once, twice);
+    });
+
+    test("stays inside the dungeon's own band over the standing sweep", () {
+      // act
+      final outside = <String>[];
+      for (final dungeon in themedDungeons) {
+        for (final worldSeed in _sweptSeeds) {
+          for (var visit = 0; visit < 2000; visit++) {
+            final rolled = delveDepth(dungeon.node, worldSeed, visit);
+            if (rolled < dungeon.shallowestDelve ||
+                rolled > dungeon.deepestDelve) {
+              outside.add('${dungeon.node.value} $worldSeed/$visit: $rolled');
+            }
+          }
+        }
+      }
+
+      // assert
+      expect(outside, isEmpty);
+    });
+
+    test('reaches every depth in its band within a handful of visits', () {
+      // act
+      final reached = {
+        for (final dungeon in themedDungeons)
+          dungeon.node.value: {
+            for (var visit = 0; visit < 200; visit++)
+              delveDepth(dungeon.node, 909, visit),
+          },
+      };
+
+      // assert
+      expect(reached['sea-cave'], {4, 5, 6});
+      expect(reached['ruined-keep'], {5, 6, 7});
+    });
+
+    test('is not the same depth on every visit', () {
+      // act
+      final rolled = {
+        for (var visit = 1; visit <= 40; visit++)
+          delveDepth(ruinedKeep, 909, visit),
+      };
+
+      // assert
+      expect(rolled, hasLength(greaterThan(1)));
+    });
+
+    test('is spread evenly over its band, so no depth is the usual one', () {
+      // arrange
+      const draws = 3000;
+
+      // assert
+      for (final dungeon in themedDungeons) {
+        final counted = <int, int>{};
+        for (var visit = 0; visit < draws; visit++) {
+          final rolled = delveDepth(dungeon.node, 4242, visit);
+          counted[rolled] = (counted[rolled] ?? 0) + 1;
+        }
+        expect(counted, hasLength(3), reason: dungeon.node.value);
+        for (final entry in counted.entries) {
+          expect(
+            entry.value,
+            closeTo(draws / 3, draws / 30),
+            reason: '${dungeon.node.value} depth ${entry.key}',
+          );
+        }
+      }
+    });
+
+    test("is the crypt's fixed five, on every world and every visit", () {
+      // assert
+      for (final worldSeed in _sweptSeeds) {
+        for (var visit = 0; visit < 200; visit++) {
+          expect(
+            delveDepth(cryptNode, worldSeed, visit),
+            deepestDepth,
+            reason: '$worldSeed/$visit',
+          );
+        }
+      }
+    });
+
+    test('refuses a place with no dungeon under it', () {
+      // act
+      void act() => delveDepth(stonebridge, 909, 1);
+
+      // assert
+      expect(act, throwsArgumentError);
+    });
+
+    test('never draws off a stream a floor or a road draws off', () {
+      // arrange
+      final collisions = <String>[];
+
+      // act
+      for (final worldSeed in _sweptSeeds) {
+        for (final dungeon in themedDungeons) {
+          final salted = worldSeed ^ dungeonSalt(dungeon.node);
+          final rolls = {
+            for (var visit = 0; visit < 2000; visit++)
+              floorSeed(salted, depthSlot, visit),
+          };
+          final floors = {
+            for (var depth = 1; depth <= dungeon.deepestDelve; depth++)
+              for (var visit = 0; visit < 2000; visit++)
+                floorSeed(salted, depth, visit),
+          };
+          final roads = {
+            for (var day = 0; day < 2000; day++) ...[
+              ambushGroundSeed(worldSeed, day),
+              ambushFightSeed(worldSeed, day),
+            ],
+          };
+          final shared = rolls
+              .intersection(floors)
+              .union(rolls.intersection(roads));
+          if (shared.isNotEmpty) {
+            collisions.add(
+              'world $worldSeed ${dungeon.node.value}: ${shared.length}',
+            );
+          }
+        }
+      }
+
+      // assert
+      expect(collisions, isEmpty);
+    });
+
+    test('is mixed at a slot no depth and no other purpose can be', () {
+      // assert
+      expect(depthSlot, greaterThan(theRuinedKeep.deepestDelve));
+      expect(depthSlot, isNot(roadDepth));
+    });
+  });
+
+  group('the delve a door opens', () {
+    test('agrees with the roll about where its bottom is', () {
+      // arrange
+      const worldSeed = 4242;
+
+      // act
+      final disagreements = <String>[];
+      for (final dungeon in themedDungeons) {
+        final run = startDungeonRunAt(
+          dungeon.node,
+          _hero(worldSeed: worldSeed),
+        );
+        final rolled = delveDepth(dungeon.node, worldSeed, run.visit);
+        if (run.deepest != rolled) {
+          disagreements.add(
+            '${dungeon.node.value}: state ${run.deepest} vs roll $rolled',
+          );
+        }
+        for (var depth = 1; depth <= rolled; depth++) {
+          final floor = run.buildFloor(depth);
+          final wantsStairs = depth < rolled;
+          if ((floor.stairsDown != null) != wantsStairs) {
+            disagreements.add(
+              '${dungeon.node.value} depth $depth of $rolled: stairs '
+              '${floor.stairsDown}',
+            );
+          }
+          final bosses = floor.monsters
+              .where((monster) => monster.id == 'boss-${dungeon.node.value}')
+              .length;
+          if (bosses != (depth == rolled ? 1 : 0)) {
+            disagreements.add(
+              '${dungeon.node.value} depth $depth of $rolled: $bosses bosses',
+            );
+          }
+        }
+      }
+
+      // assert
+      expect(disagreements, isEmpty);
+    });
+
+    test("leaves the crypt's five alone on every path", () {
+      // act
+      final run = startDungeonRunAt(cryptNode, _hero(worldSeed: 4242));
+
+      // assert
+      expect(run.deepest, deepestDepth);
     });
   });
 
@@ -165,8 +382,20 @@ void main() {
 
     test('is a different floor on the next visit', () {
       // act
-      final first = themedFloor(theSeaCave, 2, worldSeed: 909, visit: 1);
-      final second = themedFloor(theSeaCave, 2, worldSeed: 909, visit: 2);
+      final first = themedFloor(
+        theSeaCave,
+        2,
+        worldSeed: 909,
+        visit: 1,
+        deepest: delveDepth(seaCave, 909, 1),
+      );
+      final second = themedFloor(
+        theSeaCave,
+        2,
+        worldSeed: 909,
+        visit: 2,
+        deepest: delveDepth(seaCave, 909, 2),
+      );
 
       // assert
       expect(first.map.toAscii(), isNot(second.map.toAscii()));
@@ -176,7 +405,7 @@ void main() {
       // act
       final floors = [
         for (final dungeon in themedDungeons)
-          for (final depth in _allDepths) _floorOf(dungeon, depth),
+          for (final depth in _depthsOf(dungeon)) _floorOf(dungeon, depth),
       ];
 
       // assert
@@ -192,7 +421,7 @@ void main() {
       // act
       final floors = [
         for (final dungeon in themedDungeons)
-          for (final depth in _allDepths) _floorOf(dungeon, depth),
+          for (final depth in _depthsOf(dungeon)) _floorOf(dungeon, depth),
       ];
 
       // assert
@@ -205,7 +434,7 @@ void main() {
     test('draws its count from that depth\'s own table', () {
       // assert
       for (final dungeon in themedDungeons) {
-        for (final depth in _allDepths) {
+        for (final depth in _depthsOf(dungeon)) {
           final table = dungeonSpawnTableFor(dungeon.spawnTables, depth);
           expect(
             _floorOf(dungeon, depth).monsters,
@@ -219,7 +448,9 @@ void main() {
     test('stands nothing on it that is not in that depth\'s table', () {
       // assert
       for (final dungeon in themedDungeons) {
-        for (final depth in [1, 2, 3, 4]) {
+        for (final depth in _depthsOf(
+          dungeon,
+        ).where((depth) => depth < _rolled(dungeon))) {
           final allowed = dungeonSpawnTableFor(
             dungeon.spawnTables,
             depth,
@@ -234,10 +465,10 @@ void main() {
     test('leaves the way down off the deepest floor and nowhere else', () {
       // assert
       for (final dungeon in themedDungeons) {
-        for (final depth in _allDepths) {
+        for (final depth in _depthsOf(dungeon)) {
           expect(
             _floorOf(dungeon, depth).stairsDown,
-            depth == deepestDepth ? isNull : isNotNull,
+            depth == _rolled(dungeon) ? isNull : isNotNull,
             reason: '${dungeon.node.value} depth $depth',
           );
         }
@@ -249,7 +480,7 @@ void main() {
     test('stands on the deepest floor of every themed dungeon', () {
       // assert
       for (final dungeon in themedDungeons) {
-        final bottom = _floorOf(dungeon, deepestDepth);
+        final bottom = _floorOf(dungeon, _rolled(dungeon));
         final bosses = bottom.monsters
             .where((monster) => monster.id == 'boss-${dungeon.node.value}')
             .toList();
@@ -263,7 +494,9 @@ void main() {
     test('stands on no floor above it', () {
       // assert
       for (final dungeon in themedDungeons) {
-        for (final depth in [1, 2, 3, 4]) {
+        for (final depth in _depthsOf(
+          dungeon,
+        ).where((depth) => depth < _rolled(dungeon))) {
           final names = _floorOf(
             dungeon,
             depth,
@@ -277,10 +510,49 @@ void main() {
       }
     });
 
+    test('is crowned once, on the rolled bottom and on no other floor', () {
+      // arrange
+      const worldSeed = 4242;
+
+      // act
+      final crowned = <String>[];
+      for (final dungeon in themedDungeons) {
+        for (var visit = 1; visit <= 12; visit++) {
+          final deepest = delveDepth(dungeon.node, worldSeed, visit);
+          for (var depth = 1; depth <= deepest; depth++) {
+            final floor = themedFloor(
+              dungeon,
+              depth,
+              worldSeed: worldSeed,
+              visit: visit,
+              deepest: deepest,
+            );
+            final bosses = floor.monsters
+                .where((monster) => monster.id == 'boss-${dungeon.node.value}')
+                .length;
+            final trophies = floor.groundItems.values
+                .expand((lying) => lying)
+                .where((item) => item.id == 'trophy-${dungeon.node.value}')
+                .length;
+            final wanted = depth == deepest ? 1 : 0;
+            if (bosses != wanted || trophies != wanted) {
+              crowned.add(
+                '${dungeon.node.value} visit $visit depth $depth of $deepest: '
+                '$bosses bosses, $trophies trophies',
+              );
+            }
+          }
+        }
+      }
+
+      // assert
+      expect(crowned, isEmpty);
+    });
+
     test('is in no spawn table at any depth, because it is placed', () {
       // assert
       for (final dungeon in themedDungeons) {
-        for (final depth in _allDepths) {
+        for (final depth in _tabledDepthsOf(dungeon)) {
           final rollable = dungeonSpawnTableFor(dungeon.spawnTables, depth);
           expect(
             rollable.creatures,
@@ -306,14 +578,15 @@ void main() {
 
     test('replaces a rolled spawn rather than adding to the count', () {
       // arrange
-      final table = dungeonSpawnTableFor(theSeaCave.spawnTables, deepestDepth);
+      final bottom = _rolled(theSeaCave);
+      final table = dungeonSpawnTableFor(theSeaCave.spawnTables, bottom);
 
       // act
-      final bottom = _floorOf(theSeaCave, deepestDepth);
+      final floor = _floorOf(theSeaCave, bottom);
 
       // assert
       expect(
-        bottom.monsters,
+        floor.monsters,
         hasLength(inInclusiveRange(table.minCount, table.maxCount)),
       );
     });
@@ -325,11 +598,13 @@ void main() {
       for (final dungeon in themedDungeons) {
         for (final worldSeed in _sweptSeeds) {
           for (final visit in _sweptVisits) {
+            final deepest = delveDepth(dungeon.node, worldSeed, visit);
             final bottom = themedFloor(
               dungeon,
-              deepestDepth,
+              deepest,
               worldSeed: worldSeed,
               visit: visit,
+              deepest: deepest,
             );
             final trophies = [
               for (final lying in bottom.groundItems.values)
@@ -351,11 +626,13 @@ void main() {
       // assert
       for (final dungeon in themedDungeons) {
         for (final worldSeed in _sweptSeeds) {
+          final deepest = delveDepth(dungeon.node, worldSeed, 1);
           final bottom = themedFloor(
             dungeon,
-            deepestDepth,
+            deepest,
             worldSeed: worldSeed,
             visit: 1,
+            deepest: deepest,
           );
           final trophy = bottom.groundItems.values
               .expand((lying) => lying)
@@ -368,7 +645,9 @@ void main() {
     test('lies on no floor above the bottom', () {
       // assert
       for (final dungeon in themedDungeons) {
-        for (final depth in [1, 2, 3, 4]) {
+        for (final depth in _depthsOf(
+          dungeon,
+        ).where((depth) => depth < _rolled(dungeon))) {
           final ids = _floorOf(
             dungeon,
             depth,
@@ -381,16 +660,17 @@ void main() {
     test('rides an extra spawn, so the litter under it does not move', () {
       // arrange
       const worldSeed = 909;
-      final drops = dungeonDropTableFor(theSeaCave.dropTables, deepestDepth);
+      final bottom = _rolled(theSeaCave);
+      final drops = dungeonDropTableFor(theSeaCave.dropTables, bottom);
       final seed = floorSeed(
         worldSeed ^ dungeonSalt(theSeaCave.node),
-        deepestDepth,
+        bottom,
         1,
       );
       final rng = Rng(seed);
       final count = dungeonSpawnTableFor(
         theSeaCave.spawnTables,
-        deepestDepth,
+        bottom,
       ).rollCount(rng);
       final itemCount = rollFloorItemCount(drops, rng);
 
@@ -398,15 +678,17 @@ void main() {
       // would have asked for without a trophy to place
       final withTrophy = generateFloor(
         seed,
-        deepestDepth,
+        bottom,
         monsterCount: count,
         itemCount: itemCount + 1,
+        deepest: bottom,
       );
       final without = generateFloor(
         seed,
-        deepestDepth,
+        bottom,
         monsterCount: count,
         itemCount: itemCount,
+        deepest: bottom,
       );
 
       // assert

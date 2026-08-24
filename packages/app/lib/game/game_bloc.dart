@@ -134,6 +134,14 @@ class GameViewState {
 
   int get depth => game.depth;
 
+  /// How many floors the delve the hero is in laid out.
+  ///
+  /// Read off the state rather than off `deepestDepth`, because a themed delve
+  /// rolls its own bottom: the status line has to say three of six in a
+  /// six-floor cave and three of five in the crypt, and a constant would tell
+  /// the player the same thing in both.
+  int get deepest => game.deepest;
+
   /// Whether this is a fight on the road rather than a crawl.
   bool get isEncounter => game.isEncounter;
 

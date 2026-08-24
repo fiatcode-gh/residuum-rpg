@@ -4,6 +4,12 @@ import 'package:test/test.dart';
 
 const allDepths = [1, 2, 3, 4, 5];
 
+/// Every depth one themed dungeon needs a table for: one to the deepest delve
+/// its roll can lay out, which is six in the sea-cave and seven in the keep.
+List<int> tabledDepthsOf(ThemedDungeon dungeon) => [
+  for (var depth = 1; depth <= dungeon.deepestDelve; depth++) depth,
+];
+
 Floor floorAt(int depth, {int worldSeed = 1}) =>
     buildFloor(depth, worldSeed: worldSeed, visit: 0);
 
@@ -172,7 +178,7 @@ void main() {
         for (final entry in roadSpawnTable.entries)
           creatureById(entry.creatureId),
         for (final dungeon in themedDungeons) ...[
-          for (final depth in allDepths)
+          for (final depth in tabledDepthsOf(dungeon))
             ...dungeonSpawnTableFor(dungeon.spawnTables, depth).creatures,
           dungeon.boss,
         ],
@@ -217,32 +223,43 @@ void main() {
   });
 
   group('the themed spawn tables', () {
-    test('every dungeon has a table for every depth one to five', () {
+    test('every dungeon has a table for exactly the depths it can lay out', () {
       // assert
       for (final dungeon in themedDungeons) {
         expect(
-          dungeon.spawnTables.keys.toSet(),
-          allDepths.toSet(),
+          dungeon.spawnTables.keys.toList()..sort(),
+          tabledDepthsOf(dungeon),
           reason: dungeon.node.value,
         );
       }
     });
 
-    test('a depth outside the dungeon is refused', () {
-      // arrange
-      const depth = 6;
-
-      // act
-      void act() => dungeonSpawnTableFor(theSeaCave.spawnTables, depth);
-
+    test('the band a table covers is the band the roll draws from', () {
       // assert
-      expect(act, throwsArgumentError);
+      expect(theSeaCave.shallowestDelve, 4);
+      expect(theSeaCave.deepestDelve, 6);
+      expect(theRuinedKeep.shallowestDelve, 5);
+      expect(theRuinedKeep.deepestDelve, 7);
+    });
+
+    test('a depth past the deepest delve the dungeon can roll is refused', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        expect(
+          () => dungeonSpawnTableFor(
+            dungeon.spawnTables,
+            dungeon.deepestDelve + 1,
+          ),
+          throwsArgumentError,
+          reason: dungeon.node.value,
+        );
+      }
     });
 
     test('every table is non-empty with positive weights and counts', () {
       // assert
       for (final dungeon in themedDungeons) {
-        for (final depth in allDepths) {
+        for (final depth in tabledDepthsOf(dungeon)) {
           final where = '${dungeon.node.value} depth $depth';
           final table = dungeonSpawnTableFor(dungeon.spawnTables, depth);
           expect(table.entries, isNotEmpty, reason: where);
@@ -379,7 +396,7 @@ void main() {
       // assert
       for (final dungeon in themedDungeons) {
         final rolled = [
-          for (final depth in allDepths)
+          for (final depth in tabledDepthsOf(dungeon))
             ...dungeonSpawnTableFor(dungeon.spawnTables, depth).creatures,
         ];
         for (final creature in rolled) {
@@ -394,12 +411,12 @@ void main() {
   });
 
   group('the themed drop tables', () {
-    test('every dungeon has a table for every depth one to five', () {
+    test('every dungeon has a table for exactly the depths it can lay out', () {
       // assert
       for (final dungeon in themedDungeons) {
         expect(
-          dungeon.dropTables.keys.toSet(),
-          allDepths.toSet(),
+          dungeon.dropTables.keys.toList()..sort(),
+          tabledDepthsOf(dungeon),
           reason: dungeon.node.value,
         );
       }
@@ -490,7 +507,7 @@ void main() {
     test('the healing potion can drop at every themed depth', () {
       // assert
       for (final dungeon in themedDungeons) {
-        for (final depth in allDepths) {
+        for (final depth in tabledDepthsOf(dungeon)) {
           final potion = dungeonDropTableFor(
             dungeon.dropTables,
             depth,
@@ -507,7 +524,7 @@ void main() {
     test('every themed floor scatters items inside sane bounds', () {
       // assert
       for (final dungeon in themedDungeons) {
-        for (final depth in allDepths) {
+        for (final depth in tabledDepthsOf(dungeon)) {
           final where = '${dungeon.node.value} depth $depth';
           final table = dungeonDropTableFor(dungeon.dropTables, depth);
           expect(table.minFloorItems, greaterThan(0), reason: where);
@@ -541,7 +558,9 @@ void main() {
     });
 
     test('a themed depth pays better than the crypt does at the same one', () {
-      // assert
+      // assert — bounded at the crypt's own bottom, because the claim is about
+      // one depth in two dungeons and there is no crypt depth six to compare a
+      // six-floor delve against
       for (final dungeon in themedDungeons) {
         for (final depth in allDepths) {
           final crypt = _atLeastRare(dropTableFor(depth));

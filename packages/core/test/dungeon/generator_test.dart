@@ -326,7 +326,12 @@ void main() {
     test('a rejected attempt is regenerated from a derived retry seed', () {
       // arrange
       var attempts = 0;
-      String? rejectTheFirstTwo(GeneratedFloor floor, int depth, int count) {
+      String? rejectTheFirstTwo(
+        GeneratedFloor floor,
+        int depth,
+        int count,
+        int deepest,
+      ) {
         attempts++;
         return attempts <= 2 ? 'rejected for the test' : null;
       }
@@ -348,8 +353,12 @@ void main() {
 
     test('a floor that never validates throws with the diagnostic', () {
       // arrange
-      String? alwaysWrong(GeneratedFloor floor, int depth, int count) =>
-          'the corridors are haunted';
+      String? alwaysWrong(
+        GeneratedFloor floor,
+        int depth,
+        int count,
+        int deepest,
+      ) => 'the corridors are haunted';
 
       // act
       void act() =>
@@ -381,7 +390,7 @@ void main() {
       );
 
       // act
-      final problem = describeFloorProblem(split, 1, 1);
+      final problem = describeFloorProblem(split, 1, 1, deepestDepth);
 
       // assert
       expect(problem, contains('split'));
@@ -397,7 +406,7 @@ void main() {
       );
 
       // act
-      final problem = describeFloorProblem(noStairs, 2, 0);
+      final problem = describeFloorProblem(noStairs, 2, 0, deepestDepth);
 
       // assert
       expect(problem, contains('no stairs down'));
@@ -413,7 +422,12 @@ void main() {
       );
 
       // act
-      final problem = describeFloorProblem(tooDeep, deepestDepth, 0);
+      final problem = describeFloorProblem(
+        tooDeep,
+        deepestDepth,
+        0,
+        deepestDepth,
+      );
 
       // assert
       expect(problem, contains('bottom'));
@@ -429,7 +443,7 @@ void main() {
       );
 
       // act
-      final problem = describeFloorProblem(floor, 1, 3);
+      final problem = describeFloorProblem(floor, 1, 3, deepestDepth);
 
       // assert
       expect(problem, contains('wanted 3 monsters, placed 1'));
@@ -445,7 +459,7 @@ void main() {
       );
 
       // act
-      final problem = describeFloorProblem(floor, 1, 1);
+      final problem = describeFloorProblem(floor, 1, 1, deepestDepth);
 
       // assert
       expect(problem, contains('in sight before the hero has moved'));
@@ -462,6 +476,7 @@ void main() {
           floor,
           depth,
           monsterCounts[depth]!,
+          deepestDepth,
         );
         if (problem != null) problems.add('depth $depth: $problem');
       }
@@ -501,6 +516,133 @@ void main() {
 
       // assert
       expect(act, throwsStateError);
+    });
+  });
+
+  group('generateFloor in a delve deeper than the crypt', () {
+    test("lays stairs down on every floor above the delve's bottom", () {
+      // arrange
+      const deepest = 7;
+
+      // act
+      final floors = [
+        for (var depth = 1; depth < deepest; depth++)
+          generateFloor(41 * depth, depth, monsterCount: 4, deepest: deepest),
+      ];
+
+      // assert
+      expect(floors.map((floor) => floor.stairsDown), everyElement(isNotNull));
+    });
+
+    test("leaves the way down off the delve's own bottom", () {
+      // act
+      final bottom = generateFloor(287, 7, monsterCount: 4, deepest: 7);
+
+      // assert
+      expect(bottom.stairsDown, isNull);
+    });
+
+    test('still lays stairs on depth five when the delve goes to seven', () {
+      // act
+      final fifth = generateFloor(505, 5, monsterCount: 4, deepest: 7);
+
+      // assert
+      expect(fifth.stairsDown, isNotNull);
+    });
+
+    test('passes its own validator on every floor of a seven-deep delve', () {
+      // arrange
+      const deepest = 7;
+      final problems = <String>[];
+
+      // act
+      for (var depth = 1; depth <= deepest; depth++) {
+        final floor = generateFloor(
+          61 * depth,
+          depth,
+          monsterCount: 4,
+          deepest: deepest,
+        );
+        final problem = describeFloorProblem(floor, depth, 4, deepest);
+        if (problem != null) problems.add('depth $depth: $problem');
+      }
+
+      // assert
+      expect(problems, isEmpty);
+    });
+  });
+
+  group('the validator on where the delve bottoms out', () {
+    test('refuses a floor above the bottom with no way down, naming both', () {
+      // arrange
+      final noStairs = GeneratedFloor(
+        map: FloorMap.parse('######\n#....#\n######'),
+        heroSpawn: const Position(1, 1),
+        monsterSpawns: const [],
+        stairsDown: null,
+      );
+
+      // act
+      final problem = describeFloorProblem(noStairs, 5, 0, 7);
+
+      // assert
+      expect(problem, contains('no stairs down'));
+      expect(problem, contains('5'));
+      expect(problem, contains('7'));
+    });
+
+    test('refuses the bottom carrying a way down, naming both', () {
+      // arrange
+      final tooDeep = GeneratedFloor(
+        map: FloorMap.parse('######\n#...>#\n######'),
+        heroSpawn: const Position(1, 1),
+        monsterSpawns: const [],
+        stairsDown: const Position(4, 1),
+      );
+
+      // act
+      final problem = describeFloorProblem(tooDeep, 6, 0, 6);
+
+      // assert
+      expect(problem, contains('bottom'));
+      expect(problem, contains('6'));
+    });
+
+    test(
+      'takes depth six for an ordinary floor when the delve goes deeper',
+      () {
+        // act
+        final problem = describeFloorProblem(
+          generateFloor(909, 6, monsterCount: 3, deepest: 7),
+          6,
+          3,
+          7,
+        );
+
+        // assert
+        expect(problem, isNull);
+      },
+    );
+  });
+
+  group("the bottom generateFloor assumes when nobody names one", () {
+    test("is the crypt's five, so an unnamed delve builds today's floor", () {
+      // act
+      final named = generateFloor(777, 4, monsterCount: 6, deepest: 5);
+      final unnamed = generateFloor(777, 4, monsterCount: 6);
+
+      // assert
+      expect(unnamed.map.toAscii(), named.map.toAscii());
+      expect(unnamed.stairsDown, named.stairsDown);
+      expect(unnamed.monsterSpawns, named.monsterSpawns);
+    });
+
+    test('leaves depth five stairless when nobody says otherwise', () {
+      // act
+      final floor = generateFloor(778, 5, monsterCount: 6);
+
+      // assert
+      expect(floor.stairsDown, isNull);
     });
   });
 }

@@ -7,11 +7,12 @@ import 'package:residuum_core/core.dart';
 ///
 /// Fixed rather than fitted, because fitting the whole floor on screen made the
 /// cells shrink with depth. Floors grow as the crawl deepens, so a depth-five
-/// floor is 32 by 20 tiles, which on a phone left roughly 12dp cells against a
-/// 48dp touch guideline — and a tap that has to be aimed is not a tap. A fixed
-/// cell means the deepest floor is exactly as playable as the first one. What a
-/// bigger floor costs is visibility rather than accuracy, and visibility is what
-/// panning buys back.
+/// floor is 32 by 20 tiles and the deepest a delve can roll — the keep's
+/// seventh — is 36 by 22, which on a phone left roughly 12dp cells against a
+/// 48dp touch guideline once it was fitted, and a tap that has to be aimed is
+/// not a tap. A fixed cell means the deepest floor is exactly as playable as the
+/// first one. What a bigger floor costs is visibility rather than accuracy, and
+/// visibility is what panning buys back.
 const double cameraCellSize = 36;
 
 class GridGeometry {

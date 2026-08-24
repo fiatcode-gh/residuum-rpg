@@ -655,6 +655,7 @@ void main() {
         2,
         worldSeed: 909,
         visit: camp.visit,
+        deepest: delveDepth(seaCave, 909, camp.visit),
       );
 
       // assert

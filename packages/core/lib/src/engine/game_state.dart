@@ -1,6 +1,7 @@
 import '../dungeon/floor.dart';
 import '../dungeon/floor_map.dart';
 import '../dungeon/floor_memory.dart';
+import '../dungeon/generator.dart';
 import '../loot/drop.dart';
 import '../loot/item.dart';
 import '../loot/loadout.dart';
@@ -39,6 +40,7 @@ class GameState {
     this.depth = 1,
     this.worldSeed = 1,
     this.visit = 0,
+    this.deepest = deepestDepth,
     this.stairsDown,
     this.stairsUp,
     this.gold = 0,
@@ -94,6 +96,24 @@ class GameState {
 
   /// Which floor the hero is on, counting from one.
   final int depth;
+
+  /// How many floors this delve laid out. The floor at [deepest] is the one
+  /// with no way down, and the only one the boss and the trophy stand on.
+  ///
+  /// **Optional with a default, because a road fight has no bottom.** An
+  /// encounter is the same engine on smaller ground: nothing on the road reads
+  /// this, and a fixture that only wants a grid and two actors should not have
+  /// to invent a depth for a dungeon it is not in. The default is the crypt's
+  /// five — the one dungeon whose depth is not rolled — so a state built
+  /// without naming one is the state the game has always built.
+  ///
+  /// **Never written to a save file, and re-derived instead.** The depth is a
+  /// pure function of the dungeon, the world seed and the visit, all three of
+  /// which the save already holds for their own reasons, so `loadRun`
+  /// recomputes it exactly as it recomputes the floor builder and the drop
+  /// tables. A delve that stored its own depth would be a save document that
+  /// could disagree with the world about how deep a place is.
+  final int deepest;
 
   /// The seed the whole dungeon derives from.
   final int worldSeed;
@@ -219,6 +239,7 @@ class GameState {
     depth: depth ?? this.depth,
     worldSeed: worldSeed,
     visit: visit,
+    deepest: deepest,
     stairsDown: clearStairsDown ? null : (stairsDown ?? this.stairsDown),
     stairsUp: clearStairsUp ? null : (stairsUp ?? this.stairsUp),
     gold: gold,

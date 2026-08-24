@@ -174,6 +174,38 @@ void main() {
     });
   });
 
+  test("bottoms out at the crypt's five when no delve depth is named", () {
+    // arrange
+    final profile = _townie();
+
+    // act
+    final run = startRun(profile, dungeon: _shuffling());
+
+    // assert
+    expect(run.deepest, deepestDepth);
+  });
+
+  test('asks how deep the delve goes for the visit it just bumped to', () {
+    // arrange
+    final profile = _townie(visit: 11);
+    final asked = <int>[];
+
+    // act
+    final run = startRun(
+      profile,
+      dungeon: _shuffling(),
+      deepest: (visit) {
+        asked.add(visit);
+        return 6;
+      },
+    );
+
+    // assert
+    expect(asked, [12]);
+    expect(run.visit, 12);
+    expect(run.deepest, 6);
+  });
+
   group('endRun leaving alive', () {
     test('brings the whole haul home and does not heal', () {
       // arrange

@@ -74,7 +74,12 @@ const List<CreatureSpec> ruinedKeepBestiary = [
 /// the keep has no filler. The hound is the shallow floors' whole answer to
 /// pace, the man-at-arms fades in at three and takes the bottom, and the
 /// deserter runs the length of the place because a garrison is what the keep
-/// *is*.
+/// *is* — which is why it keeps a weight on six and seven rather than fading to
+/// nothing like the hound.
+///
+/// **Depths six and seven exist because the keep can roll five, six or seven
+/// floors.** A delve draws its own bottom, so the table covers every depth the
+/// roll can reach or a seven-deep keep would throw on arrival.
 const Map<int, DungeonSpawnTable> ruinedKeepSpawnTables = {
   1: DungeonSpawnTable(
     minCount: 3,
@@ -109,6 +114,16 @@ const Map<int, DungeonSpawnTable> ruinedKeepSpawnTables = {
     maxCount: 9,
     entries: [Weighted(deserter, 2), Weighted(rustedManAtArms, 3)],
   ),
+  6: DungeonSpawnTable(
+    minCount: 8,
+    maxCount: 10,
+    entries: [Weighted(deserter, 1), Weighted(rustedManAtArms, 4)],
+  ),
+  7: DungeonSpawnTable(
+    minCount: 9,
+    maxCount: 11,
+    entries: [Weighted(deserter, 1), Weighted(rustedManAtArms, 5)],
+  ),
 };
 
 /// What each depth of the keep can give up.
@@ -119,6 +134,11 @@ const Map<int, DungeonSpawnTable> ruinedKeepSpawnTables = {
 /// a keep that paid a cave's rates would be a place with nothing to recommend
 /// it. So the cave reads the crypt's curve one floor down and the keep reads it
 /// two, which is the same rule applied twice rather than a second rule.
+///
+/// Depths six and seven continue that one slide — five off Common, one off Fine,
+/// two onto Rare, four onto Epic per floor — so the deepest keep a roll can lay
+/// out is the richest place in the game, which is what four days of walking is
+/// supposed to buy.
 const Map<int, DropTable> ruinedKeepDropTables = {
   1: DropTable(
     items: [
@@ -258,6 +278,64 @@ const Map<int, DropTable> ruinedKeepDropTables = {
       Weighted(Rarity.fine, 32),
       Weighted(Rarity.rare, 30),
       Weighted(Rarity.epic, 18),
+      Weighted(Rarity.legendary, 0),
+    ],
+    weaponAffixes: weaponAffixes,
+    armourAffixes: armourAffixes,
+    minFloorItems: 4,
+    maxFloorItems: 6,
+  ),
+  6: DropTable(
+    items: [
+      Weighted(healingPotion, 14),
+      Weighted(rustySword, 0),
+      Weighted(ironSword, 0),
+      Weighted(warAxe, 4),
+      Weighted(greatsword, 8),
+      Weighted(maul, 7),
+      Weighted(kiteShield, 6),
+      Weighted(ironHelm, 6),
+      Weighted(leatherCap, 0),
+      Weighted(mailHauberk, 12),
+      Weighted(leatherJerkin, 0),
+      Weighted(ironGauntlets, 5),
+      Weighted(ironGreaves, 6),
+      Weighted(leatherBoots, 0),
+    ],
+    rarities: [
+      Weighted(Rarity.common, 15),
+      Weighted(Rarity.fine, 31),
+      Weighted(Rarity.rare, 32),
+      Weighted(Rarity.epic, 22),
+      Weighted(Rarity.legendary, 0),
+    ],
+    weaponAffixes: weaponAffixes,
+    armourAffixes: armourAffixes,
+    minFloorItems: 4,
+    maxFloorItems: 6,
+  ),
+  7: DropTable(
+    items: [
+      Weighted(healingPotion, 14),
+      Weighted(rustySword, 0),
+      Weighted(ironSword, 0),
+      Weighted(warAxe, 3),
+      Weighted(greatsword, 9),
+      Weighted(maul, 8),
+      Weighted(kiteShield, 6),
+      Weighted(ironHelm, 6),
+      Weighted(leatherCap, 0),
+      Weighted(mailHauberk, 13),
+      Weighted(leatherJerkin, 0),
+      Weighted(ironGauntlets, 5),
+      Weighted(ironGreaves, 6),
+      Weighted(leatherBoots, 0),
+    ],
+    rarities: [
+      Weighted(Rarity.common, 10),
+      Weighted(Rarity.fine, 30),
+      Weighted(Rarity.rare, 34),
+      Weighted(Rarity.epic, 26),
       Weighted(Rarity.legendary, 0),
     ],
     weaponAffixes: weaponAffixes,
