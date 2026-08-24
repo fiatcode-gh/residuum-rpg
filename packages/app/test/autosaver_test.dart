@@ -58,6 +58,7 @@ Boot _boot(
   GameState? run,
   bool inside = false,
   Whereabouts? world,
+  int campDay = 0,
 }) => Boot(
   document: SaveDocument.one(
     id: 'hero-1',
@@ -67,6 +68,7 @@ Boot _boot(
     run: run,
     dungeon: run == null ? null : cryptNode,
     inside: inside,
+    campDay: run == null || inside ? null : campDay,
   ),
 );
 
@@ -310,6 +312,7 @@ void main() {
         profile: newProfile(worldSeed: 111).copyWith(gold: 40, visit: 2),
         run: startDungeonRunAt(cryptNode, newProfile(worldSeed: 111)),
         dungeon: cryptNode,
+        campDay: 0,
       );
       final played = newProfile(worldSeed: 222).copyWith(gold: 500);
       final roster = SaveDocument(
@@ -568,7 +571,7 @@ void main() {
       final entered = await town.stream.first;
 
       // act
-      town.add(RunSuspended(entered.run!));
+      town.add(RunSuspended(entered.run!, day: 0));
       await town.stream.first;
       await saver.settled();
 
@@ -589,6 +592,7 @@ void main() {
         profile: profile,
         suspended: camp,
         dungeon: cryptNode,
+        campDay: 0,
       );
       final saver = Autosaver(SaveStore(files), from: _boot(profile, run: camp))
         ..watchTown(town);
@@ -636,6 +640,7 @@ void main() {
         profile: profile,
         suspended: camp,
         dungeon: cryptNode,
+        campDay: 0,
       );
       final saver = Autosaver(SaveStore(files), from: _boot(profile, run: camp))
         ..watchTown(town);
@@ -666,12 +671,13 @@ void main() {
         profile: profile,
         suspended: camp,
         dungeon: cryptNode,
+        campDay: 0,
       );
       final saver = Autosaver(SaveStore(files), from: _boot(profile, run: camp))
         ..watchTown(town);
 
       // act
-      town.add(const ResumeCrawlPressed());
+      town.add(const ResumeCrawlPressed(day: 0));
       await town.stream.first;
       await saver.settled();
 
@@ -693,6 +699,7 @@ void main() {
         profile: profile,
         suspended: camp,
         dungeon: cryptNode,
+        campDay: 0,
       );
       final saver = Autosaver(store, from: _boot(profile, run: camp))
         ..watchTown(town);
@@ -702,14 +709,14 @@ void main() {
       // exactly as the session does, so a stacked writer would show up as extra
       // documents for the same three changes
       for (var cycle = 0; cycle < 2; cycle++) {
-        town.add(const ResumeCrawlPressed());
+        town.add(const ResumeCrawlPressed(day: 0));
         final resumed = await town.stream.first;
         final game = GameBloc(game: resumed.run!, stepDelay: Duration.zero);
         games.add(game);
         saver.watchGame(game);
         game.add(TileTapped(game.state.game.monsters.single.position));
         await game.stream.first;
-        town.add(RunSuspended(game.state.game));
+        town.add(RunSuspended(game.state.game, day: 0));
         await town.stream.first;
         await game.close();
       }

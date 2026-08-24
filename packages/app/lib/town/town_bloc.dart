@@ -33,15 +33,28 @@ final class RunEnded extends TownBlocEvent {
 }
 
 /// The hero walked out at the stairs and left the crawl standing.
+///
+/// [day] is the world's day, carried on the press because the town does not
+/// have one. A camp has a shelf life measured in days walked, and the only
+/// thing that counts days is the road — so the number comes from the world at
+/// the moment the hero climbs out, which is the one moment it means "now".
 final class RunSuspended extends TownBlocEvent {
-  const RunSuspended(this.state);
+  const RunSuspended(this.state, {required this.day});
 
   final GameState state;
+  final int day;
 }
 
 /// The hero is going back down into the crawl that is waiting for them.
+///
+/// [day] is the world's day, for [RunSuspended]'s reason and to answer the same
+/// question from the other end: a camp older than [campLife] days is not there
+/// to walk back into, and the rule that says so has to be checked where the
+/// crawl is handed over rather than only where the door is drawn.
 final class ResumeCrawlPressed extends TownBlocEvent {
-  const ResumeCrawlPressed();
+  const ResumeCrawlPressed({required this.day});
+
+  final int day;
 }
 
 /// The hero is giving that crawl up for the dungeon under [node], laid out
@@ -155,6 +168,7 @@ class TownViewState {
     this.run,
     this.suspended,
     this.dungeon,
+    this.campDay,
     this.notice,
   });
 
@@ -216,6 +230,14 @@ class TownViewState {
   /// Never a town, and never set while both crawl fields are null.
   final NodeId? dungeon;
 
+  /// The day [suspended] was pitched, or null exactly when there is no camp.
+  ///
+  /// On the carry list beside [suspended] and [dungeon], and for the same
+  /// reason: the save document requires all three to agree, so a handler that
+  /// kept the camp and dropped this would write a document the decoder refuses.
+  /// It is also what the world screen reads to say how long the camp has left.
+  final int? campDay;
+
   /// The last refusal, for the screen to read out. Cleared by the next thing
   /// that works.
   final String? notice;
@@ -230,6 +252,23 @@ class TownViewState {
 
   /// Whether a bed would do the hero any good.
   bool get canRest => profile.hero.hp < profile.maxHp;
+
+  /// Whether the camp has stood long enough on [day] for the residue to have
+  /// taken it back.
+  ///
+  /// False when there is no camp, so a caller can ask without asking twice.
+  bool isCampOverrunOn(int day) {
+    final pitched = campDay;
+    if (pitched == null) return false;
+    return isCampOverrun(day: day, campDay: pitched);
+  }
+
+  /// Whether one more day on the road would take the camp back.
+  bool isCampNearlyOverrunOn(int day) {
+    final pitched = campDay;
+    if (pitched == null) return false;
+    return isCampNearlyOverrun(day: day, campDay: pitched);
+  }
 }
 
 /// Owns the hero between runs, and every door into and out of the dungeon.
@@ -251,6 +290,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     String? notice,
     GameState? suspended,
     NodeId? dungeon,
+    int? campDay,
   }) : super(
          _opening(
            profile: profile,
@@ -258,6 +298,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
            merchant: merchant,
            suspended: suspended,
            dungeon: dungeon,
+           campDay: campDay,
            notice: notice,
          ),
        ) {
@@ -295,6 +336,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     required MerchantVisit merchant,
     required GameState? suspended,
     required NodeId? dungeon,
+    required int? campDay,
     required String? notice,
   }) => TownViewState(
     profile: profile,
@@ -305,6 +347,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     merchant: merchant,
     suspended: suspended,
     dungeon: dungeon,
+    campDay: campDay,
     notice: notice,
   );
 
@@ -322,20 +365,38 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     ),
   );
 
-  /// Brings the run home, and forgets the visit with it.
+  /// Brings the run home, and the camp with it.
   ///
-  /// The merchant re-stocks per visit by design, so the shelf is rolled again
-  /// here — and what was bought off the old shelf names ids that no longer
-  /// exist, while what is on the counter was sold to a shop that has since
-  /// turned over its stock. Both lists are left off the new state, which is what
-  /// clears them.
+  /// **The visit state goes only if the visit moved, exactly as suspending
+  /// decides it.** The two doors used to disagree: suspending kept what the
+  /// merchant remembered when the visit had not moved, and this dropped it
+  /// unconditionally. That was harmless while death was the only way through
+  /// here, because dying after a fresh entry does move the visit. It stopped
+  /// being harmless the moment a delve could be *completed*: a hero who walked
+  /// back into a camp and then finished it at the bottom comes home on the very
+  /// visit they were shopping on, and an unconditional clear would put a bought
+  /// item back on the shelf while it sat in their pack — the D36 defect, handed
+  /// back in reverse.
+  ///
+  /// **So death after a resume now keeps the shelf too**, and that is the rule
+  /// rather than an oversight: the visit did not move, so the shelf did not turn
+  /// over, and burning the pack does not restock anybody's shop. What was bought
+  /// is still bought.
+  ///
+  /// The camp goes either way. A run that ended is a run nobody can walk back
+  /// into, whichever way it ended.
   void _onRunEnded(RunEnded event, Emitter<TownViewState> emit) {
     final home = endRun(state.profile, event.state, died: event.died);
+    final reshuffled = home.visit != state.profile.visit;
+    final merchant = reshuffled ? MerchantVisit.none : state.merchant;
     emit(
       TownViewState(
         profile: home,
         town: state.town,
-        stock: merchantStock(home.worldSeed, home.visit, state.town),
+        stock: merchant.stillOnTheShelf(
+          merchantStock(home.worldSeed, home.visit, state.town),
+        ),
+        merchant: merchant,
       ),
     );
   }
@@ -373,6 +434,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
         merchant: merchant,
         suspended: event.state,
         dungeon: state.dungeon,
+        campDay: event.day,
       ),
     );
   }
@@ -384,6 +446,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
   /// answering it with a fresh crawl would be entering a dungeon nobody asked
   /// to enter.
   void _onResumeCrawl(ResumeCrawlPressed event, Emitter<TownViewState> emit) {
+    if (state.isCampOverrunOn(event.day)) return;
     if (state.suspended case final GameState camp) {
       emit(
         TownViewState(
@@ -495,6 +558,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
         merchant: merchant,
         suspended: state.suspended,
         dungeon: state.dungeon,
+        campDay: state.campDay,
       ),
     );
   }
@@ -624,6 +688,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     merchant: merchant ?? state.merchant,
     suspended: state.suspended,
     dungeon: state.dungeon,
+    campDay: state.campDay,
     notice: refusal?.reason,
   );
 

@@ -130,6 +130,8 @@ const List<String> _seaCaveFirstSpawns = [
   'crab-2@7,14',
   'crab-3@14,11',
   'crab-4@20,4',
+  'crab-5@20,9',
+  'crab-6@3,13',
 ];
 
 const List<String> _seaCaveBottomSpawns = [
@@ -141,7 +143,8 @@ const List<String> _seaCaveBottomSpawns = [
   'drowned-6@23,15',
   'drowned-7@26,15',
   'drowned-8@16,19',
-  'boss-sea-cave@18,18',
+  'drowned-9@18,18',
+  'boss-sea-cave@24,10',
 ];
 
 const List<String> _ruinedKeepFirstSpawns = [
@@ -173,36 +176,26 @@ const List<String> _ruinedKeepBottomSpawns = [
 /// the one thing a themed drop table decides that nothing was reading. Each
 /// entry is the item's id and its whole display name, so the base item, the tier
 /// and the affixes all have to hold.
-const List<String> _seaCaveFirstLitter = [
-  'floor-1-3 Common Leather Cap',
-  'floor-1-1 Rare Reinforced Leather Boots of Swiftness',
-  'floor-1-2 Common Leather Cap',
-];
+/// The sea-cave's shallowest floor can now lay nothing at all, and this is the
+/// seed where it does. Its drop table's floor is zero — the tide leaves the
+/// shore bare as often as not — so an empty list is the pin rather than a hole
+/// in one.
+const List<String> _seaCaveFirstLitter = [];
 
 const List<String> _seaCaveBottomLitter = [
-  'floor-6-1 Epic Reinforced Sturdy Kite Shield of Swiftness',
-  'trophy-sea-cave Rare Sturdy Mail Hauberk of Vigour',
-  'floor-6-4 Common Healing Potion',
-  'floor-6-2 Rare Reinforced Sturdy Iron Helm',
-  'floor-6-3 Epic Sturdy Kite Shield of Vigour of Swiftness',
+  'floor-6-1 Epic Keen Vicious Greatsword of Fury',
+  'trophy-sea-cave Rare Reinforced Kite Shield of Vigour',
 ];
 
 const List<String> _ruinedKeepFirstLitter = [
   'floor-1-2 Fine War Axe of Embers',
-  'floor-1-6 Common Iron Greaves',
-  'floor-1-5 Common Healing Potion',
-  'floor-1-4 Fine Sturdy Leather Jerkin',
-  'floor-1-3 Rare Sturdy Iron Helm of Swiftness',
   'floor-1-1 Fine Iron Gauntlets of Vigour',
 ];
 
 const List<String> _ruinedKeepBottomLitter = [
-  'floor-7-3 Rare Reinforced Iron Gauntlets of Swiftness',
-  'floor-7-4 Common Healing Potion',
-  'trophy-ruined-keep Rare Sturdy Iron Helm of Vigour',
+  'trophy-ruined-keep Rare Reinforced Mail Hauberk of Swiftness',
   'floor-7-2 Fine Keen Maul',
   'floor-7-1 Common Healing Potion',
-  'floor-7-5 Fine Reinforced Iron Gauntlets',
 ];
 
 /// What the bosses are standing over, named in full.
@@ -210,8 +203,8 @@ const List<String> _ruinedKeepBottomLitter = [
 /// The whole display name rather than the rarity alone, because a trophy is
 /// item, tier and affixes together and any one of them moving is the loot
 /// stream having moved.
-const String _seaCaveTrophy = 'Rare Sturdy Mail Hauberk of Vigour';
-const String _ruinedKeepTrophy = 'Rare Sturdy Iron Helm of Vigour';
+const String _seaCaveTrophy = 'Rare Reinforced Kite Shield of Vigour';
+const String _ruinedKeepTrophy = 'Rare Reinforced Mail Hauberk of Swiftness';
 
 Floor _pinnedFloor(ThemedDungeon dungeon, int depth) => themedFloor(
   dungeon,

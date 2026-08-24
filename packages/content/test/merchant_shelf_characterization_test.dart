@@ -44,7 +44,6 @@ void main() {
         'market-stonebridge-0-potion-2: Common Healing Potion',
         'market-stonebridge-0-potion-3: Common Healing Potion',
         'market-stonebridge-0-gear-1: Rare Sturdy Reinforced Leather Cap',
-        'market-stonebridge-0-gear-2: Common Kite Shield',
       ]);
     });
 
@@ -61,7 +60,6 @@ void main() {
         'market-northgate-0-potion-2: Common Healing Potion',
         'market-northgate-0-potion-3: Common Healing Potion',
         'market-northgate-0-gear-1: Fine Maul of Fury',
-        'market-northgate-0-gear-2: Common Iron Sword',
       ]);
     });
 
@@ -78,7 +76,6 @@ void main() {
         'market-stonebridge-0-potion-2: Common Healing Potion',
         'market-stonebridge-0-potion-3: Common Healing Potion',
         'market-stonebridge-0-gear-1: Common Leather Cap',
-        'market-stonebridge-0-gear-2: Common Iron Sword',
       ]);
     });
 
@@ -96,7 +93,6 @@ void main() {
         'market-stonebridge-4-potion-3: Common Healing Potion',
         'market-stonebridge-4-gear-1: Common Iron Gauntlets',
         'market-stonebridge-4-gear-2: Common Iron Gauntlets',
-        'market-stonebridge-4-gear-3: Common Iron Gauntlets',
       ]);
     });
   });

@@ -190,6 +190,7 @@ void main() {
         newWhereabouts(),
         inside: false,
         dungeon: null,
+        campDay: null,
       );
 
       // assert
@@ -216,6 +217,7 @@ void main() {
         atTheCrypt(),
         inside: true,
         dungeon: cryptNode,
+        campDay: null,
       );
 
       // assert
@@ -329,6 +331,7 @@ void main() {
         newWhereabouts(),
         inside: false,
         dungeon: null,
+        campDay: null,
       );
 
       // assert
@@ -471,6 +474,7 @@ void main() {
             profile: newProfile(worldSeed: 111),
             run: deepRun(worldSeed: 111, depth: 3),
             dungeon: cryptNode,
+            campDay: 0,
           ),
         },
       );
@@ -546,6 +550,7 @@ void main() {
         atTheCrypt(),
         inside: true,
         dungeon: cryptNode,
+        campDay: null,
       );
 
       // assert
@@ -566,6 +571,7 @@ void main() {
         newWhereabouts(),
         inside: false,
         dungeon: null,
+        campDay: null,
       );
 
       // assert

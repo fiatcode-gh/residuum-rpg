@@ -83,7 +83,10 @@ void main() {
       expect(run.depth, 1);
       expect(run.rng.state, -220922450277408979);
       expect(run.lootRng.state, 2851109081598412326);
-      expect(run.groundItems, hasLength(4));
+      // the litter cut took floor one from four to five items down to two to
+      // three; the layout, the monsters and both stream states above are what
+      // this test is for, and none of them moved
+      expect(run.groundItems, hasLength(2));
       expect(run.dropTables, dropTables);
     });
   });

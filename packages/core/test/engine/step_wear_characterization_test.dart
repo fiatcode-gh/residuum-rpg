@@ -76,14 +76,15 @@ const _here = Position(3, 1);
 
 void main() {
   group('EquipAction displacement against the pack cap', () {
-    test('a full pack ends over the cap when two pieces are displaced', () {
+    test('a full pack refuses the swap that would displace two pieces', () {
       // arrange
       final maul = _item('kit-maul', _maul);
+      final sword = _item('kit-sword', _sword);
       final game = crawl(
         ascii: _room,
         heroAt: _here,
         equipment: {
-          EquipSlot.mainHand: _item('kit-sword', _sword),
+          EquipSlot.mainHand: sword,
           EquipSlot.offHand: _item('kit-shield', _shield),
         },
         inventory: [maul, ..._filler(inventoryCap - 1)],
@@ -93,9 +94,12 @@ void main() {
       final (after, events) = step(game, const EquipAction('kit-maul'));
 
       // assert
-      expect(after.equipment[EquipSlot.mainHand], maul);
-      expect(after.inventory, hasLength(inventoryCap + 1));
-      expect(events.whereType<ActionRefused>(), isEmpty);
+      expect(after.equipment[EquipSlot.mainHand], sword);
+      expect(after.inventory, hasLength(inventoryCap));
+      expect(
+        events.whereType<ActionRefused>().single.reason,
+        'your pack is too full for what that would displace',
+      );
     });
 
     test('a pack one short of the cap ends exactly at the cap', () {
@@ -150,7 +154,7 @@ void main() {
   });
 
   group('EquipAction against the hit point ceiling', () {
-    test('does not clamp hit points when a swap lowers the ceiling', () {
+    test('clamps hit points when a swap lowers the ceiling', () {
       // arrange
       final game = crawl(
         ascii: _room,
@@ -167,7 +171,7 @@ void main() {
 
       // assert
       expect(heroMaxHp(after.hero, after.loadout), 20);
-      expect(after.hero.hp, 24);
+      expect(after.hero.hp, 20);
     });
 
     test('clamps hit points when the same swap is done by taking off', () {

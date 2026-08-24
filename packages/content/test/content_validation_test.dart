@@ -175,8 +175,8 @@ void main() {
           for (final entry in spawnTableFor(depth).entries)
             creatureById(entry.creatureId),
         ],
-        for (final entry in roadSpawnTable.entries)
-          creatureById(entry.creatureId),
+        for (final route in residuumWorld.routes)
+          ...roadTableFor(route).creatures,
         for (final dungeon in themedDungeons) ...[
           for (final depth in tabledDepthsOf(dungeon))
             ...dungeonSpawnTableFor(dungeon.spawnTables, depth).creatures,
@@ -527,13 +527,17 @@ void main() {
         for (final depth in tabledDepthsOf(dungeon)) {
           final where = '${dungeon.node.value} depth $depth';
           final table = dungeonDropTableFor(dungeon.dropTables, depth);
-          expect(table.minFloorItems, greaterThan(0), reason: where);
+          expect(table.minFloorItems, greaterThanOrEqualTo(0), reason: where);
           expect(
             table.maxFloorItems,
             greaterThanOrEqualTo(table.minFloorItems),
             reason: where,
           );
           expect(table.maxFloorItems, lessThan(12), reason: where);
+          // a floor that can never carry anything is a floor with nothing to
+          // find, which the sea-cave's new floor of zero would allow if only the
+          // minimum were checked
+          expect(table.maxFloorItems, greaterThan(0), reason: where);
         }
       }
     });

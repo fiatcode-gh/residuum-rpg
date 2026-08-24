@@ -31,6 +31,17 @@ const String fledOnTheRoad = 'You get away, no further along than you were.';
 /// What the log says when the hero wins one.
 const String wonOnTheRoad = 'The road is yours again.';
 
+/// What the log says when a rumor puts a place on the map.
+///
+/// **Beside the flavour line, not instead of it.** The tavern's own sentence is
+/// what the hero was told and it is deliberately oblique — a carter says there
+/// is a town north of the moor — while this is what the purchase bought. Since
+/// walking stopped uncovering anything beyond the place reached, a rumor is one
+/// of the two ways a new place appears at all, so the moment it happens has to
+/// be said in the words the world screen's own rows use.
+String describeRevealed(WorldMap map, NodeId revealed) =>
+    '${map.nodeAt(revealed).name} is on your map now.';
+
 /// What the log says when the road kills the hero.
 String describeWakingAtHome(WorldMap map, NodeId home) =>
     'You wake in ${map.nodeAt(home).name} with nothing but what you wore.';

@@ -12,10 +12,10 @@ const CreatureSpec deserter = CreatureSpec(
   glyph: 'b',
   hp: 16,
   attackMin: 3,
-  attackMax: 6,
+  attackMax: 7,
   speed: 10,
-  dropChance: 40,
-  pierce: 2,
+  dropChance: 50,
+  pierce: 5,
 );
 
 /// Twice the hero's speed and no armour at all: it closes, and it dies.
@@ -27,7 +27,8 @@ const CreatureSpec kennelHound = CreatureSpec(
   attackMin: 3,
   attackMax: 5,
   speed: 20,
-  dropChance: 30,
+  dropChance: 40,
+  pierce: 5,
 );
 
 /// Half the hero's speed, and the hardest thing in the game to fell that is not
@@ -38,10 +39,10 @@ const CreatureSpec rustedManAtArms = CreatureSpec(
   glyph: 'm',
   hp: 22,
   attackMin: 4,
-  attackMax: 7,
+  attackMax: 8,
   speed: 5,
-  dropChance: 50,
-  pierce: 4,
+  dropChance: 60,
+  pierce: 6,
 );
 
 /// What holds the bottom of the keep, and is never rolled for.
@@ -166,8 +167,8 @@ const Map<int, DropTable> ruinedKeepDropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 4,
-    maxFloorItems: 6,
+    minFloorItems: 1,
+    maxFloorItems: 2,
   ),
   2: DropTable(
     items: [
@@ -195,8 +196,8 @@ const Map<int, DropTable> ruinedKeepDropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 4,
-    maxFloorItems: 6,
+    minFloorItems: 1,
+    maxFloorItems: 2,
   ),
   3: DropTable(
     items: [
@@ -224,8 +225,8 @@ const Map<int, DropTable> ruinedKeepDropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 4,
-    maxFloorItems: 6,
+    minFloorItems: 1,
+    maxFloorItems: 2,
   ),
   4: DropTable(
     items: [
@@ -253,8 +254,8 @@ const Map<int, DropTable> ruinedKeepDropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 4,
-    maxFloorItems: 6,
+    minFloorItems: 1,
+    maxFloorItems: 2,
   ),
   5: DropTable(
     items: [
@@ -282,8 +283,8 @@ const Map<int, DropTable> ruinedKeepDropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 4,
-    maxFloorItems: 6,
+    minFloorItems: 1,
+    maxFloorItems: 2,
   ),
   6: DropTable(
     items: [
@@ -311,8 +312,8 @@ const Map<int, DropTable> ruinedKeepDropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 4,
-    maxFloorItems: 6,
+    minFloorItems: 1,
+    maxFloorItems: 2,
   ),
   7: DropTable(
     items: [
@@ -340,8 +341,8 @@ const Map<int, DropTable> ruinedKeepDropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 4,
-    maxFloorItems: 6,
+    minFloorItems: 1,
+    maxFloorItems: 2,
   ),
 };
 

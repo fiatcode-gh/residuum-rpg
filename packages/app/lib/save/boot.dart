@@ -38,6 +38,9 @@ class Boot {
   /// What the merchant remembers of the active hero's visit.
   MerchantVisit get merchant => document.merchant;
 
+  /// The day the hero pitched their camp, or null when they have none.
+  int? get campDay => document.campDay;
+
   /// Where in the world the active hero is, and what they know of it.
   Whereabouts get world => document.world;
 }

@@ -172,7 +172,7 @@ void main() {
       ];
 
       // act
-      final inRange = counts.every((count) => count >= 2 && count <= 4);
+      final inRange = counts.every((count) => count >= 1 && count <= 3);
 
       // assert
       expect(inRange, isTrue, reason: 'gear counts were $counts');

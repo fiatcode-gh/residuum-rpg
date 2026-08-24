@@ -2,6 +2,8 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 import 'package:test/test.dart';
 
+import 'support/kit.dart';
+
 /// How the bot decides what to wear.
 enum _Build {
   /// Wear whatever is strictly better. What a first-time player does.
@@ -61,12 +63,20 @@ const int _turnBudget = 4000;
 /// pinning them is what makes the two new dungeons landing beside it provably
 /// additive rather than probably additive.
 ///
-/// Twenty-four of the forty reach depth five alive, which is the same twenty-four
-/// the win count reads — the bot stops on arrival at the bottom, so a run that
+/// Twenty of the forty reach depth five alive, which is the same twenty the
+/// win count reads — the bot stops on arrival at the bottom, so a run that
 /// ends at five is a run that won.
-const Map<int, int> _cryptDepths = {1: 1, 2: 9, 3: 6, 5: 24};
+///
+/// **The old pin was `{1: 1, 2: 9, 3: 6, 5: 24}` and it died by design.** The
+/// crypt's deep floors stopped dealing a universal one point of damage, and
+/// what the histogram shows is where that landed: the shallow floors are
+/// exactly where they were — one and nine, the same two numbers — and the
+/// dying spread down across floors three and four, which is where the skeleton
+/// and the wight now are. That is the shape the rebalance was asked for: the
+/// first half teaches, the second half bites.
+const Map<int, int> _cryptDepths = {1: 1, 2: 9, 3: 4, 4: 6, 5: 20};
 
-/// Where the forty sea-cave runs end, with [_kitted]'s gear.
+/// Where the forty sea-cave runs end, with [survivabilityKit]'s gear.
 ///
 /// Pinned beside the band for the crypt's reason, and the ordering test below is
 /// the other half: the band alone would let the cave drift past the keep and
@@ -75,18 +85,27 @@ const Map<int, int> _cryptDepths = {1: 1, 2: 9, 3: 6, 5: 24};
 /// **The keys are final depths in a variable band, not floors of one fixed
 /// dungeon.** A delve rolls four, five or six floors, so a run that ends at four
 /// may have won a four-floor cave or died on the fourth floor of a six-floor
-/// one, and only the win count separates them. The old pin — `{3: 5, 5: 35}` —
+/// one, and only the win count separates them. The first pin — `{3: 5, 5: 35}` —
 /// died with the roll rather than with a regression: every cave used to be five
 /// floors deep, so every winner keyed at five.
-const Map<int, int> _seaCaveDepths = {3: 5, 4: 15, 5: 9, 6: 11};
+///
+/// **The pin before this one was `{3: 5, 4: 15, 5: 9, 6: 11}` at 34/40.** The
+/// cave was the one dungeon the loot cut could not touch — a graduate walks in
+/// with four potions and Fine mail, so what the floor gives up was never what
+/// decided its runs. What moved it was bodies and kill drops: two more creatures
+/// on every floor, and fifteen points off every drop chance.
+const Map<int, int> _seaCaveDepths = {2: 1, 3: 7, 4: 13, 5: 10, 6: 9};
 
 /// Where the forty keep runs end, with the same gear.
 ///
-/// The old pin was `{2: 6, 3: 3, 5: 31}`. The win count came back to
-/// thirty-one, which is arithmetic rather than evidence: twenty-four of the
-/// forty delves got deeper and the runs redistributed across three bottoms to
-/// the same total. The histogram is the figure that shows it.
-const Map<int, int> _keepDepths = {2: 6, 3: 3, 5: 14, 6: 8, 7: 9};
+/// The first pin was `{2: 6, 3: 3, 5: 31}`; the one before this was
+/// `{2: 6, 3: 3, 5: 14, 6: 8, 7: 9}` at 31/40. The keep took the rebalance
+/// almost entirely on the chin — deeper pierce and a notch on the deep attack
+/// ceilings cost it three runs — because it was already the hardest walk and
+/// the hardest floor. What the new histogram shows that the old one did not is
+/// four runs ending on depth one: the keep now has a first floor that can kill
+/// a graduate who walks in carelessly.
+const Map<int, int> _keepDepths = {1: 4, 2: 6, 3: 1, 4: 1, 5: 13, 6: 9, 7: 6};
 
 /// Plays one crawl on [worldSeed] with a fixed policy and reports what happened.
 ///
@@ -100,6 +119,15 @@ const Map<int, int> _keepDepths = {2: 6, 3: 3, 5: 14, 6: 8, 7: 9};
 /// and no better a tactician. That is deliberate: the win rate then measures
 /// the content — how much the dungeon hits for and how much loot it gives back
 /// — rather than measuring how well a bot explores in the dark.
+///
+/// **A full pack stops collecting rather than making room, and the rule it
+/// replaces was a loop.** The policy used to drop the first non-potion whenever
+/// the pack was full — but a drop lands under the hero and the pick-up rule
+/// takes whatever is under the hero, so the bot put the same item down and took
+/// it back forever, and the run ended on the turn budget instead of in the
+/// dungeon. It never bit while floors were thin. It bites the moment there is
+/// enough on the ground to fill twenty slots, which is exactly what measuring a
+/// crowded floor requires. Making room where you are standing makes none.
 _Outcome _botCrawl({required int worldSeed, _Build build = _Build.greedy}) =>
     _botPlay(newGame(worldSeed: worldSeed), build);
 
@@ -109,55 +137,13 @@ _Outcome _botCrawl({required int worldSeed, _Build build = _Build.greedy}) =>
 /// at visit zero, which is the door the shipped figure was measured through and
 /// the one thing about it that must not move. A themed dungeon has no such door
 /// and no legacy figure to protect, so it enters the way a player does — through
-/// [startDungeonRunAt], on the bumped visit — carrying [_kitted]'s gear.
+/// [startDungeonRunAt], on the bumped visit — carrying [survivabilityKit]'s
+/// gear.
 _Outcome _themedCrawl({
   required NodeId node,
   required int worldSeed,
   _Build build = _Build.greedy,
-}) => _botPlay(startDungeonRunAt(node, _kitted(worldSeed)), build);
-
-/// The hero a themed dungeon is measured against: a crypt graduate.
-///
-/// **A test fixture, not content.** Nothing in the game hands a hero this, and
-/// nothing should: it stands for the state a player is plausibly in when they
-/// first walk two days past Northgate, and the bands below only mean anything
-/// against a stated starting point. A fresh hero measured in the keep would
-/// report that the keep is impossible, which is true and says nothing about
-/// whether it is well made.
-///
-/// Fine gear rather than Rare, because Fine is what the crypt actually gives up
-/// at the depths a graduate cleared; four potions rather than two, because
-/// shopping is the other thing the trip pays for; Arms, Might and Bulwark at
-/// five and Fleetfoot at nothing, because the greedy build wears everything it
-/// finds and heavy armour is what it finds most of.
-Profile _kitted(int worldSeed) => newProfile(worldSeed: worldSeed).copyWith(
-  equipment: const {
-    EquipSlot.mainHand: Item(
-      id: 'kit-weapon',
-      base: ironSword,
-      rarity: Rarity.fine,
-      affixes: [keen],
-    ),
-    EquipSlot.chest: Item(
-      id: 'kit-chest',
-      base: mailHauberk,
-      rarity: Rarity.fine,
-      affixes: [sturdy],
-    ),
-  },
-  inventory: const [
-    Item(id: 'kit-potion-1', base: healingPotion, rarity: Rarity.common),
-    Item(id: 'kit-potion-2', base: healingPotion, rarity: Rarity.common),
-    Item(id: 'kit-potion-3', base: healingPotion, rarity: Rarity.common),
-    Item(id: 'kit-potion-4', base: healingPotion, rarity: Rarity.common),
-  ],
-  skills: const {
-    SkillId.arms: SkillState(level: 5),
-    SkillId.might: SkillState(level: 5),
-    SkillId.bulwark: SkillState(level: 5),
-    SkillId.fleetfoot: SkillState(),
-  },
-);
+}) => _botPlay(startDungeonRunAt(node, survivabilityKit(worldSeed)), build);
 
 _Outcome _botPlay(GameState opening, _Build build) {
   var game = opening;
@@ -210,11 +196,6 @@ GameAction _decide(GameState game, _Build build) {
   final upgrade = _bestUpgrade(game, build);
   if (upgrade != null) return EquipAction(upgrade.id);
 
-  final junk = _junk(game);
-  if (game.inventory.length >= inventoryCap && junk != null) {
-    return DropAction(junk.id);
-  }
-
   final stairs = game.stairsDown;
   if (stairs != null) {
     final path = findPath(game.map, game.hero.position, stairs);
@@ -237,15 +218,6 @@ Actor? _adjacentMonster(GameState game) {
 Item? _firstPotion(GameState game) {
   for (final item in game.inventory) {
     if (item.base.isPotion) return item;
-  }
-  return null;
-}
-
-/// Anything carried that is neither a potion nor an upgrade: the first thing to
-/// go when the pack is full.
-Item? _junk(GameState game) {
-  for (final item in game.inventory) {
-    if (!item.base.isPotion) return item;
   }
   return null;
 }
@@ -310,9 +282,9 @@ void main() {
         'stalled $stalled, died at ${_deathDepths(outcomes)}',
       );
       expect(stalled, 0, reason: 'the bot stalled rather than played');
-      expect(rate, greaterThanOrEqualTo(0.50), reason: 'still unfair: $rate');
-      expect(rate, lessThanOrEqualTo(0.95), reason: 'trivial: $rate');
-      expect(wins, 24, reason: 'the crypt moved');
+      expect(rate, greaterThanOrEqualTo(0.45), reason: 'still unfair: $rate');
+      expect(rate, lessThanOrEqualTo(0.80), reason: 'trivial: $rate');
+      expect(wins, 20, reason: 'the crypt moved');
       expect(_depthsReached(outcomes), _cryptDepths, reason: 'the crypt moved');
     });
 
@@ -392,8 +364,8 @@ void main() {
       );
       expect(greedyWins, greaterThan(0));
       expect(exploitWins, greaterThanOrEqualTo(0));
-      expect(greedyWins, 24, reason: 'the crypt moved');
-      expect(exploitWins, 7, reason: 'the exploit moved');
+      expect(greedyWins, 20, reason: 'the crypt moved');
+      expect(exploitWins, 14, reason: 'the exploit moved');
     });
   });
 
@@ -417,9 +389,9 @@ void main() {
         'stalled $stalled, died at ${_deathDepths(outcomes)}',
       );
       expect(stalled, 0, reason: 'the bot stalled rather than played');
-      expect(rate, greaterThanOrEqualTo(0.50), reason: 'still unfair: $rate');
-      expect(rate, lessThanOrEqualTo(0.95), reason: 'trivial: $rate');
-      expect(wins, 34, reason: 'the sea-cave moved');
+      expect(rate, greaterThanOrEqualTo(0.45), reason: 'still unfair: $rate');
+      expect(rate, lessThanOrEqualTo(0.80), reason: 'trivial: $rate');
+      expect(wins, 31, reason: 'the sea-cave moved');
       expect(_depthsReached(outcomes), _seaCaveDepths);
     });
 
@@ -459,9 +431,9 @@ void main() {
         'stalled $stalled, died at ${_deathDepths(outcomes)}',
       );
       expect(stalled, 0, reason: 'the bot stalled rather than played');
-      expect(rate, greaterThanOrEqualTo(0.50), reason: 'still unfair: $rate');
-      expect(rate, lessThanOrEqualTo(0.95), reason: 'trivial: $rate');
-      expect(wins, 31, reason: 'the ruined keep moved');
+      expect(rate, greaterThanOrEqualTo(0.45), reason: 'still unfair: $rate');
+      expect(rate, lessThanOrEqualTo(0.80), reason: 'trivial: $rate');
+      expect(wins, 28, reason: 'the ruined keep moved');
       expect(_depthsReached(outcomes), _keepDepths);
     });
 

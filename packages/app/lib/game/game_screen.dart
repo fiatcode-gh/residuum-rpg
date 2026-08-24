@@ -200,10 +200,23 @@ class _Controls extends StatelessWidget {
     final bloc = context.read<GameBloc>();
     final underfoot = state.itemsUnderfoot;
     final potion = state.firstPotion;
+    final ending = state.canLeave && state.isAtTheBottom;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Column(
         children: [
+          if (ending)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 4),
+              child: Text(
+                doneAtTheBottom,
+                style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  color: Color(0xFF8A919E),
+                ),
+              ),
+            ),
           if (underfoot.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
@@ -283,8 +296,10 @@ class _Controls extends StatelessWidget {
               if (state.canLeave)
                 Expanded(
                   child: _Control(
-                    label: 'Leave',
-                    onPressed: () => suspendDungeon(context, state),
+                    label: ending ? doneControl : 'Leave',
+                    onPressed: () => ending
+                        ? _confirmCompletion(context, state)
+                        : suspendDungeon(context, state),
                   ),
                 ),
             ],
@@ -301,9 +316,10 @@ class _Controls extends StatelessWidget {
 /// of it — so coming home is one pop and one event, and there is exactly one
 /// place in the app that does it.
 ///
-/// This is the ending, and the death overlay is the only thing that reaches it.
-/// [suspendDungeon] is the other way out, and the difference between them is the
-/// whole of this unit: dying is over, and leaving is not.
+/// Two things reach it: the death overlay, and walking out from the bottom
+/// floor once the confirm has been answered. [suspendDungeon] is the third way
+/// out and the difference is what the delve has left in it — a floor below means
+/// the crawl stands and waits, and nothing below means the delve is finished.
 void leaveDungeon(
   BuildContext context,
   GameViewState state, {
@@ -326,8 +342,81 @@ void leaveDungeon(
 /// hero. That gate is also `suspendRun`'s precondition, so the one place that
 /// calls it is the one place that cannot break it.
 void suspendDungeon(BuildContext context, GameViewState state) {
-  context.read<TownBloc>().add(RunSuspended(state.game));
+  context.read<TownBloc>().add(
+    RunSuspended(state.game, day: context.read<WorldBloc>().state.world.day),
+  );
   Navigator.of(context).pop();
+}
+
+/// What the control that ends a delve says.
+///
+/// **Six characters, and a device pass is why.** The row divides by how many
+/// controls apply and the bottom floor can hold five of them — pick up, drink,
+/// pack, ascend and this — which leaves each about eight characters on a phone.
+/// The spec's "Leave — the delve is done" rendered as "Leave — t…"; the first
+/// try at fixing it, "Leave — done", still rendered as "Leave — do…", which is
+/// the same defect one word shorter. The whole sentence lives on the line above
+/// and in the dialog, both of which have room for it, so the control only has
+/// to be short and unmistakably not "Leave".
+const String doneControl = 'Finish';
+
+/// What the bottom stairs say while the hero is standing on them.
+///
+/// **A status, not a moment.** It shows whenever the hero stands where there is
+/// nothing below, including after walking back into a camp on that floor —
+/// where the beat, which is a moment, has already been and gone. The pairing is
+/// deliberate: a player who resumed into the bottom floor missed the line that
+/// marked getting there and must still be told what the door does.
+///
+/// It lives on its own row rather than on the control, because the control is
+/// one of up to five sharing a line and a sentence there ellipsises down to
+/// nonsense — which is what two device passes have already found on this exact
+/// row.
+const String doneAtTheBottom = 'The delve is done. Leaving here ends it.';
+
+/// Ends the delve, alive, after asking once.
+///
+/// **The first irreversible confirm in the crawl, and that is why it asks.**
+/// Every other way out of a dungeon either costs nothing to undo — walking out
+/// at the stairs leaves the crawl standing — or is not a decision at all. This
+/// one spends the floors, and a mis-tap on a shared control row must not.
+Future<void> _confirmCompletion(
+  BuildContext context,
+  GameViewState state,
+) async {
+  final done = await showDialog<bool>(
+    context: context,
+    builder: (dialog) => AlertDialog(
+      title: const Text(
+        'The delve is done. Leave with your spoils?',
+        style: TextStyle(fontFamily: 'monospace'),
+      ),
+      content: const Text(
+        'There is nothing below this floor, so walking out ends the delve '
+        'rather than leaving it standing. Everything you carry comes with '
+        'you.',
+        style: TextStyle(fontFamily: 'monospace', fontSize: 13),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialog).pop(false),
+          child: const Text(
+            'Stay down here',
+            style: TextStyle(fontFamily: 'monospace'),
+          ),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(dialog).pop(true),
+          child: const Text(
+            'Leave with them',
+            style: TextStyle(fontFamily: 'monospace'),
+          ),
+        ),
+      ],
+    ),
+  );
+  if (!(done ?? false) || !context.mounted) return;
+  leaveDungeon(context, state, died: false);
 }
 
 /// Ends a road fight and uncovers the world screen under it.

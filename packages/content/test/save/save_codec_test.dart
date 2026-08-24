@@ -31,6 +31,7 @@ String _save(Profile profile, {GameState? run}) => encodeSave(
     profile: profile,
     run: run,
     dungeon: run == null ? null : cryptNode,
+    campDay: run == null ? null : 0,
   ),
 );
 

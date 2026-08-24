@@ -5,6 +5,12 @@ import 'package:residuum_content/content.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
 
+/// Why a counter will not take the hero's money.
+///
+/// One sentence for buying and for buying back, because it is one rule: the
+/// purse is short. Two wordings would read as two rules.
+const String cannotAfford = 'you cannot afford this';
+
 /// The shop: what is for sale above, what was sold across the counter in the
 /// middle, what the hero is carrying below.
 ///
@@ -18,6 +24,10 @@ import 'town_style.dart';
 ///
 /// The sold list appears only while there is something on it: a heading with
 /// nothing under it is the one row on this screen that would say nothing.
+///
+/// A row the purse cannot reach goes dead and says so. Both counters refuse for
+/// the same reason and so give the same sentence, because a shop that had two
+/// ways of saying "not enough" would read as two different rules.
 class MerchantScreen extends StatelessWidget {
   const MerchantScreen({super.key});
 
@@ -41,6 +51,7 @@ class MerchantScreen extends StatelessWidget {
               onPressed: state.gold < buyPriceOf(item)
                   ? null
                   : () => bloc.add(BuyPressed(item.id)),
+              reason: cannotAfford,
             ),
           if (state.merchant.sold.isNotEmpty) ...[
             const Heading('Sold this visit'),
@@ -52,6 +63,7 @@ class MerchantScreen extends StatelessWidget {
                 onPressed: state.gold < sellPriceOf(item)
                     ? null
                     : () => bloc.add(BuyBackPressed(item.id)),
+                reason: cannotAfford,
               ),
           ],
           const Heading('Your pack'),

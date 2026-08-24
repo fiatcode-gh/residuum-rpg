@@ -134,8 +134,10 @@ class WorldBloc extends Bloc<WorldBlocEvent, WorldViewState> {
     required Whereabouts world,
     required this.worldSeed,
     WorldMap? map,
+    int Function(Route)? dangerFor,
     this.dayDelay = const Duration(milliseconds: 450),
   }) : map = map ?? residuumWorld,
+       dangerFor = dangerFor ?? _theRoadsOwnDanger,
        super(WorldViewState(world: world)) {
     on<TravelRequested>(_onTravelRequested);
     on<DayWalked>(_onDayWalked);
@@ -149,6 +151,22 @@ class WorldBloc extends Bloc<WorldBlocEvent, WorldViewState> {
 
   /// The world being walked. A parameter so a test can walk a smaller one.
   final WorldMap map;
+
+  /// How dangerous a road is for the hero walking it, right now.
+  ///
+  /// **A function rather than a number, and that is what keeps the hero out of
+  /// here.** How dangerous a road is depends on how far the hero has come, and
+  /// how far the hero has come is a [Profile] — which the town owns and this
+  /// bloc deliberately does not. So the session hands in a way to ask, closed
+  /// over the town it does own, and this asks it on the day it is walking rather
+  /// than holding an answer that would go stale the moment a skill trained.
+  ///
+  /// It falls back to the road's own danger, which is what every road carried
+  /// before the hero was part of the question — so the seventy-odd tests that
+  /// are about whether a day is a fight go on meaning exactly what they meant.
+  final int Function(Route) dangerFor;
+
+  static int _theRoadsOwnDanger(Route route) => route.danger;
 
   /// How long the screen holds each day before the next. Zero in tests.
   final Duration dayDelay;
@@ -212,11 +230,13 @@ class WorldBloc extends Bloc<WorldBlocEvent, WorldViewState> {
     Emitter<WorldViewState> emit,
   ) async {
     if (event.walkId != state.walkId || !state.isTravelling) return;
+    final leg = state.world.journey!;
     final walked = travelOneDay(
       state.world,
       map,
       travelSeed: travelSeedFor(worldSeed),
       travelerChance: travelerChance,
+      danger: dangerFor(map.routeBetween(leg.from, leg.to)!),
     );
     final line = describeRoadDay(walked, map);
     if (walked.event case final DangerMet met) {
@@ -287,12 +307,20 @@ class WorldBloc extends Bloc<WorldBlocEvent, WorldViewState> {
   /// A refused purchase and a tavern with nothing left to say both leave the map
   /// alone; only a rumor actually told widens it. The gold is the town's half and
   /// is not looked at here.
+  ///
+  /// **Two lines, because the tavern's sentence names no place.** The flavour
+  /// line is what somebody said; the second is what the hero now has, in the
+  /// name the world screen prints. A rumor is one of only two doors to a new
+  /// place, so the purchase says out loud which door it opened.
   void _onRumorHeard(RumorHeard event, Emitter<WorldViewState> emit) => emit(
     WorldViewState(
       world: event.told.whereabouts,
       log: [
         ...state.log,
-        if (event.told.rumor case final Rumor heard) heard.line,
+        if (event.told.rumor case final Rumor heard) ...[
+          heard.line,
+          describeRevealed(map, heard.reveals),
+        ],
       ],
       notice: event.told.refusal?.reason,
       walkId: state.walkId,

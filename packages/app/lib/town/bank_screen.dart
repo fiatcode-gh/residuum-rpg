@@ -7,12 +7,29 @@ import 'town_style.dart';
 /// How much gold one button moves. Ten is a nudge, all is the whole purse.
 const int _handful = 10;
 
+/// Why a Bank button is dead.
+///
+/// Under the row rather than on the buttons, because four columns on a phone
+/// have no room for a second line each — and the four share exactly two
+/// reasons, so two sentences say everything four would.
+const String purseIsShort = 'Your purse does not have it.';
+
+/// Why a Take button is dead.
+const String vaultIsShort = 'Your vault does not have it.';
+
 /// The vault: what death can reach above, what it cannot below.
 ///
 /// Carried always sits above banked, on this screen and on the town menu, so
 /// the position of a row says which side of the death penalty it is on. Gold
 /// moves in fixed amounts rather than through a text field, because a number
 /// pad on a phone is three taps to do what one button already says.
+///
+/// **The item rows are never dead, and the gold buttons are.** Banking and
+/// taking out an item always work — the pack cap refuses in a notice when it
+/// has to — while a purse or a vault that cannot cover a handful leaves two
+/// buttons inert with nothing to say. So the reasons are two dim lines under
+/// the row rather than a second line on each of four columns, which on a phone
+/// would be four columns of ellipsis.
 class BankScreen extends StatelessWidget {
   const BankScreen({super.key});
 
@@ -54,6 +71,8 @@ class BankScreen extends StatelessWidget {
               ),
             ],
           ),
+          if (state.gold < _handful) Text(purseIsShort, style: monoDim),
+          if (state.bankedGold < _handful) Text(vaultIsShort, style: monoDim),
           const Heading('Carried — lost if you die'),
           if (state.profile.inventory.isEmpty)
             const NothingHere('You are carrying nothing.'),

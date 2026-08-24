@@ -104,6 +104,15 @@ const DropTable marketTable = DropTable(
 /// [_townSalt], so Stonebridge and Northgate are two shops on one world rather
 /// than one shop drawn twice.
 ///
+/// **A thinner shelf than the shop used to keep**, and the reason is the same
+/// one the floors were thinned for: the game's problem was never that gold
+/// bought too little, it was that nothing was worth buying because the hero
+/// already had everything. Prices did not move — a currency starts mattering
+/// when income is scarce, not when the sinks get dearer — so the shelf carries
+/// one to three pieces where it carried two to four, and the potions beside
+/// them are untouched because those are what a hero has to be able to plan
+/// around.
+///
 /// The town also goes into every stock id. An id names one roll off one shelf,
 /// and the visit alone stopped being enough to say which the moment there were
 /// two shelves: a hero who bought `market-0-gear-1` in one town would have found
@@ -113,7 +122,7 @@ List<Item> merchantStock(int worldSeed, int visit, NodeId town) {
   final rng = Rng(
     floorSeed(worldSeed ^ _marketSalt ^ _townSalt(town), _marketDepth, visit),
   );
-  final gear = rng.rollRange(2, 4);
+  final gear = rng.rollRange(1, 3);
   final where = town.value;
   return [
     for (var n = 0; n < stockedPotions; n++)

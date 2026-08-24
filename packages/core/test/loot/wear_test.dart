@@ -182,10 +182,10 @@ void main() {
       },
     );
 
-    test('two displaced pieces leave the pack one longer than it started', () {
+    test('two displaced pieces fill a pack one short of the cap', () {
       // arrange
       final maul = _item('kit-2', _maul);
-      final pack = [maul, ..._filler(inventoryCap - 1)];
+      final pack = [maul, ..._filler(inventoryCap - 2)];
 
       // act
       final worn = wear(
@@ -198,8 +198,41 @@ void main() {
       );
 
       // assert
-      expect(worn.inventory, hasLength(inventoryCap + 1));
+      expect(worn.inventory, hasLength(inventoryCap));
     });
+  });
+
+  test('refuses a full pack the displacement would push past the cap', () {
+    // arrange
+    final loadout = Loadout(
+      equipment: {
+        EquipSlot.mainHand: _item('kit-0', _sword),
+        EquipSlot.offHand: _item('kit-1', _shield),
+      },
+      skills: const {},
+    );
+    final pack = [_item('kit-2', _maul), ..._filler(inventoryCap - 1)];
+
+    // act
+    final refusal = wearRefusal(loadout, pack, 'kit-2');
+
+    // assert
+    expect(refusal, 'your pack is too full for what that would displace');
+  });
+
+  test('allows a full pack the swap gives a slot back to', () {
+    // arrange
+    final loadout = Loadout(
+      equipment: {EquipSlot.mainHand: _item('kit-0', _sword)},
+      skills: const {},
+    );
+    final pack = [_item('kit-2', _maul), ..._filler(inventoryCap - 1)];
+
+    // act
+    final refusal = wearRefusal(loadout, pack, 'kit-2');
+
+    // assert
+    expect(refusal, isNull);
   });
 
   group('takeOffRefusal', () {

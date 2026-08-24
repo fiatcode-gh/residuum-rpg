@@ -14,7 +14,7 @@ const CreatureSpec shoreCrab = CreatureSpec(
   attackMin: 2,
   attackMax: 4,
   speed: 5,
-  dropChance: 35,
+  dropChance: 30,
 );
 
 const CreatureSpec drownedSailor = CreatureSpec(
@@ -23,10 +23,10 @@ const CreatureSpec drownedSailor = CreatureSpec(
   glyph: 'd',
   hp: 14,
   attackMin: 3,
-  attackMax: 5,
+  attackMax: 6,
   speed: 10,
-  dropChance: 45,
-  pierce: 1,
+  dropChance: 40,
+  pierce: 5,
 );
 
 /// Thin and twice the hero's speed: the cave's answer to the dire wolf.
@@ -38,8 +38,8 @@ const CreatureSpec morayEel = CreatureSpec(
   attackMin: 3,
   attackMax: 6,
   speed: 20,
-  dropChance: 30,
-  pierce: 2,
+  dropChance: 25,
+  pierce: 4,
 );
 
 const CreatureSpec brineHag = CreatureSpec(
@@ -48,10 +48,10 @@ const CreatureSpec brineHag = CreatureSpec(
   glyph: 'h',
   hp: 18,
   attackMin: 4,
-  attackMax: 6,
+  attackMax: 7,
   speed: 10,
-  dropChance: 55,
-  pierce: 3,
+  dropChance: 50,
+  pierce: 6,
 );
 
 /// What stands at the bottom of the sea-cave, and is never rolled for.
@@ -93,13 +93,13 @@ const List<CreatureSpec> seaCaveBestiary = [
 /// can reach or a six-deep cave would throw on arrival.
 const Map<int, DungeonSpawnTable> seaCaveSpawnTables = {
   1: DungeonSpawnTable(
-    minCount: 4,
-    maxCount: 5,
+    minCount: 6,
+    maxCount: 7,
     entries: [Weighted(shoreCrab, 6), Weighted(morayEel, 1)],
   ),
   2: DungeonSpawnTable(
-    minCount: 5,
-    maxCount: 6,
+    minCount: 7,
+    maxCount: 8,
     entries: [
       Weighted(shoreCrab, 3),
       Weighted(morayEel, 2),
@@ -107,8 +107,8 @@ const Map<int, DungeonSpawnTable> seaCaveSpawnTables = {
     ],
   ),
   3: DungeonSpawnTable(
-    minCount: 6,
-    maxCount: 8,
+    minCount: 8,
+    maxCount: 10,
     entries: [
       Weighted(morayEel, 2),
       Weighted(drownedSailor, 3),
@@ -116,8 +116,8 @@ const Map<int, DungeonSpawnTable> seaCaveSpawnTables = {
     ],
   ),
   4: DungeonSpawnTable(
-    minCount: 7,
-    maxCount: 9,
+    minCount: 9,
+    maxCount: 11,
     entries: [
       Weighted(morayEel, 1),
       Weighted(drownedSailor, 3),
@@ -125,13 +125,13 @@ const Map<int, DungeonSpawnTable> seaCaveSpawnTables = {
     ],
   ),
   5: DungeonSpawnTable(
-    minCount: 8,
-    maxCount: 10,
+    minCount: 9,
+    maxCount: 11,
     entries: [Weighted(drownedSailor, 2), Weighted(brineHag, 3)],
   ),
   6: DungeonSpawnTable(
-    minCount: 9,
-    maxCount: 11,
+    minCount: 10,
+    maxCount: 12,
     entries: [Weighted(drownedSailor, 1), Weighted(brineHag, 4)],
   ),
 };
@@ -172,8 +172,8 @@ const Map<int, DropTable> seaCaveDropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 3,
-    maxFloorItems: 5,
+    minFloorItems: 0,
+    maxFloorItems: 2,
   ),
   2: DropTable(
     items: [
@@ -201,8 +201,8 @@ const Map<int, DropTable> seaCaveDropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 3,
-    maxFloorItems: 5,
+    minFloorItems: 0,
+    maxFloorItems: 2,
   ),
   3: DropTable(
     items: [
@@ -230,8 +230,8 @@ const Map<int, DropTable> seaCaveDropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 3,
-    maxFloorItems: 5,
+    minFloorItems: 0,
+    maxFloorItems: 2,
   ),
   4: DropTable(
     items: [
@@ -259,8 +259,8 @@ const Map<int, DropTable> seaCaveDropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 3,
-    maxFloorItems: 5,
+    minFloorItems: 0,
+    maxFloorItems: 2,
   ),
   5: DropTable(
     items: [
@@ -288,8 +288,8 @@ const Map<int, DropTable> seaCaveDropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 3,
-    maxFloorItems: 5,
+    minFloorItems: 0,
+    maxFloorItems: 2,
   ),
   6: DropTable(
     items: [
@@ -317,8 +317,8 @@ const Map<int, DropTable> seaCaveDropTables = {
     ],
     weaponAffixes: weaponAffixes,
     armourAffixes: armourAffixes,
-    minFloorItems: 3,
-    maxFloorItems: 5,
+    minFloorItems: 0,
+    maxFloorItems: 2,
   ),
 };
 

@@ -21,6 +21,7 @@ const String _goldenTown =
     'evel":0,"xp":0},"fleetfoot":{"level":0,"xp":0}}},"run":null,'
     '"dungeon":null,'
     '"inside":false,'
+    '"campDay":null,'
     '"world":{"at":"northgate","home":"northgate","day":30,'
     '"discovered":["crypt","northgate","stonebridge"],"journey":null},'
     '"merchant":{"bought":[],"sold":[],"town":null}}}}';
@@ -59,8 +60,9 @@ const String _goldenRun =
     '1]],"stairsDown":[1,1],"stairsUp":null}]},'
     '"dungeon":"crypt",'
     '"inside":true,'
+    '"campDay":null,'
     '"world":{"at":"crypt","home":"stonebridge","day":0,'
-    '"discovered":["crypt","northgate","stonebridge"],"journey":null},'
+    '"discovered":["crypt","stonebridge"],"journey":null},'
     '"merchant":{"bought"'
     ':[],"sold":[],"town":null}}}}';
 
@@ -90,6 +92,7 @@ const String _goldenTwoHeroes =
     '":{"level":0,"xp":0}}},"run":null,'
     '"dungeon":null,'
     '"inside":false,'
+    '"campDay":null,'
     '"world":{"at":"stonebridge","home":"stonebridge","day":30,'
     '"discovered":["crypt","northgate","stonebridge"],'
     '"journey":{"from":"stonebridge","to":"northgate","daysLeft":2}},'
@@ -107,6 +110,7 @@ const String _goldenTwoHeroes =
     '"xp":0}}},"run":null,'
     '"dungeon":null,'
     '"inside":false,'
+    '"campDay":null,'
     '"world":{"at":"stonebridge","home":"stonebridge","day":0,'
     '"discovered":["crypt","stonebridge"],"journey":null},'
     '"merchant":{"bought":[],"sold":[],"town":null}}}}';

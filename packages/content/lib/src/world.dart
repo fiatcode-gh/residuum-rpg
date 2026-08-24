@@ -2,8 +2,11 @@ import 'package:residuum_core/core.dart';
 
 import 'affix_pool.dart';
 import 'armory.dart';
+import 'bestiary.dart';
+import 'dungeon_spawn.dart';
 import 'new_game.dart';
-import 'spawn_tables.dart';
+import 'ruined_keep.dart';
+import 'sea_cave.dart';
 
 /// What the travel day's seed is offset by, so a road never draws in step with
 /// a floor or a shelf.
@@ -145,6 +148,33 @@ Whereabouts newWhereabouts() => Whereabouts(
   discovered: {stonebridge, cryptNode},
 );
 
+/// How many days a camp stands before the residue takes it back.
+///
+/// **Three, because an inn trip fits the window and a shopping tour does not.**
+/// The crypt is a day from Stonebridge, so walking home, sleeping and walking
+/// back costs two days and leaves a day of slack; the four-day round trip to
+/// Northgate's shelf does not fit at all. That is the whole design of the
+/// number: leaving the crawl at the stairs is priced, not closed, and what it
+/// costs is the errand the player was tempted to run instead of finishing the
+/// delve.
+const int campLife = 3;
+
+/// Whether a camp pitched on [campDay] has been taken back by [day].
+///
+/// Days only pass on the road, so this counts walking and nothing else: a hero
+/// who camps and then shops, banks and sleeps in the town at the dungeon's own
+/// door has spent no days at all and comes back to the camp they left.
+bool isCampOverrun({required int day, required int campDay}) =>
+    day - campDay >= campLife;
+
+/// Whether one more day on the road would take the camp back.
+///
+/// The warning is exactly one day wide, because a warning the player can still
+/// act on is the only kind worth printing — and at two days out the walk back
+/// to the stairs is still inside the window.
+bool isCampNearlyOverrun({required int day, required int campDay}) =>
+    day - campDay == campLife - 1;
+
 /// What the tavern charges to tell the hero something.
 ///
 /// More than a night at the inn, because a bed is one night and a place on the
@@ -189,7 +219,7 @@ final List<Rumor> rumorPool = [
   ),
 ];
 
-/// What walks the roads.
+/// What walks the three roads between the towns and the crypt.
 ///
 /// **Rats and wolves only, and no undead.** The crypt's creatures are in the
 /// crypt: a wight on a public road between two towns would be a story event, not
@@ -202,15 +232,99 @@ final List<Rumor> rumorPool = [
 /// decision with a cost — three tiles to the edge is three tiles it closes
 /// twice over.
 ///
-/// One table for all three roads, and the roads differ by how often they bite
-/// rather than by what bites. At three nodes they are all the same lowland
-/// wilderness; themed danger arrives with the sea-cave and the ruined keep,
-/// which is where a second table will have something to say.
-const SpawnTable roadSpawnTable = SpawnTable(
+/// **A [DungeonSpawnTable] rather than a [SpawnTable], and the reason is the
+/// roads that are not lowland.** A [SpawnEntry] names its creature by id and
+/// resolves it through [creatureById], which searches the one global [bestiary]
+/// — so a table naming the shore crab or the kennel hound could never roll one,
+/// and would throw on the road rather than fail a content test. Holding the
+/// [CreatureSpec] outright is what lets the three road tables be three tables of
+/// one kind. The draws are identical — one range for the count, one per creature
+/// walked against the weights in list order — so the lowland roads stand up the
+/// creatures they always did, on the tiles they always did.
+const DungeonSpawnTable lowlandRoadTable = DungeonSpawnTable(
   minCount: 2,
   maxCount: 3,
-  entries: [SpawnEntry('rat', 3), SpawnEntry('wolf', 2)],
+  entries: [Weighted(giantRat, 3), Weighted(direWolf, 2)],
 );
+
+/// What walks the road out to the sea-cave.
+///
+/// The tide's leavings come inland: crabs and drowned sailors, the two the cave
+/// has most of. Not the eel and not the hag — the eel is a thing that lives in
+/// water and the hag is what the deep floors are for, and a road that handed
+/// over the bottom of a dungeon would make walking to it beside the point.
+///
+/// The counts and the shape are the lowland table's, because the road is still a
+/// road. What changes is who is on it.
+const DungeonSpawnTable shoreRoadTable = DungeonSpawnTable(
+  minCount: 2,
+  maxCount: 3,
+  entries: [Weighted(shoreCrab, 3), Weighted(drownedSailor, 2)],
+);
+
+/// What walks the road out to the ruined keep.
+///
+/// The garrison ranges: hounds and deserters, in the hound's favour, because a
+/// deserter on the road is a man who got further than most and a kennel hound
+/// is what was sent after him. Not the man-at-arms — the keep's hardest thing
+/// stays in the keep, for the hag's reason.
+const DungeonSpawnTable garrisonRoadTable = DungeonSpawnTable(
+  minCount: 2,
+  maxCount: 3,
+  entries: [Weighted(kennelHound, 3), Weighted(deserter, 2)],
+);
+
+/// What walks [route].
+///
+/// **Keyed on where the road goes, not on where it starts.** A road is named by
+/// its two ends and either can be the one the hero set out from, so the question
+/// this answers is which dungeon the road serves — the sea-cave road is the
+/// sea-cave road whichever way it is walked. The three roads between the towns
+/// and the crypt are lowland wilderness and share one table, which is the
+/// arrangement the world has always had; the two spurs off Northgate are the
+/// ones with something of their own to say.
+DungeonSpawnTable roadTableFor(Route route) {
+  final ends = {route.from, route.to};
+  if (ends.contains(seaCave)) return shoreRoadTable;
+  if (ends.contains(ruinedKeep)) return garrisonRoadTable;
+  return lowlandRoadTable;
+}
+
+/// How far a road's danger climbs with what the hero has learnt.
+///
+/// One tier per eight skill levels, because eight is roughly what a delve's
+/// worth of training comes to: the roads get a notch harder about as often as
+/// the hero gets a notch better, which is what stops the first road being the
+/// hardest thing a hero ever walks.
+const int roadTierLevels = 8;
+
+/// The most a hero's progression can add to a road's own danger.
+///
+/// Capped, because the road is a tax on travelling and not a second dungeon. An
+/// uncapped tier would eventually make every day a fight, and a hero who cannot
+/// cross the map is a hero who cannot use it.
+const int roadTierCap = 20;
+
+/// How dangerous [route] is for [profile], in the hundred [travelOneDay] rolls
+/// against.
+///
+/// **The road scales with the hero, and this is where the two meet.** The
+/// route's own danger is what the road is; the tier is who is walking it. Core
+/// never sees a [Profile] — this is the whole of why the number is worked out in
+/// content and handed in, following [travelerChance].
+///
+/// Total skill levels rather than any one skill, because what makes a road
+/// easier is the hero being further along and not the hero having trained any
+/// particular thing. It is also the one number that cannot be gamed by leaving a
+/// skill alone.
+int dangerOn(Route route, Profile profile) {
+  final trained = profile.skills.values.fold(
+    0,
+    (total, skill) => total + skill.level,
+  );
+  final tier = trained ~/ roadTierLevels;
+  return route.danger + (tier > roadTierCap ? roadTierCap : tier);
+}
 
 /// What a road fight can give up.
 ///
@@ -269,14 +383,19 @@ const DropTable roadDropTable = DropTable(
 /// dungeon: an ambush gets the first swing at nobody, because the hero acting
 /// first is what makes running a choice they are given rather than one they are
 /// denied.
-GameState startRoadEncounter(Profile profile, {required int day}) {
+///
+/// [road] says which table stands the fight up. Left unsaid it is the lowland
+/// one, which is what the three original roads carry and what every test that
+/// is about the shape of an ambush rather than about its cast wants.
+GameState startRoadEncounter(Profile profile, {required int day, Route? road}) {
+  final table = road == null ? lowlandRoadTable : roadTableFor(road);
   final seed = ambushGroundSeed(profile.worldSeed, day);
   final rng = Rng(seed);
-  final count = roadSpawnTable.rollCount(rng);
+  final count = table.rollCount(rng);
   final ground = generateEncounter(seed, monsterCount: count);
   final monsters = <Actor>[];
   for (final spawn in ground.monsterSpawns) {
-    final creature = roadSpawnTable.rollCreature(rng);
+    final creature = table.rollCreature(rng);
     monsters.add(
       creature.spawn(id: '${creature.id}-${monsters.length + 1}', at: spawn),
     );

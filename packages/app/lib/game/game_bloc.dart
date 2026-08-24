@@ -198,6 +198,15 @@ class GameViewState {
   /// place a player decides at rather than a place they pass through.
   bool get canLeave => !game.isGameOver && (canDescend || canAscend);
 
+  /// Whether there is nothing below this floor.
+  ///
+  /// **What makes leaving here an ending rather than a pause.** A delve with a
+  /// floor left under it is a crawl the hero can walk back into, and the world
+  /// screen offers exactly that; a delve with nothing below is a promise kept,
+  /// and offering to resume it is a lie the fork used to tell. False on a road,
+  /// which has no floors at all.
+  bool get isAtTheBottom => !isEncounter && game.depth >= game.deepest;
+
   /// What is lying under the hero, oldest first.
   List<Item> get itemsUnderfoot => game.itemsAt(game.hero.position);
 
@@ -476,10 +485,39 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
 
   Iterable<String> _describe(GameState before, List<GameEvent> events) {
     final names = namesIn(before);
-    return events
-        .map((event) => describeEvent(event, names))
-        .whereType<String>();
+    return [
+      ...events.map((event) => describeEvent(event, names)).whereType<String>(),
+      ..._beats(before, events),
+    ];
   }
+
+  /// The lines a moment is worth, beyond the ones the rules described.
+  ///
+  /// **Composed here, and core knows nothing about any of it.** A boss is a
+  /// content decision — the id prefix `boss-` is the whole of the contract the
+  /// themed dungeons ship — and the bottom of a delve is a depth compared with a
+  /// depth. Neither is a rule, so neither is an event: they are the
+  /// `roadOpeningLog` shape, a sentence the interface says because the moment
+  /// deserves one.
+  ///
+  /// The bottom line rides the descent rather than the floor, because a descent
+  /// is the only way to reach a bottom floor for the first time. A hero walking
+  /// back into a camp on that floor has already been told.
+  Iterable<String> _beats(GameState before, List<GameEvent> events) {
+    final names = namesIn(before);
+    return [
+      for (final event in events)
+        if (event is ActorDied && event.actorId.startsWith(bossIdPrefix))
+          '${_capitalised(names[event.actorId] ?? 'it')} is slain. '
+              'The delve is yours.',
+      for (final event in events)
+        if (event is Descended && event.newDepth >= before.deepest)
+          bottomOfTheDelve,
+    ];
+  }
+
+  static String _capitalised(String text) =>
+      text.isEmpty ? text : '${text[0].toUpperCase()}${text.substring(1)}';
 
   static bool _interrupts(
     List<GameEvent> events,
@@ -507,6 +545,22 @@ const String _watchedRefusal = 'Something is watching. You stay put.';
 /// Phrased as where the exit *is* rather than as what the button is not, so a
 /// player who pressed it by habit learns the rule instead of being told off.
 const String _backRefusal = 'You can only leave at the stairs.';
+
+/// What names a boss apart from anything else standing on a floor.
+///
+/// **Content's id scheme read as a contract, and it is the only one there is.**
+/// A themed dungeon stands its boss up as `boss-<node>` and nothing else in the
+/// game is named that way, so the prefix is what lets a beat know a captain from
+/// a crab without core growing any idea of what a boss is. It is written here
+/// rather than imported because the beat is the app's and the ids are content's,
+/// and the one thing that must not happen is core learning the word.
+const String bossIdPrefix = 'boss-';
+
+/// What the log says on arriving where there is nothing below.
+///
+/// Said out loud because the map does not show it: a bottom floor looks like
+/// every other floor until the player has walked it and found no stairs down.
+const String bottomOfTheDelve = 'This is the bottom of the delve.';
 
 /// What a road fight opens its log with.
 ///

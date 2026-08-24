@@ -103,6 +103,7 @@ import 'position.dart';
       _announce(worn, events);
       loadout = loadout.withEquipment(worn.equipment);
       inventory = worn.inventory;
+      hero = clampedToMaxHp(hero, loadout);
     case UnequipAction(:final slot):
       final worn = takeOff(loadout.equipment, inventory, slot);
       _announce(worn, events);

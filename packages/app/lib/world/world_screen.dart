@@ -230,7 +230,20 @@ class _Place extends StatelessWidget {
       name: here ? '${node.name} — you are here' : node.name,
       action: here ? 'Here' : 'Walk',
       onPressed: here || state.isTravelling || !reachable ? null : onGo,
+      reason: _why(here: here, reachable: reachable),
     );
+  }
+
+  /// Why the hero cannot set out for here, or null when nothing needs saying.
+  ///
+  /// **The two cases a dead Walk covers are not the same case.** Standing
+  /// somewhere explains itself — the row already says "you are here" — and a
+  /// road that does not exist does not, so only that one gets a sentence. It is
+  /// `beginTravel`'s own words, because the rule and the row must not drift into
+  /// two ways of saying one refusal.
+  String? _why({required bool here, required bool reachable}) {
+    if (here || state.isTravelling) return null;
+    return reachable ? null : 'no road runs there from here';
   }
 }
 
@@ -349,18 +362,22 @@ class _Here extends StatelessWidget {
     TownViewState town,
   ) {
     final camp = town.suspended;
-    if (camp == null) {
-      return [
-        WorldDoor(
-          label: 'Enter ${node.name}',
-          onPressed: () => onEnterDungeon(node.id),
-        ),
-      ];
+    final enter = WorldDoor(
+      label: 'Enter ${node.name}',
+      onPressed: () => onEnterDungeon(node.id),
+    );
+    if (camp == null) return [enter];
+    final map = context.read<WorldBloc>().map;
+    final day = state.world.day;
+    if (town.isCampOverrunOn(day)) {
+      return [_CampLost(where: map.nodeAt(town.dungeon!).name), enter];
     }
+    final nearly = town.isCampNearlyOverrunOn(day);
     if (town.dungeon == node.id) {
       return [
+        if (nearly) const _CampWarning(),
         WorldDoor(
-          label: 'Resume the crawl (depth ${camp.depth})',
+          label: 'Resume the crawl (depth ${camp.depth} of ${camp.deepest})',
           onPressed: () => onResumeCrawl(node.id),
         ),
         WorldDoor(
@@ -370,6 +387,7 @@ class _Here extends StatelessWidget {
       ];
     }
     return [
+      if (nearly) const _CampWarning(),
       WorldDoor(
         label: 'Enter ${node.name}',
         onPressed: () => _confirmAbandon(context, node, town, camp),
@@ -465,6 +483,47 @@ class _Here extends StatelessWidget {
     );
     return answer ?? false;
   }
+}
+
+/// What the fork says when the residue has taken the camp back.
+///
+/// **Said in the fiction rather than as a rule.** The player is not told that a
+/// counter reached three; they are told the wound closed, which is the same
+/// sentence the world would use about anywhere else nobody was standing. The
+/// place is named because a hero may be looking at one dungeon while the camp
+/// they lost was under another.
+///
+/// It replaces the fork rather than sitting above it: there is nothing left to
+/// resume and nothing left to give up, so the only door is the ordinary way in.
+class _CampLost extends StatelessWidget {
+  const _CampLost({required this.where});
+
+  final String where;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Text(
+      'Your camp was overrun. Residue has refilled the wound, and the camp at '
+      '$where is lost.',
+      style: monoDim,
+    ),
+  );
+}
+
+/// What the fork says on the last day the camp can still be reached.
+///
+/// One day wide, because a warning the player can still act on is the only
+/// kind worth printing — and the walk back to the stairs is still inside the
+/// window when this appears.
+class _CampWarning extends StatelessWidget {
+  const _CampWarning();
+
+  @override
+  Widget build(BuildContext context) => const Padding(
+    padding: EdgeInsets.only(bottom: 6),
+    child: Text('One more day and the camp is overrun.', style: monoDim),
+  );
 }
 
 /// One full-width door, as the world screen draws them.

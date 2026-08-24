@@ -14,6 +14,19 @@ void main() {
       expect(costs, [4, 6, 8, 10, 12]);
     });
 
+    test('costs forty triggers to reach level five, as the curve claims', () {
+      // arrange
+      const levels = [0, 1, 2, 3, 4];
+
+      // act
+      final toFive = [
+        for (final level in levels) xpToNext(level),
+      ].fold(0, (total, cost) => total + cost);
+
+      // assert
+      expect(toFive, 40);
+    });
+
     test('is monotonically increasing all the way to the cap', () {
       // arrange
       final costs = [

@@ -73,6 +73,7 @@ class ItemRow extends StatelessWidget {
     required this.name,
     required this.action,
     required this.onPressed,
+    this.reason,
     super.key,
   });
 
@@ -84,6 +85,18 @@ class ItemRow extends StatelessWidget {
 
   final VoidCallback? onPressed;
 
+  /// Why the button is dead, drawn only while it is.
+  ///
+  /// **A dead control that says nothing is a control the player thinks is
+  /// broken.** The row already has the gear screen's two-line grammar to borrow,
+  /// so the reason goes under the name where the eye already is — and it goes
+  /// away the moment the control works, because a sentence explaining a button
+  /// that does what it says is noise.
+  ///
+  /// A sentence rather than a marking, so the row reads in greyscale and reads
+  /// aloud.
+  final String? reason;
+
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 3),
@@ -94,11 +107,19 @@ class ItemRow extends StatelessWidget {
           child: Text(marking, style: monoDim, textAlign: TextAlign.center),
         ),
         Expanded(
-          child: Text(
-            name,
-            style: mono,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                name,
+                style: mono,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (onPressed == null && reason != null)
+                Text(reason!, style: monoDim),
+            ],
           ),
         ),
         const SizedBox(width: 8),

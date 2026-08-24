@@ -31,6 +31,7 @@ class Autosaver {
       _dungeon = from.dungeon,
       _inside = from.inside,
       _merchant = from.merchant,
+      _campDay = from.campDay,
       _world = from.world;
 
   final SaveStore _store;
@@ -47,6 +48,11 @@ class Autosaver {
   NodeId? _dungeon;
   bool _inside;
   MerchantVisit _merchant;
+
+  /// The day the camp was pitched, held for [_run]'s reason and required by the
+  /// document to be null exactly when there is no camp — so it is read off the
+  /// town beside the two crawl fields rather than worked out here.
+  int? _campDay;
   Whereabouts _world;
   Future<void> _queue = Future<void>.value();
 
@@ -77,6 +83,7 @@ class Autosaver {
         _dungeon = state.dungeon;
         _inside = state.run != null;
         _merchant = state.merchant;
+        _campDay = state.run == null ? state.campDay : null;
         saveNow();
       }),
     );
@@ -98,11 +105,13 @@ class Autosaver {
   void watchGame(GameBloc game) {
     _run = game.state.game;
     _inside = true;
+    _campDay = null;
     _watching.add(
       game.stream.listen((state) {
         if (state.game == _run) return;
         _run = state.game;
         _inside = true;
+        _campDay = null;
         saveNow();
       }),
     );
@@ -151,6 +160,7 @@ class Autosaver {
     _world,
     inside: _inside,
     dungeon: _dungeon,
+    campDay: _campDay,
   );
 
   /// Writes the document down.

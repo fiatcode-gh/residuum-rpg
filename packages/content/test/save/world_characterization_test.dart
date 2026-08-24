@@ -62,6 +62,7 @@ void main() {
         world: atTheCrypt(),
         run: camp,
         dungeon: cryptNode,
+        campDay: 0,
         inside: false,
       );
 
@@ -397,6 +398,7 @@ void main() {
           world: atNorthgate(),
           run: camp,
           dungeon: cryptNode,
+          campDay: 0,
         ),
       );
 
@@ -436,6 +438,7 @@ void main() {
           profile: suspendRun(profile, camp),
           run: camp,
           dungeon: cryptNode,
+          campDay: 0,
         ),
       );
 
@@ -444,6 +447,150 @@ void main() {
       expect(read.run!.rng.state, camp.rng.state);
       expect(read.run!.lootRng.state, camp.lootRng.state);
       expect(read.profile.visit, read.run!.visit);
+    });
+  });
+
+  group('the day a camp was pitched', () {
+    test('rides a round trip beside the camp', () {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = _onTheStairs(profile);
+
+      // act
+      final read = _roundTrip(
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: suspendRun(profile, camp),
+          run: camp,
+          dungeon: cryptNode,
+          campDay: 4,
+        ),
+      );
+
+      // assert
+      expect(read.campDay, 4);
+    });
+
+    test('is written down as a number beside inside', () {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = _onTheStairs(profile);
+
+      // act
+      final written = encodeSave(
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: suspendRun(profile, camp),
+          run: camp,
+          dungeon: cryptNode,
+          campDay: 4,
+        ),
+      );
+
+      // assert
+      expect(written, contains('"inside":false,"campDay":4,'));
+    });
+
+    test('a document without the key at all is refused by name', () {
+      // arrange
+      final written = _oneHero().replaceFirst('"campDay":null,', '');
+
+      // act
+      final read = decodeSave(written);
+
+      // assert
+      expect((read as SaveFailure).reason, contains('"campDay"'));
+    });
+
+    test('a camp with no day pitched is refused by name', () {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = _onTheStairs(profile);
+      final written = encodeSave(
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: suspendRun(profile, camp),
+          run: camp,
+          dungeon: cryptNode,
+          campDay: 4,
+        ),
+      ).replaceFirst('"campDay":4', '"campDay":null');
+
+      // act
+      final read = decodeSave(written);
+
+      // assert
+      expect(
+        (read as SaveFailure).reason,
+        contains('a camp without saying what day it was pitched'),
+      );
+    });
+
+    test('a day pitched with no camp to pitch is refused by name', () {
+      // arrange
+      final written = _oneHero().replaceFirst('"campDay":null', '"campDay":4');
+
+      // act
+      final read = decodeSave(written);
+
+      // assert
+      expect(
+        (read as SaveFailure).reason,
+        contains('the day a camp was pitched without having one'),
+      );
+    });
+
+    test('a hero standing inside their crawl has pitched nothing', () {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final written = encodeSave(
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: profile,
+          world: atTheCrypt(),
+          run: startDungeonRunAt(cryptNode, profile),
+          dungeon: cryptNode,
+          inside: true,
+        ),
+      ).replaceFirst('"campDay":null', '"campDay":4');
+
+      // act
+      final read = decodeSave(written);
+
+      // assert
+      expect(
+        (read as SaveFailure).reason,
+        contains('the day a camp was pitched without having one'),
+      );
+    });
+
+    test('a camp pitched before the world began is refused by name', () {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = _onTheStairs(profile);
+      final written = encodeSave(
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: suspendRun(profile, camp),
+          run: camp,
+          dungeon: cryptNode,
+          campDay: 4,
+        ),
+      ).replaceFirst('"campDay":4', '"campDay":-1');
+
+      // act
+      final read = decodeSave(written);
+
+      // assert
+      expect(
+        (read as SaveFailure).reason,
+        contains('the world starts on day zero'),
+      );
     });
   });
 
@@ -461,6 +608,7 @@ void main() {
           profile: suspendRun(profile, camp),
           run: camp,
           dungeon: seaCave,
+          campDay: 0,
         ),
       );
 
@@ -597,6 +745,7 @@ void main() {
           profile: suspendRun(profile, camp),
           run: camp,
           dungeon: seaCave,
+          campDay: 0,
         ),
       );
 
@@ -624,6 +773,7 @@ void main() {
           profile: suspendRun(profile, camp),
           run: camp,
           dungeon: ruinedKeep,
+          campDay: 0,
         ),
       );
 
@@ -647,6 +797,7 @@ void main() {
           profile: suspendRun(profile, camp),
           run: camp,
           dungeon: seaCave,
+          campDay: 0,
         ),
       );
       final next = read.run!.buildFloor(2);
@@ -679,6 +830,7 @@ void main() {
           profile: suspendRun(profile, camp),
           run: camp,
           dungeon: cryptNode,
+          campDay: 0,
         ),
       );
 

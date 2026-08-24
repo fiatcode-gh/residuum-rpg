@@ -18,6 +18,7 @@ SaveDocument _oneHero(
   world: run == null ? null : atTheCrypt(),
   run: run,
   dungeon: run == null ? null : (dungeon ?? cryptNode),
+  campDay: run == null || inside ? null : 0,
   inside: inside,
 );
 
