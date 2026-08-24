@@ -41,6 +41,31 @@ class _Outcome {
 /// of the dungeon.
 const int _turnBudget = 4000;
 
+/// Where the forty crypt runs end, and how many end there.
+///
+/// **The figure was a printed line for two milestones, and printing is not
+/// asserting.** The band above it (fifty to ninety-five percent) is wide enough
+/// to swallow a crypt that moved by six runs in either direction, so anything
+/// that quietly reshuffled the shipped dungeon would have left the suite green
+/// and the report unread. These are the numbers the crypt has always produced;
+/// pinning them is what makes the two new dungeons landing beside it provably
+/// additive rather than probably additive.
+///
+/// Twenty-four of the forty reach depth five alive, which is the same twenty-four
+/// the win count reads — the bot stops on arrival at the bottom, so a run that
+/// ends at five is a run that won.
+const Map<int, int> _cryptDepths = {1: 1, 2: 9, 3: 6, 5: 24};
+
+/// Where the forty sea-cave runs end, with [_kitted]'s gear.
+///
+/// Pinned beside the band for the crypt's reason, and the ordering test below is
+/// the other half: the band alone would let the cave drift past the keep and
+/// call it balanced.
+const Map<int, int> _seaCaveDepths = {3: 5, 5: 35};
+
+/// Where the forty keep runs end, with the same gear.
+const Map<int, int> _keepDepths = {2: 6, 3: 3, 5: 31};
+
 /// Plays one crawl on [worldSeed] with a fixed policy and reports what happened.
 ///
 /// The policy, in order: attack anything adjacent; drink under forty percent of
@@ -53,8 +78,67 @@ const int _turnBudget = 4000;
 /// and no better a tactician. That is deliberate: the win rate then measures
 /// the content — how much the dungeon hits for and how much loot it gives back
 /// — rather than measuring how well a bot explores in the dark.
-_Outcome _botCrawl({required int worldSeed, _Build build = _Build.greedy}) {
-  var game = newGame(worldSeed: worldSeed);
+_Outcome _botCrawl({required int worldSeed, _Build build = _Build.greedy}) =>
+    _botPlay(newGame(worldSeed: worldSeed), build);
+
+/// Plays one crawl of the dungeon at [node] with the mid-progression kit.
+///
+/// **A different door on purpose.** The crypt's bot walks in through [newGame]
+/// at visit zero, which is the door the shipped figure was measured through and
+/// the one thing about it that must not move. A themed dungeon has no such door
+/// and no legacy figure to protect, so it enters the way a player does — through
+/// [startDungeonRunAt], on the bumped visit — carrying [_kitted]'s gear.
+_Outcome _themedCrawl({
+  required NodeId node,
+  required int worldSeed,
+  _Build build = _Build.greedy,
+}) => _botPlay(startDungeonRunAt(node, _kitted(worldSeed)), build);
+
+/// The hero a themed dungeon is measured against: a crypt graduate.
+///
+/// **A test fixture, not content.** Nothing in the game hands a hero this, and
+/// nothing should: it stands for the state a player is plausibly in when they
+/// first walk two days past Northgate, and the bands below only mean anything
+/// against a stated starting point. A fresh hero measured in the keep would
+/// report that the keep is impossible, which is true and says nothing about
+/// whether it is well made.
+///
+/// Fine gear rather than Rare, because Fine is what the crypt actually gives up
+/// at the depths a graduate cleared; four potions rather than two, because
+/// shopping is the other thing the trip pays for; Arms, Might and Bulwark at
+/// five and Fleetfoot at nothing, because the greedy build wears everything it
+/// finds and heavy armour is what it finds most of.
+Profile _kitted(int worldSeed) => newProfile(worldSeed: worldSeed).copyWith(
+  equipment: const {
+    EquipSlot.mainHand: Item(
+      id: 'kit-weapon',
+      base: ironSword,
+      rarity: Rarity.fine,
+      affixes: [keen],
+    ),
+    EquipSlot.chest: Item(
+      id: 'kit-chest',
+      base: mailHauberk,
+      rarity: Rarity.fine,
+      affixes: [sturdy],
+    ),
+  },
+  inventory: const [
+    Item(id: 'kit-potion-1', base: healingPotion, rarity: Rarity.common),
+    Item(id: 'kit-potion-2', base: healingPotion, rarity: Rarity.common),
+    Item(id: 'kit-potion-3', base: healingPotion, rarity: Rarity.common),
+    Item(id: 'kit-potion-4', base: healingPotion, rarity: Rarity.common),
+  ],
+  skills: const {
+    SkillId.arms: SkillState(level: 5),
+    SkillId.might: SkillState(level: 5),
+    SkillId.bulwark: SkillState(level: 5),
+    SkillId.fleetfoot: SkillState(),
+  },
+);
+
+_Outcome _botPlay(GameState opening, _Build build) {
+  var game = opening;
   var turns = 0;
 
   while (turns < _turnBudget) {
@@ -205,6 +289,8 @@ void main() {
       expect(stalled, 0, reason: 'the bot stalled rather than played');
       expect(rate, greaterThanOrEqualTo(0.50), reason: 'still unfair: $rate');
       expect(rate, lessThanOrEqualTo(0.95), reason: 'trivial: $rate');
+      expect(wins, 24, reason: 'the crypt moved');
+      expect(_depthsReached(outcomes), _cryptDepths, reason: 'the crypt moved');
     });
 
     test('a run is decided by the dungeon, not by the turn budget', () {
@@ -283,16 +369,129 @@ void main() {
       );
       expect(greedyWins, greaterThan(0));
       expect(exploitWins, greaterThanOrEqualTo(0));
+      expect(greedyWins, 24, reason: 'the crypt moved');
+      expect(exploitWins, 7, reason: 'the exploit moved');
+    });
+  });
+
+  group('the sea-cave', () {
+    test('is survivable with a crypt graduate\'s kit, but not a formality', () {
+      // arrange
+      const seeds = 40;
+
+      // act
+      final outcomes = [
+        for (var seed = 1; seed <= seeds; seed++)
+          _themedCrawl(node: seaCave, worldSeed: seed),
+      ];
+      final wins = outcomes.where((outcome) => outcome.won).length;
+      final rate = wins / seeds;
+      final stalled = outcomes.where((outcome) => outcome.ranOut).length;
+
+      // assert
+      print(
+        'sea-cave: $wins/$seeds won (${(rate * 100).toStringAsFixed(1)}%), '
+        'stalled $stalled, died at ${_deathDepths(outcomes)}',
+      );
+      expect(stalled, 0, reason: 'the bot stalled rather than played');
+      expect(rate, greaterThanOrEqualTo(0.50), reason: 'still unfair: $rate');
+      expect(rate, lessThanOrEqualTo(0.95), reason: 'trivial: $rate');
+      expect(wins, 35, reason: 'the sea-cave moved');
+      expect(_depthsReached(outcomes), _seaCaveDepths);
+    });
+
+    test('plays out the same way twice on one seed', () {
+      // arrange
+      const seed = 7;
+
+      // act
+      final one = _themedCrawl(node: seaCave, worldSeed: seed);
+      final other = _themedCrawl(node: seaCave, worldSeed: seed);
+
+      // assert
+      expect(
+        (one.depth, one.alive, one.turns),
+        (other.depth, other.alive, other.turns),
+      );
+    });
+  });
+
+  group('the ruined keep', () {
+    test('is the hardest walk and the hardest floor, and still winnable', () {
+      // arrange
+      const seeds = 40;
+
+      // act
+      final outcomes = [
+        for (var seed = 1; seed <= seeds; seed++)
+          _themedCrawl(node: ruinedKeep, worldSeed: seed),
+      ];
+      final wins = outcomes.where((outcome) => outcome.won).length;
+      final rate = wins / seeds;
+      final stalled = outcomes.where((outcome) => outcome.ranOut).length;
+
+      // assert
+      print(
+        'ruined keep: $wins/$seeds won (${(rate * 100).toStringAsFixed(1)}%), '
+        'stalled $stalled, died at ${_deathDepths(outcomes)}',
+      );
+      expect(stalled, 0, reason: 'the bot stalled rather than played');
+      expect(rate, greaterThanOrEqualTo(0.50), reason: 'still unfair: $rate');
+      expect(rate, lessThanOrEqualTo(0.95), reason: 'trivial: $rate');
+      expect(wins, 31, reason: 'the ruined keep moved');
+      expect(_depthsReached(outcomes), _keepDepths);
+    });
+
+    test('plays out the same way twice on one seed', () {
+      // arrange
+      const seed = 7;
+
+      // act
+      final one = _themedCrawl(node: ruinedKeep, worldSeed: seed);
+      final other = _themedCrawl(node: ruinedKeep, worldSeed: seed);
+
+      // assert
+      expect(
+        (one.depth, one.alive, one.turns),
+        (other.depth, other.alive, other.turns),
+      );
+    });
+
+    test('is harder than the sea-cave with the same kit', () {
+      // arrange
+      const seeds = 40;
+
+      // act
+      final cave = [
+        for (var seed = 1; seed <= seeds; seed++)
+          _themedCrawl(node: seaCave, worldSeed: seed),
+      ].where((outcome) => outcome.won).length;
+      final keep = [
+        for (var seed = 1; seed <= seeds; seed++)
+          _themedCrawl(node: ruinedKeep, worldSeed: seed),
+      ].where((outcome) => outcome.won).length;
+
+      // assert — the ordering rather than the gap, because the gap is a tuning
+      // number and the ordering is the design: two days out has to cost
+      // something the one-day trip does not
+      print('sea-cave $cave/$seeds vs ruined keep $keep/$seeds');
+      expect(keep, lessThan(cave));
     });
   });
 }
 
 /// How many runs ended on each depth, for the balance report.
 String _deathDepths(List<_Outcome> outcomes) {
+  final byDepth = _depthsReached(outcomes);
+  final depths = byDepth.keys.toList()..sort();
+  return [for (final depth in depths) '$depth:${byDepth[depth]}'].join(' ');
+}
+
+/// How many runs ended on each depth, as the figure rather than the sentence.
+Map<int, int> _depthsReached(List<_Outcome> outcomes) {
   final byDepth = <int, int>{};
   for (final outcome in outcomes) {
     byDepth[outcome.depth] = (byDepth[outcome.depth] ?? 0) + 1;
   }
-  final depths = byDepth.keys.toList()..sort();
-  return [for (final depth in depths) '$depth:${byDepth[depth]}'].join(' ');
+  return byDepth;
 }

@@ -9,7 +9,8 @@ SaveDocument _twoHeroes() => SaveDocument(
     'hero-1': SavedHero(
       label: 'Ilse',
       profile: newProfile(worldSeed: 111).copyWith(gold: 40, visit: 2),
-      run: startDungeonRun(newProfile(worldSeed: 111)),
+      run: startDungeonRunAt(cryptNode, newProfile(worldSeed: 111)),
+      dungeon: cryptNode,
     ),
     'hero-2': SavedHero(
       label: 'Bram',
@@ -279,7 +280,8 @@ void main() {
         label: 'Ilse',
         profile: newProfile(worldSeed: 111)
             .copyWith(gold: 40, bankedGold: 90, visit: 2),
-        run: startDungeonRun(newProfile(worldSeed: 111)),
+        run: startDungeonRunAt(cryptNode, newProfile(worldSeed: 111)),
+        dungeon: cryptNode,
       );
 
       // act

@@ -26,14 +26,30 @@ class SavedHero extends Equatable {
   /// defaulted in *code*, so a hero built in a test that has nothing to say
   /// about the map does not have to say something anyway. The codec never uses
   /// the fallback — it refuses a document that left the block out.
+  ///
+  /// Throws [ArgumentError] when [run] and [dungeon] disagree about whether
+  /// there is a crawl. The pair is one fact written as two fields and neither
+  /// half means anything alone: a crawl nobody can say the place of cannot be
+  /// laid out past the floor it is standing on, and a place named with no crawl
+  /// in it is a hero who is somewhere they are not. Refusing at construction is
+  /// what keeps every reader above from having to ask.
   SavedHero({
     required this.label,
     required this.profile,
     Whereabouts? world,
     this.run,
+    this.dungeon,
     this.merchant = MerchantVisit.none,
     this.inside = false,
-  }) : world = world ?? newWhereabouts();
+  }) : world = world ?? newWhereabouts() {
+    if ((run == null) != (dungeon == null)) {
+      throw ArgumentError.value(
+        dungeon,
+        'dungeon',
+        'a hero has a crawl and a dungeon, or neither',
+      );
+    }
+  }
 
   /// What the roster calls this hero.
   final String label;
@@ -51,6 +67,22 @@ class SavedHero extends Equatable {
   /// one. A hero who walked out at the stairs still has all of this and is not
   /// in it.
   final GameState? run;
+
+  /// Which dungeon [run] is a crawl of, or null exactly when there is no crawl.
+  ///
+  /// **Beside the run rather than inside it, and the reason is where the run
+  /// comes from.** A [GameState] is a crawl in progress and knows nothing about
+  /// the world map — `step` never asks where in the world the hero is, and a
+  /// road fight is a [GameState] with no node to name at all. Putting a node on
+  /// the state would drag world identity into core and hand every road
+  /// encounter a field it could only leave empty.
+  ///
+  /// It cannot be worked out from anywhere else, which is why it is written
+  /// down. A hero inside a crawl is standing on the dungeon's own node and
+  /// [Whereabouts.at] would answer — but a hero *camped* away from one is
+  /// standing in a town, and then nothing on disk knows which dungeon has their
+  /// name on it. The camp is exactly the case the field exists for.
+  final NodeId? dungeon;
 
   /// What the merchant remembers of this hero's current visit.
   ///
@@ -96,17 +128,27 @@ class SavedHero extends Equatable {
     MerchantVisit merchant,
     Whereabouts world, {
     required bool inside,
+    required NodeId? dungeon,
   }) => SavedHero(
     label: label,
     profile: profile,
     world: world,
     run: run,
+    dungeon: dungeon,
     merchant: merchant,
     inside: inside,
   );
 
   @override
-  List<Object?> get props => [label, profile, world, run, merchant, inside];
+  List<Object?> get props => [
+    label,
+    profile,
+    world,
+    run,
+    dungeon,
+    merchant,
+    inside,
+  ];
 
   @override
   String toString() => 'SavedHero($label, ${_standing()})';
@@ -141,6 +183,7 @@ final class SaveDocument extends SaveRead {
     Whereabouts? world,
     MerchantVisit merchant = MerchantVisit.none,
     GameState? run,
+    NodeId? dungeon,
     bool inside = false,
   }) : active = id,
        heroes = {
@@ -149,6 +192,7 @@ final class SaveDocument extends SaveRead {
            profile: profile,
            world: world,
            run: run,
+           dungeon: dungeon,
            merchant: merchant,
            inside: inside,
          ),
@@ -172,6 +216,9 @@ final class SaveDocument extends SaveRead {
   /// The active hero's crawl, or null when they have none waiting.
   GameState? get run => hero.run;
 
+  /// Which dungeon the active hero's crawl is in, or null when they have none.
+  NodeId? get dungeon => hero.dungeon;
+
   /// Whether the active hero is standing in their [run] rather than in town.
   bool get inside => hero.inside;
 
@@ -191,6 +238,7 @@ final class SaveDocument extends SaveRead {
     MerchantVisit merchant,
     Whereabouts world, {
     required bool inside,
+    required NodeId? dungeon,
   }) => SaveDocument(
     active: active,
     heroes: {
@@ -202,6 +250,7 @@ final class SaveDocument extends SaveRead {
                 merchant,
                 world,
                 inside: inside,
+                dungeon: dungeon,
               )
             : entry.value,
     },

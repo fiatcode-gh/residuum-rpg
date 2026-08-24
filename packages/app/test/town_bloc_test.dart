@@ -37,7 +37,7 @@ void main() {
     blocTest<TownBloc, TownViewState>(
       'entering the dungeon starts a run on the bumped visit',
       build: () => TownBloc(profile: _fresh()),
-      act: (bloc) => bloc.add(const EnterDungeonPressed()),
+      act: (bloc) => bloc.add(EnterDungeonPressed(cryptNode)),
       verify: (bloc) {
         expect(bloc.state.run, isNotNull);
         expect(bloc.state.run!.visit, 1);
@@ -48,7 +48,7 @@ void main() {
     blocTest<TownBloc, TownViewState>(
       'the run carries the pack and the purse down with it',
       build: () => TownBloc(profile: _rich()),
-      act: (bloc) => bloc.add(const EnterDungeonPressed()),
+      act: (bloc) => bloc.add(EnterDungeonPressed(cryptNode)),
       verify: (bloc) {
         expect(bloc.state.run!.gold, 500);
         expect(
@@ -62,7 +62,7 @@ void main() {
       'leaving alive brings the haul home and clears the run',
       build: () => TownBloc(profile: _fresh()),
       act: (bloc) async {
-        bloc.add(const EnterDungeonPressed());
+        bloc.add(EnterDungeonPressed(cryptNode));
         await bloc.stream.first;
         bloc.add(
           RunEnded(
@@ -84,7 +84,7 @@ void main() {
       'leaving alive does not heal the wounds the run left',
       build: () => TownBloc(profile: _fresh()),
       act: (bloc) async {
-        bloc.add(const EnterDungeonPressed());
+        bloc.add(EnterDungeonPressed(cryptNode));
         await bloc.stream.first;
         final run = bloc.state.run!;
         bloc.add(
@@ -100,7 +100,7 @@ void main() {
         profile: _fresh().copyWith(bank: [_cap('vault-1')], bankedGold: 90),
       ),
       act: (bloc) async {
-        bloc.add(const EnterDungeonPressed());
+        bloc.add(EnterDungeonPressed(cryptNode));
         await bloc.stream.first;
         bloc.add(
           RunEnded(
@@ -121,7 +121,7 @@ void main() {
       'dying keeps the gear the hero was wearing and wakes it whole',
       build: () => TownBloc(profile: _fresh()),
       act: (bloc) async {
-        bloc.add(const EnterDungeonPressed());
+        bloc.add(EnterDungeonPressed(cryptNode));
         await bloc.stream.first;
         final run = bloc.state.run!;
         bloc.add(
@@ -141,11 +141,11 @@ void main() {
       're-entering after a death reshuffles the dungeon',
       build: () => TownBloc(profile: _fresh()),
       act: (bloc) async {
-        bloc.add(const EnterDungeonPressed());
+        bloc.add(EnterDungeonPressed(cryptNode));
         await bloc.stream.first;
         bloc.add(RunEnded(bloc.state.run!, died: true));
         await bloc.stream.first;
-        bloc.add(const EnterDungeonPressed());
+        bloc.add(EnterDungeonPressed(cryptNode));
       },
       verify: (bloc) => expect(bloc.state.run!.visit, 2),
     );
@@ -157,7 +157,7 @@ void main() {
         _shelfBefore = bloc.state.stock
             .map((item) => item.displayName)
             .toList();
-        bloc.add(const EnterDungeonPressed());
+        bloc.add(EnterDungeonPressed(cryptNode));
         await bloc.stream.first;
         bloc.add(RunEnded(bloc.state.run!, died: false));
       },
@@ -299,7 +299,7 @@ void main() {
       build: () => TownBloc(profile: _rich()),
       act: (bloc) async {
         bloc.add(const DepositGoldPressed(400));
-        bloc.add(const EnterDungeonPressed());
+        bloc.add(EnterDungeonPressed(cryptNode));
         await bloc.stream.firstWhere((state) => state.run != null);
         bloc.add(RunEnded(bloc.state.run!, died: true));
       },
@@ -414,7 +414,7 @@ void main() {
       act: (bloc) async {
         bloc.add(const WearPressed('held-1'));
         await bloc.stream.first;
-        bloc.add(const EnterDungeonPressed());
+        bloc.add(EnterDungeonPressed(cryptNode));
       },
       verify: (bloc) =>
           expect(bloc.state.run!.equipment[EquipSlot.offHand]?.id, 'held-1'),
@@ -508,7 +508,8 @@ void main() {
       'dying out there leaves the camp standing at the crypt',
       build: () => TownBloc(
         profile: _rich(),
-        suspended: startDungeonRun(_rich()).copyWith(depth: 3),
+        suspended: startDungeonRunAt(cryptNode, _rich()).copyWith(depth: 3),
+        dungeon: cryptNode,
       ),
       act: (bloc) => bloc.add(
         EncounterEnded(
@@ -526,7 +527,8 @@ void main() {
       'walking away from a fight leaves the camp standing too',
       build: () => TownBloc(
         profile: _rich(),
-        suspended: startDungeonRun(_rich()).copyWith(depth: 2),
+        suspended: startDungeonRunAt(cryptNode, _rich()).copyWith(depth: 2),
+        dungeon: cryptNode,
       ),
       act: (bloc) => bloc.add(
         EncounterEnded(
@@ -540,8 +542,15 @@ void main() {
     blocTest<TownBloc, TownViewState>(
       'never moves the visit, so a camp stays resumable',
       build: () {
-        final camped = suspendRun(_rich(), startDungeonRun(_rich()));
-        return TownBloc(profile: camped, suspended: startDungeonRun(_rich()));
+        final camped = suspendRun(
+          _rich(),
+          startDungeonRunAt(cryptNode, _rich()),
+        );
+        return TownBloc(
+          profile: camped,
+          suspended: startDungeonRunAt(cryptNode, _rich()),
+          dungeon: cryptNode,
+        );
       },
       act: (bloc) => bloc.add(
         EncounterEnded(
@@ -643,7 +652,8 @@ void main() {
       build: () => TownBloc(
         profile: _rich(),
         town: stonebridge,
-        suspended: startDungeonRun(_rich()),
+        suspended: startDungeonRunAt(cryptNode, _rich()),
+        dungeon: cryptNode,
       ),
       act: (bloc) => bloc.add(ArrivedInTown(northgate)),
       verify: (bloc) {
@@ -772,7 +782,7 @@ void main() {
         await bloc.stream.first;
         bloc.add(const SellPressed('held-1'));
         await bloc.stream.first;
-        bloc.add(const EnterDungeonPressed());
+        bloc.add(EnterDungeonPressed(cryptNode));
         await bloc.stream.first;
         bloc.add(RunEnded(bloc.state.run!, died: false));
       },
@@ -788,7 +798,7 @@ void main() {
       act: (bloc) async {
         bloc.add(const SellPressed('held-1'));
         await bloc.stream.first;
-        bloc.add(const EnterDungeonPressed());
+        bloc.add(EnterDungeonPressed(cryptNode));
       },
       verify: (bloc) => expect(bloc.state.merchant.sold.single.id, 'held-1'),
     );
@@ -810,7 +820,7 @@ void main() {
       'suspending brings the hero home and keeps the crawl',
       build: () => TownBloc(profile: _fresh()),
       act: (bloc) async {
-        bloc.add(const EnterDungeonPressed());
+        bloc.add(EnterDungeonPressed(cryptNode));
         await bloc.stream.first;
         final run = bloc.state.run!;
         bloc.add(
@@ -841,7 +851,7 @@ void main() {
       act: (bloc) async {
         bloc.add(BuyPressed(bloc.state.stock.first.id));
         await bloc.stream.first;
-        bloc.add(const EnterDungeonPressed());
+        bloc.add(EnterDungeonPressed(cryptNode));
         await bloc.stream.first;
         bloc.add(RunSuspended(bloc.state.run!));
       },
@@ -855,7 +865,7 @@ void main() {
       'the shelf a camped hero shops at is the one their visit rolled',
       build: () => TownBloc(profile: _fresh()),
       act: (bloc) async {
-        bloc.add(const EnterDungeonPressed());
+        bloc.add(EnterDungeonPressed(cryptNode));
         await bloc.stream.first;
         bloc.add(RunSuspended(bloc.state.run!));
       },
@@ -873,8 +883,11 @@ void main() {
 
     blocTest<TownBloc, TownViewState>(
       'shopping while camped does not lose the camp',
-      build: () =>
-          TownBloc(profile: _rich(), suspended: startDungeonRun(_rich())),
+      build: () => TownBloc(
+        profile: _rich(),
+        suspended: startDungeonRunAt(cryptNode, _rich()),
+        dungeon: cryptNode,
+      ),
       act: (bloc) async {
         bloc.add(BuyPressed(bloc.state.stock.first.id));
         await bloc.stream.first;
@@ -887,21 +900,27 @@ void main() {
 
     blocTest<TownBloc, TownViewState>(
       'selling while camped keeps the camp, streams and all',
-      build: () =>
-          TownBloc(profile: _rich(), suspended: startDungeonRun(_rich())),
+      build: () => TownBloc(
+        profile: _rich(),
+        suspended: startDungeonRunAt(cryptNode, _rich()),
+        dungeon: cryptNode,
+      ),
       act: (bloc) => bloc.add(const SellPressed('held-1')),
       verify: (bloc) {
         expect(
           bloc.state.suspended!.rng.state,
-          startDungeonRun(_rich()).rng.state,
+          startDungeonRunAt(cryptNode, _rich()).rng.state,
         );
       },
     );
 
     blocTest<TownBloc, TownViewState>(
       'a refused transaction does not lose the camp either',
-      build: () =>
-          TownBloc(profile: _fresh(), suspended: startDungeonRun(_fresh())),
+      build: () => TownBloc(
+        profile: _fresh(),
+        suspended: startDungeonRunAt(cryptNode, _fresh()),
+        dungeon: cryptNode,
+      ),
       act: (bloc) => bloc.add(const WithdrawGoldPressed(9999)),
       verify: (bloc) {
         expect(bloc.state.notice, isNotNull);
@@ -911,8 +930,11 @@ void main() {
 
     blocTest<TownBloc, TownViewState>(
       'resuming hands back the crawl with the town business in it',
-      build: () =>
-          TownBloc(profile: _rich(), suspended: startDungeonRun(_fresh())),
+      build: () => TownBloc(
+        profile: _rich(),
+        suspended: startDungeonRunAt(cryptNode, _fresh()),
+        dungeon: cryptNode,
+      ),
       act: (bloc) async {
         bloc.add(BuyPressed(bloc.state.stock.first.id));
         await bloc.stream.first;
@@ -933,14 +955,15 @@ void main() {
       'resuming does not reshuffle the dungeon',
       build: () => TownBloc(
         profile: _fresh().copyWith(visit: 1),
-        suspended: startDungeonRun(_fresh()),
+        suspended: startDungeonRunAt(cryptNode, _fresh()),
+        dungeon: cryptNode,
       ),
       act: (bloc) => bloc.add(const ResumeCrawlPressed()),
       verify: (bloc) {
         expect(bloc.state.run!.visit, 1);
         expect(
           bloc.state.run!.map.toAscii(),
-          startDungeonRun(_fresh()).map.toAscii(),
+          startDungeonRunAt(cryptNode, _fresh()).map.toAscii(),
         );
       },
     );
@@ -956,9 +979,10 @@ void main() {
       'delving anew gives the camp up and reshuffles',
       build: () => TownBloc(
         profile: _fresh().copyWith(visit: 1),
-        suspended: startDungeonRun(_fresh()),
+        suspended: startDungeonRunAt(cryptNode, _fresh()),
+        dungeon: cryptNode,
       ),
-      act: (bloc) => bloc.add(const DelveAnewPressed()),
+      act: (bloc) => bloc.add(DelveAnewPressed(cryptNode)),
       verify: (bloc) {
         expect(bloc.state.suspended, isNull);
         expect(bloc.state.run!.visit, 2);
@@ -968,8 +992,11 @@ void main() {
 
     blocTest<TownBloc, TownViewState>(
       'dying in a resumed crawl leaves no camp behind',
-      build: () =>
-          TownBloc(profile: _fresh(), suspended: startDungeonRun(_fresh())),
+      build: () => TownBloc(
+        profile: _fresh(),
+        suspended: startDungeonRunAt(cryptNode, _fresh()),
+        dungeon: cryptNode,
+      ),
       act: (bloc) async {
         bloc.add(const ResumeCrawlPressed());
         await bloc.stream.first;
@@ -990,7 +1017,7 @@ void main() {
     blocTest<TownBloc, TownViewState>(
       'entering fresh from town leaves no camp behind either',
       build: () => TownBloc(profile: _fresh()),
-      act: (bloc) => bloc.add(const EnterDungeonPressed()),
+      act: (bloc) => bloc.add(EnterDungeonPressed(cryptNode)),
       verify: (bloc) {
         expect(bloc.state.suspended, isNull);
         expect(bloc.state.run, isNotNull);
@@ -1000,8 +1027,12 @@ void main() {
     blocTest<TownBloc, TownViewState>(
       'walking out of a resumed crawl keeps the visit the merchant remembers',
       build: () {
-        final camp = startDungeonRun(_rich());
-        return TownBloc(profile: suspendRun(_rich(), camp), suspended: camp);
+        final camp = startDungeonRunAt(cryptNode, _rich());
+        return TownBloc(
+          profile: suspendRun(_rich(), camp),
+          suspended: camp,
+          dungeon: cryptNode,
+        );
       },
       act: (bloc) async {
         _boughtId = bloc.state.stock.first.id;
@@ -1027,8 +1058,12 @@ void main() {
     blocTest<TownBloc, TownViewState>(
       'walking out of a resumed crawl keeps what is on the counter too',
       build: () {
-        final camp = startDungeonRun(_rich());
-        return TownBloc(profile: suspendRun(_rich(), camp), suspended: camp);
+        final camp = startDungeonRunAt(cryptNode, _rich());
+        return TownBloc(
+          profile: suspendRun(_rich(), camp),
+          suspended: camp,
+          dungeon: cryptNode,
+        );
       },
       act: (bloc) async {
         bloc.add(const SellPressed('held-1'));
@@ -1045,7 +1080,8 @@ void main() {
       // arrange
       final bloc = TownBloc(
         profile: _fresh(),
-        suspended: startDungeonRun(_fresh()),
+        suspended: startDungeonRunAt(cryptNode, _fresh()),
+        dungeon: cryptNode,
       );
       final seen = <(bool, bool)>[];
 
@@ -1062,5 +1098,155 @@ void main() {
       expect(seen, everyElement(isNot((true, true))));
       await bloc.close();
     });
+  });
+
+  group('which dungeon the town opens', () {
+    blocTest<TownBloc, TownViewState>(
+      'entering at the sea-cave starts the sea-cave, not the crypt',
+      build: () => TownBloc(profile: _fresh()),
+      act: (bloc) => bloc.add(EnterDungeonPressed(seaCave)),
+      verify: (bloc) {
+        expect(bloc.state.dungeon, seaCave);
+        expect(
+          bloc.state.run!.map.toAscii(),
+          startDungeonRunAt(seaCave, _fresh()).map.toAscii(),
+        );
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'entering at the ruined keep starts the ruined keep',
+      build: () => TownBloc(profile: _fresh()),
+      act: (bloc) => bloc.add(EnterDungeonPressed(ruinedKeep)),
+      verify: (bloc) {
+        expect(bloc.state.dungeon, ruinedKeep);
+        expect(
+          bloc.state.run!.map.toAscii(),
+          startDungeonRunAt(ruinedKeep, _fresh()).map.toAscii(),
+        );
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'delving anew at a node gives the camp up for that node',
+      build: () => TownBloc(
+        profile: _fresh(),
+        suspended: startDungeonRunAt(cryptNode, _fresh()),
+        dungeon: cryptNode,
+      ),
+      act: (bloc) => bloc.add(DelveAnewPressed(seaCave)),
+      verify: (bloc) {
+        expect(bloc.state.dungeon, seaCave);
+        expect(bloc.state.suspended, isNull);
+        expect(
+          bloc.state.run!.map.toAscii(),
+          startDungeonRunAt(seaCave, _fresh()).map.toAscii(),
+        );
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'walking out at the stairs leaves the camp with its dungeon on it',
+      build: () => TownBloc(profile: _fresh()),
+      act: (bloc) async {
+        bloc.add(EnterDungeonPressed(seaCave));
+        final entered = await bloc.stream.first;
+        bloc.add(RunSuspended(entered.run!));
+      },
+      verify: (bloc) {
+        expect(bloc.state.suspended, isNotNull);
+        expect(bloc.state.dungeon, seaCave);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a transaction while camped carries the camp\'s dungeon forward',
+      build: () => TownBloc(
+        profile: _rich(),
+        suspended: startDungeonRunAt(seaCave, _rich()),
+        dungeon: seaCave,
+      ),
+      act: (bloc) => bloc.add(const RestPressed()),
+      verify: (bloc) {
+        expect(bloc.state.suspended, isNotNull);
+        expect(bloc.state.dungeon, seaCave);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'arriving in a town carries the camp\'s dungeon forward',
+      build: () => TownBloc(
+        profile: _rich(),
+        suspended: startDungeonRunAt(ruinedKeep, _rich()),
+        dungeon: ruinedKeep,
+      ),
+      act: (bloc) => bloc.add(ArrivedInTown(northgate)),
+      verify: (bloc) {
+        expect(bloc.state.suspended, isNotNull);
+        expect(bloc.state.dungeon, ruinedKeep);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a fight on the road leaves the camp\'s dungeon where it was',
+      build: () => TownBloc(
+        profile: _rich(),
+        suspended: startDungeonRunAt(seaCave, _rich()),
+        dungeon: seaCave,
+      ),
+      act: (bloc) => bloc.add(
+        EncounterEnded(startRoadEncounter(_rich(), day: 3), died: true),
+      ),
+      verify: (bloc) {
+        expect(bloc.state.suspended, isNotNull);
+        expect(bloc.state.dungeon, seaCave);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'the run ending takes the dungeon with it',
+      build: () => TownBloc(profile: _fresh()),
+      act: (bloc) async {
+        bloc.add(EnterDungeonPressed(seaCave));
+        final entered = await bloc.stream.first;
+        bloc.add(RunEnded(entered.run!, died: true));
+      },
+      verify: (bloc) {
+        expect(bloc.state.run, isNull);
+        expect(bloc.state.suspended, isNull);
+        expect(bloc.state.dungeon, isNull);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'walking back into a camp keeps saying which dungeon it is',
+      build: () => TownBloc(
+        profile: _fresh(),
+        suspended: startDungeonRunAt(ruinedKeep, _fresh()),
+        dungeon: ruinedKeep,
+      ),
+      act: (bloc) => bloc.add(const ResumeCrawlPressed()),
+      verify: (bloc) {
+        expect(bloc.state.run, isNotNull);
+        expect(bloc.state.dungeon, ruinedKeep);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'entering a new dungeon bumps the visit and turns the shelf over',
+      build: () => TownBloc(profile: _rich()),
+      act: (bloc) async {
+        bloc.add(BuyPressed(bloc.state.stock.first.id));
+        await bloc.stream.first;
+        bloc.add(EnterDungeonPressed(seaCave));
+        final entered = await bloc.stream.first;
+        bloc.add(RunEnded(entered.run!, died: false));
+      },
+      verify: (bloc) {
+        expect(bloc.state.profile.visit, 1);
+        expect(bloc.state.merchant, MerchantVisit.none);
+        expect(bloc.state.stock, isNotEmpty);
+      },
+    );
   });
 }

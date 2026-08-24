@@ -16,6 +16,7 @@ SaveDocument _one(Profile profile, {GameState? run, bool inside = false}) =>
       profile: profile,
       world: run == null ? null : atTheCrypt(),
       run: run,
+      dungeon: run == null ? null : cryptNode,
       inside: inside,
     );
 
@@ -72,7 +73,7 @@ void main() {
       final files = MemorySaveFiles();
       final store = SaveStore(files);
       final profile = newProfile(worldSeed: 909);
-      final run = startDungeonRun(profile);
+      final run = startDungeonRunAt(cryptNode, profile);
       await store.save(_one(profile, run: run));
 
       // act
@@ -272,7 +273,10 @@ void main() {
         // arrange
         final files = MemorySaveFiles();
         final store = SaveStore(files);
-        final suspended = startDungeonRun(newProfile(worldSeed: 111));
+        final suspended = startDungeonRunAt(
+          cryptNode,
+          newProfile(worldSeed: 111),
+        );
         final was = SaveDocument(
           active: 'hero-2',
           heroes: {
@@ -280,6 +284,7 @@ void main() {
               label: 'Ilse',
               profile: newProfile(worldSeed: 111),
               run: suspended,
+              dungeon: cryptNode,
               merchant: MerchantVisit(
                 bought: const ['market-stonebridge-0-potion-1'],
                 town: stonebridge,
@@ -392,7 +397,9 @@ void main() {
       // arrange
       final store = SaveStore(MemorySaveFiles());
       final profile = newProfile(worldSeed: 424242);
-      await store.save(_one(profile, run: startDungeonRun(profile)));
+      await store.save(
+        _one(profile, run: startDungeonRunAt(cryptNode, profile)),
+      );
 
       // act
       final booted = await bootFrom(store, rollWorldSeed: () => 1);
@@ -407,7 +414,7 @@ void main() {
       final store = SaveStore(MemorySaveFiles());
       final profile = newProfile(worldSeed: 424242);
       await store.save(
-        _one(profile, run: startDungeonRun(profile), inside: true),
+        _one(profile, run: startDungeonRunAt(cryptNode, profile), inside: true),
       );
 
       // act
@@ -458,7 +465,8 @@ void main() {
           'hero-1': SavedHero(
             label: 'Ilse',
             profile: camper,
-            run: startDungeonRun(camper),
+            run: startDungeonRunAt(cryptNode, camper),
+            dungeon: cryptNode,
           ),
           'hero-2': SavedHero(
             label: 'Bram',

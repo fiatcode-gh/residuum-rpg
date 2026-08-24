@@ -16,6 +16,7 @@ SaveDocument _twoHeroes({GameState? ilseRun, bool ilseInside = true}) =>
           profile: newProfile(worldSeed: 111).copyWith(gold: 40),
           world: ilseRun == null ? null : atTheCrypt(),
           run: ilseRun,
+          dungeon: ilseRun == null ? null : cryptNode,
           inside: ilseRun != null && ilseInside,
         ),
         'hero-2': SavedHero(
@@ -54,7 +55,9 @@ void main() {
     ) async {
       // arrange
       final app = PumpedApp(
-        _twoHeroes(ilseRun: startDungeonRun(newProfile(worldSeed: 111))),
+        _twoHeroes(
+          ilseRun: startDungeonRunAt(cryptNode, newProfile(worldSeed: 111)),
+        ),
       );
       await app.pump(tester);
 
@@ -64,7 +67,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.textContaining('Depth 1/'), findsOneWidget);
+      expect(find.textContaining('The Crypt — depth 1/'), findsOneWidget);
       expect(app.saved!.active, 'hero-1');
     });
 
@@ -74,7 +77,7 @@ void main() {
       // arrange
       final app = PumpedApp(
         _twoHeroes(
-          ilseRun: startDungeonRun(newProfile(worldSeed: 111)),
+          ilseRun: startDungeonRunAt(cryptNode, newProfile(worldSeed: 111)),
           ilseInside: false,
         ),
       );

@@ -9,6 +9,7 @@ import '../support/world_nav.dart';
 SaveDocument _oneHero(
   Profile profile, {
   GameState? run,
+  NodeId? dungeon,
   bool inside = false,
   Whereabouts? world,
 }) => SaveDocument.one(
@@ -17,6 +18,7 @@ SaveDocument _oneHero(
   profile: profile,
   world: world ?? (run == null ? null : atTheCrypt()),
   run: run,
+  dungeon: run == null ? null : (dungeon ?? cryptNode),
   inside: inside,
 );
 
@@ -28,6 +30,7 @@ SaveDocument _oneHero(
 SaveDocument _campedAndHome(Profile profile, GameState camp) => _oneHero(
   suspendRun(profile, camp),
   run: camp,
+  dungeon: cryptNode,
   world: newWhereabouts()
       .arrivingAt(residuumWorld, cryptNode)
       .arrivingAt(residuumWorld, stonebridge),
@@ -36,7 +39,7 @@ SaveDocument _campedAndHome(Profile profile, GameState camp) => _oneHero(
 /// A crawl with the hero standing on the stairs down, so the `Leave` control is
 /// on screen without a test having to walk there.
 GameState _onTheStairs(Profile profile) {
-  final run = startDungeonRun(profile);
+  final run = startDungeonRunAt(cryptNode, profile);
   return run.copyWith(hero: run.hero.copyWith(position: run.stairsDown));
 }
 
@@ -86,6 +89,7 @@ void main() {
         _oneHero(
           profile,
           run: wounded.copyWith(hero: wounded.hero.copyWith(hp: 6)),
+          dungeon: cryptNode,
           inside: true,
         ),
       );
@@ -116,7 +120,7 @@ void main() {
 
       // assert
       expect(find.text('Resume the crawl (depth 2)'), findsOneWidget);
-      expect(find.text('Enter Dungeon'), findsNothing);
+      expect(find.text('Enter The Crypt'), findsNothing);
     });
   });
 
@@ -133,7 +137,7 @@ void main() {
       await app.pump(tester);
 
       // assert
-      expect(find.text('Enter Dungeon'), findsOneWidget);
+      expect(find.text('Enter The Crypt'), findsOneWidget);
       expect(find.textContaining('Resume the crawl'), findsNothing);
       expect(find.text('Delve anew'), findsNothing);
     });
@@ -149,7 +153,7 @@ void main() {
 
       // assert
       expect(find.text('At Stonebridge'), findsOneWidget);
-      expect(find.text('Enter Dungeon'), findsNothing);
+      expect(find.text('Enter The Crypt'), findsNothing);
       expect(find.text('Enter Stonebridge'), findsOneWidget);
     });
 
@@ -260,7 +264,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.textContaining('Depth 2/'), findsOneWidget);
+      expect(find.textContaining('The Crypt — depth 2/'), findsOneWidget);
       expect(app.saved!.run!.hero.position, camp.hero.position);
       expect(app.saved!.run!.visit, camp.visit);
     });
@@ -334,7 +338,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.textContaining('Depth 1/'), findsOneWidget);
+      expect(find.textContaining('The Crypt — depth 1/'), findsOneWidget);
       expect(app.saved!.run!.visit, camp.visit + 1);
       expect(app.saved!.run!.depth, 1);
       expect(app.saved!.inside, isTrue);
@@ -351,6 +355,7 @@ void main() {
         _oneHero(
           profile,
           run: camp.copyWith(hero: camp.hero.copyWith(hp: 0), isGameOver: true),
+          dungeon: cryptNode,
           inside: true,
         ),
       );
@@ -361,7 +366,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.text('Enter Dungeon'), findsOneWidget);
+      expect(find.text('Enter The Crypt'), findsOneWidget);
       expect(find.textContaining('Resume the crawl'), findsNothing);
       expect(app.saved!.run, isNull);
       expect(app.saved!.inside, isFalse);

@@ -56,6 +56,7 @@ GameState _suspendAndResume(GameState run) {
         label: 'Hero 1',
         profile: newProfile(worldSeed: run.worldSeed),
         run: run,
+        dungeon: cryptNode,
       ),
     ),
   );

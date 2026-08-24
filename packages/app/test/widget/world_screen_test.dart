@@ -16,6 +16,7 @@ SaveDocument _oneHero(
   Profile profile, {
   Whereabouts? world,
   GameState? run,
+  NodeId? dungeon,
   bool inside = false,
 }) => SaveDocument.one(
   id: 'hero-1',
@@ -23,11 +24,25 @@ SaveDocument _oneHero(
   profile: profile,
   world: world,
   run: run,
+  dungeon: run == null ? null : (dungeon ?? cryptNode),
   inside: inside,
 );
 
 /// A hero who has heard of everywhere, standing at home.
-Whereabouts _knowingAll() => newWhereabouts().hearingOf(northgate);
+Whereabouts _knowingAll() => newWhereabouts()
+    .hearingOf(northgate)
+    .hearingOf(seaCave)
+    .hearingOf(ruinedKeep);
+
+/// A hero standing at the sea-cave, having heard of it and walked there.
+Whereabouts _atTheSeaCave() => _knowingAll()
+    .arrivingAt(residuumWorld, northgate)
+    .arrivingAt(residuumWorld, seaCave);
+
+/// A hero standing at the ruined keep.
+Whereabouts _atTheKeep() => _knowingAll()
+    .arrivingAt(residuumWorld, northgate)
+    .arrivingAt(residuumWorld, ruinedKeep);
 
 /// The bloc driving whatever crawl or fight is on screen.
 GameBloc _fightOnScreen(WidgetTester tester) =>
@@ -51,7 +66,7 @@ Future<(TownBloc, WorldBloc)> _pushRoadFight(
   final placed = heroAt == null
       ? fight
       : fight.copyWith(hero: fight.hero.copyWith(position: heroAt));
-  final town = TownBloc(profile: profile, suspended: null);
+  final town = TownBloc(profile: profile, suspended: null, dungeon: cryptNode);
   final worldBloc = WorldBloc(
     world: world ?? _knowingAll(),
     worldSeed: profile.worldSeed,
@@ -116,8 +131,8 @@ void main() {
       // assert
       expect(find.text('[T]'), findsOneWidget);
       expect(find.text('(D)'), findsOneWidget);
-      expect(find.text('[?]'), findsOneWidget);
-      expect(find.text('Somewhere you have not heard of'), findsOneWidget);
+      expect(find.text('[?]'), findsNWidgets(3));
+      expect(find.text('Somewhere you have not heard of'), findsNWidgets(3));
     });
 
     testWidgets('says which place the hero is standing on, in words', (
@@ -149,6 +164,7 @@ void main() {
       expect(find.text('Northgate'), findsOneWidget);
       expect(find.text('[?]'), findsNothing);
       expect(find.text('[T]'), findsNWidgets(2));
+      expect(find.text('(D)'), findsNWidgets(3));
     });
 
     testWidgets('the Heroes door is here rather than in a town', (
@@ -216,6 +232,7 @@ void main() {
       // assert
       expect(find.text('At The Crypt'), findsOneWidget);
       expect(find.text('Day 1.'), findsOneWidget);
+      await scrollToTheLog(tester);
       expect(find.textContaining('The road is quiet.'), findsOneWidget);
     });
 
@@ -406,8 +423,8 @@ void main() {
 
       // assert
       expect(find.text('Northgate'), findsOneWidget);
-      expect(find.text('[?]'), findsNothing);
       expect(app.saved!.world.discovered, contains(northgate));
+      expect(app.saved!.world.discovered, isNot(contains(seaCave)));
       expect(app.saved!.profile.gold, 100 - rumorPrice);
     });
 
@@ -532,7 +549,7 @@ void main() {
     ) async {
       // arrange
       final profile = newProfile(worldSeed: 909).copyWith(gold: 200);
-      final camp = startDungeonRun(profile).copyWith(depth: 3);
+      final camp = startDungeonRunAt(cryptNode, profile).copyWith(depth: 3);
       final app = PumpedApp(
         _oneHero(
           suspendRun(profile, camp),
@@ -540,6 +557,7 @@ void main() {
               .hearingOf(northgate)
               .arrivingAt(residuumWorld, cryptNode),
           run: camp,
+          dungeon: cryptNode,
         ),
       );
       await app.pump(tester);
@@ -576,7 +594,7 @@ void main() {
 
       // assert
       expect(find.byType(GameScreen), findsOneWidget);
-      expect(find.text('The road'), findsOneWidget);
+      expect(find.textContaining('The road'), findsOneWidget);
       expect(find.textContaining('Depth'), findsNothing);
     });
 
@@ -781,6 +799,291 @@ void main() {
       expect(find.text('Leave'), findsNothing);
     });
   });
+
+  group('the doors at a dungeon node', () {
+    testWidgets('a hero with no camp is offered the way in, named', (
+      tester,
+    ) async {
+      // arrange
+      final app = PumpedApp(
+        _oneHero(newProfile(worldSeed: 909), world: _atTheSeaCave()),
+      );
+
+      // act
+      await app.pump(tester);
+
+      // assert
+      expect(find.text('Enter The Sea-Cave'), findsOneWidget);
+      expect(find.textContaining('Resume the crawl'), findsNothing);
+    });
+
+    testWidgets('entering at a node opens that node\'s dungeon, on disk', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final app = PumpedApp(_oneHero(profile, world: _atTheSeaCave()));
+      await app.pump(tester);
+
+      // act
+      await tester.tap(find.text('Enter The Sea-Cave'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(app.saved!.dungeon, seaCave);
+      expect(
+        app.saved!.run!.map.toAscii(),
+        startDungeonRunAt(seaCave, profile).map.toAscii(),
+      );
+      expect(find.textContaining('The Sea-Cave — depth 1/'), findsOneWidget);
+    });
+
+    testWidgets('the keep is its own dungeon, not the cave\'s', (tester) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final app = PumpedApp(_oneHero(profile, world: _atTheKeep()));
+      await app.pump(tester);
+
+      // act
+      await tester.tap(find.text('Enter The Ruined Keep'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(app.saved!.dungeon, ruinedKeep);
+      expect(
+        app.saved!.run!.map.toAscii(),
+        startDungeonRunAt(ruinedKeep, profile).map.toAscii(),
+      );
+      expect(find.textContaining('The Ruined Keep — depth 1/'), findsOneWidget);
+    });
+
+    testWidgets('a camp at this node is the resume-or-delve fork', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = startDungeonRunAt(seaCave, profile).copyWith(depth: 3);
+
+      // act
+      final app = PumpedApp(
+        _oneHero(
+          suspendRun(profile, camp),
+          world: _atTheSeaCave(),
+          run: camp,
+          dungeon: seaCave,
+        ),
+      );
+      await app.pump(tester);
+
+      // assert
+      expect(find.text('Resume the crawl (depth 3)'), findsOneWidget);
+      expect(find.text('Delve anew'), findsOneWidget);
+      expect(find.text('Enter The Sea-Cave'), findsNothing);
+    });
+
+    testWidgets('a camp somewhere else is never offered a resume here', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = startDungeonRunAt(cryptNode, profile).copyWith(depth: 3);
+
+      // act
+      final app = PumpedApp(
+        _oneHero(
+          suspendRun(profile, camp),
+          world: _atTheSeaCave(),
+          run: camp,
+          dungeon: cryptNode,
+        ),
+      );
+      await app.pump(tester);
+
+      // assert
+      expect(find.textContaining('Resume the crawl'), findsNothing);
+      expect(find.text('Delve anew'), findsNothing);
+      expect(find.text('Enter The Sea-Cave'), findsOneWidget);
+    });
+
+    testWidgets('entering with a camp elsewhere asks, and names the camp', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = startDungeonRunAt(cryptNode, profile).copyWith(depth: 3);
+      final app = PumpedApp(
+        _oneHero(
+          suspendRun(profile, camp),
+          world: _atTheSeaCave(),
+          run: camp,
+          dungeon: cryptNode,
+        ),
+      );
+      await app.pump(tester);
+
+      // act
+      await tester.tap(find.text('Enter The Sea-Cave'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(
+        find.textContaining('abandons your camp at The Crypt'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('depth 3'), findsWidgets);
+    });
+
+    testWidgets('keeping the crawl at that question changes nothing', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = startDungeonRunAt(cryptNode, profile).copyWith(depth: 3);
+      final app = PumpedApp(
+        _oneHero(
+          suspendRun(profile, camp),
+          world: _atTheSeaCave(),
+          run: camp,
+          dungeon: cryptNode,
+        ),
+      );
+      await app.pump(tester);
+
+      // act
+      await tester.tap(find.text('Enter The Sea-Cave'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Keep the crawl'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(app.saved!.dungeon, cryptNode);
+      expect(app.saved!.run!.depth, 3);
+      expect(app.saved!.inside, isFalse);
+      expect(find.text('Enter The Sea-Cave'), findsOneWidget);
+    });
+
+    testWidgets('giving it up walks into the new dungeon and drops the old', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = startDungeonRunAt(cryptNode, profile).copyWith(depth: 3);
+      final app = PumpedApp(
+        _oneHero(
+          suspendRun(profile, camp),
+          world: _atTheSeaCave(),
+          run: camp,
+          dungeon: cryptNode,
+        ),
+      );
+      await app.pump(tester);
+
+      // act
+      await tester.tap(find.text('Enter The Sea-Cave'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Give it up'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(app.saved!.dungeon, seaCave);
+      expect(app.saved!.run!.depth, 1);
+      expect(app.saved!.run!.visit, camp.visit + 1);
+      expect(app.saved!.inside, isTrue);
+      expect(find.textContaining('The Sea-Cave — depth 1/'), findsOneWidget);
+    });
+
+    testWidgets('booting inside a sea-cave crawl lands back in the sea-cave', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final run = startDungeonRunAt(seaCave, profile);
+
+      // act
+      final app = PumpedApp(
+        _oneHero(
+          profile,
+          world: _atTheSeaCave(),
+          run: run,
+          dungeon: seaCave,
+          inside: true,
+        ),
+      );
+      await app.pump(tester);
+
+      // assert
+      expect(find.textContaining('The Sea-Cave — depth 1/'), findsOneWidget);
+      expect(app.saved!.dungeon, seaCave);
+    });
+  });
+
+  group('the crawl status line on a phone-sized screen', () {
+    testWidgets('does not overflow with the longest dungeon name and a fight', (
+      tester,
+    ) async {
+      // arrange — a Pixel-sized surface rather than the test default, because
+      // the default is wider than a phone and the row that overflowed on a
+      // device fitted comfortably on it
+      await _onAPhone(tester);
+      final profile = newProfile(worldSeed: 909);
+      final app = PumpedApp(
+        _oneHero(
+          profile,
+          world: _atTheKeep(),
+          run: startDungeonRunAt(ruinedKeep, profile),
+          dungeon: ruinedKeep,
+          inside: true,
+        ),
+      );
+
+      // act
+      await app.pump(tester);
+
+      // assert
+      expect(find.textContaining('The Ruined Keep — depth 1/'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('says the hit points, the condition and the place at once', (
+      tester,
+    ) async {
+      // arrange
+      await _onAPhone(tester);
+      final profile = newProfile(worldSeed: 909);
+      final app = PumpedApp(
+        _oneHero(
+          profile,
+          world: _atTheSeaCave(),
+          run: startDungeonRunAt(seaCave, profile),
+          dungeon: seaCave,
+          inside: true,
+        ),
+      );
+
+      // act
+      await app.pump(tester);
+      final line = tester
+          .widgetList<Text>(find.textContaining('The Sea-Cave'))
+          .single
+          .data!;
+
+      // assert
+      expect(line, contains('20 / 20'));
+      expect(line, contains('Steady'));
+      expect(line, contains('The Sea-Cave — depth 1/5'));
+    });
+  });
+}
+
+/// Sizes the test surface like the phone the device pass runs on.
+///
+/// The default surface is 800 by 600 logical pixels, which is wider than any
+/// phone in portrait — so a row that overflows on a Pixel fits on it, and the
+/// defect ships. Restored after the test so nothing else inherits the size.
+Future<void> _onAPhone(WidgetTester tester) async {
+  tester.view.physicalSize = const Size(1080, 2424);
+  tester.view.devicePixelRatio = 2.625;
+  addTearDown(tester.view.reset);
 }
 
 /// A world whose first day out of Stonebridge is a fight.

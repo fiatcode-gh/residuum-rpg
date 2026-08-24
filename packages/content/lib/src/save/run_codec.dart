@@ -1,7 +1,6 @@
 import 'package:residuum_core/core.dart';
 
-import '../drop_tables.dart';
-import '../new_game.dart';
+import '../dungeons.dart';
 import 'actor_codec.dart';
 import 'item_codec.dart';
 import 'save_json.dart';
@@ -63,7 +62,18 @@ Map<String, Object?> encodeRun(GameState run) => {
 /// The generators are restored with [Rng.fromState] rather than re-seeded from
 /// the world seed. A re-seed would look identical in every field and be wrong in
 /// every roll after it.
-GameState loadRun(Map<String, Object?> from, String key) {
+///
+/// **[dungeon] is a parameter because the run block does not know it.** The two
+/// collaborators a crawl carries by reference — the floor builder and the drop
+/// tables — are the two things content has to supply on the way back in, and
+/// once there is more than one dungeon neither can be answered from the state
+/// alone. The node lives one level up, beside the run on the hero, and the
+/// caller that reads it there hands it down.
+GameState loadRun(
+  Map<String, Object?> from,
+  String key, {
+  required NodeId dungeon,
+}) {
   final written = objectAt(from, key);
   final worldSeed = wideAt(written, 'worldSeed');
   final visit = intAt(written, 'visit');
@@ -75,7 +85,7 @@ GameState loadRun(Map<String, Object?> from, String key) {
     lootRng: Rng.fromState(wideAt(written, 'lootRngState')),
     visible: decodePositions(written, 'visible'),
     explored: decodePositions(written, 'explored'),
-    buildFloor: residuumDungeon(worldSeed)(visit),
+    buildFloor: dungeonFor(dungeon, worldSeed)(visit),
     depth: intAt(written, 'depth'),
     worldSeed: worldSeed,
     visit: visit,
@@ -88,7 +98,7 @@ GameState loadRun(Map<String, Object?> from, String key) {
     inventory: decodeItems(written, 'inventory'),
     equipment: decodeEquipment(written, 'equipment'),
     skills: decodeSkills(written, 'skills'),
-    dropTables: dropTables,
+    dropTables: dropTablesFor(dungeon),
     nextDropNumber: intAt(written, 'nextDropNumber'),
   );
 }

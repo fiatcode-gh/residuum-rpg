@@ -30,3 +30,13 @@ Future<void> walkTo(WidgetTester tester, String place) async {
     await tester.pumpAndSettle();
   }
 }
+
+/// Scrolls the world's list to the bottom, where the road log is.
+///
+/// The list grew when the world did: five places plus a row for each one the
+/// hero has not heard of pushes the log below the fold on a test-sized screen,
+/// and a lazily built list does not put an off-screen child in the tree at all.
+Future<void> scrollToTheLog(WidgetTester tester) async {
+  await tester.drag(find.byType(ListView), const Offset(0, -400));
+  await tester.pumpAndSettle();
+}

@@ -68,10 +68,17 @@ final NodeId northgate = NodeId('northgate');
 /// The dungeon node. What is under it is the crawl the game shipped with.
 final NodeId cryptNode = NodeId('crypt');
 
-/// The world the game ships: two towns, one dungeon, and a road between every
-/// pair.
+/// The second dungeon: a day west of Northgate, under the tide.
+final NodeId seaCave = NodeId('sea-cave');
+
+/// The third dungeon, and the longest walk to any of them.
+final NodeId ruinedKeep = NodeId('ruined-keep');
+
+/// The world the game ships: two towns, three dungeons, and the roads between
+/// them.
 ///
-/// **A triangle, and the day costs are the whole economy of the thing.**
+/// **A triangle with two spurs off it, and the day costs are the whole economy
+/// of the thing.**
 ///
 /// Stonebridge to the crypt is one day and the safest road, because that is the
 /// loop the hero walks constantly — bank the haul, buy potions, go back down.
@@ -84,19 +91,36 @@ final NodeId cryptNode = NodeId('crypt');
 /// hero who camps at the stairs to heal now pays for it in days of encounter
 /// rolls rather than in twelve gold, and the road is the cost.
 ///
-/// The back road from Northgate to the crypt is the most dangerous, because it
-/// is the one that skips a town. A route that let the hero bypass Stonebridge as
-/// cheaply as going through it would make the middle of the map decoration.
+/// The back road from Northgate to the crypt is the most dangerous of the three
+/// roads between towns, because it is the one that skips a town. A route that
+/// let the hero bypass Stonebridge as cheaply as going through it would make the
+/// middle of the map decoration.
+///
+/// **Both new dungeons hang off Northgate, and neither is reachable from home.**
+/// The crypt is a day from Stonebridge and everything harder is on the far side
+/// of the two-day road, so the second town stops being a second shelf and
+/// becomes the staging post the rest of the world is walked from. The sea-cave
+/// is one day out and the keep is two, which prices them the way the crypt is
+/// priced: the harder floor is also the longer walk, and a hero who wants the
+/// keep's loot pays four days a trip for it before a single blow is struck.
+///
+/// The sea-cave road ties the crawl loop on days and doubles its danger, so the
+/// crypt keeps the thing that makes it the farming loop — the cheapest road in
+/// the world — without the sea-cave being an errand.
 final WorldMap residuumWorld = WorldMap(
   nodes: [
     WorldNode(id: stonebridge, kind: NodeKind.town, name: 'Stonebridge'),
     WorldNode(id: northgate, kind: NodeKind.town, name: 'Northgate'),
     WorldNode(id: cryptNode, kind: NodeKind.dungeon, name: 'The Crypt'),
+    WorldNode(id: seaCave, kind: NodeKind.dungeon, name: 'The Sea-Cave'),
+    WorldNode(id: ruinedKeep, kind: NodeKind.dungeon, name: 'The Ruined Keep'),
   ],
   routes: [
     Route(from: stonebridge, to: cryptNode, days: 1, danger: 15),
     Route(from: stonebridge, to: northgate, days: 2, danger: 25),
     Route(from: northgate, to: cryptNode, days: 2, danger: 30),
+    Route(from: northgate, to: seaCave, days: 1, danger: 30),
+    Route(from: northgate, to: ruinedKeep, days: 2, danger: 40),
   ],
 );
 
@@ -135,6 +159,15 @@ const int rumorPrice = 15;
 /// drop tables: a table that names everything it could carry is a table a reader
 /// can check. It also stops the pool from being a one-line list that reads like
 /// an oversight.
+///
+/// **One pool, ordered, and no per-town pools.** The order is the pacing: the
+/// town comes first because a hero who found the sea-cave before Northgate would
+/// be told about a place they cannot reach, and the keep comes last because it
+/// is the hardest walk and the hardest floor. Splitting the pool per town would
+/// buy nothing that this order does not already buy — the two new places both
+/// hang off Northgate, and the two-day road to it is the stagger. A per-town
+/// pool is machinery for a world that has outgrown first-untold ordering, and
+/// this one has not.
 final List<Rumor> rumorPool = [
   Rumor(
     line: 'A carter says there is a town north of the moor that buys iron.',
@@ -143,6 +176,16 @@ final List<Rumor> rumorPool = [
   Rumor(
     line: 'An old man says the crypt door on the hill still opens.',
     reveals: cryptNode,
+  ),
+  Rumor(
+    line: 'A fisherman says the tide uncovers a cave under the north cliffs.',
+    reveals: seaCave,
+  ),
+  Rumor(
+    line:
+        'A pedlar says the keep east of Northgate is not as empty as it '
+        'looks.',
+    reveals: ruinedKeep,
   ),
 ];
 

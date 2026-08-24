@@ -65,6 +65,7 @@ Boot _boot(
     profile: profile,
     world: world ?? (run == null ? null : atTheCrypt()),
     run: run,
+    dungeon: run == null ? null : cryptNode,
     inside: inside,
   ),
 );
@@ -122,7 +123,7 @@ void main() {
       )..watchTown(town);
 
       // act
-      town.add(const EnterDungeonPressed());
+      town.add(EnterDungeonPressed(cryptNode));
       await town.stream.first;
       await saver.settled();
 
@@ -140,7 +141,7 @@ void main() {
       final town = TownBloc(profile: profile);
       final saver = Autosaver(SaveStore(files), from: _boot(profile))
         ..watchTown(town);
-      town.add(const EnterDungeonPressed());
+      town.add(EnterDungeonPressed(cryptNode));
       final entered = await town.stream.first;
 
       // act
@@ -161,7 +162,7 @@ void main() {
       // arrange
       final files = MemorySaveFiles();
       final profile = newProfile(worldSeed: 5);
-      final run = _withSomethingToFight(startDungeonRun(profile));
+      final run = _withSomethingToFight(startDungeonRunAt(cryptNode, profile));
       final game = GameBloc(game: run, stepDelay: Duration.zero);
       final saver = Autosaver(SaveStore(files), from: _boot(profile, run: run))
         ..watchGame(game);
@@ -193,7 +194,7 @@ void main() {
       // arrange
       final files = MemorySaveFiles();
       final profile = newProfile(worldSeed: 5);
-      final run = startDungeonRun(profile);
+      final run = startDungeonRunAt(cryptNode, profile);
       final game = GameBloc(game: run, stepDelay: Duration.zero);
       final saver = Autosaver(SaveStore(files), from: _boot(profile, run: run))
         ..watchGame(game);
@@ -213,7 +214,7 @@ void main() {
       // arrange
       final files = MemorySaveFiles();
       final profile = newProfile(worldSeed: 5);
-      final run = startDungeonRun(profile);
+      final run = startDungeonRunAt(cryptNode, profile);
       final dying = run.copyWith(
         hero: run.hero.copyWith(hp: 0),
         isGameOver: true,
@@ -237,7 +238,7 @@ void main() {
       // arrange
       final files = MemorySaveFiles();
       final profile = newProfile(worldSeed: 5).copyWith(gold: 90, visit: 2);
-      final run = startDungeonRun(profile);
+      final run = startDungeonRunAt(cryptNode, profile);
       final saver = Autosaver(SaveStore(files), from: _boot(profile, run: run));
 
       // act
@@ -284,7 +285,7 @@ void main() {
       // arrange
       final files = MemorySaveFiles();
       final profile = newProfile(worldSeed: 5);
-      final run = startDungeonRun(profile);
+      final run = startDungeonRunAt(cryptNode, profile);
       final game = GameBloc(game: run, stepDelay: Duration.zero);
       final saver = Autosaver(SaveStore(files), from: _boot(profile, run: run))
         ..watchGame(game);
@@ -307,7 +308,8 @@ void main() {
       final idle = SavedHero(
         label: 'Ilse',
         profile: newProfile(worldSeed: 111).copyWith(gold: 40, visit: 2),
-        run: startDungeonRun(newProfile(worldSeed: 111)),
+        run: startDungeonRunAt(cryptNode, newProfile(worldSeed: 111)),
+        dungeon: cryptNode,
       );
       final played = newProfile(worldSeed: 222).copyWith(gold: 500);
       final roster = SaveDocument(
@@ -363,7 +365,7 @@ void main() {
         ..watchTown(town);
 
       // act
-      town.add(const EnterDungeonPressed());
+      town.add(EnterDungeonPressed(cryptNode));
       await town.stream.first;
       await saver.settled();
 
@@ -493,7 +495,7 @@ void main() {
         ..watchTown(town);
       town.add(BuyPressed(town.state.stock.first.id));
       await town.stream.first;
-      town.add(const EnterDungeonPressed());
+      town.add(EnterDungeonPressed(cryptNode));
       final entered = await town.stream.first;
 
       // act
@@ -536,7 +538,7 @@ void main() {
       // arrange
       final files = MemorySaveFiles();
       final profile = newProfile(worldSeed: 5);
-      final run = startDungeonRun(profile);
+      final run = startDungeonRunAt(cryptNode, profile);
       final game = GameBloc(game: run, stepDelay: Duration.zero);
       final saver = Autosaver(
         SaveStore(files),
@@ -562,7 +564,7 @@ void main() {
       final town = TownBloc(profile: profile);
       final saver = Autosaver(SaveStore(files), from: _boot(profile))
         ..watchTown(town);
-      town.add(const EnterDungeonPressed());
+      town.add(EnterDungeonPressed(cryptNode));
       final entered = await town.stream.first;
 
       // act
@@ -582,8 +584,12 @@ void main() {
       // arrange
       final files = MemorySaveFiles();
       final profile = newProfile(worldSeed: 5).copyWith(gold: 500);
-      final camp = startDungeonRun(profile);
-      final town = TownBloc(profile: profile, suspended: camp);
+      final camp = startDungeonRunAt(cryptNode, profile);
+      final town = TownBloc(
+        profile: profile,
+        suspended: camp,
+        dungeon: cryptNode,
+      );
       final saver = Autosaver(SaveStore(files), from: _boot(profile, run: camp))
         ..watchTown(town);
 
@@ -625,8 +631,12 @@ void main() {
       // arrange
       final files = MemorySaveFiles();
       final profile = newProfile(worldSeed: 5);
-      final camp = startDungeonRun(profile);
-      final town = TownBloc(profile: profile, suspended: camp);
+      final camp = startDungeonRunAt(cryptNode, profile);
+      final town = TownBloc(
+        profile: profile,
+        suspended: camp,
+        dungeon: cryptNode,
+      );
       final saver = Autosaver(SaveStore(files), from: _boot(profile, run: camp))
         ..watchTown(town);
 
@@ -651,8 +661,12 @@ void main() {
       // arrange
       final files = MemorySaveFiles();
       final profile = newProfile(worldSeed: 5).copyWith(gold: 40);
-      final camp = startDungeonRun(profile);
-      final town = TownBloc(profile: profile, suspended: camp);
+      final camp = startDungeonRunAt(cryptNode, profile);
+      final town = TownBloc(
+        profile: profile,
+        suspended: camp,
+        dungeon: cryptNode,
+      );
       final saver = Autosaver(SaveStore(files), from: _boot(profile, run: camp))
         ..watchTown(town);
 
@@ -674,8 +688,12 @@ void main() {
       final files = MemorySaveFiles();
       final store = _CountingStore(files);
       final profile = newProfile(worldSeed: 5);
-      final camp = _withSomethingToFight(startDungeonRun(profile));
-      final town = TownBloc(profile: profile, suspended: camp);
+      final camp = _withSomethingToFight(startDungeonRunAt(cryptNode, profile));
+      final town = TownBloc(
+        profile: profile,
+        suspended: camp,
+        dungeon: cryptNode,
+      );
       final saver = Autosaver(store, from: _boot(profile, run: camp))
         ..watchTown(town);
       final games = <GameBloc>[];

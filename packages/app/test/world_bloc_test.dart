@@ -14,7 +14,10 @@ WorldBloc _bloc({Whereabouts? world, int worldSeed = 909}) => WorldBloc(
 );
 
 /// A hero who has heard of everywhere, so the tavern has nothing left to sell.
-Whereabouts _knowingAll() => newWhereabouts().hearingOf(northgate);
+Whereabouts _knowingAll() => newWhereabouts()
+    .hearingOf(northgate)
+    .hearingOf(seaCave)
+    .hearingOf(ruinedKeep);
 
 void main() {
   group('setting out', () {

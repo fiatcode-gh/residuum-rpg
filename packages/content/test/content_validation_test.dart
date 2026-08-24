@@ -153,18 +153,33 @@ void main() {
       }
     });
 
-    test('every creature in the bestiary can be met somewhere', () {
-      // arrange
-      const depths = allDepths;
+    test('every creature in the game can be met somewhere', () {
+      // arrange — every cast in the game, and every door a creature reaches a
+      // floor through. Bosses are met and never rolled, so a test that read the
+      // tables alone would call each of them an orphan; one that read the
+      // bestiaries alone would let a creature be written and placed nowhere.
+      final cast = {
+        for (final creature in bestiary) creature,
+        for (final dungeon in themedDungeons) ...dungeon.bestiary,
+      };
 
       // act
       final reachable = {
-        for (final depth in depths)
-          for (final entry in spawnTableFor(depth).entries) entry.creatureId,
+        for (final depth in allDepths) ...[
+          for (final entry in spawnTableFor(depth).entries)
+            creatureById(entry.creatureId),
+        ],
+        for (final entry in roadSpawnTable.entries)
+          creatureById(entry.creatureId),
+        for (final dungeon in themedDungeons) ...[
+          for (final depth in allDepths)
+            ...dungeonSpawnTableFor(dungeon.spawnTables, depth).creatures,
+          dungeon.boss,
+        ],
       };
 
       // assert
-      expect(reachable, bestiary.map((creature) => creature.id).toSet());
+      expect(reachable, cast);
     });
 
     test('a roll only ever returns a creature from that table', () {
@@ -198,6 +213,348 @@ void main() {
         counts,
         everyElement(inInclusiveRange(table.minCount, table.maxCount)),
       );
+    });
+  });
+
+  group('the themed spawn tables', () {
+    test('every dungeon has a table for every depth one to five', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        expect(
+          dungeon.spawnTables.keys.toSet(),
+          allDepths.toSet(),
+          reason: dungeon.node.value,
+        );
+      }
+    });
+
+    test('a depth outside the dungeon is refused', () {
+      // arrange
+      const depth = 6;
+
+      // act
+      void act() => dungeonSpawnTableFor(theSeaCave.spawnTables, depth);
+
+      // assert
+      expect(act, throwsArgumentError);
+    });
+
+    test('every table is non-empty with positive weights and counts', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        for (final depth in allDepths) {
+          final where = '${dungeon.node.value} depth $depth';
+          final table = dungeonSpawnTableFor(dungeon.spawnTables, depth);
+          expect(table.entries, isNotEmpty, reason: where);
+          expect(table.minCount, greaterThan(0), reason: where);
+          expect(
+            table.maxCount,
+            greaterThanOrEqualTo(table.minCount),
+            reason: where,
+          );
+          for (final entry in table.entries) {
+            expect(entry.weight, greaterThan(0), reason: entry.value.id);
+          }
+        }
+      }
+    });
+
+    test('a roll only ever returns a creature from that table', () {
+      // arrange
+      final rng = Rng(4);
+      final table = dungeonSpawnTableFor(theSeaCave.spawnTables, 3);
+      final allowed = table.creatures.toSet();
+
+      // act
+      final rolled = {
+        for (var draw = 0; draw < 200; draw++) table.rollCreature(rng),
+      };
+
+      // assert
+      expect(allowed, containsAll(rolled));
+      expect(rolled, hasLength(allowed.length));
+    });
+
+    test('a count stays inside the table range', () {
+      // arrange
+      final rng = Rng(9);
+      final table = dungeonSpawnTableFor(theRuinedKeep.spawnTables, 5);
+
+      // act
+      final counts = [
+        for (var draw = 0; draw < 100; draw++) table.rollCount(rng),
+      ];
+
+      // assert
+      expect(
+        counts,
+        everyElement(inInclusiveRange(table.minCount, table.maxCount)),
+      );
+    });
+  });
+
+  group('the themed bestiaries', () {
+    test('every creature has its own id and its own glyph, game-wide', () {
+      // arrange
+      final everything = [
+        ...bestiary,
+        for (final dungeon in themedDungeons) ...dungeon.bestiary,
+      ];
+
+      // act
+      final ids = everything.map((creature) => creature.id).toSet();
+      final glyphs = everything.map((creature) => creature.glyph).toSet();
+
+      // assert
+      expect(everything, hasLength(14));
+      expect(ids, hasLength(everything.length));
+      expect(glyphs, hasLength(everything.length));
+    });
+
+    test('no creature glyph collides with the hero or with an item', () {
+      // arrange
+      final taken = {'@', for (final base in armory) base.glyph};
+
+      // act
+      final glyphs = {
+        for (final dungeon in themedDungeons)
+          for (final creature in dungeon.bestiary) creature.glyph,
+      };
+
+      // assert
+      expect(glyphs.intersection(taken), isEmpty);
+    });
+
+    test('every creature is one character, and it is a letter', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        for (final creature in dungeon.bestiary) {
+          expect(creature.glyph, hasLength(1), reason: creature.id);
+          expect(
+            RegExp(r'^[A-Za-z]$').hasMatch(creature.glyph),
+            isTrue,
+            reason: creature.id,
+          );
+        }
+      }
+    });
+
+    test('every creature has a sane stat line', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        for (final creature in dungeon.bestiary) {
+          expect(creature.hp, greaterThan(0), reason: creature.id);
+          expect(creature.speed, greaterThan(0), reason: creature.id);
+          expect(
+            creature.attackMax,
+            greaterThanOrEqualTo(creature.attackMin),
+            reason: creature.id,
+          );
+          expect(creature.attackMin, greaterThan(0), reason: creature.id);
+          expect(creature.name, startsWith('the '), reason: creature.id);
+          expect(
+            creature.dropChance,
+            inInclusiveRange(0, 100),
+            reason: creature.id,
+          );
+        }
+      }
+    });
+
+    test('pierce never rises above the armour the game can wear', () {
+      // arrange
+      final heaviest = armory.fold(0, (most, base) => base.armor + most);
+
+      // act
+      final deepest = [
+        for (final dungeon in themedDungeons)
+          for (final creature in dungeon.bestiary) creature.pierce,
+      ].reduce((one, other) => one > other ? one : other);
+
+      // assert
+      expect(deepest, lessThan(heaviest));
+    });
+
+    test('a boss is harder than anything rolled beside it', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        final rolled = [
+          for (final depth in allDepths)
+            ...dungeonSpawnTableFor(dungeon.spawnTables, depth).creatures,
+        ];
+        for (final creature in rolled) {
+          expect(
+            dungeon.boss.hp,
+            greaterThan(creature.hp),
+            reason: '${dungeon.node.value} vs ${creature.id}',
+          );
+        }
+      }
+    });
+  });
+
+  group('the themed drop tables', () {
+    test('every dungeon has a table for every depth one to five', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        expect(
+          dungeon.dropTables.keys.toSet(),
+          allDepths.toSet(),
+          reason: dungeon.node.value,
+        );
+      }
+    });
+
+    test('a depth with no table throws rather than building a bare floor', () {
+      // act
+      void act() => dungeonDropTableFor(theSeaCave.dropTables, 0);
+
+      // assert
+      expect(act, throwsArgumentError);
+    });
+
+    test('every item a table can drop is a real base item', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        for (final table in [
+          ...dungeon.dropTables.values,
+          dungeon.trophyTable,
+        ]) {
+          for (final entry in table.items) {
+            expect(
+              () => baseItemById(entry.value.id),
+              returnsNormally,
+              reason: entry.value.id,
+            );
+          }
+        }
+      }
+    });
+
+    test('every tier is named at every depth, even at weight zero', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        for (final table in [
+          ...dungeon.dropTables.values,
+          dungeon.trophyTable,
+        ]) {
+          expect(
+            table.rarities.map((entry) => entry.value).toSet(),
+            Rarity.values.toSet(),
+            reason: dungeon.node.value,
+          );
+        }
+      }
+    });
+
+    test('weights are never negative and every table can be drawn from', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        for (final table in [
+          ...dungeon.dropTables.values,
+          dungeon.trophyTable,
+        ]) {
+          for (final entry in table.items) {
+            expect(entry.weight, greaterThanOrEqualTo(0));
+          }
+          for (final entry in table.rarities) {
+            expect(entry.weight, greaterThanOrEqualTo(0));
+          }
+          expect(
+            table.items.fold(0, (sum, entry) => sum + entry.weight),
+            greaterThan(0),
+          );
+          expect(
+            table.rarities.fold(0, (sum, entry) => sum + entry.weight),
+            greaterThan(0),
+          );
+        }
+      }
+    });
+
+    test('no themed depth can drop a Legendary this milestone', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        for (final table in [
+          ...dungeon.dropTables.values,
+          dungeon.trophyTable,
+        ]) {
+          final legendary = table.rarities.firstWhere(
+            (entry) => entry.value == Rarity.legendary,
+          );
+          expect(legendary.weight, 0, reason: dungeon.node.value);
+        }
+      }
+    });
+
+    test('the healing potion can drop at every themed depth', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        for (final depth in allDepths) {
+          final potion = dungeonDropTableFor(
+            dungeon.dropTables,
+            depth,
+          ).items.firstWhere((entry) => entry.value.isPotion);
+          expect(
+            potion.weight,
+            greaterThan(0),
+            reason: '${dungeon.node.value} depth $depth',
+          );
+        }
+      }
+    });
+
+    test('every themed floor scatters items inside sane bounds', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        for (final depth in allDepths) {
+          final where = '${dungeon.node.value} depth $depth';
+          final table = dungeonDropTableFor(dungeon.dropTables, depth);
+          expect(table.minFloorItems, greaterThan(0), reason: where);
+          expect(
+            table.maxFloorItems,
+            greaterThanOrEqualTo(table.minFloorItems),
+            reason: where,
+          );
+          expect(table.maxFloorItems, lessThan(12), reason: where);
+        }
+      }
+    });
+
+    test('a trophy table can never roll anything below Rare', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        for (final entry in dungeon.trophyTable.rarities) {
+          if (entry.value.index < Rarity.rare.index) {
+            expect(
+              entry.weight,
+              0,
+              reason: '${entry.value} on ${dungeon.name}',
+            );
+          }
+        }
+        final potion = dungeon.trophyTable.items.firstWhere(
+          (entry) => entry.value.isPotion,
+        );
+        expect(potion.weight, 0, reason: dungeon.name);
+      }
+    });
+
+    test('a themed depth pays better than the crypt does at the same one', () {
+      // assert
+      for (final dungeon in themedDungeons) {
+        for (final depth in allDepths) {
+          final crypt = _atLeastRare(dropTableFor(depth));
+          final themed = _atLeastRare(
+            dungeonDropTableFor(dungeon.dropTables, depth),
+          );
+          expect(
+            themed,
+            greaterThan(crypt),
+            reason: '${dungeon.node.value} depth $depth',
+          );
+        }
+      }
     });
   });
 
@@ -515,6 +872,15 @@ List<String> _play(
     game = next;
   }
   return log;
+}
+
+/// The share of a table's rarity draw that lands at Rare or better.
+double _atLeastRare(DropTable table) {
+  final total = table.rarities.fold(0, (sum, entry) => sum + entry.weight);
+  final rich = table.rarities
+      .where((entry) => entry.value.index >= Rarity.rare.index)
+      .fold(0, (sum, entry) => sum + entry.weight);
+  return rich / total;
 }
 
 void _armouryAndLoot() {
@@ -1157,7 +1523,7 @@ void _armouryAndLoot() {
       final profile = newProfile(worldSeed: 3);
 
       // act
-      final run = startDungeonRun(profile);
+      final run = startDungeonRunAt(cryptNode, profile);
 
       // assert
       expect(run.visit, 1);
@@ -1170,7 +1536,7 @@ void _armouryAndLoot() {
       final profile = newProfile(worldSeed: 3);
 
       // act
-      final run = startDungeonRun(profile);
+      final run = startDungeonRunAt(cryptNode, profile);
 
       // assert
       expect(run.map.isWalkable(run.hero.position), isTrue);
@@ -1181,10 +1547,13 @@ void _armouryAndLoot() {
     test('re-entering after a run reshuffles the floors', () {
       // arrange
       final profile = newProfile(worldSeed: 3);
-      final first = startDungeonRun(profile);
+      final first = startDungeonRunAt(cryptNode, profile);
 
       // act
-      final second = startDungeonRun(endRun(profile, first, died: true));
+      final second = startDungeonRunAt(
+        cryptNode,
+        endRun(profile, first, died: true),
+      );
 
       // assert
       expect(second.map.toAscii(), isNot(first.map.toAscii()));
@@ -1193,12 +1562,20 @@ void _armouryAndLoot() {
     test('a re-entry keeps the world, so a seed still names the dungeon', () {
       // arrange
       final profile = newProfile(worldSeed: 3);
-      final first = startDungeonRun(profile);
+      final first = startDungeonRunAt(cryptNode, profile);
 
       // act
-      final again = startDungeonRun(endRun(profile, first, died: true));
-      final other = startDungeonRun(
-        endRun(profile, startDungeonRun(newProfile(worldSeed: 3)), died: true),
+      final again = startDungeonRunAt(
+        cryptNode,
+        endRun(profile, first, died: true),
+      );
+      final other = startDungeonRunAt(
+        cryptNode,
+        endRun(
+          profile,
+          startDungeonRunAt(cryptNode, newProfile(worldSeed: 3)),
+          died: true,
+        ),
       );
 
       // assert
@@ -1207,7 +1584,10 @@ void _armouryAndLoot() {
 
     test('a hero can walk all five floors down and find them again', () {
       // arrange
-      var game = startDungeonRun(_unkillable(newProfile(worldSeed: 3)));
+      var game = startDungeonRunAt(
+        cryptNode,
+        _unkillable(newProfile(worldSeed: 3)),
+      );
       final layouts = <int, String>{1: game.map.toAscii()};
 
       // act
@@ -1230,7 +1610,10 @@ void _armouryAndLoot() {
 
     test('every floor below the first offers a way back up', () {
       // arrange
-      var game = startDungeonRun(_unkillable(newProfile(worldSeed: 8)));
+      var game = startDungeonRunAt(
+        cryptNode,
+        _unkillable(newProfile(worldSeed: 8)),
+      );
       final ups = <int, Position?>{1: game.stairsUp};
 
       // act

@@ -5,8 +5,8 @@ import 'package:test/test.dart';
 import 'support/standing.dart';
 
 /// A crawl with the hero standing on the stairs down, ready to be walked out of.
-GameState _onTheStairs(Profile profile) {
-  final run = startDungeonRun(profile);
+GameState _onTheStairs(Profile profile, [NodeId? node]) {
+  final run = startDungeonRunAt(node ?? cryptNode, profile);
   return run.copyWith(hero: run.hero.copyWith(position: run.stairsDown));
 }
 
@@ -38,7 +38,8 @@ void main() {
         label: 'Hero 1',
         profile: profile,
         world: atTheCrypt(),
-        run: startDungeonRun(profile),
+        run: startDungeonRunAt(cryptNode, profile),
+        dungeon: cryptNode,
         inside: true,
       );
 
@@ -60,6 +61,7 @@ void main() {
         profile: suspendRun(profile, camp),
         world: atTheCrypt(),
         run: camp,
+        dungeon: cryptNode,
         inside: false,
       );
 
@@ -279,7 +281,8 @@ void main() {
               label: 'Hero 1',
               profile: profile,
               world: atTheCrypt(),
-              run: startDungeonRun(profile),
+              run: startDungeonRunAt(cryptNode, profile),
+              dungeon: cryptNode,
               inside: true,
             ),
           ).replaceFirst(
@@ -367,7 +370,8 @@ void main() {
           label: 'Hero 1',
           profile: profile,
           world: atTheCrypt(),
-          run: startDungeonRun(profile),
+          run: startDungeonRunAt(cryptNode, profile),
+          dungeon: cryptNode,
           inside: true,
         ),
       ).replaceFirst('"at":"crypt"', '"at":"stonebridge"');
@@ -392,6 +396,7 @@ void main() {
           profile: suspendRun(profile, camp),
           world: atNorthgate(),
           run: camp,
+          dungeon: cryptNode,
         ),
       );
 
@@ -430,6 +435,7 @@ void main() {
           label: 'Hero 1',
           profile: suspendRun(profile, camp),
           run: camp,
+          dungeon: cryptNode,
         ),
       );
 
@@ -438,6 +444,249 @@ void main() {
       expect(read.run!.rng.state, camp.rng.state);
       expect(read.run!.lootRng.state, camp.lootRng.state);
       expect(read.profile.visit, read.run!.visit);
+    });
+  });
+
+  group('which dungeon the crawl is in', () {
+    test('rides a round trip beside the run, not inside it', () {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = _onTheStairs(profile, seaCave);
+
+      // act
+      final read = _roundTrip(
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: suspendRun(profile, camp),
+          run: camp,
+          dungeon: seaCave,
+        ),
+      );
+
+      // assert
+      expect(read.dungeon, seaCave);
+    });
+
+    test('a document that does not say which is refused by name', () {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final written = encodeSave(
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: profile,
+          world: atTheCrypt(),
+          run: startDungeonRunAt(cryptNode, profile),
+          dungeon: cryptNode,
+          inside: true,
+        ),
+      ).replaceFirst(',"dungeon":"crypt"', '');
+
+      // act
+      final read = decodeSave(written);
+
+      // assert
+      expect((read as SaveFailure).reason, contains('"dungeon"'));
+    });
+
+    test('a crawl with no dungeon named is refused by name', () {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final written = encodeSave(
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: profile,
+          world: atTheCrypt(),
+          run: startDungeonRunAt(cryptNode, profile),
+          dungeon: cryptNode,
+          inside: true,
+        ),
+      ).replaceFirst('"dungeon":"crypt"', '"dungeon":null');
+
+      // act
+      final read = decodeSave(written);
+
+      // assert
+      expect(
+        (read as SaveFailure).reason,
+        contains('a crawl without saying which dungeon'),
+      );
+    });
+
+    test('a dungeon named without a crawl to be in is refused by name', () {
+      // arrange
+      final written = _oneHero().replaceFirst(
+        '"dungeon":null',
+        '"dungeon":"crypt"',
+      );
+
+      // act
+      final read = decodeSave(written);
+
+      // assert
+      expect(
+        (read as SaveFailure).reason,
+        contains('names a dungeon it has no crawl in'),
+      );
+    });
+
+    test('a dungeon this world has never had is refused by name', () {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final written = encodeSave(
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: profile,
+          world: atTheCrypt(),
+          run: startDungeonRunAt(cryptNode, profile),
+          dungeon: cryptNode,
+          inside: true,
+        ),
+      ).replaceFirst('"dungeon":"crypt"', '"dungeon":"moria"');
+
+      // act
+      final read = decodeSave(written);
+
+      // assert
+      expect(
+        (read as SaveFailure).reason,
+        contains('"moria", which is nowhere in this world'),
+      );
+    });
+
+    test('a town named as the dungeon is refused by name', () {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final written = encodeSave(
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: profile,
+          world: atTheCrypt(),
+          run: startDungeonRunAt(cryptNode, profile),
+          dungeon: cryptNode,
+          inside: true,
+        ),
+      ).replaceFirst('"dungeon":"crypt"', '"dungeon":"northgate"');
+
+      // act
+      final read = decodeSave(written);
+
+      // assert
+      expect(
+        (read as SaveFailure).reason,
+        contains('which has no dungeon under it'),
+      );
+    });
+  });
+
+  group('a camp in a themed dungeon', () {
+    test('comes back roll for roll in the sea-cave', () {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = _onTheStairs(profile, seaCave);
+
+      // act
+      final read = _roundTrip(
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: suspendRun(profile, camp),
+          run: camp,
+          dungeon: seaCave,
+        ),
+      );
+
+      // assert
+      expect(read.run!.map.toAscii(), camp.map.toAscii());
+      expect(read.run!.rng.state, camp.rng.state);
+      expect(read.run!.lootRng.state, camp.lootRng.state);
+      expect(
+        read.run!.monsters.map((monster) => (monster.id, monster.position)),
+        camp.monsters.map((monster) => (monster.id, monster.position)),
+      );
+      expect(read.run!.dropTables, seaCaveDropTables);
+    });
+
+    test('comes back roll for roll in the ruined keep', () {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = _onTheStairs(profile, ruinedKeep);
+
+      // act
+      final read = _roundTrip(
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: suspendRun(profile, camp),
+          run: camp,
+          dungeon: ruinedKeep,
+        ),
+      );
+
+      // assert
+      expect(read.run!.map.toAscii(), camp.map.toAscii());
+      expect(read.run!.rng.state, camp.rng.state);
+      expect(read.run!.lootRng.state, camp.lootRng.state);
+      expect(read.run!.dropTables, ruinedKeepDropTables);
+    });
+
+    test('walks on down the floors of the dungeon it was camped in', () {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = _onTheStairs(profile, seaCave);
+
+      // act
+      final read = _roundTrip(
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: suspendRun(profile, camp),
+          run: camp,
+          dungeon: seaCave,
+        ),
+      );
+      final next = read.run!.buildFloor(2);
+      final expected = themedFloor(
+        theSeaCave,
+        2,
+        worldSeed: 909,
+        visit: camp.visit,
+      );
+
+      // assert
+      expect(next.map.toAscii(), expected.map.toAscii());
+      expect(
+        next.monsters.map((monster) => monster.id),
+        expected.monsters.map((monster) => monster.id),
+      );
+    });
+
+    test('a crypt camp still walks on down the crypt', () {
+      // arrange
+      final profile = newProfile(worldSeed: 909);
+      final camp = _onTheStairs(profile);
+
+      // act
+      final read = _roundTrip(
+        SaveDocument.one(
+          id: 'hero-1',
+          label: 'Hero 1',
+          profile: suspendRun(profile, camp),
+          run: camp,
+          dungeon: cryptNode,
+        ),
+      );
+
+      // assert
+      expect(
+        read.run!.buildFloor(2).map.toAscii(),
+        buildFloor(2, worldSeed: 909, visit: camp.visit).map.toAscii(),
+      );
+      expect(read.run!.dropTables, dropTables);
     });
   });
 }

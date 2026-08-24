@@ -29,6 +29,7 @@ SaveDocument _twoHeroes() => SaveDocument(
       profile: newProfile(worldSeed: 111).copyWith(gold: 40, visit: 2),
       world: atTheCrypt(),
       run: deepRun(worldSeed: 111, depth: 3),
+      dungeon: cryptNode,
       inside: true,
     ),
     'hero-2': SavedHero(
@@ -188,6 +189,7 @@ void main() {
         MerchantVisit.none,
         newWhereabouts(),
         inside: false,
+        dungeon: null,
       );
 
       // assert
@@ -213,6 +215,7 @@ void main() {
         MerchantVisit.none,
         atTheCrypt(),
         inside: true,
+        dungeon: cryptNode,
       );
 
       // assert
@@ -325,6 +328,7 @@ void main() {
         visit,
         newWhereabouts(),
         inside: false,
+        dungeon: null,
       );
 
       // assert
@@ -466,6 +470,7 @@ void main() {
             label: 'Ilse',
             profile: newProfile(worldSeed: 111),
             run: deepRun(worldSeed: 111, depth: 3),
+            dungeon: cryptNode,
           ),
         },
       );
@@ -540,6 +545,7 @@ void main() {
         MerchantVisit.none,
         atTheCrypt(),
         inside: true,
+        dungeon: cryptNode,
       );
 
       // assert
@@ -559,6 +565,7 @@ void main() {
         MerchantVisit.none,
         newWhereabouts(),
         inside: false,
+        dungeon: null,
       );
 
       // assert

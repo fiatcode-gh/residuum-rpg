@@ -9,8 +9,13 @@ import 'support/memory_save_files.dart';
 Profile _hero({int gold = 0}) => newProfile(worldSeed: 5).copyWith(gold: gold);
 
 /// A one-hero document, which every slot-rotation test here is about.
-SaveDocument _one(Profile profile, {GameState? run}) =>
-    SaveDocument.one(id: 'hero-1', label: 'Hero 1', profile: profile, run: run);
+SaveDocument _one(Profile profile, {GameState? run}) => SaveDocument.one(
+  id: 'hero-1',
+  label: 'Hero 1',
+  profile: profile,
+  run: run,
+  dungeon: run == null ? null : cryptNode,
+);
 
 void main() {
   group('saving', () {
@@ -110,7 +115,9 @@ void main() {
       final profile = newProfile(worldSeed: 8);
 
       // act
-      await store.save(_one(profile, run: startDungeonRun(profile)));
+      await store.save(
+        _one(profile, run: startDungeonRunAt(cryptNode, profile)),
+      );
 
       // assert
       final read = decodeSave(files.contents[currentSlot]!) as SaveDocument;
@@ -246,7 +253,7 @@ void main() {
       final files = MemorySaveFiles();
       final store = SaveStore(files);
       final profile = newProfile(worldSeed: 8);
-      final run = startDungeonRun(profile);
+      final run = startDungeonRunAt(cryptNode, profile);
       await store.save(_one(profile, run: run));
 
       // act

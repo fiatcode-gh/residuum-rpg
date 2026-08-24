@@ -23,7 +23,7 @@ import 'package:residuum_content/content.dart';
 /// milliseconds.
 Future<GameBloc> _pushCrawl(WidgetTester tester, {bool dead = false}) async {
   final profile = newProfile(worldSeed: 5);
-  final run = startDungeonRun(profile);
+  final run = startDungeonRunAt(cryptNode, profile);
   final town = TownBloc(profile: profile);
   final game = GameBloc(
     game: dead

@@ -6,15 +6,20 @@ import '../support/pumped_app.dart';
 import '../support/standing.dart';
 import '../support/world_nav.dart';
 
-SaveDocument _oneHero(Profile profile, {GameState? run, bool inside = false}) =>
-    SaveDocument.one(
-      id: 'hero-1',
-      label: 'Hero 1',
-      profile: profile,
-      world: run == null ? null : atTheCrypt(),
-      run: run,
-      inside: inside,
-    );
+SaveDocument _oneHero(
+  Profile profile, {
+  GameState? run,
+  NodeId? dungeon,
+  bool inside = false,
+}) => SaveDocument.one(
+  id: 'hero-1',
+  label: 'Hero 1',
+  profile: profile,
+  world: run == null ? null : atTheCrypt(),
+  run: run,
+  dungeon: run == null ? null : (dungeon ?? cryptNode),
+  inside: inside,
+);
 
 void main() {
   group('booting the app', () {
@@ -45,14 +50,19 @@ void main() {
       // arrange
       final profile = newProfile(worldSeed: 909);
       final app = PumpedApp(
-        _oneHero(profile, run: startDungeonRun(profile), inside: true),
+        _oneHero(
+          profile,
+          run: startDungeonRunAt(cryptNode, profile),
+          dungeon: cryptNode,
+          inside: true,
+        ),
       );
 
       // act
       await app.pump(tester);
 
       // assert
-      expect(find.textContaining('Depth 1/'), findsOneWidget);
+      expect(find.textContaining('The Crypt — depth 1/'), findsOneWidget);
       expect(find.text('The crawl resumes.'), findsOneWidget);
     });
 
@@ -61,7 +71,7 @@ void main() {
     ) async {
       // arrange
       final profile = newProfile(worldSeed: 909);
-      final camp = startDungeonRun(profile);
+      final camp = startDungeonRunAt(cryptNode, profile);
       final app = PumpedApp(_oneHero(suspendRun(profile, camp), run: camp));
 
       // act
