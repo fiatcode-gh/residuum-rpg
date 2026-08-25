@@ -39,18 +39,19 @@ class ItemStack {
       count > 1 ? '${item.displayName} ×$count' : item.displayName;
 }
 
-/// The three lists the pack is read in, in the order it reads them.
+/// The four lists the pack is read in, in the order it reads them.
 enum PackSection {
   weapons('Weapons'),
   armour('Armour'),
-  potions('Potions');
+  potions('Potions'),
+  books('Books');
 
   const PackSection(this.title);
 
   final String title;
 }
 
-/// The pack split into its three sections, each sorted and stacked.
+/// The pack split into its four sections, each sorted and stacked.
 ///
 /// Every section is present even when it is empty, so the screen's headings stay
 /// in a fixed order — the position of a list is information the player can rely
@@ -129,11 +130,18 @@ String _signed(int amount) => amount > 0 ? '+$amount' : '$amount';
 
 /// Which list an item is read in.
 ///
-/// A weapon is what needs hands; anything else worn is armour; everything left
-/// is drunk, which this milestone's content makes exhaustive.
+/// A weapon is what needs hands; anything else worn is armour; a book is what
+/// teaches something; everything left is drunk.
+///
+/// **Books are named before the fall-through rather than after it**, and that
+/// ordering is the whole fix: the last line used to catch everything that was
+/// not worn or swung, so the first spell book ever added to the game would have
+/// been filed under Potions and offered a Drink button. A kind the reader has
+/// to know about is a kind this function has to name.
 PackSection _sectionOf(Item item) {
   if (item.base.isWeapon) return PackSection.weapons;
   if (item.base.isEquippable) return PackSection.armour;
+  if (item.base.isSpellBook) return PackSection.books;
   return PackSection.potions;
 }
 

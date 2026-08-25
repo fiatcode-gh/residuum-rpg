@@ -12,4 +12,5 @@ export 'src/save/merchant_visit.dart';
 export 'src/save/save_codec.dart';
 export 'src/save/save_read.dart';
 export 'src/spawn_tables.dart';
+export 'src/spells.dart';
 export 'src/world.dart';

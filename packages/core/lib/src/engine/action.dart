@@ -68,6 +68,36 @@ final class DrinkAction extends GameAction {
   final String itemId;
 }
 
+/// Read the carried spell book with this id, learning what it teaches.
+///
+/// Refused when nothing carried answers to the id, when the item is not a book,
+/// when the hero already knows the spell, and when the hero's school is below
+/// the book's gate. Reading a book that could have waited is *not* refused: it
+/// consumes the turn and the book for a spell the hero may not need yet,
+/// because a page spent early is a player's mistake and not the rules' to undo.
+/// See [DrinkAction], which this is the sibling of.
+final class ReadAction extends GameAction {
+  const ReadAction(this.itemId);
+
+  final String itemId;
+}
+
+/// Cast the known spell with this id.
+///
+/// Refused when the hero does not know it, when the pool is short of its cost,
+/// and — for the kinds that need something to land on — when no enemy is in
+/// sight. Casting Mend at full health is *not* refused: it spends the turn and
+/// the mana and heals nothing, for [DrinkAction]'s reason.
+///
+/// **Nothing here says what to cast it at.** A targeted spell finds the nearest
+/// enemy the hero can see, breaking ties by row and then column; see
+/// `nearestVisibleEnemy` for why the rule is a rule and not a tap.
+final class CastSpellAction extends GameAction {
+  const CastSpellAction(this.spellId);
+
+  final String spellId;
+}
+
 /// Put the carried item with this id down on the hero's tile.
 ///
 /// Refused when nothing carried answers to the id.

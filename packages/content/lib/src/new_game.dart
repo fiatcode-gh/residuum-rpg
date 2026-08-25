@@ -3,6 +3,7 @@ import 'package:residuum_core/core.dart';
 import 'armory.dart';
 import 'drop_tables.dart';
 import 'spawn_tables.dart';
+import 'spells.dart';
 
 /// What the loot stream's seed is offset by, so it never runs in step with the
 /// combat stream.
@@ -102,7 +103,8 @@ Floor buildFloor(int depth, {required int worldSeed, required int visit}) {
   );
 }
 
-/// A hero who has never gone down: armed, stocked, untrained and broke.
+/// A hero who has never gone down: armed, stocked, untrained, broke, and with no
+/// spell to their name.
 ///
 /// The hero stands nowhere in particular, because a profile is a hero between
 /// runs and there is no floor to stand on. `startDungeonRunAt` is what puts it
@@ -147,5 +149,7 @@ GameState newGame({int worldSeed = 1, int visit = 0}) {
     equipment: _startingEquipment(),
     skills: untrainedSkills,
     dropTables: dropTables,
+    spells: spellsById,
+    mana: heroMaxMana(const Loadout(equipment: {}, skills: untrainedSkills)),
   );
 }

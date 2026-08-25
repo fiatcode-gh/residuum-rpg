@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 import '../loot/equip_slot.dart';
 import '../loot/item.dart';
+import '../magic/spell.dart';
 import '../skills/skill.dart';
 import 'position.dart';
 
@@ -278,4 +279,134 @@ final class SkillLevelledUp extends GameEvent with Equatable {
 
   @override
   String toString() => 'SkillLevelledUp(${skill.name}, $level)';
+}
+
+/// The hero read a book and knows a spell it did not know before.
+///
+/// The book is gone by the time this is emitted: learning is what spends it,
+/// and there is no state in which the hero both knows the spell and still holds
+/// the page. It is carried here anyway, whole, for [PotionDrunk]'s reason — the
+/// log has to name the thing that was used up, and it can no longer be looked
+/// up anywhere.
+final class SpellLearned extends GameEvent with Equatable {
+  const SpellLearned({required this.book, required this.spell});
+
+  final Item book;
+  final Spell spell;
+
+  @override
+  List<Object?> get props => [book, spell];
+
+  @override
+  String toString() => 'SpellLearned(${book.id}, ${spell.id})';
+}
+
+/// A bolt landed on a monster for [damage], after its make-up had its say.
+///
+/// [damage] is what the target actually lost, so the log never has to redo the
+/// arithmetic; [bite] is why that number differs from the roll, and it is
+/// carried rather than derived because the message layer has no bestiary to
+/// look the creature up in.
+final class SpellHit extends GameEvent with Equatable {
+  const SpellHit({
+    required this.spell,
+    required this.targetId,
+    required this.damage,
+    required this.bite,
+  });
+
+  final Spell spell;
+  final String targetId;
+  final int damage;
+  final SpellBite bite;
+
+  @override
+  List<Object?> get props => [spell, targetId, damage, bite];
+
+  @override
+  String toString() =>
+      'SpellHit(${spell.id} -> $targetId, $damage, ${bite.name})';
+}
+
+/// The hero mended itself for [healed] hit points.
+///
+/// [healed] can be zero: mending at full health spends the mana and the turn
+/// for nothing, which is the potion's doctrine and not the rules' to undo.
+final class MendCast extends GameEvent with Equatable {
+  const MendCast({required this.healed});
+
+  final int healed;
+
+  @override
+  List<Object?> get props => [healed];
+
+  @override
+  String toString() => 'MendCast($healed)';
+}
+
+/// A ward now stands, holding [absorbs] damage.
+///
+/// Emitted on every successful cast, including one over a ward already standing:
+/// the new pool replaces what was left rather than adding to it, and the log
+/// says the new number so the player can see what they traded away.
+final class WardRaised extends GameEvent with Equatable {
+  const WardRaised({required this.absorbs});
+
+  final int absorbs;
+
+  @override
+  List<Object?> get props => [absorbs];
+
+  @override
+  String toString() => 'WardRaised($absorbs)';
+}
+
+/// A ward took [absorbed] of a blow, and has [remaining] left in it.
+final class WardStruck extends GameEvent with Equatable {
+  const WardStruck({required this.absorbed, required this.remaining});
+
+  final int absorbed;
+  final int remaining;
+
+  @override
+  List<Object?> get props => [absorbed, remaining];
+
+  @override
+  String toString() => 'WardStruck($absorbed, $remaining left)';
+}
+
+/// A monster is held still for [turns] of its own turns.
+final class MonsterBound extends GameEvent with Equatable {
+  const MonsterBound({required this.targetId, required this.turns});
+
+  final String targetId;
+  final int turns;
+
+  @override
+  List<Object?> get props => [targetId, turns];
+
+  @override
+  String toString() => 'MonsterBound($targetId, $turns)';
+}
+
+/// A monster was moved elsewhere on the floor.
+///
+/// It is not gone: it is somewhere else on the same floor, and it is coming
+/// back. What banishing buys is the turns that takes.
+final class MonsterBanished extends GameEvent with Equatable {
+  const MonsterBanished({
+    required this.targetId,
+    required this.from,
+    required this.to,
+  });
+
+  final String targetId;
+  final Position from;
+  final Position to;
+
+  @override
+  List<Object?> get props => [targetId, from, to];
+
+  @override
+  String toString() => 'MonsterBanished($targetId, $from -> $to)';
 }

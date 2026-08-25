@@ -15,6 +15,7 @@ const CreatureSpec shoreCrab = CreatureSpec(
   attackMax: 4,
   speed: 5,
   dropChance: 30,
+  vulnerableTo: {DamageType.frost},
 );
 
 const CreatureSpec drownedSailor = CreatureSpec(
@@ -27,6 +28,8 @@ const CreatureSpec drownedSailor = CreatureSpec(
   speed: 10,
   dropChance: 40,
   pierce: 5,
+  resists: {DamageType.frost},
+  vulnerableTo: {DamageType.fire},
 );
 
 /// Thin and twice the hero's speed: the cave's answer to the dire wolf.
@@ -40,6 +43,7 @@ const CreatureSpec morayEel = CreatureSpec(
   speed: 20,
   dropChance: 25,
   pierce: 4,
+  vulnerableTo: {DamageType.frost},
 );
 
 const CreatureSpec brineHag = CreatureSpec(
@@ -52,6 +56,8 @@ const CreatureSpec brineHag = CreatureSpec(
   speed: 10,
   dropChance: 50,
   pierce: 6,
+  resists: {DamageType.frost},
+  vulnerableTo: {DamageType.fire},
 );
 
 /// What stands at the bottom of the sea-cave, and is never rolled for.
@@ -65,6 +71,8 @@ const CreatureSpec drownedCaptain = CreatureSpec(
   speed: 10,
   dropChance: 100,
   pierce: 4,
+  resists: {DamageType.frost},
+  vulnerableTo: {DamageType.fire},
 );
 
 /// Everything the sea-cave has, in the order the hero meets it.
@@ -162,6 +170,8 @@ const Map<int, DropTable> seaCaveDropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 5),
       Weighted(leatherBoots, 5),
+      Weighted(bookOfMend, 1),
+      Weighted(bookOfFrostLance, 1),
     ],
     rarities: [
       Weighted(Rarity.common, 60),
@@ -191,6 +201,8 @@ const Map<int, DropTable> seaCaveDropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 4),
+      Weighted(bookOfMend, 1),
+      Weighted(bookOfFrostLance, 1),
     ],
     rarities: [
       Weighted(Rarity.common, 50),
@@ -220,6 +232,8 @@ const Map<int, DropTable> seaCaveDropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 3),
+      Weighted(bookOfMend, 1),
+      Weighted(bookOfFrostLance, 1),
     ],
     rarities: [
       Weighted(Rarity.common, 40),
@@ -249,6 +263,8 @@ const Map<int, DropTable> seaCaveDropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 2),
+      Weighted(bookOfMend, 1),
+      Weighted(bookOfFrostLance, 1),
     ],
     rarities: [
       Weighted(Rarity.common, 30),
@@ -278,6 +294,8 @@ const Map<int, DropTable> seaCaveDropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 1),
+      Weighted(bookOfMend, 1),
+      Weighted(bookOfFrostLance, 1),
     ],
     rarities: [
       Weighted(Rarity.common, 25),
@@ -307,6 +325,8 @@ const Map<int, DropTable> seaCaveDropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 0),
+      Weighted(bookOfMend, 1),
+      Weighted(bookOfFrostLance, 1),
     ],
     rarities: [
       Weighted(Rarity.common, 20),

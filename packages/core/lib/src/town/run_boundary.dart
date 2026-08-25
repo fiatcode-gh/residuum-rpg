@@ -5,6 +5,8 @@ import '../engine/energy.dart';
 import '../engine/game_state.dart';
 import '../engine/rng.dart';
 import '../loot/drop.dart';
+import '../magic/mana.dart';
+import '../magic/spell.dart';
 import 'profile.dart';
 
 /// How a dungeon lays its floors out on a given visit.
@@ -53,6 +55,7 @@ GameState startRun(
   Profile profile, {
   required Dungeon dungeon,
   Map<int, DropTable> dropTables = const {},
+  Map<String, Spell> spells = const {},
   int lootSeedSalt = 0,
   DelveDepth? deepest,
 }) {
@@ -84,6 +87,9 @@ GameState startRun(
     skills: profile.skills,
     gold: profile.gold,
     dropTables: dropTables,
+    spells: spells,
+    knownSpells: profile.knownSpells,
+    mana: heroMaxMana(profile.loadout),
   );
 }
 
@@ -111,6 +117,7 @@ Profile endRun(Profile entered, GameState state, {required bool died}) {
     inventory: state.inventory,
     gold: state.gold,
     visit: state.visit,
+    knownSpells: state.knownSpells,
   );
   if (!died) return carried;
   final stripped = carried.copyWith(inventory: const [], gold: 0);
@@ -149,12 +156,23 @@ Profile suspendRun(Profile entered, GameState state) => entered.copyWith(
   inventory: state.inventory,
   gold: state.gold,
   visit: state.visit,
+  knownSpells: state.knownSpells,
 );
 
 /// The crawl [suspended] was, with [profile] walking back down into it.
 ///
-/// **Everything the hero is comes from the profile; everything the dungeon is
-/// comes from the suspended crawl.** Those are exactly the two halves
+/// **The mana, the ward and the binds come back exactly as they were left**, and
+/// that is the split holding rather than an exception to it: a floor's budget is
+/// a fact about the floor the hero is standing on, so it belongs to the crawl,
+/// beside the clock and the two streams. Refilling here would make walking home
+/// and back the cheapest way to buy a spell, and the suspend theorem — resume
+/// roll for roll — would stop being true of anything a caster did.
+///
+/// What the hero has *learned* comes from the profile instead, because a book
+/// read at the camp is a book the hero climbs back down knowing.
+///
+/// **Everything else the hero is comes from the profile; everything else the
+/// dungeon is comes from the suspended crawl.** Those are exactly the two halves
 /// [suspendRun] separated, put back together the other way round — so a potion
 /// bought while camped is in the pack, a night at the inn shows in the hit
 /// points, and a helm swapped at the gear door is the helm the hero climbs back
@@ -208,5 +226,10 @@ GameState resumeRun(Profile profile, GameState suspended) => GameState(
   equipment: profile.equipment,
   skills: profile.skills,
   dropTables: suspended.dropTables,
+  spells: suspended.spells,
+  knownSpells: profile.knownSpells,
+  mana: suspended.mana,
+  warded: suspended.warded,
+  bound: suspended.bound,
   nextDropNumber: suspended.nextDropNumber,
 );

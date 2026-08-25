@@ -39,10 +39,49 @@ String? describeEvent(
     'You drink ${item.displayName}. Nothing was wrong with you.',
   PotionDrunk(:final item, :final healed) =>
     'You drink ${item.displayName} and recover $healed.',
+  SpellLearned(:final book, :final spell) =>
+    'You read ${book.displayName} and learn ${spell.name}.',
+  SpellHit(:final spell, :final targetId, :final damage, :final bite) =>
+    '${_capitalised(spell.name)} ${_boltVerb(spell.type!)} '
+        '${_named(names, targetId)} for $damage${_biteAside(bite)}',
+  MendCast(:final healed) when healed == 0 =>
+    'You mend. Nothing was wrong with you.',
+  MendCast(:final healed) => 'You mend and recover $healed.',
+  WardRaised(:final absorbs) => 'A ward closes over you, holding $absorbs.',
+  WardStruck(:final absorbed, :final remaining) when remaining == 0 =>
+    'Your ward takes $absorbed and breaks.',
+  WardStruck(:final absorbed, :final remaining) =>
+    'Your ward takes $absorbed, $remaining left.',
+  MonsterBound(:final targetId, :final turns) =>
+    '${_capitalised(_named(names, targetId))} is bound for $turns turns.',
+  MonsterBanished(:final targetId) =>
+    '${_capitalised(_named(names, targetId))} vanishes and reappears '
+        'elsewhere.',
   SkillLevelledUp(:final skill, :final level) =>
     '${_skillName(skill)} rises to $level.',
   Fled() => 'You break off and get away.',
   GameOver() => null,
+};
+
+/// What a bolt of this type does to the thing it lands on.
+///
+/// The verb carries the damage type in a word, so the log says which element
+/// landed without the player having to remember what colour anything was.
+String _boltVerb(DamageType type) => switch (type) {
+  DamageType.fire => 'burns',
+  DamageType.frost => 'freezes',
+};
+
+/// The clause that says why a bolt's number differs from its usual range.
+///
+/// Spelled out rather than shown as a mark, because whether a creature resists
+/// what you are throwing at it is the single most useful thing a caster can
+/// learn from a fight — and a player who never reads it will go on throwing
+/// fire at the thing that shrugs it off.
+String _biteAside(SpellBite bite) => switch (bite) {
+  SpellBite.plain => '.',
+  SpellBite.resisted => ' — it resists.',
+  SpellBite.vulnerable => ' — it burns.',
 };
 
 /// What the log calls a slot, in words rather than a field name.
@@ -63,6 +102,7 @@ String _skillName(SkillId skill) => switch (skill) {
   SkillId.might => 'Might',
   SkillId.bulwark => 'Bulwark',
   SkillId.fleetfoot => 'Fleetfoot',
+  SkillId.wrath || SkillId.mending || SkillId.binding => skill.schoolWord,
 };
 
 /// The id the hero always answers to.

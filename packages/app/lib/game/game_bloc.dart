@@ -53,6 +53,20 @@ final class DropPressed extends GameBlocEvent {
   final String itemId;
 }
 
+/// Read the carried spell book with this id, learning what it teaches.
+final class ReadPressed extends GameBlocEvent {
+  const ReadPressed(this.itemId);
+
+  final String itemId;
+}
+
+/// Cast the known spell with this id at whatever the rules choose.
+final class CastPressed extends GameBlocEvent {
+  const CastPressed(this.spellId);
+
+  final String spellId;
+}
+
 /// Drink the first potion the hero is carrying, so the common case is one tap.
 final class QuickDrinkPressed extends GameBlocEvent {
   const QuickDrinkPressed();
@@ -240,6 +254,66 @@ class GameViewState {
       .where((monster) => game.visible.contains(monster.position))
       .length;
 
+  /// What the hero has left to cast with on this floor.
+  int get mana => game.mana;
+
+  /// The most this hero's schooling lets them hold.
+  int get maxMana => heroMaxMana(game.loadout);
+
+  /// What is left of the hero's ward, or zero when none stands.
+  int get warded => game.warded;
+
+  /// Every spell the hero can cast, in the order the pack screen lists them.
+  ///
+  /// School first and then name, so a spell keeps its place in the list from one
+  /// screen to the next. Position is information a player relies on, which is the
+  /// whole reason the pack's own sections are in a fixed order too.
+  List<Spell> get knownSpells {
+    final known = [
+      for (final id in game.knownSpells)
+        if (game.spells[id] case final Spell spell) spell,
+    ];
+    known.sort((one, other) {
+      final bySchool = one.school.index.compareTo(other.school.index);
+      return bySchool != 0 ? bySchool : one.name.compareTo(other.name);
+    });
+    return known;
+  }
+
+  /// Every spell book in the pack, so the screen can offer Read on each.
+  List<Item> get carriedBooks => [
+    for (final item in game.inventory)
+      if (item.base.isSpellBook) item,
+  ];
+
+  /// Why [spell] cannot be cast right now, or null when it can.
+  ///
+  /// **The screen asks the rules rather than deciding for itself**, which is what
+  /// stops the two from drifting: a button that greyed itself out on its own
+  /// arithmetic would eventually offer a cast the rules refuse, or refuse one
+  /// they would have allowed. The sentence it hands back is the one the log
+  /// would have printed.
+  String? castRefusal(Spell spell) {
+    if (game.isGameOver) return 'you are dead';
+    if (game.mana < spell.manaCost) return 'not enough mana';
+    if (_needsATarget(spell) && enemiesInSight == 0) return 'no enemy in sight';
+    return null;
+  }
+
+  bool _needsATarget(Spell spell) =>
+      spell.kind == SpellKind.bolt ||
+      spell.kind == SpellKind.bind ||
+      spell.kind == SpellKind.banish;
+
+  /// Why the carried book [itemId] cannot be read, or null when it can.
+  String? readRefusalFor(String itemId) => readRefusal(
+    game.loadout,
+    game.inventory,
+    game.knownSpells,
+    game.spells,
+    itemId,
+  );
+
   (int, int) get attack => heroAttack(game.hero, game.loadout);
 
   int get armor => heroArmor(game.loadout);
@@ -273,6 +347,8 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     on<UnequipPressed>(_onUnequipPressed);
     on<DrinkPressed>(_onDrinkPressed);
     on<DropPressed>(_onDropPressed);
+    on<ReadPressed>(_onReadPressed);
+    on<CastPressed>(_onCastPressed);
     on<QuickDrinkPressed>(_onQuickDrinkPressed);
     on<MapPanned>(_onMapPanned);
     on<SystemBackPressed>(_onSystemBackPressed);
@@ -349,6 +425,12 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
 
   void _onDropPressed(DropPressed event, Emitter<GameViewState> emit) =>
       _act(DropAction(event.itemId), emit);
+
+  void _onReadPressed(ReadPressed event, Emitter<GameViewState> emit) =>
+      _act(ReadAction(event.itemId), emit);
+
+  void _onCastPressed(CastPressed event, Emitter<GameViewState> emit) =>
+      _act(CastSpellAction(event.spellId), emit);
 
   void _onQuickDrinkPressed(
     QuickDrinkPressed event,

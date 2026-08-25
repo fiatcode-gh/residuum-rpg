@@ -368,4 +368,173 @@ void main() {
       expect(home.inventory, isEmpty);
     });
   });
+
+  group('magic through the four doors', () {
+    const firebolt = Spell(
+      id: 'firebolt',
+      name: 'Firebolt',
+      school: SkillId.wrath,
+      manaCost: 2,
+      requiredLevel: 0,
+      kind: SpellKind.bolt,
+      type: DamageType.fire,
+      min: 2,
+      max: 4,
+    );
+
+    test('startRun carries what the hero has learned down with them', () {
+      // arrange
+      final profile = _townie().copyWith(knownSpells: const {'firebolt'});
+
+      // act
+      final run = startRun(profile, dungeon: _shuffling());
+
+      // assert
+      expect(run.knownSpells, const {'firebolt'});
+    });
+
+    test('startRun injects the spell registry, as it injects drop tables', () {
+      // arrange
+      final profile = _townie();
+
+      // act
+      final run = startRun(
+        profile,
+        dungeon: _shuffling(),
+        spells: const {'firebolt': firebolt},
+      );
+
+      // assert
+      expect(run.spells, const {'firebolt': firebolt});
+    });
+
+    test('startRun opens the crawl with a full pool', () {
+      // arrange
+      final profile = _townie().copyWith(
+        skills: {...untrainedSkills, SkillId.wrath: const SkillState(level: 4)},
+      );
+
+      // act
+      final run = startRun(profile, dungeon: _shuffling());
+
+      // assert
+      expect(run.mana, heroMaxMana(profile.loadout));
+      expect(run.mana, baseMana + 2);
+    });
+
+    test('startRun opens the crawl with no ward and nothing bound', () {
+      // arrange
+      final profile = _townie();
+
+      // act
+      final run = startRun(profile, dungeon: _shuffling());
+
+      // assert
+      expect(run.warded, 0);
+      expect(run.bound, isEmpty);
+    });
+
+    test('endRun brings what was learned home', () {
+      // arrange
+      final profile = _townie();
+      final run = startRun(profile, dungeon: _shuffling());
+
+      // act
+      final home = endRun(
+        profile,
+        run.copyWith(knownSpells: const {'mend'}),
+        died: false,
+      );
+
+      // assert
+      expect(home.knownSpells, const {'mend'});
+    });
+
+    test('dying burns the pack and the purse but never the spells', () {
+      // arrange
+      final profile = _townie();
+      final run = startRun(profile, dungeon: _shuffling());
+
+      // act
+      final home = endRun(
+        profile,
+        run.copyWith(knownSpells: const {'mend'}),
+        died: true,
+      );
+
+      // assert - learned exactly as skills are learned, and kept for the same
+      // reason: the book was spent when it was read
+      expect(home.knownSpells, const {'mend'});
+      expect(home.inventory, isEmpty);
+      expect(home.gold, 0);
+    });
+
+    test('suspendRun carries the spells out to the camp', () {
+      // arrange
+      final profile = _townie();
+      final run = startRun(profile, dungeon: _shuffling());
+
+      // act
+      final camped = suspendRun(profile, run.copyWith(knownSpells: {'ward'}));
+
+      // assert
+      expect(camped.knownSpells, const {'ward'});
+    });
+
+    test(
+      'resumeRun restores the run\'s mana, ward and binds, roll for roll',
+      () {
+        // arrange
+        final profile = _townie();
+        final opened = startRun(profile, dungeon: _shuffling());
+        final spent = opened.copyWith(
+          mana: 1,
+          warded: 4,
+          bound: const {'ghoul-1-1': 2},
+        );
+        final camped = suspendRun(profile, spent);
+
+        // act
+        final back = resumeRun(camped, spent);
+
+        // assert - a camp is not a rest: what the crawl was holding is what it
+        // holds when the hero climbs back down into it
+        expect(back.mana, 1);
+        expect(back.warded, 4);
+        expect(back.bound, const {'ghoul-1-1': 2});
+      },
+    );
+
+    test('resumeRun takes the known spells from the hero, not the crawl', () {
+      // arrange
+      final profile = _townie();
+      final opened = startRun(profile, dungeon: _shuffling());
+      final camped = suspendRun(
+        profile,
+        opened,
+      ).copyWith(knownSpells: const {'bind'});
+
+      // act
+      final back = resumeRun(camped, opened);
+
+      // assert - a book read at the camp is a book the hero climbs down knowing
+      expect(back.knownSpells, const {'bind'});
+    });
+
+    test('resumeRun carries the spell registry back down', () {
+      // arrange
+      final profile = _townie();
+      final opened = startRun(
+        profile,
+        dungeon: _shuffling(),
+        spells: const {'firebolt': firebolt},
+      );
+
+      // act
+      final back = resumeRun(suspendRun(profile, opened), opened);
+
+      // assert
+      expect(back.spells, const {'firebolt': firebolt});
+    });
+  });
 }

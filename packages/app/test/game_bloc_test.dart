@@ -53,6 +53,9 @@ GameState arenaGame({
   Equipment equipment = const {},
   Map<SkillId, SkillState> skills = untrainedSkills,
   Map<int, DropTable> dropTables = const {},
+  Map<String, Spell> spells = const {},
+  Set<String> knownSpells = const {},
+  int mana = 0,
 }) {
   final map = FloorMap.parse(ascii);
   final visible = computeFov(map, heroAt, fovRadius);
@@ -76,6 +79,9 @@ GameState arenaGame({
     buildFloor: buildFloor,
     visible: visible,
     explored: explored ?? {...visible},
+    spells: spells,
+    knownSpells: knownSpells,
+    mana: mana,
     depth: depth,
     stairsDown: stairsDown,
     stairsUp: stairsUp,
@@ -1297,5 +1303,198 @@ void _lootTests() {
         expect(bloc.state.isWalking, isFalse);
       },
     );
+  });
+
+  group('magic on the crawl screen', () {
+    Item book(String id, BaseItem base) =>
+        Item(id: id, base: base, rarity: Rarity.common);
+
+    GameState caster({
+      List<Actor> monsters = const [],
+      List<Item> inventory = const [],
+      Set<String> knownSpells = const {},
+      int mana = 10,
+      Map<SkillId, SkillState> skills = untrainedSkills,
+    }) => arenaGame(
+      heroAt: const Position(1, 1),
+      monsters: monsters,
+      inventory: inventory,
+      skills: skills,
+      spells: spellsById,
+      knownSpells: knownSpells,
+      mana: mana,
+    );
+
+    Actor target(Position at) => Actor(
+      id: 'ghoul-1',
+      name: 'the ghoul',
+      glyph: 'g',
+      position: at,
+      hp: 10,
+      maxHp: 10,
+      attackMin: 1,
+      attackMax: 1,
+      speed: 10,
+      energy: actThreshold,
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'reading a book learns the spell and spends the page',
+      build: () =>
+          GameBloc(game: caster(inventory: [book('kit-4', bookOfFirebolt)])),
+      act: (bloc) => bloc.add(const ReadPressed('kit-4')),
+      verify: (bloc) {
+        expect(bloc.state.game.knownSpells, {'firebolt'});
+        expect(bloc.state.carriedBooks, isEmpty);
+        expect(bloc.state.log.last, contains('learn Firebolt'));
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a book past its gate is refused in a sentence, not swallowed',
+      build: () =>
+          GameBloc(game: caster(inventory: [book('kit-5', bookOfFrostLance)])),
+      act: (bloc) => bloc.add(const ReadPressed('kit-5')),
+      verify: (bloc) {
+        expect(bloc.state.game.knownSpells, isEmpty);
+        expect(bloc.state.log.last, contains('Needs Wrath 4'));
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'casting a bolt spends the mana and burns what it hits',
+      build: () => GameBloc(
+        game: caster(
+          monsters: [target(const Position(4, 1))],
+          knownSpells: const {'firebolt'},
+        ),
+      ),
+      act: (bloc) => bloc.add(const CastPressed('firebolt')),
+      verify: (bloc) {
+        expect(bloc.state.mana, 10 - firebolt.manaCost);
+        expect(bloc.state.log.join(' '), contains('burns the ghoul'));
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a cast with nothing in sight is refused in a sentence',
+      build: () => GameBloc(game: caster(knownSpells: const {'firebolt'})),
+      act: (bloc) => bloc.add(const CastPressed('firebolt')),
+      verify: (bloc) {
+        expect(bloc.state.mana, 10);
+        expect(bloc.state.log.last, contains('No enemy in sight'));
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a ward shows what it is holding, and the log says when it is struck',
+      build: () => GameBloc(
+        game: caster(
+          monsters: [target(const Position(2, 1))],
+          knownSpells: const {'ward'},
+          skills: {
+            ...untrainedSkills,
+            SkillId.mending: const SkillState(level: 3),
+          },
+        ),
+      ),
+      act: (bloc) => bloc.add(const CastPressed('ward')),
+      verify: (bloc) {
+        expect(bloc.state.warded, lessThan(ward.min));
+        expect(bloc.state.log.join(' '), contains('ward'));
+      },
+    );
+
+    test('the readout says what the hero can hold, not a constant', () {
+      // arrange
+      final schooled = GameBloc(
+        game: caster(
+          skills: {
+            ...untrainedSkills,
+            SkillId.wrath: const SkillState(level: 6),
+          },
+        ),
+      );
+
+      // act
+      final ceiling = schooled.state.maxMana;
+
+      // assert
+      expect(ceiling, baseMana + 3);
+    });
+
+    test('known spells are listed by school and then by name', () {
+      // arrange
+      final bloc = GameBloc(
+        game: caster(knownSpells: const {'ward', 'firebolt', 'bind', 'mend'}),
+      );
+
+      // act
+      final listed = [for (final spell in bloc.state.knownSpells) spell.id];
+
+      // assert - Wrath, then Mending, then Binding, exactly as the enum runs
+      expect(listed, ['firebolt', 'mend', 'ward', 'bind']);
+    });
+
+    test('a spell the pool is short of carries its reason', () {
+      // arrange
+      final bloc = GameBloc(
+        game: caster(knownSpells: const {'firebolt'}, mana: 1),
+      );
+
+      // act
+      final reason = bloc.state.castRefusal(firebolt);
+
+      // assert - a sentence the player can read, never a greyed-out control
+      expect(reason, 'not enough mana');
+    });
+
+    test('a bolt with nothing to throw it at carries its reason', () {
+      // arrange
+      final bloc = GameBloc(game: caster(knownSpells: const {'firebolt'}));
+
+      // act
+      final reason = bloc.state.castRefusal(firebolt);
+
+      // assert
+      expect(reason, 'no enemy in sight');
+    });
+
+    test('a mend is castable in an empty room, because it is cast on you', () {
+      // arrange
+      final bloc = GameBloc(game: caster(knownSpells: const {'mend'}));
+
+      // act
+      final reason = bloc.state.castRefusal(mend);
+
+      // assert
+      expect(reason, isNull);
+    });
+
+    test('a locked book carries the gate as its reason', () {
+      // arrange
+      final bloc = GameBloc(
+        game: caster(inventory: [book('kit-5', bookOfWard)]),
+      );
+
+      // act
+      final reason = bloc.state.readRefusalFor('kit-5');
+
+      // assert
+      expect(reason, 'needs Mending 3');
+    });
+
+    test('a book the hero can read carries no reason at all', () {
+      // arrange
+      final bloc = GameBloc(
+        game: caster(inventory: [book('kit-4', bookOfMend)]),
+      );
+
+      // act
+      final reason = bloc.state.readRefusalFor('kit-4');
+
+      // assert
+      expect(reason, isNull);
+    });
   });
 }

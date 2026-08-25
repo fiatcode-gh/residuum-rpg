@@ -2,6 +2,7 @@ import 'package:residuum_core/core.dart';
 
 import 'affix_pool.dart';
 import 'armory.dart';
+import 'spells.dart';
 
 /// What a night at the inn costs.
 ///
@@ -20,6 +21,14 @@ const int innPrice = 12;
 /// into a dice roll made before the dungeon got a say in it.
 const int stockedPotions = 3;
 
+/// The floor a spell book is worth before its gate is counted.
+///
+/// A book has no attack, no armour and no healing, so the worth every other
+/// item is read off comes to nothing for one — and the clamp used to price the
+/// Book of Banish at a single gold, which is less than the merchant asks for a
+/// rusty sword. The flat term is what a page is worth for being a page.
+const int bookWorth = 10;
+
 /// What the merchant pays for [item].
 ///
 /// Worth is read off what the thing does rather than a price tag on the base
@@ -27,16 +36,32 @@ const int stockedPotions = 3;
 /// Armour counts double against attack because a point of armour applies to
 /// every blow of a fight while a point of damage applies to one swing.
 ///
+/// **A book is worth [bookWorth] plus the level its spell is gated behind**,
+/// which is the same rule read off a different verb: what a book does is teach
+/// one spell, and the gate is the only number that says which spells are worth
+/// more than others. The gate is looked up through [BaseItem.teaches] rather
+/// than written on the book, so a book cannot be added to the armory with its
+/// price out of step with the spell it opens.
+///
 /// The tier multiplies rather than adds, because a tier *is* its affix count:
-/// a Rare is two bonuses on the same base, and the price says so.
+/// a Rare is two bonuses on the same base, and the price says so. It is always
+/// one for a book, which [rollDrop] forces to Common — so the term above is
+/// the whole of a book's price, and that is deliberate.
 int sellPriceOf(Item item) {
   final worth =
       item.base.attackMin +
       item.base.attackMax +
       item.base.armor * 2 +
-      item.base.heal;
+      item.base.heal +
+      _bookWorthOf(item.base);
   final priced = worth * (1 + item.rarity.affixCount);
   return priced < 1 ? 1 : priced;
+}
+
+int _bookWorthOf(BaseItem base) {
+  final teaches = base.teaches;
+  if (teaches == null) return 0;
+  return bookWorth + (spellOrNull(teaches)?.requiredLevel ?? 0);
 }
 
 /// What the merchant charges for [item]. Always more than [sellPriceOf].
@@ -59,6 +84,13 @@ int buyPriceOf(Item item) => sellPriceOf(item) * 2;
 /// the shelf directly. It stays in the list at zero for the same reason
 /// [Rarity.legendary] does in the drop tables: a table that names everything it
 /// could carry is a table a reader can check.
+///
+/// **The shop stocks the two ungated books and only those.** A hero who has
+/// never found a book has no way into magic at all otherwise, and the two that
+/// open Wrath and Mending are the two a fresh hero can actually read. The other
+/// four are named at zero rather than left out, for the reason above: they are
+/// found in the places that teach them, and a shelf that sold them would make
+/// the walk pointless.
 const DropTable marketTable = DropTable(
   items: [
     Weighted(healingPotion, 0),
@@ -75,6 +107,8 @@ const DropTable marketTable = DropTable(
     Weighted(ironGauntlets, 4),
     Weighted(ironGreaves, 4),
     Weighted(leatherBoots, 4),
+    Weighted(bookOfFirebolt, 2),
+    Weighted(bookOfMend, 2),
   ],
   rarities: [
     Weighted(Rarity.common, 55),

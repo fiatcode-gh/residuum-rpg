@@ -1402,4 +1402,78 @@ void main() {
       },
     );
   });
+
+  group('reading a book in town', () {
+    Profile carrying(BaseItem book, {Map<SkillId, SkillState>? skills}) =>
+        _fresh().copyWith(
+          inventory: [_gear('held-9', book)],
+          skills: skills ?? untrainedSkills,
+        );
+
+    blocTest<TownBloc, TownViewState>(
+      'learns the spell and spends the page, and no gold changes hands',
+      build: () => TownBloc(profile: carrying(bookOfFirebolt)),
+      act: (bloc) => bloc.add(const ReadBookPressed('held-9')),
+      verify: (bloc) {
+        expect(bloc.state.profile.knownSpells, {'firebolt'});
+        expect(bloc.state.profile.inventory, isEmpty);
+        expect(bloc.state.profile.gold, _fresh().gold);
+        expect(bloc.state.notice, isNull);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a book past its gate is refused in the dungeon\'s own sentence',
+      build: () => TownBloc(profile: carrying(bookOfFrostLance)),
+      act: (bloc) => bloc.add(const ReadBookPressed('held-9')),
+      verify: (bloc) {
+        expect(bloc.state.profile.knownSpells, isEmpty);
+        expect(bloc.state.profile.inventory, hasLength(1));
+        expect(bloc.state.notice, 'needs Wrath 4');
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'the same book goes through once the school reaches the gate',
+      build: () => TownBloc(
+        profile: carrying(
+          bookOfFrostLance,
+          skills: {
+            ...untrainedSkills,
+            SkillId.wrath: const SkillState(level: 4),
+          },
+        ),
+      ),
+      act: (bloc) => bloc.add(const ReadBookPressed('held-9')),
+      verify: (bloc) {
+        expect(bloc.state.profile.knownSpells, {'frost-lance'});
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a spell already known is refused rather than charged for twice',
+      build: () => TownBloc(
+        profile: carrying(bookOfFirebolt)
+            .copyWith(knownSpells: const {'firebolt'}),
+      ),
+      act: (bloc) => bloc.add(const ReadBookPressed('held-9')),
+      verify: (bloc) {
+        expect(bloc.state.profile.inventory, hasLength(1));
+        expect(bloc.state.notice, 'you already know Firebolt');
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'what was learned in town walks into the dungeon',
+      build: () => TownBloc(profile: carrying(bookOfMend)),
+      act: (bloc) {
+        bloc.add(const ReadBookPressed('held-9'));
+        bloc.add(EnterDungeonPressed(cryptNode));
+      },
+      verify: (bloc) {
+        expect(bloc.state.run!.knownSpells, {'mend'});
+        expect(bloc.state.run!.mana, heroMaxMana(bloc.state.profile.loadout));
+      },
+    );
+  });
 }

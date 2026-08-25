@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/item_presentation.dart';
+import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 const _sword = BaseItem(
@@ -453,6 +454,78 @@ void main() {
 
       // assert
       expect(line, '▲+1 arm · ▼-4 hp');
+    });
+  });
+
+  group('the Books section', () {
+    Item book(String id, BaseItem base) =>
+        Item(id: id, base: base, rarity: Rarity.common);
+
+    test('a spell book is read in Books, never in Potions', () {
+      // arrange
+      final pack = [book('kit-4', bookOfFirebolt)];
+
+      // act
+      final sections = packSections(pack);
+
+      // assert - the fall-through used to file every unknown kind as a drink,
+      // which would have offered the player a Drink button on a book
+      expect(sections[PackSection.books], hasLength(1));
+      expect(sections[PackSection.potions], isEmpty);
+    });
+
+    test('the four sections are always present, in their fixed order', () {
+      // arrange
+      // act
+      final sections = packSections(const []);
+
+      // assert - position is information the player relies on, so an empty
+      // section keeps its place rather than closing the gap
+      expect(sections.keys, [
+        PackSection.weapons,
+        PackSection.armour,
+        PackSection.potions,
+        PackSection.books,
+      ]);
+      expect(sections.values, everyElement(isEmpty));
+    });
+
+    test('two copies of one book stack into a single row', () {
+      // arrange
+      final pack = [
+        book('kit-4', bookOfFirebolt),
+        book('kit-5', bookOfFirebolt),
+      ];
+
+      // act
+      final rows = packSections(pack)[PackSection.books]!;
+
+      // assert
+      expect(rows, hasLength(1));
+      expect(rows.single.count, 2);
+      expect(rows.single.label, contains('2'));
+    });
+
+    test('two different books are two rows', () {
+      // arrange
+      final pack = [book('kit-4', bookOfFirebolt), book('kit-5', bookOfMend)];
+
+      // act
+      final rows = packSections(pack)[PackSection.books]!;
+
+      // assert
+      expect(rows, hasLength(2));
+    });
+
+    test('a book has no stat line to show, and says nothing rather than 0', () {
+      // arrange
+      final page = book('kit-4', bookOfFirebolt);
+
+      // act
+      final line = statLine(page);
+
+      // assert
+      expect(line, isEmpty);
     });
   });
 }

@@ -111,6 +111,7 @@ void main() {
         'inventory',
         'bank',
         'skills',
+        'knownSpells',
       ]);
     });
 
@@ -160,6 +161,66 @@ void main() {
           ),
         ),
       );
+    });
+  });
+
+  group('what the hero learned to cast', () {
+    test('survives a round trip', () {
+      // arrange
+      final before = _lived().copyWith(knownSpells: const {'firebolt', 'mend'});
+
+      // act
+      final after = decodeProfile({
+        'profile': encodeProfile(before),
+      }, 'profile');
+
+      // assert
+      expect(after.knownSpells, const {'firebolt', 'mend'});
+    });
+
+    test('is written as sorted ids, so one hero is one document', () {
+      // arrange
+      final before = _lived().copyWith(knownSpells: const {'mend', 'bind'});
+
+      // act
+      final written = encodeProfile(before);
+
+      // assert
+      expect(written['knownSpells'], ['bind', 'mend']);
+    });
+
+    test('is written even by a hero who has read nothing', () {
+      // arrange
+      final before = _lived();
+
+      // act
+      final written = encodeProfile(before);
+
+      // assert - present and empty, never absent
+      expect(written['knownSpells'], isEmpty);
+    });
+
+    test('a spell this build never heard of is refused by name', () {
+      // arrange
+      final written = encodeProfile(_lived());
+      written['knownSpells'] = ['telekinesis'];
+
+      // act
+      call() => decodeProfile({'profile': written}, 'profile');
+
+      // assert
+      expect(call, throwsA(isA<SaveMalformed>()));
+    });
+
+    test('a missing key is refused rather than read as knowing nothing', () {
+      // arrange
+      final written = encodeProfile(_lived())..remove('knownSpells');
+
+      // act
+      call() => decodeProfile({'profile': written}, 'profile');
+
+      // assert - never repair: a hero who quietly lost a spell could not tell
+      expect(call, throwsA(isA<SaveMalformed>()));
     });
   });
 }

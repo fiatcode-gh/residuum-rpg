@@ -88,8 +88,8 @@ void main() {
 
       // assert
       expect(written.keys.first, 'version');
-      expect(written['version'], 1);
-      expect(saveVersion, 1);
+      expect(written['version'], 2);
+      expect(saveVersion, 2);
     });
 
     test('being in town is written out, not left out', () {
@@ -106,7 +106,7 @@ void main() {
 
     test('malformed JSON is refused with a sentence', () {
       // arrange
-      const written = '{"version": 1, "profile":';
+      const written = '{"version": 2, "profile":';
 
       // act
       final reason = _reason(written);
@@ -129,13 +129,13 @@ void main() {
     test('a version this build does not know is refused by number', () {
       // arrange
       final written = _asMap(_save(newProfile()));
-      written['version'] = 2;
+      written['version'] = 3;
 
       // act
       final reason = _reason(jsonEncode(written));
 
       // assert
-      expect(reason, contains('2'));
+      expect(reason, contains('3'));
       expect(reason, contains('version'));
     });
 
@@ -152,7 +152,7 @@ void main() {
 
     test('the version is checked before any other field is touched', () {
       // arrange
-      const written = '{"version": 2, "heroes": "nonsense"}';
+      const written = '{"version": 3, "heroes": "nonsense"}';
 
       // act
       final reason = _reason(written);
@@ -257,15 +257,15 @@ void main() {
         '',
         'null',
         '{}',
-        '{"version": 1}',
-        '{"version": "1"}',
-        '{"version": 1, "profile": {}}',
-        '{"version": 1, "active": "hero-1"}',
-        '{"version": 1, "active": "hero-1", "heroes": {}}',
-        '{"version": 1, "active": "hero-1", "heroes": null}',
-        '{"version": 1, "active": "hero-1", "heroes": {"hero-1": {}}}',
-        '{"version": 1, "active": 7, "heroes": {"hero-1": {}}}',
-        '{"version": 1, "heroes": {"hero-1": {"label": "x"}}}',
+        '{"version": 2}',
+        '{"version": "2"}',
+        '{"version": 2, "profile": {}}',
+        '{"version": 2, "active": "hero-1"}',
+        '{"version": 2, "active": "hero-1", "heroes": {}}',
+        '{"version": 2, "active": "hero-1", "heroes": null}',
+        '{"version": 2, "active": "hero-1", "heroes": {"hero-1": {}}}',
+        '{"version": 2, "active": 7, "heroes": {"hero-1": {}}}',
+        '{"version": 2, "heroes": {"hero-1": {"label": "x"}}}',
       ];
 
       // act

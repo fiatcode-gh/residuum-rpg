@@ -183,19 +183,19 @@ const List<String> _ruinedKeepBottomSpawns = [
 const List<String> _seaCaveFirstLitter = [];
 
 const List<String> _seaCaveBottomLitter = [
-  'floor-6-1 Epic Keen Vicious Greatsword of Fury',
-  'trophy-sea-cave Rare Reinforced Kite Shield of Vigour',
+  'floor-6-1 Common Healing Potion',
+  'trophy-sea-cave Epic Sturdy Reinforced Iron Greaves of Swiftness',
 ];
 
 const List<String> _ruinedKeepFirstLitter = [
-  'floor-1-2 Fine War Axe of Embers',
-  'floor-1-1 Fine Iron Gauntlets of Vigour',
+  'floor-1-2 Common Healing Potion',
+  'floor-1-1 Fine War Axe of Embers',
 ];
 
 const List<String> _ruinedKeepBottomLitter = [
-  'trophy-ruined-keep Rare Reinforced Mail Hauberk of Swiftness',
-  'floor-7-2 Fine Keen Maul',
-  'floor-7-1 Common Healing Potion',
+  'trophy-ruined-keep Rare Greatsword of Fury of Embers',
+  'floor-7-2 Fine Reinforced Mail Hauberk',
+  'floor-7-1 Epic Reinforced Kite Shield of Vigour of Swiftness',
 ];
 
 /// What the bosses are standing over, named in full.
@@ -203,8 +203,16 @@ const List<String> _ruinedKeepBottomLitter = [
 /// The whole display name rather than the rarity alone, because a trophy is
 /// item, tier and affixes together and any one of them moving is the loot
 /// stream having moved.
-const String _seaCaveTrophy = 'Rare Reinforced Kite Shield of Vigour';
-const String _ruinedKeepTrophy = 'Rare Reinforced Mail Hauberk of Swiftness';
+///
+/// **Both moved when the dungeons learned to drop books, and neither trophy
+/// table was touched.** A trophy is rolled off the bottom floor's own stream
+/// after that floor's litter, so a depth table that gives up one more kind of
+/// thing hands the trophy roll a different number to work from. The promise
+/// these pin — rare or better, on the deepest floor, every seed — is asserted
+/// separately and still holds.
+const String _seaCaveTrophy =
+    'Epic Sturdy Reinforced Iron Greaves of Swiftness';
+const String _ruinedKeepTrophy = 'Rare Greatsword of Fury of Embers';
 
 Floor _pinnedFloor(ThemedDungeon dungeon, int depth) => themedFloor(
   dungeon,

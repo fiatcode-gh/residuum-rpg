@@ -919,15 +919,16 @@ void _armouryAndLoot() {
       expect(ids.toSet(), hasLength(ids.length));
     });
 
-    test('every base item draws as a weapon, armour or a potion', () {
+    test('every base item draws as a weapon, armour, a drink or a book', () {
       // arrange
       const items = armory;
 
       // act
       final glyphs = items.map((item) => item.glyph).toSet();
 
-      // assert
-      expect(glyphs, {')', '[', '!'});
+      // assert - a closed set, so a new kind of item cannot arrive drawing as
+      // something the player already learned to read as something else
+      expect(glyphs, {')', '[', '!', '?'});
     });
 
     test('a weapon needs hands and goes in the main hand', () {

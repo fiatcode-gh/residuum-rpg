@@ -79,12 +79,20 @@ class DropTable extends Equatable {
 /// twice. Each table's pools therefore need at least [Rarity.legendary]'s affix
 /// count of entries; the content validation tests pin that.
 ///
-/// A potion is forced to [Rarity.common]. Affixes on a consumable would be
-/// bonuses on a thing that is never worn, and a 'Rare Healing Potion of Vigour'
-/// promises the player something the rules cannot deliver.
+/// A consumable is forced to [Rarity.common]. Affixes on a thing that is used
+/// up would be bonuses on something that will not be there tomorrow, and a
+/// 'Rare Healing Potion of Vigour' promises the player something the rules
+/// cannot deliver. A spell book is the same argument with a different noun:
+/// what it gives the hero is the spell, once, and an 'Epic Book of Firebolt'
+/// would say the table gave up something better than it did.
+///
+/// **Forcing costs the stream nothing**, and that is deliberate: a consumable
+/// stops after the base-item draw, so a table holding one advances exactly as
+/// far as a table holding the other, and adding books to a table can never
+/// reshuffle the items around them by drawing a different number of times.
 Item rollDrop(DropTable table, Rng rng, String id) {
   final base = _draw(table.items, rng);
-  if (base.isPotion) {
+  if (base.isConsumable) {
     return Item(id: id, base: base, rarity: Rarity.common);
   }
   final rarity = _draw(table.rarities, rng);

@@ -13,7 +13,7 @@ const _rule = Color(0xFF2A2E38);
 const _mono = TextStyle(fontFamily: 'monospace', fontSize: 13, color: _ink);
 const _monoDim = TextStyle(fontFamily: 'monospace', fontSize: 11, color: _dim);
 
-/// The pack, the six slots, the derived stats and the four skills.
+/// The pack, the six slots, the derived stats, the spells and the seven skills.
 ///
 /// Nothing on this screen is told apart by colour. Rarity is the tier word in
 /// the item's own name plus a marking column; an empty slot is a dash; skill
@@ -38,6 +38,11 @@ class InventoryScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           children: [
             _DerivedStats(state: state),
+            if (state.knownSpells.isNotEmpty) ...[
+              const _Heading('Spells'),
+              for (final spell in state.knownSpells)
+                _SpellRow(spell: spell, reason: state.castRefusal(spell)),
+            ],
             const _Heading('Worn'),
             for (final slot in EquipSlot.values)
               _SlotRow(slot: slot, item: state.game.equipment[slot]),
@@ -52,7 +57,13 @@ class InventoryScreen extends StatelessWidget {
               if (sections[section]!.isNotEmpty) ...[
                 _Heading(section.title),
                 for (final stack in sections[section]!)
-                  _CarriedRow(stack: stack, equipment: state.game.equipment),
+                  _CarriedRow(
+                    stack: stack,
+                    equipment: state.game.equipment,
+                    readReason: stack.item.base.isSpellBook
+                        ? state.readRefusalFor(stack.item.id)
+                        : null,
+                  ),
               ],
             const _Heading('Skills'),
             for (final skill in SkillId.values)
@@ -116,6 +127,9 @@ class _DerivedStats extends StatelessWidget {
           Text('Dodge    ${state.dodgePercent}%', style: _mono),
           Text('Speed    ${state.speed}', style: _mono),
           Text('Health   ${state.game.hero.hp}/${state.maxHp}', style: _mono),
+          Text('Mana     ${state.mana}/${state.maxMana}', style: _mono),
+          if (state.warded > 0)
+            Text('Ward     ${state.warded} held', style: _mono),
         ],
       ),
     );
@@ -189,11 +203,93 @@ String slotLabel(EquipSlot slot) => switch (slot) {
   EquipSlot.feet => 'feet',
 };
 
+/// One known spell: what it is, what it costs, and whether it can be cast now.
+///
+/// **The school is a marking and a word, never a colour.** The author is
+/// deuteranomalous and the standing rule is that no category may be carried by
+/// hue alone, so a Wrath row says so twice — the glyph and the word — and reads
+/// correctly in greyscale and aloud.
+///
+/// A spell that cannot be cast keeps its button and gains a sentence saying why,
+/// rather than going quietly grey. "Not enough mana" is a thing the player can
+/// act on; a dimmed control is a thing they have to guess at.
+class _SpellRow extends StatelessWidget {
+  const _SpellRow({required this.spell, required this.reason});
+
+  final Spell spell;
+
+  /// Why casting is refused right now, or null when it is not.
+  final String? reason;
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<GameBloc>();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 28,
+            child: Text(spell.school.schoolMarking, style: _mono),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(spell.name, style: _mono),
+                Text(
+                  '${spell.school.schoolWord} · ${spell.manaCost} mana'
+                  '${_effectOf(spell)}',
+                  style: _monoDim,
+                ),
+                if (reason != null) Text(reason!, style: _monoDim),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: reason == null
+                ? () => bloc.add(CastPressed(spell.id))
+                : null,
+            child: const Text(
+              'Cast',
+              style: TextStyle(fontFamily: 'monospace', fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What a spell does, in the numbers the player is choosing between.
+String _effectOf(Spell spell) => switch (spell.kind) {
+  SpellKind.bolt =>
+    ' · ${spell.min}-${spell.max} ${spell.type!.word} ${spell.type!.marking}',
+  SpellKind.mend => ' · heals ${spell.min}',
+  SpellKind.ward => ' · absorbs ${spell.min}',
+  SpellKind.bind => ' · holds ${spell.min} turns',
+  SpellKind.banish => ' · moves it away',
+};
+
 class _CarriedRow extends StatelessWidget {
-  const _CarriedRow({required this.stack, required this.equipment});
+  const _CarriedRow({
+    required this.stack,
+    required this.equipment,
+    this.readReason,
+  });
 
   final ItemStack stack;
   final Equipment equipment;
+
+  /// Why this book cannot be read, or null when it can.
+  ///
+  /// **Null for everything that is not a book**, and the caller is what makes it
+  /// so. Asking the shared rule about a potion gets a perfectly true sentence —
+  /// "Healing Potion is not something to read" — and printing it under a Drink
+  /// button is nonsense the player has to work past. A refusal only belongs on a
+  /// row whose action it refuses.
+  final String? readReason;
 
   @override
   Widget build(BuildContext context) {
@@ -213,6 +309,7 @@ class _CarriedRow extends StatelessWidget {
               children: [
                 Text(stack.label, style: _mono),
                 if (stats.isNotEmpty) Text(stats, style: _monoDim),
+                if (readReason != null) Text(readReason!, style: _monoDim),
                 if (slot != null)
                   Text(
                     deltaLine(wornDeltas(item, equipment[slot])),
@@ -226,6 +323,16 @@ class _CarriedRow extends StatelessWidget {
               onPressed: () => bloc.add(DrinkPressed(item.id)),
               child: const Text(
                 'Drink',
+                style: TextStyle(fontFamily: 'monospace', fontSize: 12),
+              ),
+            )
+          else if (item.base.isSpellBook)
+            TextButton(
+              onPressed: readReason == null
+                  ? () => bloc.add(ReadPressed(item.id))
+                  : null,
+              child: const Text(
+                'Read',
                 style: TextStyle(fontFamily: 'monospace', fontSize: 12),
               ),
             )

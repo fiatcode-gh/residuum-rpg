@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:residuum_content/content.dart';
 import 'package:residuum_content/src/save/run_codec.dart';
+import 'package:residuum_content/src/save/save_json.dart';
 import 'package:residuum_core/core.dart';
 import 'package:test/test.dart';
 
@@ -279,6 +280,75 @@ void main() {
 
       // assert
       expect(after.isGameOver, isTrue);
+    });
+  });
+
+  group('what a crawl holds for a caster', () {
+    test('mana, ward and binds survive a round trip', () {
+      // arrange
+      final spent = newGame(worldSeed: 3).copyWith(
+        mana: 2,
+        warded: 5,
+        bound: const {'ghoul-1': 3, 'rat-2': 1},
+        knownSpells: const {'firebolt'},
+      );
+
+      // act
+      final back = _reread(spent);
+
+      // assert
+      expect(back.mana, 2);
+      expect(back.warded, 5);
+      expect(back.bound, const {'ghoul-1': 3, 'rat-2': 1});
+      expect(back.knownSpells, const {'firebolt'});
+    });
+
+    test('the bind counters are written sorted by the monster they hold', () {
+      // arrange
+      final held = newGame(
+        worldSeed: 3,
+      ).copyWith(bound: const {'wight-2': 1, 'ghoul-1': 3});
+
+      // act
+      final written = encodeRun(held)['bound']! as Map<String, Object?>;
+
+      // assert - one crawl encodes to one document
+      expect(written.keys, ['ghoul-1', 'wight-2']);
+    });
+
+    test('a crawl comes back knowing every spell this build casts', () {
+      // arrange
+      final game = newGame(worldSeed: 3);
+
+      // act
+      final back = _reread(game);
+
+      // assert - the registry rides content on the way back in, exactly as the
+      // drop tables and the floor builder do
+      expect(back.spells, spellsById);
+    });
+
+    test('a missing mana key is refused rather than read as empty', () {
+      // arrange
+      final written = encodeRun(newGame(worldSeed: 3))..remove('mana');
+
+      // act
+      call() => loadRun({'run': written}, 'run', dungeon: cryptNode);
+
+      // assert
+      expect(call, throwsA(isA<SaveMalformed>()));
+    });
+
+    test('a bind counter that is not a whole number is refused', () {
+      // arrange
+      final written = encodeRun(newGame(worldSeed: 3));
+      written['bound'] = {'ghoul-1': 'soon'};
+
+      // act
+      call() => loadRun({'run': written}, 'run', dungeon: cryptNode);
+
+      // assert
+      expect(call, throwsA(isA<SaveMalformed>()));
     });
   });
 }

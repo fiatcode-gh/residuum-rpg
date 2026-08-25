@@ -25,6 +25,18 @@ const _hero = Actor(
   energy: actThreshold,
 );
 
+GameState _game({Map<String, Spell> spells = const {}}) => GameState(
+  map: FloorMap.parse(_room),
+  hero: _hero,
+  monsters: const [],
+  rng: Rng(1),
+  lootRng: Rng(2),
+  visible: const {},
+  explored: const {},
+  buildFloor: _noFloorBelow,
+  spells: spells,
+);
+
 void main() {
   group('Actor', () {
     test('is alive while it has hit points', () {
@@ -458,6 +470,153 @@ void main() {
 
       // assert
       expect(memory.monsters.map((monster) => monster.id), ['ghoul-1']);
+    });
+  });
+
+  group('resistances', () {
+    test('a creature resists nothing and burns at nothing by default', () {
+      // arrange
+      const plain = Actor(
+        id: 'rat-1',
+        name: 'the rat',
+        glyph: 'r',
+        position: Position(1, 1),
+        hp: 3,
+        maxHp: 3,
+        attackMin: 1,
+        attackMax: 2,
+        speed: 10,
+        energy: 100,
+      );
+
+      // act
+      final resists = plain.resists;
+      final vulnerable = plain.vulnerableTo;
+
+      // assert
+      expect(resists, isEmpty);
+      expect(vulnerable, isEmpty);
+    });
+
+    test('a copy carries the resistances over, because they never move', () {
+      // arrange
+      const drowned = Actor(
+        id: 'drowned-1',
+        name: 'the drowned sailor',
+        glyph: 'd',
+        position: Position(1, 1),
+        hp: 9,
+        maxHp: 9,
+        attackMin: 2,
+        attackMax: 4,
+        speed: 10,
+        energy: 100,
+        resists: {DamageType.frost},
+        vulnerableTo: {DamageType.fire},
+      );
+
+      // act
+      final wounded = drowned.copyWith(hp: 4);
+
+      // assert - a creature's make-up is not something a fight changes, which
+      // is why copyWith never offers to change it
+      expect(wounded.resists, {DamageType.frost});
+      expect(wounded.vulnerableTo, {DamageType.fire});
+    });
+
+    test('says what it resists when it is asked to describe itself', () {
+      // arrange
+      const wight = Actor(
+        id: 'wight-1',
+        name: 'the wight',
+        glyph: 'w',
+        position: Position(2, 3),
+        hp: 14,
+        maxHp: 14,
+        attackMin: 3,
+        attackMax: 6,
+        speed: 10,
+        energy: 100,
+        vulnerableTo: {DamageType.fire},
+      );
+
+      // act
+      final described = wight.toString();
+
+      // assert
+      expect(described, contains('fire'));
+    });
+  });
+
+  group('the crawl a magic hero plays', () {
+    test('starts with no mana, no ward, no bind and no spells known', () {
+      // arrange
+      // act
+      final game = _game();
+
+      // assert - a state built without naming any of it is the state every
+      // pre-magic rule test has always built
+      expect(game.mana, 0);
+      expect(game.warded, 0);
+      expect(game.bound, isEmpty);
+      expect(game.knownSpells, isEmpty);
+    });
+
+    test('carries mana, ward, bind and known spells through copyWith', () {
+      // arrange
+      final game = _game();
+
+      // act
+      final cast = game.copyWith(
+        mana: 3,
+        warded: 6,
+        bound: const {'ghoul-1': 2},
+        knownSpells: const {'firebolt'},
+      );
+
+      // assert
+      expect(cast.mana, 3);
+      expect(cast.warded, 6);
+      expect(cast.bound, const {'ghoul-1': 2});
+      expect(cast.knownSpells, const {'firebolt'});
+    });
+
+    test('carries the spell registry by identity, never through copyWith', () {
+      // arrange
+      const firebolt = Spell(
+        id: 'firebolt',
+        name: 'Firebolt',
+        school: SkillId.wrath,
+        manaCost: 2,
+        requiredLevel: 0,
+        kind: SpellKind.bolt,
+        type: DamageType.fire,
+        min: 2,
+        max: 4,
+      );
+      final game = _game(spells: const {'firebolt': firebolt});
+
+      // act
+      final moved = game.copyWith(mana: 1);
+
+      // assert - content data injected at the door, exactly as dropTables are
+      expect(moved.spells, {'firebolt': firebolt});
+    });
+
+    test('holds its bind counters and its known spells unmodifiable', () {
+      // arrange
+      final game = _game().copyWith(
+        bound: const {'ghoul-1': 3},
+        knownSpells: const {'mend'},
+      );
+
+      // act
+      write() => game.bound['wight-1'] = 1;
+      learn() => game.knownSpells.add('ward');
+
+      // assert
+      expect(write, throwsUnsupportedError);
+      expect(learn, throwsUnsupportedError);
     });
   });
 }

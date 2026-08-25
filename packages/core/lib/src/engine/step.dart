@@ -6,6 +6,10 @@ import '../loot/wear.dart';
 import '../loot/drop.dart';
 import '../loot/item.dart';
 import '../loot/loadout.dart';
+import '../magic/mana.dart';
+import '../magic/read.dart';
+import '../magic/spell.dart';
+import '../magic/target.dart';
 import '../skills/skill.dart';
 import 'action.dart';
 import 'actor.dart';
@@ -64,6 +68,10 @@ import 'position.dart';
   var groundItems = state.groundItems;
   var inventory = state.inventory;
   var nextDropNumber = state.nextDropNumber;
+  var knownSpells = state.knownSpells;
+  var mana = state.mana;
+  var warded = state.warded;
+  var bound = state.bound;
 
   switch (action) {
     case MoveAction(:final direction):
@@ -120,6 +128,29 @@ import 'position.dart';
           if (item.id != itemId) item,
       ];
       events.add(PotionDrunk(item: potion, healed: healed > 0 ? healed : 0));
+    case ReadAction(:final itemId):
+      final book = inventory.firstWhere((item) => item.id == itemId);
+      final learned = state.spells[book.base.teaches]!;
+      knownSpells = {...knownSpells, learned.id};
+      inventory = [
+        for (final item in inventory)
+          if (item.id != itemId) item,
+      ];
+      events.add(SpellLearned(book: book, spell: learned));
+    case CastSpellAction(:final spellId):
+      final spell = state.spells[spellId]!;
+      final cast = _castSpell(state, spell, hero, monsters, events);
+      hero = cast.hero;
+      loadout = loadout.withSkills(
+        _train(spell.school, loadout.skills, events),
+      );
+      mana -= spell.manaCost;
+      warded = cast.warded ?? warded;
+      bound = cast.bound ?? bound;
+      if (cast.spoils != null) {
+        groundItems = _withItem(groundItems, cast.spoils!.$1, cast.spoils!.$2);
+        nextDropNumber++;
+      }
     case DropAction(:final itemId):
       final put = inventory.firstWhere((item) => item.id == itemId);
       inventory = [
@@ -130,9 +161,19 @@ import 'position.dart';
       events.add(ItemDropped(item: put, at: hero.position));
   }
 
-  final phase = _monsterPhase(state, hero, loadout, monsters, events);
+  final phase = _monsterPhase(
+    state,
+    hero,
+    loadout,
+    monsters,
+    warded,
+    bound,
+    events,
+  );
   hero = phase.hero;
   loadout = loadout.withSkills(phase.skills);
+  warded = phase.warded;
+  bound = phase.bound;
 
   if (!hero.isAlive) {
     events.add(ActorDied(actorId: hero.id));
@@ -152,10 +193,176 @@ import 'position.dart';
       inventory: inventory,
       equipment: loadout.equipment,
       skills: loadout.skills,
+      knownSpells: knownSpells,
+      mana: mana,
+      warded: warded,
+      bound: _stillStanding(bound, monsters),
       nextDropNumber: nextDropNumber,
     ),
     events,
   );
+}
+
+/// Why the rules will not cast [spellId], or null when they will.
+///
+/// **The order is the contract.** An empty pool is answered before an empty
+/// room, because a hero who could not have cast the spell at anything should be
+/// told that rather than sent looking for a target they could not have used.
+String? _castRefusal(GameState state, String spellId) {
+  final spell = state.spells[spellId];
+  if (spell == null || !state.knownSpells.contains(spellId)) {
+    return 'you do not know that spell';
+  }
+  if (state.mana < spell.manaCost) return 'not enough mana';
+  if (_needsATarget(spell.kind) &&
+      nearestVisibleEnemy(state.monsters, state.visible, state.hero.position) ==
+          null) {
+    return 'no enemy in sight';
+  }
+  return null;
+}
+
+/// Whether this kind of spell has to land on something.
+///
+/// Mend and Ward are cast on the hero, so an empty room is exactly when a
+/// player most wants them.
+bool _needsATarget(SpellKind kind) =>
+    kind == SpellKind.bolt ||
+    kind == SpellKind.bind ||
+    kind == SpellKind.banish;
+
+/// What one cast changed, beyond the monsters it wrote through.
+///
+/// [warded] and [bound] are null where the cast did not touch them, so the
+/// caller can tell "set to zero" from "left alone" without a second flag.
+class _Cast {
+  const _Cast(this.hero, {this.warded, this.bound, this.spoils});
+
+  final Actor hero;
+  final int? warded;
+  final Map<String, int>? bound;
+  final (Position, Item)? spoils;
+}
+
+/// Resolves one cast of [spell], writing wounded or moved monsters into
+/// [monsters].
+///
+/// **Every draw this can make is named here and nowhere else**, because the
+/// count and the order of draws is the seed contract: a bolt draws exactly one
+/// number for its damage, a banish draws exactly one to pick a tile, and mend,
+/// ward and bind draw nothing whatsoever. A conditional draw anywhere on this
+/// path would make two crawls on one seed diverge the moment one of them cast.
+_Cast _castSpell(
+  GameState state,
+  Spell spell,
+  Actor hero,
+  List<Actor> monsters,
+  List<GameEvent> events,
+) {
+  switch (spell.kind) {
+    case SpellKind.mend:
+      final missing = heroMaxHp(hero, state.loadout) - hero.hp;
+      final healed = spell.min < missing ? spell.min : missing;
+      final given = healed > 0 ? healed : 0;
+      events.add(MendCast(healed: given));
+      return _Cast(hero.copyWith(hp: hero.hp + given));
+    case SpellKind.ward:
+      events.add(WardRaised(absorbs: spell.min));
+      return _Cast(hero, warded: spell.min);
+    case SpellKind.bolt:
+      return _boltAt(state, spell, hero, monsters, events);
+    case SpellKind.bind:
+      final target = _targetOf(state, monsters);
+      events.add(MonsterBound(targetId: target.id, turns: spell.min));
+      return _Cast(hero, bound: {...state.bound, target.id: spell.min});
+    case SpellKind.banish:
+      _banish(state, monsters, events);
+      return _Cast(hero);
+  }
+}
+
+_Cast _boltAt(
+  GameState state,
+  Spell spell,
+  Actor hero,
+  List<Actor> monsters,
+  List<GameEvent> events,
+) {
+  final target = _targetOf(state, monsters);
+  final index = monsters.indexOf(target);
+  final roll = state.rng.rollRange(spell.min, spell.max);
+  final bite = _biteOf(target, spell.type!);
+  final damage = switch (bite) {
+    SpellBite.plain => roll,
+    SpellBite.resisted => roll ~/ 2 < 1 ? 1 : roll ~/ 2,
+    SpellBite.vulnerable => roll * 2,
+  };
+  events.add(
+    SpellHit(spell: spell, targetId: target.id, damage: damage, bite: bite),
+  );
+  final wounded = target.copyWith(hp: target.hp - damage);
+  if (wounded.isAlive) {
+    monsters[index] = wounded;
+    return _Cast(hero);
+  }
+  monsters.removeAt(index);
+  events.add(ActorDied(actorId: target.id));
+  return _Cast(hero, spoils: _spoilsOf(state, target, events));
+}
+
+/// How [target]'s make-up answers a bolt of [type].
+///
+/// Resistance halves rounding down with a floor of one, for the reason armour
+/// has a floor of one: a creature nothing can hurt stops being a reason to leave
+/// the room. Vulnerability doubles, and the two can never both apply — content
+/// validation keeps the sets disjoint.
+SpellBite _biteOf(Actor target, DamageType type) {
+  if (target.resists.contains(type)) return SpellBite.resisted;
+  if (target.vulnerableTo.contains(type)) return SpellBite.vulnerable;
+  return SpellBite.plain;
+}
+
+/// Moves the targeted monster to a tile drawn from the crawl's stream.
+///
+/// **One draw, into a list built row by row and then column by column.** That
+/// order is [byRowThenColumn]'s, walked rather than sorted, and it is what makes
+/// the draw mean the same thing twice: an index only names a tile if the list it
+/// indexes into is in a stated order.
+void _banish(GameState state, List<Actor> monsters, List<GameEvent> events) {
+  final target = _targetOf(state, monsters);
+  final index = monsters.indexOf(target);
+  final taken = _occupiedTiles(state.hero, monsters, target.id);
+  final candidates = <Position>[
+    for (var y = 0; y < state.map.height; y++)
+      for (var x = 0; x < state.map.width; x++)
+        if (state.map.isWalkable(Position(x, y)) &&
+            !taken.contains(Position(x, y)) &&
+            Position(x, y) != target.position)
+          Position(x, y),
+  ];
+  if (candidates.isEmpty) return;
+  final landing = candidates[state.rng.rollRange(0, candidates.length - 1)];
+  monsters[index] = target.copyWith(position: landing);
+  events.add(
+    MonsterBanished(targetId: target.id, from: target.position, to: landing),
+  );
+}
+
+Actor _targetOf(GameState state, List<Actor> monsters) =>
+    nearestVisibleEnemy(monsters, state.visible, state.hero.position)!;
+
+/// [bound] with every counter whose monster is no longer on the floor dropped.
+///
+/// A bound monster that dies takes its counter with it, and so does one that was
+/// never there. Left alone the map would grow a entry per kill and a save file
+/// would carry counters for the dead.
+Map<String, int> _stillStanding(Map<String, int> bound, List<Actor> monsters) {
+  if (bound.isEmpty) return bound;
+  final alive = {for (final monster in monsters) monster.id};
+  return {
+    for (final held in bound.entries)
+      if (alive.contains(held.key)) held.key: held.value,
+  };
 }
 
 /// Whether [action] walks the hero off the edge of a road fight.
@@ -210,6 +417,18 @@ GameEvent? _refuse(GameState state, GameAction action) {
         return ActionRefused(reason: '${item.base.name} is not a drink');
       }
       return null;
+    case ReadAction(:final itemId):
+      return _refusedBy(
+        readRefusal(
+          state.loadout,
+          state.inventory,
+          state.knownSpells,
+          state.spells,
+          itemId,
+        ),
+      );
+    case CastSpellAction(:final spellId):
+      return _refusedBy(_castRefusal(state, spellId));
     case DropAction(:final itemId):
       if (_carried(state, itemId) == null) {
         return const ActionRefused(reason: 'you are not carrying that');
@@ -306,12 +525,16 @@ _HeroSwing _moveHero(
   return (defender.position, item);
 }
 
-/// The hero after the monsters have had their turns, and the skills they trained.
+/// The hero after the monsters have had their turns, the skills they trained,
+/// what is left of the ward they struck, and how much longer each held monster
+/// stays held.
 class _MonsterPhase {
-  const _MonsterPhase(this.hero, this.skills);
+  const _MonsterPhase(this.hero, this.skills, this.warded, this.bound);
 
   final Actor hero;
   final Map<SkillId, SkillState> skills;
+  final int warded;
+  final Map<String, int> bound;
 }
 
 _MonsterPhase _monsterPhase(
@@ -319,6 +542,8 @@ _MonsterPhase _monsterPhase(
   Actor hero,
   Loadout loadout,
   List<Actor> monsters,
+  int warded,
+  Map<String, int> bound,
   List<GameEvent> events,
 ) {
   final owed = scheduleMonsterTurns(
@@ -330,13 +555,23 @@ _MonsterPhase _monsterPhase(
   final field = computeFlowField(state.map, hero.position);
   var wounded = hero;
   var trained = loadout;
+  var standing = warded;
+  var held = bound;
   for (final index in owed.monsterTurns) {
     if (!wounded.isAlive) break;
     final monster = monsters[index];
+    if (held[monster.id] case final turns?) {
+      held = _oneTurnLess(held, monster.id, turns);
+      continue;
+    }
     if (monster.position.isOrthogonallyAdjacentTo(wounded.position)) {
       trained = trained.withSkills(
-        _defend(state, monster, trained, events, wounded.id, (damage) {
+        _defend(state, monster, trained, events, wounded.id, standing, (
+          damage,
+          left,
+        ) {
           wounded = wounded.copyWith(hp: wounded.hp - damage);
+          standing = left;
         }),
       );
       continue;
@@ -361,7 +596,19 @@ _MonsterPhase _monsterPhase(
   return _MonsterPhase(
     wounded.copyWith(energy: owed.heroEnergy),
     trained.skills,
+    standing,
+    held,
   );
+}
+
+/// [bound] with [id]'s count spent by one, and the entry gone when it runs out.
+///
+/// Counted in the held monster's own turns rather than the hero's, so a fast
+/// monster works its way free sooner than a slow one — the same clock every
+/// other rule in this phase runs on.
+Map<String, int> _oneTurnLess(Map<String, int> bound, String id, int turns) {
+  if (turns <= 1) return {...bound}..remove(id);
+  return {...bound, id: turns - 1};
 }
 
 /// Resolves one monster swing at the hero and returns the skills it trained.
@@ -390,28 +637,50 @@ _MonsterPhase _monsterPhase(
 /// zero and leaves the floor of one to do the rest. It also keeps the sentence
 /// the player reads honest — the wight did not swing harder, the mail did
 /// less.
+///
+/// **A ward soaks what is left, after the floor of one and never before it.**
+/// Armour reduces a blow and a ward takes what still lands, which is the only
+/// order that keeps both rules meaning what they say: absorbing first would let
+/// a ward eat a blow armour was going to floor anyway, and the floor exists so
+/// that no defence can make a creature harmless. [AttackHit] is emitted only
+/// when hit points actually drop, because that event is what the log turns into
+/// a wound — a blow the ward ate whole is a [WardStruck] and nothing else.
+///
+/// **The ward adds no roll**, which is the dodge gate's determinism rule again:
+/// it is arithmetic over a number already on the state, so a warded hero and a
+/// bare one draw from the combat stream identically.
 Map<SkillId, SkillState> _defend(
   GameState state,
   Actor attacker,
   Loadout loadout,
   List<GameEvent> events,
   String heroId,
-  void Function(int damage) wound,
+  int warded,
+  void Function(int damage, int warded) wound,
 ) {
   final defence = loadout.wearsHeavy ? SkillId.bulwark : SkillId.fleetfoot;
   final dodge = heroDodgePercent(loadout);
   if (dodge > 0 && state.rng.rollRange(1, 100) <= dodge) {
     events.add(AttackDodged(attackerId: attacker.id));
+    wound(0, warded);
     return _train(defence, loadout.skills, events);
   }
   final roll = state.rng.rollRange(attacker.attackMin, attacker.attackMax);
   final armor = heroArmor(loadout) - attacker.pierce;
   final reduced = roll - (armor < 0 ? 0 : armor);
   final damage = reduced < 1 ? 1 : reduced;
-  events.add(
-    AttackHit(attackerId: attacker.id, targetId: heroId, damage: damage),
-  );
-  wound(damage);
+  final absorbed = warded < damage ? warded : damage;
+  final left = warded - absorbed;
+  if (absorbed > 0) {
+    events.add(WardStruck(absorbed: absorbed, remaining: left));
+  }
+  final taken = damage - absorbed;
+  if (taken > 0) {
+    events.add(
+      AttackHit(attackerId: attacker.id, targetId: heroId, damage: taken),
+    );
+  }
+  wound(taken, left);
   return _train(defence, loadout.skills, events);
 }
 
@@ -497,23 +766,36 @@ FloorMemory _built(Floor floor) => FloorMemory(
 ///
 /// **That makes a stairs bounce two free actions**, because neither direction
 /// runs a monster phase: a hero cornered on the stairs can step through and
-/// back without ever being hit. It is harmless only while nothing in the game
-/// gives hit points back on its own — the bounce buys time, and time buys
-/// nothing. The day regeneration arrives, or any rule that pays out per turn,
-/// this becomes a healing loop and the arrival will have to start charging for
-/// itself.
+/// back without ever being hit. It buys time, and time buys nothing.
+///
+/// **Which is exactly why mana refills on a floor never built and not on every
+/// arrival.** Mend gives hit points back, so a pool that topped up every time
+/// the hero crossed a stairwell would be the healing loop this arrival was
+/// always one rule away from: step down, step up, mend, repeat, for free and
+/// forever. Refilling on the first arrival at a depth keeps the budget the
+/// per-floor thing it is meant to be — one floor, one pool — and leaves a
+/// bounce buying nothing at all, which is what it has always bought.
+///
+/// **Binds are cleared here, on every arrival in both directions.** A monster
+/// id is unique to a floor and not to a run, so the crypt's first ghoul is
+/// `ghoul-1` on depth one and a different `ghoul-1` waits on depth two: a
+/// counter carried down the stairs would hold a monster the hero never bound,
+/// and one carried back up would hold one that had long since worked free.
 (GameState, List<GameEvent>) _arriveOn(
   GameState state,
   Actor hero,
   int depth,
   FloorMemory floor,
   Position at,
-  List<GameEvent> events,
-) {
+  List<GameEvent> events, {
+  bool refillMana = false,
+}) {
   final arrived = hero.copyWith(position: at, energy: actThreshold);
   final visible = computeFov(floor.map, at, fovRadius);
   return (
     state.copyWith(
+      bound: const {},
+      mana: refillMana ? heroMaxMana(state.loadout) : state.mana,
       map: floor.map,
       hero: arrived,
       monsters: floor.monsters,
@@ -537,9 +819,18 @@ FloorMemory _built(Floor floor) => FloorMemory(
   List<GameEvent> events,
 ) {
   final depth = state.depth + 1;
-  final floor = state.floors[depth] ?? _built(state.buildFloor(depth));
+  final remembered = state.floors[depth];
+  final floor = remembered ?? _built(state.buildFloor(depth));
   events.add(Descended(newDepth: depth));
-  return _arriveOn(state, hero, depth, floor, floor.stairsUp!, events);
+  return _arriveOn(
+    state,
+    hero,
+    depth,
+    floor,
+    floor.stairsUp!,
+    events,
+    refillMana: remembered == null,
+  );
 }
 
 /// Climbs to the floor above, which the hero must have walked to get here.

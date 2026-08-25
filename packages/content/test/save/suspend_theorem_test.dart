@@ -110,6 +110,75 @@ void main() {
       expect(resumedPlayed.isGameOver, livePlayed.isGameOver);
     });
 
+    test('a caster resumes mid-cast: mana spent, ward up, monster bound', () {
+      // arrange - a crawl left exactly as a player would leave one after a
+      // fight went badly: some of the pool gone, a ward standing, and the thing
+      // that was about to reach them held still
+      final live = deepRun(worldSeed: 4242, depth: 3);
+      final held = live.monsters.first.id;
+      final mid = live.copyWith(
+        mana: 3,
+        warded: 4,
+        bound: {held: 2},
+        knownSpells: const {'firebolt', 'mend', 'ward', 'bind'},
+      );
+
+      // act
+      final resumed = _suspendAndResume(mid);
+
+      // assert - the crawl's own half comes back off the document, roll for
+      // roll: a resume that refilled the pool would make walking home and back
+      // the cheapest spell in the game
+      expect(resumed.mana, 3);
+      expect(resumed.warded, 4);
+      expect(resumed.bound, {held: 2});
+      expect(resumed.knownSpells, {'firebolt', 'mend', 'ward', 'bind'});
+    });
+
+    test('a resumed caster plays out exactly as the one it resumed', () {
+      // arrange
+      final live = deepRun(worldSeed: 4242, depth: 3);
+      final held = live.monsters.first.id;
+      GameState midCast(GameState from) => from.copyWith(
+        mana: 6,
+        warded: 4,
+        bound: {held: 2},
+        knownSpells: const {'firebolt', 'mend'},
+      );
+      final one = midCast(live);
+      final other = _suspendAndResume(one);
+
+      // act
+      final (livePlayed, liveEvents) = _play(one);
+      final (resumedPlayed, resumedEvents) = _play(other);
+
+      // assert - the ward soaking blows and the bind holding a monster both
+      // change what the transcript says, so a resume that dropped either would
+      // diverge in the events rather than only in a field
+      expect(resumedEvents, liveEvents);
+      expect(resumedPlayed.mana, livePlayed.mana);
+      expect(resumedPlayed.warded, livePlayed.warded);
+      expect(resumedPlayed.bound, livePlayed.bound);
+      expect(resumedPlayed.rng.state, livePlayed.rng.state);
+      expect(resumedPlayed.hero.hp, livePlayed.hero.hp);
+      expect(_asBytes(resumedPlayed), _asBytes(livePlayed));
+    });
+
+    test('the caster script actually exercises the ward and the bind', () {
+      // arrange
+      final live = deepRun(worldSeed: 4242, depth: 3);
+      final held = live.monsters.first.id;
+
+      // act
+      final (played, events) = _play(
+        live.copyWith(warded: 4, bound: {held: 2}),
+      );
+
+      // assert - a theorem over state nothing touches proves nothing
+      expect(events.whereType<WardStruck>(), isNotEmpty);
+      expect(played.warded, lessThan(4));
+    });
+
     test(
       'the script draws from both streams, so the theorem has work to do',
       () {
