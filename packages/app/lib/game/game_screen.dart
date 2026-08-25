@@ -146,7 +146,27 @@ class _HitPoints extends StatelessWidget {
         ? '  Engaged ${state.enemiesInSight}'
         : '';
     return '$shown / $ceiling  ${_condition(fraction)}  '
-        '${_whereabouts(context, state)}$engaged';
+        '${_whereabouts(context, state)}$engaged${_magic(state)}';
+  }
+
+  /// The pool and the ward, as words and numbers, and only when they say
+  /// something.
+  ///
+  /// **Not a sixth control**, because the control row is full and a device pass
+  /// has twice found the sixth thing on a phone row ellipsised down to nonsense.
+  /// It joins the status line instead, which shrinks to fit rather than
+  /// truncating.
+  ///
+  /// **Silent for a hero who knows no spells**, which is every hero until they
+  /// read their first book. A pool nobody can spend is a number in the way, and
+  /// leaving it out means the line a non-casting hero reads is exactly the line
+  /// that shipped before magic did. The ward joins it only while one stands, for
+  /// the same reason and because a ward is the one piece of state a player has
+  /// to be able to see mid-fight.
+  static String _magic(GameViewState state) {
+    if (state.game.knownSpells.isEmpty) return '';
+    final ward = state.warded > 0 ? '  Ward ${state.warded}' : '';
+    return '  Mana ${state.mana}/${state.maxMana}$ward';
   }
 
   /// Where the hero is standing, in words and a depth.

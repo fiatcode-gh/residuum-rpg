@@ -43,7 +43,7 @@ void main() {
         'market-stonebridge-0-potion-1: Common Healing Potion',
         'market-stonebridge-0-potion-2: Common Healing Potion',
         'market-stonebridge-0-potion-3: Common Healing Potion',
-        'market-stonebridge-0-gear-1: Rare Sturdy Reinforced Leather Cap',
+        'market-stonebridge-0-gear-1: Rare Sturdy Reinforced Leather Jerkin',
       ]);
     });
 
@@ -59,7 +59,7 @@ void main() {
         'market-northgate-0-potion-1: Common Healing Potion',
         'market-northgate-0-potion-2: Common Healing Potion',
         'market-northgate-0-potion-3: Common Healing Potion',
-        'market-northgate-0-gear-1: Fine Maul of Fury',
+        'market-northgate-0-gear-1: Fine War Axe of Fury',
       ]);
     });
 
@@ -75,7 +75,7 @@ void main() {
         'market-stonebridge-0-potion-1: Common Healing Potion',
         'market-stonebridge-0-potion-2: Common Healing Potion',
         'market-stonebridge-0-potion-3: Common Healing Potion',
-        'market-stonebridge-0-gear-1: Common Leather Cap',
+        'market-stonebridge-0-gear-1: Common Mail Hauberk',
       ]);
     });
 
@@ -91,8 +91,8 @@ void main() {
         'market-stonebridge-4-potion-1: Common Healing Potion',
         'market-stonebridge-4-potion-2: Common Healing Potion',
         'market-stonebridge-4-potion-3: Common Healing Potion',
-        'market-stonebridge-4-gear-1: Common Iron Gauntlets',
-        'market-stonebridge-4-gear-2: Common Iron Gauntlets',
+        'market-stonebridge-4-gear-1: Common Book of Firebolt',
+        'market-stonebridge-4-gear-2: Common Leather Jerkin',
       ]);
     });
   });

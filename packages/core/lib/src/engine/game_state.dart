@@ -5,6 +5,7 @@ import '../dungeon/generator.dart';
 import '../loot/drop.dart';
 import '../loot/item.dart';
 import '../loot/loadout.dart';
+import '../magic/spell.dart';
 import '../skills/skill.dart';
 import 'actor.dart';
 import 'position.dart';
@@ -51,6 +52,11 @@ class GameState {
     Equipment equipment = const {},
     Map<SkillId, SkillState> skills = untrainedSkills,
     Map<int, DropTable> dropTables = const {},
+    Map<String, Spell> spells = const {},
+    Set<String> knownSpells = const {},
+    Map<String, int> bound = const {},
+    this.mana = 0,
+    this.warded = 0,
     this.nextDropNumber = 1,
     this.isEncounter = false,
   }) : monsters = List.unmodifiable(monsters),
@@ -64,7 +70,10 @@ class GameState {
        inventory = List.unmodifiable(inventory),
        equipment = Map.unmodifiable(equipment),
        skills = Map.unmodifiable(skills),
-       dropTables = Map.unmodifiable(dropTables);
+       dropTables = Map.unmodifiable(dropTables),
+       spells = Map.unmodifiable(spells),
+       knownSpells = Set.unmodifiable(knownSpells),
+       bound = Map.unmodifiable(bound);
 
   final FloorMap map;
   final Actor hero;
@@ -162,7 +171,7 @@ class GameState {
   /// What the hero is wearing, by slot.
   final Equipment equipment;
 
-  /// All four skills, always present.
+  /// All seven skills, always present.
   final Map<SkillId, SkillState> skills;
 
   /// What each depth can give up.
@@ -173,6 +182,47 @@ class GameState {
 
   /// The number the next kill's item id is built from.
   final int nextDropNumber;
+
+  /// Every spell this build knows how to cast, by id.
+  ///
+  /// Content data carried by identity, exactly as [dropTables] are, and injected
+  /// at the same door: the rules know the five spell kinds and nothing about
+  /// which spells exist. Empty means this crawl has no magic in it at all, which
+  /// is what most rule tests want and why it is not required.
+  final Map<String, Spell> spells;
+
+  /// What the hero has learned to cast, by spell id.
+  ///
+  /// Mirrors [skills] in every way that matters: learned by doing, kept on the
+  /// [Profile] between runs, and carried home through death. A book is spent to
+  /// get one, and nothing takes one away.
+  final Set<String> knownSpells;
+
+  /// What the hero has left to cast with on this floor.
+  ///
+  /// **A run field, and never on [Actor] or [Profile].** Monsters do not cast,
+  /// so a pool on the actor would be a number written into every monster of
+  /// every save for nothing; and a pool on the profile would be a resource the
+  /// town could sell, which a per-floor budget that starts full makes
+  /// meaningless. It refills on arriving at a floor this run has never built —
+  /// see `step`'s arrival — so what magic costs is what the floor can afford,
+  /// not what the purse can.
+  final int mana;
+
+  /// What is left of the hero's ward: damage it will soak before hit points do.
+  ///
+  /// Zero when no ward stands. A second ward replaces this rather than adding to
+  /// it, so the spell is a decision about timing and never a pool to stack up
+  /// before walking downstairs.
+  final int warded;
+
+  /// How many scheduled turns each held monster still has to sit out, by id.
+  ///
+  /// **Cleared on every arrival**, because a monster id is unique to a floor and
+  /// not to a run: the crypt's first ghoul is `ghoul-1` on depth one and a
+  /// different `ghoul-1` waits on depth two, so a counter carried down the
+  /// stairs would hold a monster the hero never bound.
+  final Map<String, int> bound;
 
   /// Whether this is a fight on the road rather than a crawl in the dungeon.
   ///
@@ -227,6 +277,10 @@ class GameState {
     Equipment? equipment,
     Map<SkillId, SkillState>? skills,
     int? nextDropNumber,
+    Set<String>? knownSpells,
+    Map<String, int>? bound,
+    int? mana,
+    int? warded,
   }) => GameState(
     map: map ?? this.map,
     hero: hero ?? this.hero,
@@ -250,6 +304,11 @@ class GameState {
     equipment: equipment ?? this.equipment,
     skills: skills ?? this.skills,
     dropTables: dropTables,
+    spells: spells,
+    knownSpells: knownSpells ?? this.knownSpells,
+    bound: bound ?? this.bound,
+    mana: mana ?? this.mana,
+    warded: warded ?? this.warded,
     nextDropNumber: nextDropNumber ?? this.nextDropNumber,
     isEncounter: isEncounter,
   );

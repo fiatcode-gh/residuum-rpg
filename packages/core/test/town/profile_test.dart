@@ -18,6 +18,8 @@ const _vigour = Affix(
   maxHp: 6,
 );
 
+Profile _townie() => Profile(hero: hero(const Position(0, 0)), worldSeed: 1);
+
 void main() {
   group('Profile', () {
     test('derives its ceiling from the gear it wears', () {
@@ -112,6 +114,40 @@ void main() {
       expect(opening, (0, 0, 0));
       expect(profile.bank, isEmpty);
       expect(profile.inventory, isEmpty);
+    });
+  });
+
+  group('what the hero has learned to cast', () {
+    test('a fresh profile knows no spells', () {
+      // arrange
+      // act
+      final profile = _townie();
+
+      // assert
+      expect(profile.knownSpells, isEmpty);
+    });
+
+    test('is part of what makes two profiles the same profile', () {
+      // arrange
+      final plain = _townie();
+
+      // act
+      final learned = plain.copyWith(knownSpells: const {'firebolt'});
+
+      // assert - a hero who has read a book is not the hero who has not
+      expect(learned, isNot(plain));
+      expect(learned.knownSpells, const {'firebolt'});
+    });
+
+    test('cannot be added to behind the profile\'s back', () {
+      // arrange
+      final profile = _townie().copyWith(knownSpells: const {'mend'});
+
+      // act
+      learn() => profile.knownSpells.add('ward');
+
+      // assert
+      expect(learn, throwsUnsupportedError);
     });
   });
 }

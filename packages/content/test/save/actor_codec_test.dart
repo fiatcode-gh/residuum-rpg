@@ -180,4 +180,101 @@ void main() {
       );
     });
   });
+
+  group('what an actor is made of', () {
+    test('resistances and vulnerabilities survive a round trip', () {
+      // arrange
+      const drowned = Actor(
+        id: 'drowned-1',
+        name: 'the drowned sailor',
+        glyph: 'd',
+        position: Position(2, 2),
+        hp: 9,
+        maxHp: 9,
+        attackMin: 2,
+        attackMax: 4,
+        speed: 10,
+        energy: 100,
+        resists: {DamageType.frost},
+        vulnerableTo: {DamageType.fire},
+      );
+
+      // act
+      final after = decodeActor(encodeActor(drowned));
+
+      // assert
+      expect(after.resists, {DamageType.frost});
+      expect(after.vulnerableTo, {DamageType.fire});
+    });
+
+    test('are written even when the creature is made of nothing special', () {
+      // arrange
+      const plain = _ghoul;
+
+      // act
+      final written = encodeActor(plain);
+
+      // assert - present and empty rather than absent, so a reader never has to
+      // guess whether the build that wrote this knew about resistances
+      expect(written['resists'], isEmpty);
+      expect(written['vulnerableTo'], isEmpty);
+    });
+
+    test('are written as sorted names, so one actor is one document', () {
+      // arrange
+      const both = Actor(
+        id: 'thing-1',
+        name: 'the thing',
+        glyph: 't',
+        position: Position(1, 1),
+        hp: 1,
+        maxHp: 1,
+        attackMin: 1,
+        attackMax: 1,
+        speed: 10,
+        energy: 100,
+        resists: {DamageType.frost, DamageType.fire},
+      );
+
+      // act
+      final written = encodeActor(both);
+
+      // assert
+      expect(written['resists'], ['fire', 'frost']);
+    });
+
+    test('a damage type this build never heard of is refused by name', () {
+      // arrange
+      final written = encodeActor(_ghoul);
+      written['resists'] = ['aether'];
+
+      // act
+      call() => decodeActor(written);
+
+      // assert
+      expect(call, throwsA(isA<SaveMalformed>()));
+      expect(
+        () => decodeActor(written),
+        throwsA(
+          isA<SaveMalformed>().having(
+            (failure) => failure.reason,
+            'reason',
+            contains('resists'),
+          ),
+        ),
+      );
+    });
+
+    test('a missing resistance key is refused rather than defaulted', () {
+      // arrange
+      final written = encodeActor(_ghoul)..remove('vulnerableTo');
+
+      // act
+      call() => decodeActor(written);
+
+      // assert - never repair: a document that did not answer the question is
+      // refused whole, so nobody loses a creature's make-up quietly
+      expect(call, throwsA(isA<SaveMalformed>()));
+    });
+  });
 }

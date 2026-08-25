@@ -30,6 +30,8 @@ const Map<int, DropTable> dropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 5),
       Weighted(leatherBoots, 6),
+      Weighted(bookOfBind, 1),
+      Weighted(bookOfFirebolt, 1),
     ],
     rarities: [
       Weighted(Rarity.common, 70),
@@ -59,6 +61,8 @@ const Map<int, DropTable> dropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 5),
       Weighted(leatherBoots, 5),
+      Weighted(bookOfBind, 1),
+      Weighted(bookOfFirebolt, 1),
     ],
     rarities: [
       Weighted(Rarity.common, 60),
@@ -88,6 +92,8 @@ const Map<int, DropTable> dropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 4),
+      Weighted(bookOfBind, 1),
+      Weighted(bookOfFirebolt, 1),
     ],
     rarities: [
       Weighted(Rarity.common, 50),
@@ -117,6 +123,8 @@ const Map<int, DropTable> dropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 3),
+      Weighted(bookOfBind, 1),
+      Weighted(bookOfFirebolt, 1),
     ],
     rarities: [
       Weighted(Rarity.common, 40),
@@ -146,6 +154,8 @@ const Map<int, DropTable> dropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 2),
+      Weighted(bookOfBind, 1),
+      Weighted(bookOfFirebolt, 1),
     ],
     rarities: [
       Weighted(Rarity.common, 30),

@@ -133,6 +133,69 @@ const BaseItem healingPotion = BaseItem(
   heal: 10,
 );
 
+/// Every spell book, one per spell.
+///
+/// **Books live here with the swords rather than in a registry of their own**,
+/// because a book is a base item in every way the rules care about: it is
+/// found, carried, dropped, sold, and looked up by [baseItemById] like anything
+/// else. A second registry would mean a second lookup for the save codec to
+/// forget about.
+///
+/// The glyph is `?`, which nothing else in the game draws as: creature glyphs
+/// are letters, the hero is `@`, and the other items are `)`, `[` and `!`. A
+/// validation test holds that set closed.
+const BaseItem bookOfFirebolt = BaseItem(
+  id: 'book-of-firebolt',
+  name: 'Book of Firebolt',
+  glyph: '?',
+  teaches: 'firebolt',
+);
+
+const BaseItem bookOfFrostLance = BaseItem(
+  id: 'book-of-frost-lance',
+  name: 'Book of Frost Lance',
+  glyph: '?',
+  teaches: 'frost-lance',
+);
+
+const BaseItem bookOfMend = BaseItem(
+  id: 'book-of-mend',
+  name: 'Book of Mend',
+  glyph: '?',
+  teaches: 'mend',
+);
+
+const BaseItem bookOfWard = BaseItem(
+  id: 'book-of-ward',
+  name: 'Book of Ward',
+  glyph: '?',
+  teaches: 'ward',
+);
+
+const BaseItem bookOfBind = BaseItem(
+  id: 'book-of-bind',
+  name: 'Book of Bind',
+  glyph: '?',
+  teaches: 'bind',
+);
+
+const BaseItem bookOfBanish = BaseItem(
+  id: 'book-of-banish',
+  name: 'Book of Banish',
+  glyph: '?',
+  teaches: 'banish',
+);
+
+/// Every spell book, in the order their spells are written.
+const List<BaseItem> spellBooks = [
+  bookOfFirebolt,
+  bookOfFrostLance,
+  bookOfMend,
+  bookOfWard,
+  bookOfBind,
+  bookOfBanish,
+];
+
 /// Every base item in the game.
 ///
 /// Heavy and light armour are deliberate alternatives rather than a ladder: a
@@ -154,6 +217,7 @@ const List<BaseItem> armory = [
   ironGreaves,
   leatherBoots,
   healingPotion,
+  ...spellBooks,
 ];
 
 /// The base item with this [id], or null when nothing answers to it.

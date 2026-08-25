@@ -1,3 +1,4 @@
+import '../magic/spell.dart';
 import 'position.dart';
 
 /// One living thing on a dungeon floor: the hero, or a monster.
@@ -15,6 +16,8 @@ class Actor {
     required this.energy,
     this.dropChance = 0,
     this.pierce = 0,
+    this.resists = const {},
+    this.vulnerableTo = const {},
   });
 
   /// Unique within a crawl: `hero`, or `ghoul-1`.
@@ -68,6 +71,21 @@ class Actor {
   /// monster has no armour to get through.
   final int pierce;
 
+  /// The damage types this actor shrugs off: a bolt of one is halved.
+  ///
+  /// **Not in [copyWith], and that is the contract rather than an omission.**
+  /// What a creature is made of does not change during a fight — a drowned
+  /// sailor is as cold at one hit point as at nine — so there is no rule that
+  /// would ever want to write one, and offering the setter would invite a
+  /// milestone to invent one by accident. Content writes these once, at spawn.
+  ///
+  /// Disjoint from [vulnerableTo] by content validation: a creature that both
+  /// resisted and burned at fire would be a table nobody could read.
+  final Set<DamageType> resists;
+
+  /// The damage types this actor takes double from.
+  final Set<DamageType> vulnerableTo;
+
   /// Whether this actor still has hit points.
   bool get isAlive => hp > 0;
 
@@ -85,8 +103,15 @@ class Actor {
     energy: energy ?? this.energy,
     dropChance: dropChance,
     pierce: pierce,
+    resists: resists,
+    vulnerableTo: vulnerableTo,
   );
 
   @override
-  String toString() => 'Actor($id at $position, $hp/$maxHp hp)';
+  String toString() => 'Actor($id at $position, $hp/$maxHp hp${_makeUp()})';
+
+  String _makeUp() => [
+    for (final type in resists) ', resists ${type.word}',
+    for (final type in vulnerableTo) ', burns at ${type.word}',
+  ].join();
 }

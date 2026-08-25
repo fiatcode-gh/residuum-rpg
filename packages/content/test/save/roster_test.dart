@@ -112,7 +112,7 @@ void main() {
 
     test('a document with no heroes at all is refused', () {
       // arrange
-      const written = '{"version":1,"active":"hero-1","heroes":{}}';
+      const written = '{"version":2,"active":"hero-1","heroes":{}}';
 
       // act
       final reason = _reason(written);

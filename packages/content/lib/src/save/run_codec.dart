@@ -1,8 +1,10 @@
 import 'package:residuum_core/core.dart';
 
 import '../dungeons.dart';
+import '../spells.dart';
 import 'actor_codec.dart';
 import 'item_codec.dart';
+import 'profile_codec.dart';
 import 'save_json.dart';
 
 /// One suspended crawl, whole.
@@ -47,8 +49,32 @@ Map<String, Object?> encodeRun(GameState run) => {
   'inventory': encodeItems(run.inventory),
   'equipment': encodeEquipment(run.equipment),
   'skills': encodeSkills(run.skills),
+  'knownSpells': encodeSpellIds(run.knownSpells),
+  'mana': run.mana,
+  'warded': run.warded,
+  'bound': _encodeBound(run.bound),
   'floors': _encodeFloors(run.floors),
 };
+
+/// How long each held monster still has to sit still, by id, in a stable order.
+///
+/// Sorted by monster id so one crawl encodes to one document. The order carries
+/// no meaning of its own — unlike the monster list, which is the order they act
+/// in — because a counter is looked up by the id that owns it and never walked.
+Map<String, Object?> _encodeBound(Map<String, int> bound) {
+  final ids = bound.keys.toList()..sort();
+  return {for (final id in ids) id: bound[id]};
+}
+
+Map<String, int> _decodeBound(Map<String, Object?> written, String key) {
+  final holding = objectAt(written, key);
+  return {
+    for (final entry in holding.entries)
+      entry.key: entry.value is int
+          ? entry.value! as int
+          : throw SaveMalformed('"$key" must count turns in whole numbers'),
+  };
+}
 
 /// The crawl written at [key], ready to be played on.
 ///
@@ -107,6 +133,11 @@ GameState loadRun(
     equipment: decodeEquipment(written, 'equipment'),
     skills: decodeSkills(written, 'skills'),
     dropTables: dropTablesFor(dungeon),
+    spells: spellsById,
+    knownSpells: decodeSpellIds(written, 'knownSpells'),
+    mana: intAt(written, 'mana'),
+    warded: intAt(written, 'warded'),
+    bound: _decodeBound(written, 'bound'),
     nextDropNumber: intAt(written, 'nextDropNumber'),
   );
 }

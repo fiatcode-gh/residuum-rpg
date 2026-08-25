@@ -17,7 +17,20 @@ import 'save_read.dart';
 /// a save from a future build is refused as a version rather than misread as a
 /// shape. The fallback chain above the codec is what turns that refusal into the
 /// previous snapshot.
-const int saveVersion = 1;
+///
+/// **Two, because magic reshaped the document and the reshape cannot be
+/// repaired into.** Three spell schools joined [SkillId], so every skills block
+/// a version-1 file wrote is missing three entries — and [decodeSkills] would
+/// read those absences as level zero rather than as a file it cannot answer for,
+/// which is the exact quiet degradation the never-repair rule exists to forbid.
+/// Known spells, mana, wards, binds and creature resistances are required keys
+/// beside it. Every pre-magic hero is refused by design; the fallback chain
+/// offers a new one.
+///
+/// **This is the last break.** The version freezes here at the first shipped
+/// build, and every reshape after it has to be a key a version-2 document can
+/// already answer.
+const int saveVersion = 2;
 
 /// One save document: every hero, and which of them is being played.
 ///
@@ -148,7 +161,7 @@ SaveRead decodeSave(String document) {
   }
 }
 
-/// The roster at the top of a version-1 document.
+/// The roster at the top of a document whose version has already been checked.
 ///
 /// Two invariants are checked here rather than trusted, because both are things
 /// a hand-edited or half-written file can break and neither can be recovered

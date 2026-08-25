@@ -29,6 +29,7 @@ const CreatureSpec kennelHound = CreatureSpec(
   speed: 20,
   dropChance: 40,
   pierce: 5,
+  vulnerableTo: {DamageType.fire},
 );
 
 /// Half the hero's speed, and the hardest thing in the game to fell that is not
@@ -43,6 +44,8 @@ const CreatureSpec rustedManAtArms = CreatureSpec(
   speed: 5,
   dropChance: 60,
   pierce: 6,
+  resists: {DamageType.fire},
+  vulnerableTo: {DamageType.frost},
 );
 
 /// What holds the bottom of the keep, and is never rolled for.
@@ -56,6 +59,8 @@ const CreatureSpec fallenCastellan = CreatureSpec(
   speed: 10,
   dropChance: 100,
   pierce: 5,
+  resists: {DamageType.fire},
+  vulnerableTo: {DamageType.frost},
 );
 
 /// Everything the keep has, in the order the hero meets it.
@@ -157,6 +162,8 @@ const Map<int, DropTable> ruinedKeepDropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 4),
+      Weighted(bookOfWard, 2),
+      Weighted(bookOfBanish, 2),
     ],
     rarities: [
       Weighted(Rarity.common, 50),
@@ -186,6 +193,8 @@ const Map<int, DropTable> ruinedKeepDropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 3),
+      Weighted(bookOfWard, 2),
+      Weighted(bookOfBanish, 2),
     ],
     rarities: [
       Weighted(Rarity.common, 40),
@@ -215,6 +224,8 @@ const Map<int, DropTable> ruinedKeepDropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 2),
+      Weighted(bookOfWard, 2),
+      Weighted(bookOfBanish, 2),
     ],
     rarities: [
       Weighted(Rarity.common, 30),
@@ -244,6 +255,8 @@ const Map<int, DropTable> ruinedKeepDropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 1),
+      Weighted(bookOfWard, 2),
+      Weighted(bookOfBanish, 2),
     ],
     rarities: [
       Weighted(Rarity.common, 25),
@@ -273,6 +286,8 @@ const Map<int, DropTable> ruinedKeepDropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 0),
+      Weighted(bookOfWard, 2),
+      Weighted(bookOfBanish, 2),
     ],
     rarities: [
       Weighted(Rarity.common, 20),
@@ -302,6 +317,8 @@ const Map<int, DropTable> ruinedKeepDropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 0),
+      Weighted(bookOfWard, 2),
+      Weighted(bookOfBanish, 2),
     ],
     rarities: [
       Weighted(Rarity.common, 15),
@@ -331,6 +348,8 @@ const Map<int, DropTable> ruinedKeepDropTables = {
       Weighted(ironGauntlets, 5),
       Weighted(ironGreaves, 6),
       Weighted(leatherBoots, 0),
+      Weighted(bookOfWard, 2),
+      Weighted(bookOfBanish, 2),
     ],
     rarities: [
       Weighted(Rarity.common, 10),

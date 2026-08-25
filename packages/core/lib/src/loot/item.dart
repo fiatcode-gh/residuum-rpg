@@ -27,12 +27,14 @@ class BaseItem extends Equatable {
     this.armor = 0,
     this.heavy = false,
     this.heal = 0,
+    this.teaches,
   });
 
   final String id;
   final String name;
 
-  /// The single character this item draws as on the floor: `)`, `[` or `!`.
+  /// The single character this item draws as on the floor: `)`, `[`, `!` or
+  /// `?`.
   final String glyph;
 
   /// Where it is worn, or null when it is not worn at all.
@@ -51,6 +53,14 @@ class BaseItem extends Equatable {
   /// Potions only; how much one restores.
   final int heal;
 
+  /// Spell books only; the id of the spell reading this teaches.
+  ///
+  /// The id rather than the spell, because `core`'s item layer has no business
+  /// holding content's spell table: the book names what it teaches and the
+  /// registry on the game state answers for it, exactly as a drop table names
+  /// base items and the armory answers for those.
+  final String? teaches;
+
   /// Whether this is swung. Weapons are the only items that need hands.
   bool get isWeapon => hands != null;
 
@@ -59,6 +69,18 @@ class BaseItem extends Equatable {
 
   /// Whether this is drunk.
   bool get isPotion => heal > 0;
+
+  /// Whether this is read, and spent by reading.
+  bool get isSpellBook => teaches != null;
+
+  /// Whether using this spends it.
+  ///
+  /// The one question the drop roller asks, and the reason it is a predicate
+  /// rather than two: an affix on a thing that is used up once is a bonus on
+  /// something that will not be there tomorrow, so a 'Rare Book of Firebolt'
+  /// promises the player exactly as much as a 'Rare Healing Potion of Vigour'
+  /// does, which is nothing.
+  bool get isConsumable => isPotion || isSpellBook;
 
   /// Whether this belongs in a slot at all.
   bool get isEquippable => slot != null;
@@ -75,6 +97,7 @@ class BaseItem extends Equatable {
     armor,
     heavy,
     heal,
+    teaches,
   ];
 
   @override

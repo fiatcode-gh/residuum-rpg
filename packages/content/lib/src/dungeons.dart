@@ -6,6 +6,7 @@ import 'dungeon_spawn.dart';
 import 'new_game.dart';
 import 'ruined_keep.dart';
 import 'sea_cave.dart';
+import 'spells.dart';
 import 'world.dart';
 
 /// One themed dungeon's whole content: what lives in it, what it drops, what
@@ -367,6 +368,7 @@ GameState startDungeonRunAt(NodeId node, Profile profile) => startRun(
   profile,
   dungeon: dungeonFor(node, profile.worldSeed),
   dropTables: dropTablesFor(node),
+  spells: spellsById,
   lootSeedSalt: lootSaltFor(node),
   deepest: (visit) => delveDepth(node, profile.worldSeed, visit),
 );

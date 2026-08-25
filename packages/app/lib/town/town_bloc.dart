@@ -141,6 +141,17 @@ final class WearPressed extends TownBlocEvent {
   final String itemId;
 }
 
+/// Read the carried spell book with this id, at a camp or in a town.
+///
+/// **The same rule the corridor uses**, wrapped the town's way: [readBook]
+/// calls the shared `readRefusal`, so a gate refuses in the same sentence
+/// wherever the hero opens the page.
+final class ReadBookPressed extends TownBlocEvent {
+  const ReadBookPressed(this.itemId);
+
+  final String itemId;
+}
+
 final class TakeOffPressed extends TownBlocEvent {
   const TakeOffPressed(this.slot);
 
@@ -315,6 +326,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     on<WithdrawItemPressed>(_onWithdrawItem);
     on<WearPressed>(_onWear);
     on<TakeOffPressed>(_onTakeOff);
+    on<ReadBookPressed>(_onReadBook);
     on<DepositGoldPressed>(_onDepositGold);
     on<WithdrawGoldPressed>(_onWithdrawGold);
     on<ArrivedInTown>(_onArrivedInTown);
@@ -656,6 +668,9 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
 
   void _onTakeOff(TakeOffPressed event, Emitter<TownViewState> emit) =>
       emit(_transacted(unequipItem(state.profile, event.slot)));
+
+  void _onReadBook(ReadBookPressed event, Emitter<TownViewState> emit) =>
+      emit(_transacted(readBook(state.profile, event.itemId, spellsById)));
 
   void _onDepositGold(DepositGoldPressed event, Emitter<TownViewState> emit) =>
       emit(_transacted(depositGold(state.profile, event.amount)));

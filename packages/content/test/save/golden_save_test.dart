@@ -4,13 +4,13 @@ import 'package:test/test.dart';
 
 import 'support/standing.dart';
 
-/// A committed version-1 document with the hero in town.
+/// A committed version-2 document with the hero in town.
 ///
 /// Any change to the format reddens this, which is the whole point: a save
 /// format that drifts quietly is a save format that stops reading yesterday's
 /// saves, and the player finds out by losing a hero.
 const String _goldenTown =
-    '{"version":1,"active":"hero-1","heroes":{"hero-1":{"label":"He'
+    '{"version":2,"active":"hero-1","heroes":{"hero-1":{"label":"He'
     'ro 1","profile":{"hp":14,"gold":30,"bankedGold":120,"worldSeed'
     '":"9007199254740993","visit":3,"equipment":{"mainHand":{"id":"'
     'drop-3","base":"war-axe","rarity":"rare","affixes":["keen","of'
@@ -18,22 +18,22 @@ const String _goldenTown =
     ',"rarity":"common","affixes":[]}],"bank":[{"id":"drop-1","base'
     '":"iron-sword","rarity":"common","affixes":[]}],"skills":{"arm'
     's":{"level":4,"xp":2},"might":{"level":0,"xp":0},"bulwark":{"l'
-    'evel":0,"xp":0},"fleetfoot":{"level":0,"xp":0}}},"run":null,'
-    '"dungeon":null,'
-    '"inside":false,'
-    '"campDay":null,'
-    '"world":{"at":"northgate","home":"northgate","day":30,'
-    '"discovered":["crypt","northgate","stonebridge"],"journey":null},'
-    '"merchant":{"bought":[],"sold":[],"town":null}}}}';
+    'evel":0,"xp":0},"fleetfoot":{"level":0,"xp":0},"wrath":{"level'
+    '":2,"xp":3},"mending":{"level":0,"xp":0},"binding":{"level":0,'
+    '"xp":0}},"knownSpells":["firebolt"]},"run":null,"dungeon":null'
+    ',"inside":false,"campDay":null,"world":{"at":"northgate","home'
+    '":"northgate","day":30,"discovered":["crypt","northgate","ston'
+    'ebridge"],"journey":null},"merchant":{"bought":[],"sold":[],"t'
+    'own":null}}}}';
 
-/// A committed version-1 document with a crawl the hero is standing in, so the
+/// A committed version-2 document with a crawl the hero is standing in, so the
 /// run block's shape is pinned as tightly as the profile's.
 ///
 /// `inside` is true here and false in the other two, so the three goldens
 /// between them pin both answers to the question a run block alone cannot
 /// answer.
 const String _goldenRun =
-    '{"version":1,"active":"hero-1","heroes":{"hero-1":{"label":"He'
+    '{"version":2,"active":"hero-1","heroes":{"hero-1":{"label":"He'
     'ro 1","profile":{"hp":20,"gold":0,"bankedGold":0,"worldSeed":"'
     '77","visit":0,"equipment":{"mainHand":{"id":"kit-1","base":"ru'
     'sty-sword","rarity":"common","affixes":[]}},"inventory":[{"id"'
@@ -41,32 +41,34 @@ const String _goldenRun =
     ']},{"id":"kit-3","base":"healing-potion","rarity":"common","af'
     'fixes":[]}],"bank":[],"skills":{"arms":{"level":0,"xp":0},"mig'
     'ht":{"level":0,"xp":0},"bulwark":{"level":0,"xp":0},"fleetfoot'
-    '":{"level":0,"xp":0}}},"run":{"depth":2,"worldSeed":"77","visi'
-    't":1,"gold":9,"isGameOver":false,"nextDropNumber":4,"rngState"'
-    ':"-8613303245920329199","lootRngState":"2420599403871909411","'
-    'map":"#####\\n#.>.#\\n#####","hero":{"id":"hero","name":"you",'
-    '"glyph":"@","x":1,"y":1,"hp":13,"maxHp":20,"attackMin":1,"atta'
-    'ckMax":2,"speed":10,"energy":100,"dropChance":0,"pierce":0},"m'
-    'onsters":[{"id":"ghoul-1","name":"the ghoul","glyph":"g","x":3'
-    ',"y":1,"hp":5,"maxHp":12,"attackMin":2,"attackMax":4,"speed":1'
-    '0,"energy":40,"dropChance":25,"pierce":0}],"visible":[[1,1],[2'
-    ',1]],"explored":[[1,1],[2,1],[3,1]],"stairsDown":[2,1],"stairs'
-    'Up":[1,1],"groundItems":[{"x":2,"y":1,"items":[{"id":"floor-2-'
-    '1","base":"leather-cap","rarity":"fine","affixes":["sturdy"]}]'
-    '}],"inventory":[],"equipment":{},"skills":{"arms":{"level":1,"'
-    'xp":1},"might":{"level":0,"xp":0},"bulwark":{"level":0,"xp":0}'
-    ',"fleetfoot":{"level":0,"xp":0}},"floors":[{"depth":1,"map":"#'
-    '##\\n#.#\\n###","monsters":[],"groundItems":[],"explored":[[1,'
-    '1]],"stairsDown":[1,1],"stairsUp":null}]},'
-    '"dungeon":"crypt",'
-    '"inside":true,'
-    '"campDay":null,'
-    '"world":{"at":"crypt","home":"stonebridge","day":0,'
-    '"discovered":["crypt","stonebridge"],"journey":null},'
-    '"merchant":{"bought"'
-    ':[],"sold":[],"town":null}}}}';
+    '":{"level":0,"xp":0},"wrath":{"level":0,"xp":0},"mending":{"le'
+    'vel":0,"xp":0},"binding":{"level":0,"xp":0}},"knownSpells":[]}'
+    ',"run":{"depth":2,"worldSeed":"77","visit":1,"gold":9,"isGameO'
+    'ver":false,"nextDropNumber":4,"rngState":"-8613303245920329199'
+    '","lootRngState":"2420599403871909411","map":"#####\\n#.>.#\\n##'
+    '###","hero":{"id":"hero","name":"you","glyph":"@","x":1,"y":1,'
+    '"hp":13,"maxHp":20,"attackMin":1,"attackMax":2,"speed":10,"ene'
+    'rgy":100,"dropChance":0,"pierce":0,"resists":[],"vulnerableTo"'
+    ':[]},"monsters":[{"id":"ghoul-1","name":"the ghoul","glyph":"g'
+    '","x":3,"y":1,"hp":5,"maxHp":12,"attackMin":2,"attackMax":4,"s'
+    'peed":10,"energy":40,"dropChance":25,"pierce":0,"resists":[],"'
+    'vulnerableTo":["fire"]}],"visible":[[1,1],[2,1]],"explored":[['
+    '1,1],[2,1],[3,1]],"stairsDown":[2,1],"stairsUp":[1,1],"groundI'
+    'tems":[{"x":2,"y":1,"items":[{"id":"floor-2-1","base":"leather'
+    '-cap","rarity":"fine","affixes":["sturdy"]}]}],"inventory":[],'
+    '"equipment":{},"skills":{"arms":{"level":1,"xp":1},"might":{"l'
+    'evel":0,"xp":0},"bulwark":{"level":0,"xp":0},"fleetfoot":{"lev'
+    'el":0,"xp":0},"wrath":{"level":1,"xp":2},"mending":{"level":0,'
+    '"xp":0},"binding":{"level":0,"xp":0}},"knownSpells":["firebolt'
+    '"],"mana":3,"warded":4,"bound":{"ghoul-1":2},"floors":[{"depth'
+    '":1,"map":"###\\n#.#\\n###","monsters":[],"groundItems":[],"expl'
+    'ored":[[1,1]],"stairsDown":[1,1],"stairsUp":null}]},"dungeon":'
+    '"crypt","inside":true,"campDay":null,"world":{"at":"crypt","ho'
+    'me":"stonebridge","day":0,"discovered":["crypt","stonebridge"]'
+    ',"journey":null},"merchant":{"bought":[],"sold":[],"town":null'
+    '}}}}';
 
-/// A committed version-1 document with two heroes in it.
+/// A committed version-2 document with two heroes in it.
 ///
 /// The roster's own shape is pinned here: that `active` is a written field and
 /// not the first key, and that heroes are written in key order however the map
@@ -81,7 +83,7 @@ const String _goldenRun =
 /// being walked, and standing still. A document where nobody travelled would
 /// leave the journey shape unpinned entirely.
 const String _goldenTwoHeroes =
-    '{"version":1,"active":"hero-2","heroes":{"hero-1":{"label":"Il'
+    '{"version":2,"active":"hero-2","heroes":{"hero-1":{"label":"Il'
     'se","profile":{"hp":20,"gold":40,"bankedGold":0,"worldSeed":"1'
     '11","visit":0,"equipment":{"mainHand":{"id":"kit-1","base":"ru'
     'sty-sword","rarity":"common","affixes":[]}},"inventory":[{"id"'
@@ -89,31 +91,27 @@ const String _goldenTwoHeroes =
     ']},{"id":"kit-3","base":"healing-potion","rarity":"common","af'
     'fixes":[]}],"bank":[],"skills":{"arms":{"level":0,"xp":0},"mig'
     'ht":{"level":0,"xp":0},"bulwark":{"level":0,"xp":0},"fleetfoot'
-    '":{"level":0,"xp":0}}},"run":null,'
-    '"dungeon":null,'
-    '"inside":false,'
-    '"campDay":null,'
-    '"world":{"at":"stonebridge","home":"stonebridge","day":30,'
-    '"discovered":["crypt","northgate","stonebridge"],'
-    '"journey":{"from":"stonebridge","to":"northgate","daysLeft":2}},'
-    '"merchant":{"bought":["market-stonebridge-0-gear-1"],'
-    '"sold":[{"id":"drop-3","base":"iron-sword","rarit'
-    'y":"common","affixes":[]}],"town":"stonebridge"}},'
-    '"hero-2":{"label":"Bram","profile'
-    '":{"hp":20,"gold":0,"bankedGold":0,"worldSeed":"222","visit":0'
-    ',"equipment":{"mainHand":{"id":"kit-1","base":"rusty-sword","r'
-    'arity":"common","affixes":[]}},"inventory":[{"id":"kit-2","bas'
-    'e":"healing-potion","rarity":"common","affixes":[]},{"id":"kit'
-    '-3","base":"healing-potion","rarity":"common","affixes":[]}],"'
-    'bank":[],"skills":{"arms":{"level":0,"xp":0},"might":{"level":'
-    '0,"xp":0},"bulwark":{"level":0,"xp":0},"fleetfoot":{"level":0,'
-    '"xp":0}}},"run":null,'
-    '"dungeon":null,'
-    '"inside":false,'
-    '"campDay":null,'
-    '"world":{"at":"stonebridge","home":"stonebridge","day":0,'
-    '"discovered":["crypt","stonebridge"],"journey":null},'
-    '"merchant":{"bought":[],"sold":[],"town":null}}}}';
+    '":{"level":0,"xp":0},"wrath":{"level":0,"xp":0},"mending":{"le'
+    'vel":0,"xp":0},"binding":{"level":0,"xp":0}},"knownSpells":[]}'
+    ',"run":null,"dungeon":null,"inside":false,"campDay":null,"worl'
+    'd":{"at":"stonebridge","home":"stonebridge","day":30,"discover'
+    'ed":["crypt","northgate","stonebridge"],"journey":{"from":"sto'
+    'nebridge","to":"northgate","daysLeft":2}},"merchant":{"bought"'
+    ':["market-stonebridge-0-gear-1"],"sold":[{"id":"drop-3","base"'
+    ':"iron-sword","rarity":"common","affixes":[]}],"town":"stonebr'
+    'idge"}},"hero-2":{"label":"Bram","profile":{"hp":20,"gold":0,"'
+    'bankedGold":0,"worldSeed":"222","visit":0,"equipment":{"mainHa'
+    'nd":{"id":"kit-1","base":"rusty-sword","rarity":"common","affi'
+    'xes":[]}},"inventory":[{"id":"kit-2","base":"healing-potion","'
+    'rarity":"common","affixes":[]},{"id":"kit-3","base":"healing-p'
+    'otion","rarity":"common","affixes":[]}],"bank":[],"skills":{"a'
+    'rms":{"level":0,"xp":0},"might":{"level":0,"xp":0},"bulwark":{'
+    '"level":0,"xp":0},"fleetfoot":{"level":0,"xp":0},"wrath":{"lev'
+    'el":0,"xp":0},"mending":{"level":0,"xp":0},"binding":{"level":'
+    '0,"xp":0}},"knownSpells":[]},"run":null,"dungeon":null,"inside'
+    '":false,"campDay":null,"world":{"at":"stonebridge","home":"sto'
+    'nebridge","day":0,"discovered":["crypt","stonebridge"],"journe'
+    'y":null},"merchant":{"bought":[],"sold":[],"town":null}}}}';
 
 /// Ilse, one of the two heroes of the roster golden, built once because two
 /// tests assemble the same roster in two different orders.
@@ -166,7 +164,11 @@ Profile _pinnedTown() => newProfile(worldSeed: 9007199254740993).copyWith(
     SkillId.might: SkillState(),
     SkillId.bulwark: SkillState(),
     SkillId.fleetfoot: SkillState(),
+    SkillId.wrath: SkillState(level: 2, xp: 3),
+    SkillId.mending: SkillState(),
+    SkillId.binding: SkillState(),
   },
+  knownSpells: const {'firebolt'},
 );
 
 GameState _pinnedRun() => GameState(
@@ -187,6 +189,7 @@ GameState _pinnedRun() => GameState(
       speed: 10,
       energy: 40,
       dropChance: 25,
+      vulnerableTo: {DamageType.fire},
     ),
   ],
   rng: Rng.fromState(-8613303245920329199),
@@ -225,8 +228,16 @@ GameState _pinnedRun() => GameState(
     SkillId.might: SkillState(),
     SkillId.bulwark: SkillState(),
     SkillId.fleetfoot: SkillState(),
+    SkillId.wrath: SkillState(level: 1, xp: 2),
+    SkillId.mending: SkillState(),
+    SkillId.binding: SkillState(),
   },
   dropTables: dropTables,
+  spells: spellsById,
+  knownSpells: const {'firebolt'},
+  mana: 3,
+  warded: 4,
+  bound: const {'ghoul-1': 2},
   nextDropNumber: 4,
 );
 

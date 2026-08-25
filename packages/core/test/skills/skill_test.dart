@@ -2,6 +2,38 @@ import 'package:residuum_core/core.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group('SkillId', () {
+    test('the three schools append after the four shipped skills', () {
+      // arrange
+      const shipped = [
+        SkillId.arms,
+        SkillId.might,
+        SkillId.bulwark,
+        SkillId.fleetfoot,
+      ];
+
+      // act
+      final values = SkillId.values;
+
+      // assert - appended and never reordered, because the save's skills block
+      // is written in enum order and a reorder would rewrite every document
+      expect(values.take(4), shipped);
+      expect(values.skip(4), [SkillId.wrath, SkillId.mending, SkillId.binding]);
+    });
+
+    test('every skill in the enum starts untrained', () {
+      // arrange
+      const untouched = SkillState();
+
+      // act
+      final untrained = untrainedSkills;
+
+      // assert
+      expect(untrained.keys, SkillId.values);
+      expect(untrained.values, everyElement(untouched));
+    });
+  });
+
   group('xpToNext', () {
     test('rises with every level, so later levels cost more', () {
       // arrange
@@ -106,7 +138,7 @@ void main() {
   });
 
   group('untrainedSkills', () {
-    test('holds all four skills at level zero', () {
+    test('holds all seven skills at level zero', () {
       // arrange
       const skills = untrainedSkills;
 

@@ -55,7 +55,31 @@ Map<String, Object?> encodeActor(Actor actor) => {
   'energy': actor.energy,
   'dropChance': actor.dropChance,
   'pierce': actor.pierce,
+  'resists': encodeDamageTypes(actor.resists),
+  'vulnerableTo': encodeDamageTypes(actor.vulnerableTo),
 };
+
+/// Every damage type in [types], as sorted names.
+///
+/// Sorted for [encodePositions]'s reason: one state has to encode to one
+/// document or a golden fixture cannot be pinned, and nothing reads a
+/// resistance set in order — it is asked whether it holds a type, never what
+/// its first type is. Written by name rather than by index so that appending a
+/// type to the enum never rewrites what an old document meant.
+List<Object?> encodeDamageTypes(Set<DamageType> types) =>
+    [for (final type in types) type.name]..sort();
+
+/// Every damage type in the list at [key].
+Set<DamageType> decodeDamageTypes(Map<String, Object?> from, String key) => {
+  for (final written in listAt(from, key)) _damageTypeNamed(written, key),
+};
+
+DamageType _damageTypeNamed(Object? written, String key) {
+  for (final type in DamageType.values) {
+    if (type.name == written) return type;
+  }
+  throw SaveMalformed('"$key" names a kind of damage this build does not deal');
+}
 
 /// Every actor in [actors], in the order they act in.
 ///
@@ -84,6 +108,8 @@ Actor decodeActor(Object? from) {
     energy: intAt(from, 'energy'),
     dropChance: intAt(from, 'dropChance'),
     pierce: intAt(from, 'pierce'),
+    resists: decodeDamageTypes(from, 'resists'),
+    vulnerableTo: decodeDamageTypes(from, 'vulnerableTo'),
   );
 }
 
@@ -91,11 +117,6 @@ Actor decodeActor(Object? from) {
 List<Actor> decodeActors(Map<String, Object?> from, String key) => [
   for (final written in listAt(from, key)) decodeActor(written),
 ];
-
-/// Rows first, then columns, so a sorted document reads the way a floor does.
-int byRowThenColumn(Position first, Position second) => first.y == second.y
-    ? first.x.compareTo(second.x)
-    : first.y.compareTo(second.y);
 
 Position _asPosition(Object? written, String key) {
   if (written is! List || written.length != 2) {

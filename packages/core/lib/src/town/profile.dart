@@ -26,19 +26,30 @@ class Profile extends Equatable {
     Map<SkillId, SkillState> skills = untrainedSkills,
     List<Item> inventory = const [],
     List<Item> bank = const [],
+    Set<String> knownSpells = const {},
     this.gold = 0,
     this.bankedGold = 0,
     this.visit = 0,
   }) : equipment = Map.unmodifiable(equipment),
        skills = Map.unmodifiable(skills),
        inventory = List.unmodifiable(inventory),
-       bank = List.unmodifiable(bank);
+       bank = List.unmodifiable(bank),
+       knownSpells = Set.unmodifiable(knownSpells);
 
   /// The base body: base stats, and the hit points the hero walked out with.
   final Actor hero;
 
   final Equipment equipment;
   final Map<SkillId, SkillState> skills;
+
+  /// Every spell this hero has read a book to learn, by id.
+  ///
+  /// **Mirrors [skills] exactly, and for the same reason.** What a hero has
+  /// learned is not something a dungeon can take back: the book is spent at the
+  /// moment of reading, so a death that burned the spell would charge twice for
+  /// one page. It rides all four run-boundary doors beside the training, and it
+  /// is part of [props] because a hero who can cast is not the hero who cannot.
+  final Set<String> knownSpells;
 
   /// What the hero carries into the dungeon, and loses by dying in it.
   final List<Item> inventory;
@@ -75,6 +86,7 @@ class Profile extends Equatable {
     List<Item>? bank,
     int? bankedGold,
     int? visit,
+    Set<String>? knownSpells,
   }) => Profile(
     hero: hero ?? this.hero,
     worldSeed: worldSeed,
@@ -85,6 +97,7 @@ class Profile extends Equatable {
     bank: bank ?? this.bank,
     bankedGold: bankedGold ?? this.bankedGold,
     visit: visit ?? this.visit,
+    knownSpells: knownSpells ?? this.knownSpells,
   );
 
   /// [Actor] is not a value object, so a profile's identity names the fields of
@@ -102,6 +115,7 @@ class Profile extends Equatable {
     bankedGold,
     worldSeed,
     visit,
+    knownSpells,
   ];
 
   @override

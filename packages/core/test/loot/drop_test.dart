@@ -193,4 +193,46 @@ void main() {
       expect(counts, everyElement(inInclusiveRange(2, 4)));
     });
   });
+
+  group('a consumable is forced to Common', () {
+    const book = BaseItem(
+      id: 'book-of-firebolt',
+      name: 'Book of Firebolt',
+      glyph: '?',
+      teaches: 'firebolt',
+    );
+
+    DropTable tableOf(BaseItem only) => _table(
+      items: [Weighted(only, 1)],
+      rarities: const [Weighted(Rarity.epic, 1)],
+    );
+
+    test('a spell book rolls Common off a table that says Epic', () {
+      // arrange
+      final table = tableOf(book);
+
+      // act
+      final rolled = rollDrop(table, Rng(1), 'drop-1');
+
+      // assert - the potion's argument, extended: an affixed book would be a
+      // bonus on a thing that is gone the moment it is used, and its tier word
+      // would lie about what the table gave up
+      expect(rolled.rarity, Rarity.common);
+      expect(rolled.affixes, isEmpty);
+    });
+
+    test('a book costs the table exactly one roll, as a potion does', () {
+      // arrange
+      final bookRng = Rng(9);
+      final potionRng = Rng(9);
+
+      // act
+      rollDrop(tableOf(book), bookRng, 'drop-1');
+      rollDrop(tableOf(_potion), potionRng, 'drop-1');
+
+      // assert - both stop after the base-item draw, so a table holding one
+      // does not advance the stream differently from a table holding the other
+      expect(bookRng.state, potionRng.state);
+    });
+  });
 }

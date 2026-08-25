@@ -27,6 +27,8 @@ Actor ghoul(
   int speed = 10,
   int dropChance = 0,
   int pierce = 0,
+  Set<DamageType> resists = const {},
+  Set<DamageType> vulnerableTo = const {},
 }) => Actor(
   id: id,
   name: 'the ghoul',
@@ -40,6 +42,8 @@ Actor ghoul(
   energy: actThreshold,
   dropChance: dropChance,
   pierce: pierce,
+  resists: resists,
+  vulnerableTo: vulnerableTo,
 );
 
 Floor noFloorBelow(int depth) =>
@@ -66,6 +70,11 @@ GameState crawl({
   Equipment equipment = const {},
   Map<SkillId, SkillState> skills = untrainedSkills,
   Map<int, DropTable> dropTables = const {},
+  Map<String, Spell> spells = const {},
+  Set<String> knownSpells = const {},
+  Map<String, int> bound = const {},
+  int mana = 0,
+  int warded = 0,
   int nextDropNumber = 1,
   bool isEncounter = false,
 }) {
@@ -96,6 +105,11 @@ GameState crawl({
     equipment: equipment,
     skills: skills,
     dropTables: dropTables,
+    spells: spells,
+    knownSpells: knownSpells,
+    bound: bound,
+    mana: mana,
+    warded: warded,
     nextDropNumber: nextDropNumber,
     isEncounter: isEncounter,
   );

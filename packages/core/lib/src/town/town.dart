@@ -4,6 +4,8 @@ import '../engine/game_state.dart';
 import '../loot/equip_slot.dart';
 import '../loot/item.dart';
 import '../loot/wear.dart';
+import '../magic/read.dart';
+import '../magic/spell.dart';
 import 'profile.dart';
 
 /// Why the town would not do what was asked.
@@ -162,6 +164,35 @@ Profile _dressed(Profile profile, Worn worn) {
     inventory: worn.inventory,
   );
   return dressed.copyWith(hero: clampedToMaxHp(dressed.hero, dressed.loadout));
+}
+
+/// Reads the carried spell book [itemId], learning what it teaches.
+///
+/// The rule itself lives in [readRefusal], which the dungeon calls too, so a
+/// book behaves the same whether the hero opens it at a camp or in a corridor —
+/// including the gate, and including the sentence the gate refuses in.
+///
+/// **No gold changes hands, and no merchant is involved.** Learning is the hero
+/// spending a page they already own, not a transaction: charging for it would
+/// make the book a receipt rather than a find, and would mean a hero who walked
+/// out of the dungeon broke could not read what they had carried home.
+Transacted readBook(Profile profile, String itemId, Map<String, Spell> spells) {
+  final refusal = readRefusal(
+    profile.loadout,
+    profile.inventory,
+    profile.knownSpells,
+    spells,
+    itemId,
+  );
+  if (refusal != null) return (profile, TownRefusal(refusal));
+  final book = _find(profile.inventory, itemId)!;
+  return (
+    profile.copyWith(
+      inventory: _without(profile.inventory, itemId),
+      knownSpells: {...profile.knownSpells, book.base.teaches!},
+    ),
+    null,
+  );
 }
 
 /// Banks [amount] of carried gold, putting it out of death's reach.

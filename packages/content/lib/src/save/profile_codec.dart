@@ -1,6 +1,7 @@
 import 'package:residuum_core/core.dart';
 
 import '../new_game.dart';
+import '../spells.dart';
 import 'item_codec.dart';
 import 'save_json.dart';
 
@@ -30,7 +31,29 @@ Map<String, Object?> encodeProfile(Profile profile) => {
   'inventory': encodeItems(profile.inventory),
   'bank': encodeItems(profile.bank),
   'skills': encodeSkills(profile.skills),
+  'knownSpells': encodeSpellIds(profile.knownSpells),
 };
+
+/// Every spell in [known], as sorted ids.
+///
+/// Sorted for [encodeSkills]'s reason: one profile has to encode to one
+/// document, and nothing reads this set in order. Ids rather than names, because
+/// a name is a thing a screen shows and an id is the thing the rules join on.
+List<Object?> encodeSpellIds(Set<String> known) => known.toList()..sort();
+
+/// Every spell in the list at [key].
+///
+/// An id this build has never heard of is a load failure with a sentence in it,
+/// not a spell quietly dropped: a hero who came back one spell short would have
+/// no way to find out which.
+Set<String> decodeSpellIds(Map<String, Object?> from, String key) => {
+  for (final written in listAt(from, key)) _spellIdNamed(written, key),
+};
+
+String _spellIdNamed(Object? written, String key) {
+  if (written is String && spellOrNull(written) != null) return written;
+  throw SaveMalformed('"$key" names a spell this build does not know');
+}
 
 /// The hero between runs, from the object at [key].
 Profile decodeProfile(Map<String, Object?> from, String key) {
@@ -48,5 +71,6 @@ Profile decodeProfile(Map<String, Object?> from, String key) {
     gold: intAt(written, 'gold'),
     bankedGold: intAt(written, 'bankedGold'),
     visit: intAt(written, 'visit'),
+    knownSpells: decodeSpellIds(written, 'knownSpells'),
   );
 }

@@ -16,6 +16,8 @@ class CreatureSpec {
     required this.speed,
     required this.dropChance,
     this.pierce = 0,
+    this.resists = const {},
+    this.vulnerableTo = const {},
   });
 
   final String id;
@@ -44,6 +46,20 @@ class CreatureSpec {
   /// difficulty curve can be bought off in the armoury is not a dungeon.
   final int pierce;
 
+  /// The damage types this creature shrugs off: a bolt of one is halved.
+  ///
+  /// **A content field and nothing more.** It changes no melee number, so a
+  /// hero who never casts fights exactly the dungeon that shipped before magic
+  /// did — which is what makes the bands able to say so.
+  ///
+  /// Disjoint from [vulnerableTo], which a validation test holds: a creature
+  /// that both resisted and burned at one type would be a row nobody could
+  /// read.
+  final Set<DamageType> resists;
+
+  /// The damage types this creature takes double from.
+  final Set<DamageType> vulnerableTo;
+
   /// One of these creatures, alive and ready to act, standing at [at].
   Actor spawn({required String id, required Position at}) => Actor(
     id: id,
@@ -58,6 +74,8 @@ class CreatureSpec {
     energy: actThreshold,
     dropChance: dropChance,
     pierce: pierce,
+    resists: resists,
+    vulnerableTo: vulnerableTo,
   );
 }
 
@@ -95,6 +113,7 @@ const CreatureSpec ghoul = CreatureSpec(
   speed: 10,
   dropChance: 50,
   pierce: 1,
+  vulnerableTo: {DamageType.fire},
 );
 
 /// Half the hero's speed, but it hits hard and takes a long time to fell.
@@ -108,6 +127,8 @@ const CreatureSpec skeleton = CreatureSpec(
   speed: 5,
   dropChance: 60,
   pierce: 6,
+  resists: {DamageType.fire},
+  vulnerableTo: {DamageType.frost},
 );
 
 const CreatureSpec wight = CreatureSpec(
@@ -120,6 +141,7 @@ const CreatureSpec wight = CreatureSpec(
   speed: 10,
   dropChance: 70,
   pierce: 6,
+  vulnerableTo: {DamageType.fire},
 );
 
 /// Every creature in the game, in the order they are first met.

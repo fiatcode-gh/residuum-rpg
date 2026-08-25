@@ -2,7 +2,6 @@ import 'package:residuum_core/core.dart';
 
 import '../affix_pool.dart';
 import '../armory.dart';
-import 'actor_codec.dart';
 import 'save_json.dart';
 
 /// One item, as the registry entries it is made of.

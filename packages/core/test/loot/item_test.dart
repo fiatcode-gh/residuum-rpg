@@ -26,6 +26,13 @@ const _ofEmbers = Affix(
   attackMax: 2,
 );
 
+const BaseItem healingPotionForTest = BaseItem(
+  id: 'healing-potion',
+  name: 'Healing Potion',
+  glyph: '!',
+  heal: 10,
+);
+
 void main() {
   group('Item.displayName', () {
     test('a common item is the tier word and the base name', () {
@@ -153,6 +160,87 @@ void main() {
 
       // assert
       expect(same, isFalse);
+    });
+  });
+
+  group('a spell book', () {
+    const book = BaseItem(
+      id: 'book-of-firebolt',
+      name: 'Book of Firebolt',
+      glyph: '?',
+      teaches: 'firebolt',
+    );
+
+    test('knows the spell it teaches', () {
+      // arrange
+      const page = book;
+
+      // act
+      final taught = page.teaches;
+
+      // assert
+      expect(taught, 'firebolt');
+      expect(page.isSpellBook, isTrue);
+    });
+
+    test('is consumable, exactly as a potion is', () {
+      // arrange
+      const page = book;
+
+      // act
+      final spent = page.isConsumable;
+
+      // assert - both are spent by using them, which is the only thing the
+      // drop roller needs to know about either
+      expect(spent, isTrue);
+      expect(healingPotionForTest.isConsumable, isTrue);
+    });
+
+    test('is not worn, not swung, and not drunk', () {
+      // arrange
+      const page = book;
+
+      // act
+      // assert
+      expect(page.isWeapon, isFalse);
+      expect(page.isArmour, isFalse);
+      expect(page.isEquippable, isFalse);
+      expect(page.isPotion, isFalse);
+    });
+
+    test('anything that is not a book teaches nothing', () {
+      // arrange
+      const sword = BaseItem(
+        id: 'iron-sword',
+        name: 'Iron Sword',
+        glyph: ')',
+        slot: EquipSlot.mainHand,
+        hands: WeaponHands.one,
+      );
+
+      // act
+      final taught = sword.teaches;
+
+      // assert
+      expect(taught, isNull);
+      expect(sword.isSpellBook, isFalse);
+      expect(sword.isConsumable, isFalse);
+    });
+
+    test('is part of what makes two base items the same base item', () {
+      // arrange
+      const one = book;
+
+      // act
+      const other = BaseItem(
+        id: 'book-of-firebolt',
+        name: 'Book of Firebolt',
+        glyph: '?',
+        teaches: 'mend',
+      );
+
+      // assert
+      expect(one, isNot(other));
     });
   });
 }
