@@ -112,6 +112,8 @@ void main() {
         'bank',
         'skills',
         'knownSpells',
+        'materials',
+        'brewNumber',
       ]);
     });
 

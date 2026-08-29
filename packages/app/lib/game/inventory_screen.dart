@@ -13,7 +13,7 @@ const _rule = Color(0xFF2A2E38);
 const _mono = TextStyle(fontFamily: 'monospace', fontSize: 13, color: _ink);
 const _monoDim = TextStyle(fontFamily: 'monospace', fontSize: 11, color: _dim);
 
-/// The pack, the six slots, the derived stats, the spells and the seven skills.
+/// The pack, the six slots, the derived stats, the spells and the nine skills.
 ///
 /// Nothing on this screen is told apart by colour. Rarity is the tier word in
 /// the item's own name plus a marking column; an empty slot is a dash; skill
@@ -65,6 +65,9 @@ class InventoryScreen extends StatelessWidget {
                         : null,
                   ),
               ],
+            const _Heading('Materials'),
+            for (final entry in state.materials.entries)
+              _MaterialRow(material: entry.key, count: entry.value),
             const _Heading('Skills'),
             for (final skill in SkillId.values)
               _SkillRow(
@@ -355,6 +358,34 @@ class _CarriedRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// One material the hero is carrying: its mark, its word, and how much.
+///
+/// **Every material has a row even at zero**, which is [packSections]' rule: the
+/// position of a row is information the player relies on, so a row that came and
+/// went would move the two below it under a thumb already reaching for one.
+///
+/// The mark, the word and the number are three separate readings of the same
+/// fact, so the panel is legible in greyscale, on a monochrome screen, and read
+/// aloud.
+class _MaterialRow extends StatelessWidget {
+  const _MaterialRow({required this.material, required this.count});
+
+  final MaterialId material;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      children: [
+        SizedBox(width: 28, child: Text(material.marking, style: _mono)),
+        SizedBox(width: 84, child: Text(material.word, style: _mono)),
+        Text('$count', style: count == 0 ? _monoDim : _mono),
+      ],
+    ),
+  );
 }
 
 class _SkillRow extends StatelessWidget {

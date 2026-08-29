@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:residuum_core/core.dart';
 
 const Color ink = Color(0xFFE6EAF0);
 const Color dim = Color(0xFF8A919E);
@@ -165,6 +166,65 @@ class Purse extends StatelessWidget {
         Text('Banked   $banked gold', style: mono),
       ],
     ),
+  );
+}
+
+/// What the hero has gathered, in a fixed order with no gaps.
+///
+/// Every material has a row even at zero, because the position of a row is
+/// information the player relies on and a row that came and went would move the
+/// ones below it under a thumb already reaching for one.
+///
+/// The mark, the word and the number are three readings of one fact, so the rows
+/// are legible in greyscale and read aloud.
+///
+/// **Laid out in fixed-width columns rather than by padding the text.** The
+/// markings are not all one cell wide in the device's monospace font — the ingot
+/// bar is wider than the ore diamond — so a padded string aligns on the desktop
+/// and steps sideways on the phone. A device pass caught exactly that.
+class MaterialRows extends StatelessWidget {
+  const MaterialRows({required this.materials, super.key});
+
+  final Map<MaterialId, int> materials;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      for (final id in MaterialId.values)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 1),
+          child: Row(
+            children: [
+              SizedBox(width: 28, child: Text(id.marking, style: mono)),
+              SizedBox(width: 84, child: Text(id.word, style: mono)),
+              Text('${materials[id] ?? 0}', style: mono),
+            ],
+          ),
+        ),
+    ],
+  );
+}
+
+/// [MaterialRows] inside a panel, for the rooms that spend them.
+///
+/// [Purse]'s sibling: the two panels sit one above the other at the top of the
+/// forge and the alchemist, so what a transaction costs and what the hero has to
+/// pay it with are read in one glance.
+class MaterialsPanel extends StatelessWidget {
+  const MaterialsPanel({required this.materials, super.key});
+
+  final Map<MaterialId, int> materials;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: panel,
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: MaterialRows(materials: materials),
   );
 }
 

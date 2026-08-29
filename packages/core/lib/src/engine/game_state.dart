@@ -1,3 +1,5 @@
+import '../craft/gather_node.dart';
+import '../craft/material.dart';
 import '../dungeon/floor.dart';
 import '../dungeon/floor_map.dart';
 import '../dungeon/floor_memory.dart';
@@ -48,6 +50,7 @@ class GameState {
     this.isGameOver = false,
     Map<int, FloorMemory> floors = const {},
     Map<Position, List<Item>> groundItems = const {},
+    Map<Position, GatherKind> nodes = const {},
     List<Item> inventory = const [],
     Equipment equipment = const {},
     Map<SkillId, SkillState> skills = untrainedSkills,
@@ -55,6 +58,7 @@ class GameState {
     Map<String, Spell> spells = const {},
     Set<String> knownSpells = const {},
     Map<String, int> bound = const {},
+    Map<MaterialId, int> materials = const {},
     this.mana = 0,
     this.warded = 0,
     this.nextDropNumber = 1,
@@ -66,6 +70,7 @@ class GameState {
          for (final tile in groundItems.entries)
            tile.key: List<Item>.unmodifiable(tile.value),
        }),
+       nodes = Map.unmodifiable(nodes),
        floors = Map.unmodifiable(floors),
        inventory = List.unmodifiable(inventory),
        equipment = Map.unmodifiable(equipment),
@@ -73,7 +78,8 @@ class GameState {
        dropTables = Map.unmodifiable(dropTables),
        spells = Map.unmodifiable(spells),
        knownSpells = Set.unmodifiable(knownSpells),
-       bound = Map.unmodifiable(bound);
+       bound = Map.unmodifiable(bound),
+       materials = Map.unmodifiable(materials);
 
   final FloorMap map;
   final Actor hero;
@@ -158,11 +164,31 @@ class GameState {
 
   final bool isGameOver;
 
+  /// What the hero has gathered so far this crawl, by kind.
+  ///
+  /// [gold]'s twin on the way in and out — carried down at the door, carried
+  /// home alive, burned by a death — and its opposite while the crawl runs:
+  /// nothing moves gold in `step`, and gathering is exactly what moves this.
+  /// That is why it is in [copyWith] where gold is not.
+  final Map<MaterialId, int> materials;
+
   /// What is lying on the floor, by tile.
   ///
   /// A tile with nothing on it has no entry rather than an empty list, so the
   /// map's size is the number of littered tiles and never the floor's area.
   final Map<Position, List<Item>> groundItems;
+
+  /// What is still there to be worked on this floor, by tile.
+  ///
+  /// [groundItems]' twin, and a separate map for a reason rather than for
+  /// symmetry: litter is loot, and putting a vein in the same map would put it
+  /// in front of the pack cap, the drop tables, the glyph set and the balance
+  /// bot, all four of which are things gathering has to stay clear of.
+  ///
+  /// A worked node is removed and does not come back this run. Re-entering the
+  /// dungeon lays out fresh floors and so regrows everything, which is the
+  /// visit bump doing the work rather than a rule of its own.
+  final Map<Position, GatherKind> nodes;
 
   /// What the hero is carrying but not wearing. Never longer than
   /// [inventoryCap].
@@ -171,7 +197,7 @@ class GameState {
   /// What the hero is wearing, by slot.
   final Equipment equipment;
 
-  /// All seven skills, always present.
+  /// All nine skills, always present.
   final Map<SkillId, SkillState> skills;
 
   /// What each depth can give up.
@@ -251,6 +277,9 @@ class GameState {
   /// What is lying on [position], oldest first.
   List<Item> itemsAt(Position position) => groundItems[position] ?? const [];
 
+  /// What can be worked on [position], or null when nothing can.
+  GatherKind? nodeAt(Position position) => nodes[position];
+
   /// The living monster standing on [position], or null when none does.
   Actor? monsterAt(Position position) {
     for (final monster in monsters) {
@@ -273,12 +302,14 @@ class GameState {
     Map<int, FloorMemory>? floors,
     bool? isGameOver,
     Map<Position, List<Item>>? groundItems,
+    Map<Position, GatherKind>? nodes,
     List<Item>? inventory,
     Equipment? equipment,
     Map<SkillId, SkillState>? skills,
     int? nextDropNumber,
     Set<String>? knownSpells,
     Map<String, int>? bound,
+    Map<MaterialId, int>? materials,
     int? mana,
     int? warded,
   }) => GameState(
@@ -300,6 +331,7 @@ class GameState {
     floors: floors ?? this.floors,
     isGameOver: isGameOver ?? this.isGameOver,
     groundItems: groundItems ?? this.groundItems,
+    nodes: nodes ?? this.nodes,
     inventory: inventory ?? this.inventory,
     equipment: equipment ?? this.equipment,
     skills: skills ?? this.skills,
@@ -307,6 +339,7 @@ class GameState {
     spells: spells,
     knownSpells: knownSpells ?? this.knownSpells,
     bound: bound ?? this.bound,
+    materials: materials ?? this.materials,
     mana: mana ?? this.mana,
     warded: warded ?? this.warded,
     nextDropNumber: nextDropNumber ?? this.nextDropNumber,

@@ -49,6 +49,7 @@ GameState arenaGame({
   FloorBuilder buildFloor = _noFloorBelow,
   Set<Position>? explored,
   Map<Position, List<Item>> groundItems = const {},
+  Map<Position, GatherKind> nodes = const {},
   List<Item> inventory = const [],
   Equipment equipment = const {},
   Map<SkillId, SkillState> skills = untrainedSkills,
@@ -86,6 +87,7 @@ GameState arenaGame({
     stairsDown: stairsDown,
     stairsUp: stairsUp,
     groundItems: groundItems,
+    nodes: nodes,
     inventory: inventory,
     equipment: equipment,
     skills: skills,
@@ -1495,6 +1497,144 @@ void _lootTests() {
 
       // assert
       expect(reason, isNull);
+    });
+  });
+
+  group('GameBloc gathering', () {
+    blocTest<GameBloc, GameViewState>(
+      'mines the vein underfoot and says so',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          nodes: {const Position(3, 2): GatherKind.oreVein},
+        ),
+      ),
+      act: (bloc) => bloc.add(const GatherPressed()),
+      expect: () => [
+        isA<GameViewState>()
+            .having((s) => s.game.materials, 'carried', {MaterialId.ore: 1})
+            .having((s) => s.game.nodes, 'left standing', isEmpty)
+            .having((s) => s.log, 'log', [
+              'You mine the ore vein and take one Ore.',
+            ]),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'gathers the patch underfoot and says so',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          nodes: {const Position(3, 2): GatherKind.herbPatch},
+        ),
+      ),
+      act: (bloc) => bloc.add(const GatherPressed()),
+      expect: () => [
+        isA<GameViewState>()
+            .having((s) => s.game.materials, 'carried', {MaterialId.herb: 1})
+            .having((s) => s.log, 'log', [
+              'You gather the herb patch and take one Herb.',
+            ]),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a tap off a node is refused and the log says why',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          nodes: {const Position(1, 1): GatherKind.oreVein},
+        ),
+      ),
+      act: (bloc) => bloc.add(const GatherPressed()),
+      expect: () => [
+        isA<GameViewState>()
+            .having((s) => s.game.materials, 'carried', isEmpty)
+            .having((s) => s.log, 'log', ['There is nothing here to gather.']),
+      ],
+    );
+
+    test('offers the control only where there is something to work', () {
+      // arrange
+      final bare = GameBloc(game: arenaGame(heroAt: const Position(3, 2)));
+      final standing = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          nodes: {const Position(3, 2): GatherKind.herbPatch},
+        ),
+      );
+
+      // act
+      final offered = (bare.state.canGather, standing.state.canGather);
+
+      // assert
+      expect(offered, (false, true));
+      addTearDown(bare.close);
+      addTearDown(standing.close);
+    });
+
+    test('the control is labelled by what is underfoot', () {
+      // arrange
+      final vein = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          nodes: {const Position(3, 2): GatherKind.oreVein},
+        ),
+      );
+      final patch = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          nodes: {const Position(3, 2): GatherKind.herbPatch},
+        ),
+      );
+
+      // act
+      final labels = (
+        vein.state.nodeUnderfoot!.verb,
+        patch.state.nodeUnderfoot!.verb,
+      );
+
+      // assert - you mine a seam and you pick a plant, and the label is the one
+      // place that difference is ever said out loud
+      expect(labels, ('Mine', 'Gather'));
+      addTearDown(vein.close);
+      addTearDown(patch.close);
+    });
+
+    test('a full pack does not stop the hero mining', () {
+      // arrange
+      final bloc = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          inventory: [
+            for (var index = 0; index < inventoryCap; index++)
+              _item('kit-$index', _potion),
+          ],
+          nodes: {const Position(3, 2): GatherKind.oreVein},
+        ),
+      );
+
+      // act
+      final offered = bloc.state.canGather;
+
+      // assert - unlike Pick up: the cap is a decision about gear, and ore is
+      // not carried in the pack at all
+      expect(offered, isTrue);
+      addTearDown(bloc.close);
+    });
+
+    test('the materials panel lists every kind in a fixed order', () {
+      // arrange
+      final bloc = GameBloc(game: arenaGame(heroAt: const Position(3, 2)));
+
+      // act
+      final panel = bloc.state.materials;
+
+      // assert - every row present even at zero, so a row never moves under the
+      // player's thumb
+      expect(panel.keys, MaterialId.values);
+      expect(panel.values, everyElement(0));
+      addTearDown(bloc.close);
     });
   });
 }

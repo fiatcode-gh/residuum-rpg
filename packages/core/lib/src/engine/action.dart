@@ -98,6 +98,26 @@ final class CastSpellAction extends GameAction {
   final String spellId;
 }
 
+/// Work whatever ore vein or herb patch the hero is standing on.
+///
+/// **One action for both kinds, because the tile decides.** The node underfoot
+/// is what says whether this is mining or gathering, so two actions would be two
+/// names for one question the state already answers — and a caller that chose
+/// the wrong one would be asking the rules to do something the floor does not
+/// offer. The control says 'Mine' or 'Gather' by the kind it is standing on;
+/// that is a label, not a second rule.
+///
+/// Refused when there is nothing underfoot to work, following [PickUpAction]
+/// rather than [DescendAction]: the interface only offers this on a node, so a
+/// stray tap must cost nothing.
+///
+/// **Draws no random number whatsoever.** The yield is a flat one and the node
+/// is simply gone, so the crawl's two streams are where they were — see
+/// `gatherSalt` for why that is the one thing this path is not allowed to do.
+final class GatherAction extends GameAction {
+  const GatherAction();
+}
+
 /// Put the carried item with this id down on the hero's tile.
 ///
 /// Refused when nothing carried answers to the id.

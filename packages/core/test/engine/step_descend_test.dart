@@ -21,6 +21,7 @@ Floor nextFloor(int depth) => Floor(
   monsters: [ghoul('ghoul-9', const Position(8, 2))],
   stairsDown: depth >= deepestDepth ? null : const Position(8, 1),
   stairsUp: const Position(1, 1),
+  nodes: {const Position(4, 2): GatherKind.oreVein},
 );
 
 GameState onTheStairs({int heroHp = 20, int depth = 1}) => crawl(
@@ -200,6 +201,63 @@ void main() {
       // assert
       expect(next.depth, deepestDepth);
       expect(events.whereType<Descended>(), isEmpty);
+    });
+  });
+
+  group('the nodes a floor keeps while the hero is elsewhere', () {
+    test('a floor built for the first time arrives with its own nodes', () {
+      // arrange
+      final state = onTheStairs();
+
+      // act
+      final (below, _) = step(state, const DescendAction());
+
+      // assert
+      expect(below.nodes, {const Position(4, 2): GatherKind.oreVein});
+    });
+
+    test('the floor left behind keeps the nodes it was left holding', () {
+      // arrange
+      final state = onTheStairs().copyWith(
+        nodes: {const Position(5, 2): GatherKind.herbPatch},
+      );
+
+      // act
+      final (below, _) = step(state, const DescendAction());
+
+      // assert - frozen with the litter and the fog, for FloorMemory's reason:
+      // what you left is what is waiting
+      expect(below.floors[1]!.nodes, {
+        const Position(5, 2): GatherKind.herbPatch,
+      });
+    });
+
+    test('climbing back up restores them, unworked', () {
+      // arrange
+      final state = onTheStairs().copyWith(
+        nodes: {const Position(5, 2): GatherKind.herbPatch},
+      );
+
+      // act
+      final (below, _) = step(state, const DescendAction());
+      final (again, _) = step(below, const AscendAction());
+
+      // assert
+      expect(again.nodes, {const Position(5, 2): GatherKind.herbPatch});
+    });
+
+    test('a floor stripped of its nodes comes back stripped', () {
+      // arrange
+      final state = onTheStairs().copyWith(nodes: const {});
+
+      // act
+      final (below, _) = step(state, const DescendAction());
+      final (again, _) = step(below, const AscendAction());
+
+      // assert - a worked vein does not grow back inside one delve; the visit
+      // bump is what regrows a dungeon, and only entering bumps it
+      expect(again.nodes, isEmpty);
+      expect(below.floors[1]!.nodes, isEmpty);
     });
   });
 }

@@ -102,6 +102,8 @@ void main() {
       expect(resumedPlayed.lootRng.state, livePlayed.lootRng.state);
       expect(resumedPlayed.inventory, livePlayed.inventory);
       expect(resumedPlayed.groundItems, livePlayed.groundItems);
+      expect(resumedPlayed.nodes, livePlayed.nodes);
+      expect(resumedPlayed.materials, livePlayed.materials);
       expect(resumedPlayed.equipment, livePlayed.equipment);
       expect(resumedPlayed.skills, livePlayed.skills);
       expect(resumedPlayed.nextDropNumber, livePlayed.nextDropNumber);
@@ -367,6 +369,62 @@ void main() {
       // assert
       expect(_asBytes(resumed), isNot(_asBytes(live)));
       expect(resumed.gold, 9999);
+    });
+  });
+
+  group('the theorem extended to what a hero gathers', () {
+    test('a resumed crawl walks back onto the veins it left standing', () {
+      // arrange
+      final live = deepRun(worldSeed: 4242, depth: 3);
+
+      // act
+      final resumed = _suspendAndResume(live);
+
+      // assert - a floor's nodes are a fact about the floor, so they suspend
+      // with it exactly as the litter and the fog do
+      expect(resumed.nodes, live.nodes);
+      expect(resumed.nodes, isNotEmpty);
+      for (final depth in live.floors.keys) {
+        expect(
+          resumed.floors[depth]!.nodes,
+          live.floors[depth]!.nodes,
+          reason: 'depth $depth',
+        );
+      }
+    });
+
+    test('a resumed crawl still carries what the hero had gathered', () {
+      // arrange
+      final live = deepRun(
+        worldSeed: 4242,
+        depth: 3,
+      ).copyWith(materials: const {MaterialId.ore: 6, MaterialId.herb: 2});
+
+      // act
+      final resumed = _suspendAndResume(live);
+
+      // assert
+      expect(resumed.materials, const {MaterialId.ore: 6, MaterialId.herb: 2});
+    });
+
+    test('a gathered floor resumes gathered, roll for roll', () {
+      // arrange
+      final live = deepRun(worldSeed: 4242, depth: 3);
+      final worked = live.copyWith(
+        nodes: {...live.nodes}..remove(live.nodes.keys.first),
+        materials: const {MaterialId.ore: 1},
+      );
+
+      // act
+      final resumed = _suspendAndResume(worked);
+      final (workedPlayed, workedEvents) = _play(worked);
+      final (resumedPlayed, resumedEvents) = _play(resumed);
+
+      // assert - the whole point of the theorem: a relaunch is the same game,
+      // and the streams are the ones the hero left off on
+      expect(resumedEvents, workedEvents);
+      expect(_asBytes(resumedPlayed), _asBytes(workedPlayed));
+      expect(resumed.nodes.length, live.nodes.length - 1);
     });
   });
 }

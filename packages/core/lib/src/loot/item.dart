@@ -85,6 +85,17 @@ class BaseItem extends Equatable {
   /// Whether this belongs in a slot at all.
   bool get isEquippable => slot != null;
 
+  /// Whether a forge can work this: steel only, so a weapon or a piece of
+  /// armour and nothing else.
+  ///
+  /// **One predicate with three readers**, which is the reason it is here rather
+  /// than spelled out at each of them: the stat getters ask it to decide where a
+  /// tier lands, `sellPriceOf` asks it so a price can never disagree with the
+  /// forge about what was worked, and `temperRefusal` asks it to say 'only steel
+  /// takes a temper'. Three copies of `isWeapon || isArmour` is three chances
+  /// for a fourth kind of item to be added to two of them.
+  bool get takesTemper => isWeapon || isArmour;
+
   @override
   List<Object?> get props => [
     id,
@@ -165,6 +176,7 @@ class Item extends Equatable {
     required this.base,
     required this.rarity,
     this.affixes = const [],
+    this.temper = 0,
   });
 
   final String id;
@@ -173,6 +185,24 @@ class Item extends Equatable {
 
   /// Always exactly [Rarity.affixCount] long.
   final List<Affix> affixes;
+
+  /// How many times a forge has worked this piece: zero to three.
+  ///
+  /// **The one number on an item that a dungeon never rolls.** Rarity and
+  /// affixes are what the world gave; this is what the hero paid for, which is
+  /// the whole of what crafting is allowed to be here — it serves loot and never
+  /// competes with it, so best in slot stays a found item somebody invested in.
+  /// `temperItem` is the only thing that changes it.
+  ///
+  /// A tier adds to what the piece is *for*: both ends of a weapon's damage,
+  /// because a smith makes the whole blade better, or a piece of armour's
+  /// armour. It never reaches hit points or speed — neither of those is steel.
+  ///
+  /// It is part of [props], and that is load-bearing rather than tidy: two
+  /// swords that differ only here would otherwise compare equal, a list would
+  /// merge them into one row, and an action on the row would reach whichever of
+  /// the two came first.
+  final int temper;
 
   /// What the log and the inventory call this item.
   ///
@@ -187,11 +217,11 @@ class Item extends Equatable {
       if (!affix.isPrefix) affix.affixName,
   ].join(' ');
 
-  int get attackMin => _sum(base.attackMin, (affix) => affix.attackMin);
+  int get attackMin => _sum(base.attackMin + _weaponTemper, (a) => a.attackMin);
 
-  int get attackMax => _sum(base.attackMax, (affix) => affix.attackMax);
+  int get attackMax => _sum(base.attackMax + _weaponTemper, (a) => a.attackMax);
 
-  int get armor => _sum(base.armor, (affix) => affix.armor);
+  int get armor => _sum(base.armor + _armourTemper, (affix) => affix.armor);
 
   int get maxHp => _sum(0, (affix) => affix.maxHp);
 
@@ -200,8 +230,25 @@ class Item extends Equatable {
   int _sum(int from, int Function(Affix) of) =>
       affixes.fold(from, (total, affix) => total + of(affix));
 
+  int get _weaponTemper => base.isWeapon ? temper : 0;
+
+  int get _armourTemper => base.isArmour ? temper : 0;
+
+  /// This item worked to [temper] instead.
+  ///
+  /// Narrower than a `copyWith` on purpose. Every other field of an item is
+  /// settled the moment it is rolled, so a general copy would be a door onto
+  /// changing a rarity or an id, and the only reason to open one is this.
+  Item tempered(int temper) => Item(
+    id: id,
+    base: base,
+    rarity: rarity,
+    affixes: affixes,
+    temper: temper,
+  );
+
   @override
-  List<Object?> get props => [id, base, rarity, affixes];
+  List<Object?> get props => [id, base, rarity, affixes, temper];
 
   @override
   String toString() => 'Item($id, $displayName)';

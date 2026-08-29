@@ -18,19 +18,30 @@ import 'save_read.dart';
 /// shape. The fallback chain above the codec is what turns that refusal into the
 /// previous snapshot.
 ///
-/// **Two, because magic reshaped the document and the reshape cannot be
-/// repaired into.** Three spell schools joined [SkillId], so every skills block
-/// a version-1 file wrote is missing three entries — and [decodeSkills] would
-/// read those absences as level zero rather than as a file it cannot answer for,
-/// which is the exact quiet degradation the never-repair rule exists to forbid.
-/// Known spells, mana, wards, binds and creature resistances are required keys
-/// beside it. Every pre-magic hero is refused by design; the fallback chain
-/// offers a new one.
+/// **Three, because crafting reshaped the document the same way magic did.**
+/// Herbcraft and Blacksmith joined [SkillId], so every skills block a version-2
+/// file wrote is missing two entries — and [decodeSkills] builds only from the
+/// document, so it would read those absences as level zero rather than as a file
+/// it cannot answer for, which is the exact quiet degradation the never-repair
+/// rule exists to forbid. The materials the hero carries, the counter their
+/// brewed potions are numbered from, the nodes each floor still has standing and
+/// the temper on every item are required keys beside it. Every pre-crafting hero
+/// is refused by design; the fallback chain offers a new one.
 ///
-/// **This is the last break.** The version freezes here at the first shipped
-/// build, and every reshape after it has to be a key a version-2 document can
-/// already answer.
-const int saveVersion = 2;
+/// **No claim is made here about this being the last break, and the previous two
+/// such claims are why.** The version-1 dartdoc said the campDay reshape was the
+/// last one and the version-2 dartdoc said the same of the magic reshape; both
+/// were written in good faith and both were wrong inside one milestone, because
+/// what forces a break is not carelessness in the codec but a new mechanic that
+/// a hero's saved skills block cannot answer for — and the design spec still owes
+/// four skills and a quest log.
+///
+/// The honest rule is the one the follow-up records: **the version freezes at the
+/// first SHIPPED build.** Until a build is in a player's hands there is no
+/// document anywhere that a break can cost anything, and every break is a
+/// sanctioned, recorded decision rather than an accident. After that, a reshape
+/// has to be a key an older document can already answer.
+const int saveVersion = 3;
 
 /// One save document: every hero, and which of them is being played.
 ///

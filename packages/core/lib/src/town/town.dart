@@ -1,11 +1,16 @@
 import 'package:equatable/equatable.dart';
 
+import '../craft/craft.dart';
+import '../craft/material.dart';
+import '../craft/temper.dart';
 import '../engine/game_state.dart';
 import '../loot/equip_slot.dart';
 import '../loot/item.dart';
+import '../loot/rarity.dart';
 import '../loot/wear.dart';
 import '../magic/read.dart';
 import '../magic/spell.dart';
+import '../skills/skill.dart';
 import 'profile.dart';
 
 /// Why the town would not do what was asked.
@@ -158,12 +163,125 @@ Transacted unequipItem(Profile profile, EquipSlot slot) {
 /// Both dressing transactions come through here so neither can forget the
 /// clamp. See [clampedToMaxHp] for why the town clamps on both paths where the
 /// dungeon clamps on only one.
-Profile _dressed(Profile profile, Worn worn) {
-  final dressed = profile.copyWith(
-    equipment: worn.equipment,
-    inventory: worn.inventory,
+Profile _dressed(Profile profile, Worn worn) => _clamped(
+  profile.copyWith(equipment: worn.equipment, inventory: worn.inventory),
+);
+
+/// [profile] with its hit points brought inside the ceiling its gear allows.
+///
+/// **Every town transaction that can change what the hero is wearing comes
+/// through here**, which is now three of them rather than two: putting a piece
+/// on, taking one off, and working a piece the hero has on. One door means none
+/// of the three can forget the clamp, and a fourth will inherit it by being
+/// written the same way.
+Profile _clamped(Profile profile) =>
+    profile.copyWith(hero: clampedToMaxHp(profile.hero, profile.loadout));
+
+/// Smelts [smeltCost] ore into one ingot, and trains Blacksmith by doing it.
+///
+/// Refused in [smeltRefusal]'s sentence when the hero is short of ore. No gold
+/// changes hands — see [smeltRefusal] for why the forge's first door is a
+/// workshop and not a shop.
+///
+/// **The counters move by one function**, [withMaterial], which drops an entry
+/// that empties. So a hero who smelts their last two ore comes out of this with
+/// no `ore` key at all rather than a zero — which is what keeps a save document's
+/// materials block the size of what the hero is actually carrying.
+Transacted smeltOre(Profile profile) {
+  final refusal = smeltRefusal(profile);
+  if (refusal != null) return (profile, TownRefusal(refusal));
+  final spent = withMaterial(profile.materials, MaterialId.ore, -smeltCost);
+  return (
+    profile.copyWith(
+      materials: withMaterial(spent, MaterialId.ingot, 1),
+      skills: trainedIn(profile.skills, SkillId.blacksmith),
+    ),
+    null,
   );
-  return dressed.copyWith(hero: clampedToMaxHp(dressed.hero, dressed.loadout));
+}
+
+/// Brews [brewCost] herbs into one [potion], and trains Herbcraft by doing it.
+///
+/// [potion] is a parameter because `core` has no armory, exactly as [readBook]
+/// takes the spell registry: the rules know that brewing makes a potion, and
+/// content knows which one.
+///
+/// The new item's id is `brew-<n>` off [Profile.brewNumber], and the counter is
+/// bumped in the same breath. **A derived id would not do**: an id has to be
+/// unique among everything the hero holds, and anything read off the pack or the
+/// visit would hand out the number of a potion that was drunk an hour ago.
+///
+/// Refused in [brewRefusal]'s sentences — short of herbs, or a full pack in
+/// [buyItem]'s exact words, because a brewed potion runs into the same twenty
+/// slots a bought one does.
+Transacted brewPotion(Profile profile, BaseItem potion) {
+  final refusal = brewRefusal(profile);
+  if (refusal != null) return (profile, TownRefusal(refusal));
+  final brewed = Item(
+    id: 'brew-${profile.brewNumber}',
+    base: potion,
+    rarity: Rarity.common,
+  );
+  return (
+    profile.copyWith(
+      inventory: [...profile.inventory, brewed],
+      materials: withMaterial(profile.materials, MaterialId.herb, -brewCost),
+      brewNumber: profile.brewNumber + 1,
+      skills: trainedIn(profile.skills, SkillId.herbcraft),
+    ),
+    null,
+  );
+}
+
+/// Works the carried or worn item [itemId] up one tier of temper.
+///
+/// Spends the tier's ingots and gold, trains Blacksmith, and refuses in
+/// [temperRefusal]'s sentences — which the screen reads too, so a dead row says
+/// exactly what the transaction would have said.
+///
+/// **Applies to a worn piece as well as a carried one**, so the hero does not
+/// have to undress to visit the forge; the piece most worth working is usually
+/// the one they have on. A worn temper goes through [_clamped], with dressing.
+///
+/// **Any future temper term that reaches `maxHp` must keep coming through
+/// [_clamped].** Today it cannot: a tier lands on a weapon's damage or a piece of
+/// armour's armour and on nothing else, so no clamp scenario exists and there is
+/// deliberately no test pretending one does. The route is here because the
+/// invariant is "the town never leaves a hero above their ceiling", not "the
+/// current arithmetic happens not to lower one" — and the day a perk gives temper
+/// a hit-point term, this is the line that is already right.
+///
+/// This is the only thing in the game that changes [Item.temper].
+Transacted temperItem(Profile profile, String itemId) {
+  final refusal = temperRefusal(profile, itemId);
+  if (refusal != null) return (profile, TownRefusal(refusal));
+  final item = heldItem(profile, itemId)!;
+  final worked = item.tempered(item.temper + 1);
+  final price = temperPriceFrom(item.temper);
+  return (
+    _clamped(
+      profile.copyWith(
+        inventory: [
+          for (final carried in profile.inventory)
+            carried.id == itemId ? worked : carried,
+        ],
+        equipment: {
+          for (final slot in profile.equipment.keys)
+            slot: profile.equipment[slot]!.id == itemId
+                ? worked
+                : profile.equipment[slot]!,
+        },
+        gold: profile.gold - price.gold,
+        materials: withMaterial(
+          profile.materials,
+          MaterialId.ingot,
+          -price.ingots,
+        ),
+        skills: trainedIn(profile.skills, SkillId.blacksmith),
+      ),
+    ),
+    null,
+  );
 }
 
 /// Reads the carried spell book [itemId], learning what it teaches.

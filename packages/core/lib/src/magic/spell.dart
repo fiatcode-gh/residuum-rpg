@@ -68,7 +68,7 @@ enum SpellBite {
   vulnerable,
 }
 
-/// Which of the seven skills are spell schools, and what each is called.
+/// Which of the nine skills are spell schools, and what each is called.
 ///
 /// An extension rather than three more fields on [SkillId], because a school is
 /// a fact about how a skill is trained and not a property every skill has: Arms

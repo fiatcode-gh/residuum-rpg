@@ -21,7 +21,7 @@ const _room = '''
 
 void main() {
   group('GameState loot fields', () {
-    test('a fresh crawl carries no loot and all four skills untrained', () {
+    test('a fresh crawl carries no loot and every skill untrained', () {
       // arrange
       final game = crawl(ascii: _room, heroAt: const Position(2, 2));
 

@@ -29,6 +29,11 @@ const int stockedPotions = 3;
 /// rusty sword. The flat term is what a page is worth for being a page.
 const int bookWorth = 10;
 
+/// What one tier of temper adds to an item's worth before the tier multiplier.
+///
+/// See [sellPriceOf] for why it is two.
+const int temperWorth = 2;
+
 /// What the merchant pays for [item].
 ///
 /// Worth is read off what the thing does rather than a price tag on the base
@@ -47,12 +52,33 @@ const int bookWorth = 10;
 /// a Rare is two bonuses on the same base, and the price says so. It is always
 /// one for a book, which [rollDrop] forces to Common — so the term above is
 /// the whole of a book's price, and that is deliberate.
+///
+/// **A temper is counted here by name, and it is the one stat that has to be.**
+/// Every line above reads `base.*`, which is deliberate — a saved item becomes
+/// whatever its base is in the build that reads it, so a balance pass reaches
+/// old vaults. Temper is not on the base: it is the one thing about an item that
+/// the hero paid for rather than found, so it would be the one thing a price
+/// silently missed, and a forge that changed no price at all would be a
+/// laundering hole in reverse.
+///
+/// [temperWorth] is two rather than three because two is what those stats cost
+/// everywhere else in this expression: a tier gives a weapon a point at each end
+/// of its damage, weighted one apiece, or a piece of armour one point of armour,
+/// weighted two. Three would price a temper above the way the identical stats
+/// are priced when a dungeon hands them over — and through a Legendary's
+/// fivefold multiplier it would make the first tier of a temper hand back more
+/// gold than the forge charged for it.
+///
+/// The term is gated on [BaseItem.takesTemper] rather than trusted to be zero,
+/// so this expression and the forge's own refusal read the same predicate and
+/// cannot come to disagree about what a temper is allowed to be on.
 int sellPriceOf(Item item) {
   final worth =
       item.base.attackMin +
       item.base.attackMax +
       item.base.armor * 2 +
       item.base.heal +
+      (item.base.takesTemper ? item.temper * temperWorth : 0) +
       _bookWorthOf(item.base);
   final priced = worth * (1 + item.rarity.affixCount);
   return priced < 1 ? 1 : priced;

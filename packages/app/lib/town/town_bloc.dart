@@ -2,6 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import '../game/event_messages.dart';
+
 sealed class TownBlocEvent {
   const TownBlocEvent();
 }
@@ -158,6 +160,23 @@ final class TakeOffPressed extends TownBlocEvent {
   final EquipSlot slot;
 }
 
+/// The player asked the forge to smelt.
+final class SmeltPressed extends TownBlocEvent {
+  const SmeltPressed();
+}
+
+/// The player asked the alchemist to brew.
+final class BrewPressed extends TownBlocEvent {
+  const BrewPressed();
+}
+
+/// The player asked the forge to work the item with this id up one tier.
+final class TemperPressed extends TownBlocEvent {
+  const TemperPressed(this.itemId);
+
+  final String itemId;
+}
+
 final class DepositGoldPressed extends TownBlocEvent {
   const DepositGoldPressed(this.amount);
 
@@ -264,6 +283,41 @@ class TownViewState {
   /// Whether a bed would do the hero any good.
   bool get canRest => profile.hero.hp < profile.maxHp;
 
+  /// What the hero has gathered, every material present even at zero.
+  ///
+  /// A fixed order with no gaps, for the pack panel's reason: the position of a
+  /// row is information the player relies on.
+  Map<MaterialId, int> get materials => {
+    for (final id in MaterialId.values) id: countOf(profile.materials, id),
+  };
+
+  /// Why the forge will not smelt right now, or null when it will.
+  String? get smeltReason => smeltRefusal(profile);
+
+  /// Why the alchemist will not brew right now, or null when they will.
+  String? get brewReason => brewRefusal(profile);
+
+  /// Why the forge will not work [itemId], or null when it will.
+  ///
+  /// **The screen asks the rules rather than deciding for itself.** A dead row
+  /// that greyed itself out on its own arithmetic would eventually refuse
+  /// something the rules would have allowed, and the sentence it shows is the
+  /// one the transaction would have refused with.
+  String? temperReason(String itemId) => temperRefusal(profile, itemId);
+
+  /// Everything the forge could work, carried or worn, in a stated order.
+  ///
+  /// Worn pieces first and then carried ones, because the piece most worth
+  /// working is usually the one the hero has on — and within each half the
+  /// slot's own order, so a row keeps its place from one visit to the next.
+  List<Item> get temperable => [
+    for (final slot in EquipSlot.values)
+      if (profile.equipment[slot] case final Item worn)
+        if (worn.base.takesTemper) worn,
+    for (final item in profile.inventory)
+      if (item.base.takesTemper) item,
+  ];
+
   /// Whether the camp has stood long enough on [day] for the residue to have
   /// taken it back.
   ///
@@ -327,6 +381,9 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     on<WearPressed>(_onWear);
     on<TakeOffPressed>(_onTakeOff);
     on<ReadBookPressed>(_onReadBook);
+    on<SmeltPressed>(_onSmelt);
+    on<BrewPressed>(_onBrew);
+    on<TemperPressed>(_onTemper);
     on<DepositGoldPressed>(_onDepositGold);
     on<WithdrawGoldPressed>(_onWithdrawGold);
     on<ArrivedInTown>(_onArrivedInTown);
@@ -671,6 +728,55 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
 
   void _onReadBook(ReadBookPressed event, Emitter<TownViewState> emit) =>
       emit(_transacted(readBook(state.profile, event.itemId, spellsById)));
+
+  void _onSmelt(SmeltPressed event, Emitter<TownViewState> emit) =>
+      emit(_crafted(smeltOre(state.profile), SkillId.blacksmith));
+
+  void _onBrew(BrewPressed event, Emitter<TownViewState> emit) => emit(
+    _crafted(brewPotion(state.profile, healingPotion), SkillId.herbcraft),
+  );
+
+  void _onTemper(TemperPressed event, Emitter<TownViewState> emit) => emit(
+    _crafted(temperItem(state.profile, event.itemId), SkillId.blacksmith),
+  );
+
+  /// One settled craft, with a level-up said out loud where a refusal would be.
+  ///
+  /// **The level-up is worked out here rather than carried out of the rules**,
+  /// and that is the only place it can be. `SkillLevelledUp` is a `GameEvent`,
+  /// and a town transaction has no event list — inventing one for three
+  /// handlers would give the town a second, thinner copy of the crawl's whole
+  /// announcement machinery. What the rules owe is the training; what the screen
+  /// owes is the sentence, and this compares the one skill the transaction could
+  /// have moved before and after.
+  ///
+  /// The sentence is `describeEvent`'s own wording for the same event, so the
+  /// forge says exactly what the message log would have said in the dungeon.
+  ///
+  /// A refusal wins over a level-up, because a refusal trained nothing.
+  TownViewState _crafted(Transacted result, SkillId trained) {
+    final settled = _settled(result.$1, result.$2);
+    if (result.$2 != null) return settled;
+    final before = state.profile.skills[trained]?.level ?? 0;
+    final after = result.$1.skills[trained]?.level ?? 0;
+    if (after <= before) return settled;
+    return _noticed(settled, '${skillName(trained)} rises to $after');
+  }
+
+  /// [settled] with [notice] on it, and nothing else moved.
+  ///
+  /// Built by hand rather than through [_settled] because that one takes its
+  /// notice from a refusal, and this notice is the opposite of one.
+  TownViewState _noticed(TownViewState settled, String notice) => TownViewState(
+    profile: settled.profile,
+    town: settled.town,
+    stock: settled.stock,
+    merchant: settled.merchant,
+    suspended: settled.suspended,
+    dungeon: settled.dungeon,
+    campDay: settled.campDay,
+    notice: notice,
+  );
 
   void _onDepositGold(DepositGoldPressed event, Emitter<TownViewState> emit) =>
       emit(_transacted(depositGold(state.profile, event.amount)));

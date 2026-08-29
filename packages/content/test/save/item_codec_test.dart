@@ -56,6 +56,7 @@ void main() {
         'base': 'war-axe',
         'rarity': 'rare',
         'affixes': ['keen', 'of-embers'],
+        'temper': 0,
       });
     });
 
@@ -66,6 +67,7 @@ void main() {
         'base': 'mithril-sword',
         'rarity': 'rare',
         'affixes': <Object?>[],
+        'temper': 0,
       };
 
       // act

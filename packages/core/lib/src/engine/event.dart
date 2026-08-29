@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../craft/gather_node.dart';
+import '../craft/material.dart';
 import '../loot/equip_slot.dart';
 import '../loot/item.dart';
 import '../magic/spell.dart';
@@ -387,6 +389,33 @@ final class MonsterBound extends GameEvent with Equatable {
 
   @override
   String toString() => 'MonsterBound($targetId, $turns)';
+}
+
+/// The hero worked a node, and it is not there any more.
+///
+/// [material] is carried rather than read back off [kind], for [PotionDrunk]'s
+/// reason: the thing is gone by the time anyone reads this, and the message
+/// layer should not have to look up what a vein used to give.
+final class NodeGathered extends GameEvent with Equatable {
+  const NodeGathered({
+    required this.kind,
+    required this.at,
+    required this.material,
+  });
+
+  final GatherKind kind;
+
+  /// The tile it was on, which is the tile the hero is standing on.
+  final Position at;
+
+  /// What the hero has one more of.
+  final MaterialId material;
+
+  @override
+  List<Object?> get props => [kind, at, material];
+
+  @override
+  String toString() => 'NodeGathered(${kind.name}, at $at)';
 }
 
 /// A monster was moved elsewhere on the floor.

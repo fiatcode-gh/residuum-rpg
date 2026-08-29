@@ -1,28 +1,49 @@
 import 'package:residuum_core/core.dart';
 
+/// The mark a tempered item wears beside its stats.
+///
+/// **Deliberately not a plus sign.** The rarity column already spends `+` on
+/// Fine and `++` on Rare, so a temper drawn with plusses would put two
+/// categories in one shape on a screen the author has to read in greyscale. The
+/// word and the number ride beside it, so the line reads aloud as well: "plus
+/// five to seven attack, temper plus two".
+const String temperMarking = '‡';
+
 /// What [item] adds, as a compact line of only the parts that are not zero.
 ///
 /// Nothing here is told apart by colour: every part is a label and a signed
 /// number, so the line reads in greyscale and it reads aloud.
+///
+/// The temper comes last and says only itself. What it *did* has already been
+/// counted in the attack or the armour above it, because every stat an item has
+/// is read through the item's own getters — so this part is the explanation of a
+/// number the player can already see, not a second copy of it.
 String statLine(Item item) => [
   ..._attackParts(item.attackMin, item.attackMax, 'atk'),
   if (item.armor != 0) '${_signed(item.armor)} arm',
   if (item.maxHp != 0) '${_signed(item.maxHp)} hp',
   if (item.speed != 0) '${_signed(item.speed)} spd',
   if (item.base.heal != 0) '${_signed(item.base.heal)} heal',
+  if (item.temper != 0) '$temperMarking${_signed(item.temper)} temper',
 ].join(' · ');
 
-/// What makes two items the same row in a list: the base, the tier, and the
-/// affixes — never the id.
+/// What makes two items the same row in a list: the base, the tier, the affixes
+/// and the temper — never the id.
 ///
 /// Ids are unique by design, so keying on one would mean nothing ever stacked.
 /// Stacking is a display decision about items the player cannot tell apart, and
 /// the pack still holds each one separately: an action on a stack reaches for one
 /// item of it.
+///
+/// **The temper is in the key for that last sentence's sake.** A `+2` sword and
+/// a `+0` sword are not items the player cannot tell apart — one of them is the
+/// one they paid six ingots for. Merged into one row, Wear would reach whichever
+/// of the two the pack happened to hold first.
 String stackKey(Item item) => [
   item.base.id,
   item.rarity.name,
   for (final affix in item.affixes) affix.id,
+  'temper${item.temper}',
 ].join('|');
 
 /// One row of a list: an item, and how many the hero is carrying like it.

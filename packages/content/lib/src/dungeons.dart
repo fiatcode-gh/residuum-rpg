@@ -3,6 +3,7 @@ import 'package:residuum_core/core.dart';
 import 'bestiary.dart';
 import 'drop_tables.dart';
 import 'dungeon_spawn.dart';
+import 'gathering.dart';
 import 'new_game.dart';
 import 'ruined_keep.dart';
 import 'sea_cave.dart';
@@ -280,6 +281,11 @@ int lootSaltFor(NodeId node) =>
 /// only thing that builds a themed floor, and a default here would be a wrong
 /// bottom waiting for the second caller.
 ///
+/// **The nodes are grown last, off a stream of their own, and off this
+/// dungeon's own band** — a cave grows more than it mines and a keep the other
+/// way round. Last for [buildFloor]'s reason: everything above that call is byte
+/// for byte the floor it was before gathering existed.
+///
 /// [Floor.stairsUp] is left off here exactly as [buildFloor] leaves it off, and
 /// `step` supplies the arrival tile in its place. Preserved rather than fixed:
 /// the two builders have to behave the same way, and correcting one of them
@@ -338,6 +344,12 @@ Floor themedFloor(
     stairsDown: generated.stairsDown,
     monsters: monsters,
     groundItems: groundItems,
+    nodes: gatherNodesOn(
+      generated.map,
+      generated.heroSpawn,
+      seed ^ gatherSalt,
+      gatherBandFor(dungeon.node),
+    ),
   );
 }
 

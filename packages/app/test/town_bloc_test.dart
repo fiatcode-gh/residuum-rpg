@@ -20,6 +20,9 @@ List<String> _shelfBefore = const [];
 /// The id bought in `act`, for `verify` to look for. Same reason.
 String _boughtId = '';
 
+/// A crawl to hand a suspend event when the bloc has not opened one yet.
+GameState _anyRun() => startDungeonRunAt(cryptNode, _fresh());
+
 void main() {
   group('TownBloc', () {
     test('starts in town on a fresh profile with a stocked shelf', () {
@@ -1473,6 +1476,238 @@ void main() {
       verify: (bloc) {
         expect(bloc.state.run!.knownSpells, {'mend'});
         expect(bloc.state.run!.mana, heroMaxMana(bloc.state.profile.loadout));
+      },
+    );
+  });
+
+  group('the forge', () {
+    blocTest<TownBloc, TownViewState>(
+      'smelts ore into an ingot and trains Blacksmith',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(materials: const {MaterialId.ore: 2}),
+      ),
+      act: (bloc) => bloc.add(const SmeltPressed()),
+      verify: (bloc) {
+        expect(bloc.state.profile.materials, const {MaterialId.ingot: 1});
+        expect(bloc.state.profile.skills[SkillId.blacksmith]!.xp, 1);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'refuses in a sentence when there is not enough ore',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(materials: const {MaterialId.ore: 1}),
+      ),
+      act: (bloc) => bloc.add(const SmeltPressed()),
+      verify: (bloc) {
+        expect(bloc.state.notice, 'that takes 2 ore');
+        expect(bloc.state.profile.materials, const {MaterialId.ore: 1});
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'says so on the notice line when a craft level arrives',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(
+          materials: const {MaterialId.ore: 2},
+          skills: {
+            ...untrainedSkills,
+            SkillId.blacksmith: SkillState(xp: xpToNext(0) - 1),
+          },
+        ),
+      ),
+      act: (bloc) => bloc.add(const SmeltPressed()),
+      verify: (bloc) {
+        expect(bloc.state.notice, 'Blacksmith rises to 1');
+        expect(bloc.state.profile.skills[SkillId.blacksmith]!.level, 1);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'tempers a carried weapon, spending the iron and the gold',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(
+          gold: 100,
+          inventory: [_gear('drop-1', ironSword)],
+          materials: const {MaterialId.ingot: 2},
+        ),
+      ),
+      act: (bloc) => bloc.add(const TemperPressed('drop-1')),
+      verify: (bloc) {
+        expect(bloc.state.profile.inventory.single.temper, 1);
+        expect(bloc.state.profile.gold, 90);
+        expect(bloc.state.profile.materials, const {MaterialId.ingot: 1});
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'tempers the piece the hero is wearing',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(
+          gold: 100,
+          equipment: {EquipSlot.chest: _gear('drop-2', mailHauberk)},
+          materials: const {MaterialId.ingot: 1},
+        ),
+      ),
+      act: (bloc) => bloc.add(const TemperPressed('drop-2')),
+      verify: (bloc) {
+        expect(bloc.state.profile.equipment[EquipSlot.chest]!.temper, 1);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'refuses a potion in the forge\'s own words',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(materials: const {MaterialId.ingot: 4}),
+      ),
+      act: (bloc) => bloc.add(const TemperPressed('kit-2')),
+      verify: (bloc) {
+        expect(bloc.state.notice, 'only steel takes a temper');
+      },
+    );
+
+    test('offers only the steel, worn pieces first', () {
+      // arrange
+      final bloc = TownBloc(
+        profile: _fresh().copyWith(
+          equipment: {EquipSlot.chest: _gear('drop-2', mailHauberk)},
+          inventory: [
+            _gear('drop-1', ironSword),
+            _gear('kit-2', healingPotion),
+          ],
+        ),
+      );
+
+      // act
+      final workable = bloc.state.temperable.map((item) => item.id);
+
+      // assert - the piece most worth working is usually the one they have on
+      expect(workable, ['drop-2', 'drop-1']);
+      addTearDown(bloc.close);
+    });
+
+    test(
+      'hands the screen the same reason the transaction would refuse with',
+      () {
+        // arrange
+        final bloc = TownBloc(
+          profile: _fresh().copyWith(
+            inventory: [_gear('drop-1', ironSword)],
+            materials: const {},
+          ),
+        );
+
+        // act
+        final shown = bloc.state.temperReason('drop-1');
+
+        // assert - a button that greyed itself out on its own arithmetic would
+        // eventually disagree with the rules
+        expect(shown, temperRefusal(bloc.state.profile, 'drop-1'));
+        expect(shown, isNotNull);
+        addTearDown(bloc.close);
+      },
+    );
+  });
+
+  group('the alchemist', () {
+    blocTest<TownBloc, TownViewState>(
+      'brews a potion into the pack and trains Herbcraft',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(materials: const {MaterialId.herb: 3}),
+      ),
+      act: (bloc) => bloc.add(const BrewPressed()),
+      verify: (bloc) {
+        expect(bloc.state.profile.inventory.last.base, healingPotion);
+        expect(bloc.state.profile.inventory.last.id, 'brew-1');
+        expect(bloc.state.profile.skills[SkillId.herbcraft]!.xp, 1);
+        expect(bloc.state.profile.materials, isEmpty);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'refuses in a sentence when there are not enough herbs',
+      build: () => TownBloc(profile: _fresh()),
+      act: (bloc) => bloc.add(const BrewPressed()),
+      verify: (bloc) {
+        expect(bloc.state.notice, 'that takes 3 herbs');
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'refuses a full pack in the merchant\'s exact words',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(
+          materials: const {MaterialId.herb: 3},
+          inventory: [
+            for (var made = 0; made < inventoryCap; made++)
+              _gear('kit-$made', healingPotion),
+          ],
+        ),
+      ),
+      act: (bloc) => bloc.add(const BrewPressed()),
+      verify: (bloc) {
+        expect(bloc.state.notice, 'you cannot carry any more');
+      },
+    );
+  });
+
+  group('what the craft handlers must not drop', () {
+    blocTest<TownBloc, TownViewState>(
+      'smelting keeps the camp, the dungeon and the day it was pitched',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(materials: const {MaterialId.ore: 2}),
+      ),
+      act: (bloc) {
+        bloc.add(EnterDungeonPressed(cryptNode));
+        bloc.add(RunSuspended(bloc.state.run ?? _anyRun(), day: 4));
+        bloc.add(const SmeltPressed());
+      },
+      verify: (bloc) {
+        expect(bloc.state.suspended, isNotNull);
+        expect(bloc.state.dungeon, cryptNode);
+        expect(bloc.state.campDay, 4);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'brewing keeps what the merchant remembers of this visit',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(
+          gold: 500,
+          materials: const {MaterialId.herb: 3},
+        ),
+      ),
+      act: (bloc) {
+        _boughtId = bloc.state.stock.first.id;
+        bloc.add(BuyPressed(_boughtId));
+        bloc.add(const BrewPressed());
+      },
+      verify: (bloc) {
+        expect(bloc.state.merchant.bought, [_boughtId]);
+        expect(
+          bloc.state.stock.map((item) => item.id),
+          isNot(contains(_boughtId)),
+        );
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'tempering keeps the camp too',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(
+          gold: 100,
+          inventory: [_gear('drop-1', ironSword)],
+          materials: const {MaterialId.ingot: 1},
+        ),
+      ),
+      act: (bloc) {
+        bloc.add(EnterDungeonPressed(cryptNode));
+        bloc.add(RunSuspended(bloc.state.run ?? _anyRun(), day: 2));
+        bloc.add(const TemperPressed('drop-1'));
+      },
+      verify: (bloc) {
+        expect(bloc.state.suspended, isNotNull);
+        expect(bloc.state.campDay, 2);
       },
     );
   });

@@ -59,6 +59,23 @@ void main() {
       expect(pool, baseMana);
     });
 
+    test('neither craft buys any mana, however far it is trained', () {
+      // arrange
+      final loadout = _trained(const {
+        SkillId.herbcraft: SkillState(level: maxSkillLevel),
+        SkillId.blacksmith: SkillState(level: maxSkillLevel),
+      });
+
+      // act
+      final pool = heroMaxMana(loadout);
+
+      // assert - the pool comes off the three schools by an explicit check, so
+      // a skill that is not one contributes nothing by construction rather than
+      // by happening not to be counted. A hero who ground the forge to a
+      // hundred is not a caster
+      expect(pool, baseMana);
+    });
+
     test('reads an absent school as untrained rather than throwing', () {
       // arrange
       const loadout = Loadout(equipment: {}, skills: {});
