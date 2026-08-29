@@ -528,4 +528,104 @@ void main() {
       expect(line, isEmpty);
     });
   });
+
+  group('a tempered item on the screen', () {
+    test('the stat line says the word, the mark and the number', () {
+      // arrange
+      final sword = _item('kit-1', _sword).tempered(2);
+
+      // act
+      final line = statLine(sword);
+
+      // assert - the damage has already moved, and the temper says why
+      expect(line, '+5-7 atk · ‡+2 temper');
+    });
+
+    test('an untempered item says nothing about temper at all', () {
+      // arrange
+      final sword = _item('kit-1', _sword);
+
+      // act
+      final line = statLine(sword);
+
+      // assert
+      expect(line, isNot(contains('temper')));
+    });
+
+    test('the mark is not a rarity mark or a delta arrow', () {
+      // arrange
+      final marks = {
+        for (final rarity in Rarity.values) rarity.marking,
+        '▲',
+        '▼',
+      };
+
+      // act
+      final line = statLine(_item('kit-1', _sword).tempered(1));
+      final mark = line.substring(line.length - '‡+1 temper'.length)[0];
+
+      // assert - the rarity column already spends `+` and `++`, so a naked plus
+      // here would be two categories wearing one shape
+      expect(marks, isNot(contains(mark)));
+      expect(mark, '‡');
+    });
+
+    test('a tempered piece of armour reads as armour', () {
+      // arrange
+      final shield = _item('kit-1', _shield).tempered(1);
+
+      // act
+      final line = statLine(shield);
+
+      // assert
+      expect(line, '+3 arm · ‡+1 temper');
+    });
+
+    test('two tempers of one sword are two rows, not one', () {
+      // act
+      final keys = (
+        stackKey(_item('kit-1', _sword)),
+        stackKey(_item('kit-2', _sword).tempered(2)),
+      );
+
+      // assert - a merged row would offer one action for two different swords
+      // and reach whichever of them happened to come first
+      expect(keys.$1, isNot(keys.$2));
+    });
+
+    test('two swords worked to the same tier still share a row', () {
+      // act
+      final keys = (
+        stackKey(_item('kit-1', _sword).tempered(2)),
+        stackKey(_item('kit-2', _sword).tempered(2)),
+      );
+
+      // assert
+      expect(keys.$1, keys.$2);
+    });
+
+    test('the worn deltas count the temper the player is about to gain', () {
+      // arrange
+      final worn = _item('kit-1', _sword);
+      final worked = _item('drop-3', _sword).tempered(2);
+
+      // act
+      final deltas = wornDeltas(worked, worn);
+
+      // assert - both ends moved by the same amount, so it reads as one entry
+      expect(deltas.map((delta) => delta.text), ['▲+2 atk']);
+    });
+
+    test('the worn deltas count a temper the player is about to give up', () {
+      // arrange
+      final worn = _item('kit-1', _shield).tempered(3);
+      final plain = _item('drop-3', _shield);
+
+      // act
+      final deltas = wornDeltas(plain, worn);
+
+      // assert
+      expect(deltas.map((delta) => delta.text), ['▼-3 arm']);
+    });
+  });
 }

@@ -12,11 +12,20 @@ import 'save_json.dart';
 /// build that reads it, or every balance pass would leave a museum of old
 /// numbers in players' vaults. The item's own [Item.id] is kept, because
 /// uniqueness within a crawl is a contract the drop counter depends on.
+///
+/// **The temper is the one number here that is not a reference**, and it has to
+/// be written rather than looked up for exactly the reason everything else is
+/// looked up: it is not a fact about what an Iron Sword is, it is a fact about
+/// what this hero paid for. A balance pass may change what an Iron Sword does; it
+/// cannot change how many ingots went into this one. Always written, even at
+/// zero, so a document has one shape and a missing key is never read as
+/// "probably unworked".
 Map<String, Object?> encodeItem(Item item) => {
   'id': item.id,
   'base': item.base.id,
   'rarity': item.rarity.name,
   'affixes': [for (final affix in item.affixes) affix.id],
+  'temper': item.temper,
 };
 
 /// Every item in [items], in the order carried.
@@ -43,6 +52,7 @@ Item decodeItem(Object? from) {
     affixes: [
       for (final written in listAt(from, 'affixes')) _affixNamed(written),
     ],
+    temper: _temperAt(from),
   );
 }
 
@@ -107,6 +117,23 @@ Map<Position, List<Item>> decodeGroundItems(
     );
   }
   return litter;
+}
+
+/// How many times a forge worked this item, from the required key.
+///
+/// Required and range-checked rather than clamped, because this codec never
+/// repairs: a document naming a fourth tier describes an item this build has no
+/// arithmetic for, and quietly reading it as three would hand the player back a
+/// weaker sword than the file says they own.
+int _temperAt(Map<String, Object?> from) {
+  final temper = intAt(from, 'temper');
+  if (temper < 0 || temper > maxTemper) {
+    throw SaveMalformed(
+      'the save file has an item worked to temper $temper, and a forge goes to '
+      '$maxTemper',
+    );
+  }
+  return temper;
 }
 
 Rarity _rarityNamed(String name) {

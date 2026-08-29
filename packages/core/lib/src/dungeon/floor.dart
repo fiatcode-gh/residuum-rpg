@@ -1,3 +1,4 @@
+import '../craft/gather_node.dart';
 import '../engine/actor.dart';
 import '../engine/position.dart';
 import '../loot/item.dart';
@@ -16,6 +17,7 @@ class Floor {
     required this.stairsDown,
     this.stairsUp,
     this.groundItems = const {},
+    this.nodes = const {},
   });
 
   final FloorMap map;
@@ -38,6 +40,15 @@ class Floor {
   /// item you can see from the doorway is an invitation; a monster you can
   /// see from the doorway is an ambush you never got to avoid.
   final Map<Position, List<Item>> groundItems;
+
+  /// What can be mined or gathered on this floor, by tile.
+  ///
+  /// [groundItems]' twin in shape and its opposite in kind: litter is loot and
+  /// these are not, which is exactly why they are a second map rather than
+  /// entries in the first. Placed after the floor is finished, from a stream of
+  /// their own, so a floor with nodes on it is byte for byte the floor it would
+  /// have been without them.
+  final Map<Position, GatherKind> nodes;
 }
 
 /// Builds the floor at [depth] for the crawl in progress.

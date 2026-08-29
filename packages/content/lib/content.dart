@@ -5,6 +5,7 @@ export 'src/drop_tables.dart';
 export 'src/dungeon_spawn.dart';
 export 'src/dungeons.dart';
 export 'src/economy.dart';
+export 'src/gathering.dart';
 export 'src/new_game.dart';
 export 'src/ruined_keep.dart';
 export 'src/sea_cave.dart';

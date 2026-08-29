@@ -219,6 +219,7 @@ class _Controls extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = context.read<GameBloc>();
     final underfoot = state.itemsUnderfoot;
+    final node = state.nodeUnderfoot;
     final potion = state.firstPotion;
     final ending = state.canLeave && state.isAtTheBottom;
     return Padding(
@@ -231,6 +232,18 @@ class _Controls extends StatelessWidget {
               child: Text(
                 doneAtTheBottom,
                 style: TextStyle(
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                  color: Color(0xFF8A919E),
+                ),
+              ),
+            ),
+          if (node != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                'Underfoot: ${node.marking} ${node.word}',
+                style: const TextStyle(
                   fontFamily: 'monospace',
                   fontSize: 12,
                   color: Color(0xFF8A919E),
@@ -259,6 +272,13 @@ class _Controls extends StatelessWidget {
                   child: _Control(
                     label: 'Pick up',
                     onPressed: () => bloc.add(const PickUpPressed()),
+                  ),
+                ),
+              if (state.canGather)
+                Expanded(
+                  child: _Control(
+                    label: node!.verb,
+                    onPressed: () => bloc.add(const GatherPressed()),
                   ),
                 ),
               if (potion != null)

@@ -2,6 +2,7 @@ import 'package:residuum_core/core.dart';
 
 import 'armory.dart';
 import 'drop_tables.dart';
+import 'gathering.dart';
 import 'spawn_tables.dart';
 import 'spells.dart';
 
@@ -65,6 +66,11 @@ List<Item> _startingInventory() => const [
 /// Monster ids are the creature's id plus its place in the spawn list, and item
 /// ids are the depth plus their place in the litter, which makes both unique on
 /// the floor by construction.
+///
+/// **The nodes are grown last, off a stream of their own**, so everything above
+/// this line is byte for byte what it was before gathering existed — see
+/// [gatherNodesOn], and `gathering_test.dart`, which pins the whole layout of
+/// twenty-one floors captured on the code that had no gathering in it.
 Floor buildFloor(int depth, {required int worldSeed, required int visit}) {
   final seed = floorSeed(worldSeed, depth, visit);
   final table = spawnTableFor(depth);
@@ -100,6 +106,12 @@ Floor buildFloor(int depth, {required int worldSeed, required int visit}) {
     stairsDown: generated.stairsDown,
     monsters: monsters,
     groundItems: groundItems,
+    nodes: gatherNodesOn(
+      generated.map,
+      generated.heroSpawn,
+      seed ^ gatherSalt,
+      cryptGathering,
+    ),
   );
 }
 
@@ -145,6 +157,7 @@ GameState newGame({int worldSeed = 1, int visit = 0}) {
     visit: visit,
     stairsDown: floor.stairsDown,
     groundItems: floor.groundItems,
+    nodes: floor.nodes,
     inventory: _startingInventory(),
     equipment: _startingEquipment(),
     skills: untrainedSkills,

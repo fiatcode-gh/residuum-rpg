@@ -57,6 +57,9 @@ String? describeEvent(
   MonsterBanished(:final targetId) =>
     '${_capitalised(_named(names, targetId))} vanishes and reappears '
         'elsewhere.',
+  NodeGathered(:final kind, :final material) =>
+    'You ${kind.verb.toLowerCase()} the ${kind.word} and take one '
+        '${material.word}.',
   SkillLevelledUp(:final skill, :final level) =>
     '${_skillName(skill)} rises to $level.',
   Fled() => 'You break off and get away.',
@@ -103,6 +106,8 @@ String _skillName(SkillId skill) => switch (skill) {
   SkillId.bulwark => 'Bulwark',
   SkillId.fleetfoot => 'Fleetfoot',
   SkillId.wrath || SkillId.mending || SkillId.binding => skill.schoolWord,
+  SkillId.herbcraft => 'Herbcraft',
+  SkillId.blacksmith => 'Blacksmith',
 };
 
 /// The id the hero always answers to.

@@ -48,10 +48,12 @@ Profile _townie({
   List<Item> inventory = const [],
   List<Item> bank = const [],
   Equipment equipment = const {},
+  Map<MaterialId, int> materials = const {},
 }) => Profile(
   hero: hero(const Position(0, 0), hp: hp),
   worldSeed: 5,
   gold: gold,
+  materials: materials,
   bankedGold: bankedGold,
   visit: visit,
   inventory: inventory,
@@ -535,6 +537,104 @@ void main() {
 
       // assert
       expect(back.spells, const {'firebolt': firebolt});
+    });
+  });
+
+  group('materials through the four doors', () {
+    test('startRun carries the counters down with the purse', () {
+      // arrange
+      final profile = _townie(materials: const {MaterialId.ore: 3});
+
+      // act
+      final run = startRun(profile, dungeon: _shuffling());
+
+      // assert
+      expect(run.materials, const {MaterialId.ore: 3});
+    });
+
+    test(
+      'startRun carries nothing down for a hero who has gathered nothing',
+      () {
+        // arrange
+        final profile = _townie();
+
+        // act
+        final run = startRun(profile, dungeon: _shuffling());
+
+        // assert
+        expect(run.materials, isEmpty);
+      },
+    );
+
+    test('endRun brings what was mined home when the hero walks out', () {
+      // arrange
+      final profile = _townie(materials: const {MaterialId.ore: 1});
+      final run = startRun(profile, dungeon: _shuffling());
+
+      // act
+      final home = endRun(
+        profile,
+        run.copyWith(materials: const {MaterialId.ore: 4, MaterialId.herb: 2}),
+        died: false,
+      );
+
+      // assert
+      expect(home.materials, const {MaterialId.ore: 4, MaterialId.herb: 2});
+    });
+
+    test('dying clears the counters, beside the pack and the purse', () {
+      // arrange
+      final profile = _townie(
+        gold: 30,
+        inventory: [_item('carried-1')],
+        materials: const {MaterialId.ore: 2},
+      );
+      final run = startRun(profile, dungeon: _shuffling());
+
+      // act
+      final dead = endRun(
+        profile,
+        run.copyWith(materials: const {MaterialId.ore: 9, MaterialId.ingot: 1}),
+        died: true,
+      );
+
+      // assert - they ride exactly the risk gold rides, because they are
+      // earned the same way
+      expect(dead.materials, isEmpty);
+      expect(dead.gold, 0);
+      expect(dead.inventory, isEmpty);
+    });
+
+    test('suspendRun carries the counters out to the camp', () {
+      // arrange
+      final profile = _townie();
+      final run = startRun(profile, dungeon: _shuffling());
+
+      // act
+      final camped = suspendRun(
+        profile,
+        run.copyWith(materials: const {MaterialId.herb: 5}),
+      );
+
+      // assert
+      expect(camped.materials, const {MaterialId.herb: 5});
+    });
+
+    test('resumeRun takes the counters from the hero, not the crawl', () {
+      // arrange
+      final profile = _townie();
+      final opened = startRun(profile, dungeon: _shuffling());
+      final camped = suspendRun(
+        profile,
+        opened,
+      ).copyWith(materials: const {MaterialId.ingot: 2});
+
+      // act
+      final back = resumeRun(camped, opened);
+
+      // assert - ore smelted at the camp is an ingot the hero climbs back down
+      // holding, exactly as a potion bought there is in the pack
+      expect(back.materials, const {MaterialId.ingot: 2});
     });
   });
 }

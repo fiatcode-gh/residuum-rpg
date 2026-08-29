@@ -3,6 +3,7 @@ import 'package:residuum_core/core.dart';
 import '../dungeons.dart';
 import '../spells.dart';
 import 'actor_codec.dart';
+import 'craft_codec.dart';
 import 'item_codec.dart';
 import 'profile_codec.dart';
 import 'save_json.dart';
@@ -46,6 +47,7 @@ Map<String, Object?> encodeRun(GameState run) => {
   'stairsDown': encodeNullablePosition(run.stairsDown),
   'stairsUp': encodeNullablePosition(run.stairsUp),
   'groundItems': encodeGroundItems(run.groundItems),
+  'nodes': encodeNodes(run.nodes),
   'inventory': encodeItems(run.inventory),
   'equipment': encodeEquipment(run.equipment),
   'skills': encodeSkills(run.skills),
@@ -53,6 +55,7 @@ Map<String, Object?> encodeRun(GameState run) => {
   'mana': run.mana,
   'warded': run.warded,
   'bound': _encodeBound(run.bound),
+  'materials': encodeMaterials(run.materials),
   'floors': _encodeFloors(run.floors),
 };
 
@@ -129,6 +132,7 @@ GameState loadRun(
     isGameOver: boolAt(written, 'isGameOver'),
     floors: _decodeFloors(written),
     groundItems: decodeGroundItems(written, 'groundItems'),
+    nodes: decodeNodes(written, 'nodes'),
     inventory: decodeItems(written, 'inventory'),
     equipment: decodeEquipment(written, 'equipment'),
     skills: decodeSkills(written, 'skills'),
@@ -138,6 +142,7 @@ GameState loadRun(
     mana: intAt(written, 'mana'),
     warded: intAt(written, 'warded'),
     bound: _decodeBound(written, 'bound'),
+    materials: decodeMaterials(written, 'materials'),
     nextDropNumber: intAt(written, 'nextDropNumber'),
   );
 }
@@ -151,6 +156,7 @@ List<Object?> _encodeFloors(Map<int, FloorMemory> floors) {
         'map': floors[depth]!.map.toAscii(),
         'monsters': encodeActors(floors[depth]!.monsters),
         'groundItems': encodeGroundItems(floors[depth]!.groundItems),
+        'nodes': encodeNodes(floors[depth]!.nodes),
         'explored': encodePositions(floors[depth]!.explored),
         'stairsDown': encodeNullablePosition(floors[depth]!.stairsDown),
         'stairsUp': encodeNullablePosition(floors[depth]!.stairsUp),
@@ -168,6 +174,7 @@ Map<int, FloorMemory> _decodeFloors(Map<String, Object?> written) {
       map: _parseMap(stringAt(entry, 'map')),
       monsters: decodeActors(entry, 'monsters'),
       groundItems: decodeGroundItems(entry, 'groundItems'),
+      nodes: decodeNodes(entry, 'nodes'),
       explored: decodePositions(entry, 'explored'),
       stairsDown: decodeNullablePosition(entry, 'stairsDown'),
       stairsUp: decodeNullablePosition(entry, 'stairsUp'),

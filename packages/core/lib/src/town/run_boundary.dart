@@ -82,6 +82,7 @@ GameState startRun(
     stairsDown: floor.stairsDown,
     stairsUp: floor.stairsUp,
     groundItems: floor.groundItems,
+    nodes: floor.nodes,
     inventory: profile.inventory,
     equipment: profile.equipment,
     skills: profile.skills,
@@ -89,6 +90,7 @@ GameState startRun(
     dropTables: dropTables,
     spells: spells,
     knownSpells: profile.knownSpells,
+    materials: profile.materials,
     mana: heroMaxMana(profile.loadout),
   );
 }
@@ -118,9 +120,14 @@ Profile endRun(Profile entered, GameState state, {required bool died}) {
     gold: state.gold,
     visit: state.visit,
     knownSpells: state.knownSpells,
+    materials: state.materials,
   );
   if (!died) return carried;
-  final stripped = carried.copyWith(inventory: const [], gold: 0);
+  final stripped = carried.copyWith(
+    inventory: const [],
+    gold: 0,
+    materials: const {},
+  );
   return stripped.copyWith(hero: stripped.hero.copyWith(hp: stripped.maxHp));
 }
 
@@ -157,6 +164,7 @@ Profile suspendRun(Profile entered, GameState state) => entered.copyWith(
   gold: state.gold,
   visit: state.visit,
   knownSpells: state.knownSpells,
+  materials: state.materials,
 );
 
 /// The crawl [suspended] was, with [profile] walking back down into it.
@@ -222,12 +230,14 @@ GameState resumeRun(Profile profile, GameState suspended) => GameState(
   isGameOver: suspended.isGameOver,
   floors: suspended.floors,
   groundItems: suspended.groundItems,
+  nodes: suspended.nodes,
   inventory: profile.inventory,
   equipment: profile.equipment,
   skills: profile.skills,
   dropTables: suspended.dropTables,
   spells: suspended.spells,
   knownSpells: profile.knownSpells,
+  materials: profile.materials,
   mana: suspended.mana,
   warded: suspended.warded,
   bound: suspended.bound,

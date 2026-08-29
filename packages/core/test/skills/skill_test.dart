@@ -3,7 +3,7 @@ import 'package:test/test.dart';
 
 void main() {
   group('SkillId', () {
-    test('the three schools append after the four shipped skills', () {
+    test('every addition appends, in the order the milestones added it', () {
       // arrange
       const shipped = [
         SkillId.arms,
@@ -11,6 +11,8 @@ void main() {
         SkillId.bulwark,
         SkillId.fleetfoot,
       ];
+      const schools = [SkillId.wrath, SkillId.mending, SkillId.binding];
+      const crafts = [SkillId.herbcraft, SkillId.blacksmith];
 
       // act
       final values = SkillId.values;
@@ -18,7 +20,8 @@ void main() {
       // assert - appended and never reordered, because the save's skills block
       // is written in enum order and a reorder would rewrite every document
       expect(values.take(4), shipped);
-      expect(values.skip(4), [SkillId.wrath, SkillId.mending, SkillId.binding]);
+      expect(values.skip(4).take(3), schools);
+      expect(values.skip(7), crafts);
     });
 
     test('every skill in the enum starts untrained', () {
@@ -138,7 +141,7 @@ void main() {
   });
 
   group('untrainedSkills', () {
-    test('holds all seven skills at level zero', () {
+    test('holds all nine skills at level zero', () {
       // arrange
       const skills = untrainedSkills;
 

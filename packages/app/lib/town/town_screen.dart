@@ -4,7 +4,9 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../world/world_bloc.dart';
+import 'alchemist_screen.dart';
 import 'bank_screen.dart';
+import 'forge_screen.dart';
 import 'gear_screen.dart';
 import 'inn_screen.dart';
 import 'merchant_screen.dart';
@@ -12,7 +14,7 @@ import 'tavern_screen.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
 
-/// One town: five doors and a purse.
+/// One town: seven doors, a purse and what the hero has gathered.
 ///
 /// A menu rather than a map, which is the design's own choice and not a
 /// shortcut — there is nothing to explore in a town, and a walkable one would
@@ -23,8 +25,18 @@ import 'town_style.dart';
 /// node, so leaving town is the back button and nothing else. The roster moved
 /// to the world screen for a structural reason — see `WorldScreen.onOpenRoster`.
 ///
+/// **The forge and the alchemist are in both towns, like the inn.** A one-town
+/// forge has real friction either way round: Northgate starts undiscovered, so a
+/// fresh hero could not temper at all, and a Stonebridge-only forge would park
+/// it at the cheap end of the world. Per-town difference stays the shelf's job.
+///
+/// Seven doors is two more than the column was written for, which is why the
+/// scroll wrapper below matters rather than being decoration — the device pass
+/// checks that the last door is reachable on a phone.
+///
 /// Nothing here is told apart by colour. Carried and banked gold are two
-/// labelled rows in a fixed order, and every refusal is a sentence.
+/// labelled rows in a fixed order, the materials are a mark and a word and a
+/// number each, and every refusal is a sentence.
 class TownScreen extends StatelessWidget {
   const TownScreen({super.key});
 
@@ -70,6 +82,8 @@ class TownScreen extends StatelessWidget {
                       ),
                       Text('Carried  ${state.gold} gold', style: mono),
                       Text('Banked   ${state.bankedGold} gold', style: mono),
+                      const Divider(color: rule, height: 28),
+                      MaterialRows(materials: state.materials),
                       Notice(state.notice),
                       const Spacer(),
                       _Door(
@@ -91,6 +105,15 @@ class TownScreen extends StatelessWidget {
                       _Door(
                         label: 'Tavern',
                         onPressed: () => _open(context, const TavernScreen()),
+                      ),
+                      _Door(
+                        label: 'Forge',
+                        onPressed: () => _open(context, const ForgeScreen()),
+                      ),
+                      _Door(
+                        label: 'Alchemist',
+                        onPressed: () =>
+                            _open(context, const AlchemistScreen()),
                       ),
                     ],
                   ),

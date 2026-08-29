@@ -88,8 +88,7 @@ void main() {
 
       // assert
       expect(written.keys.first, 'version');
-      expect(written['version'], 2);
-      expect(saveVersion, 2);
+      expect(written['version'], saveVersion);
     });
 
     test('being in town is written out, not left out', () {
@@ -129,13 +128,14 @@ void main() {
     test('a version this build does not know is refused by number', () {
       // arrange
       final written = _asMap(_save(newProfile()));
-      written['version'] = 3;
+      written['version'] = 99;
 
       // act
       final reason = _reason(jsonEncode(written));
 
-      // assert
-      expect(reason, contains('3'));
+      // assert - ninety-nine rather than one past this build's own number, so
+      // the next sanctioned break does not have to come back and edit this
+      expect(reason, contains('99'));
       expect(reason, contains('version'));
     });
 
@@ -152,7 +152,7 @@ void main() {
 
     test('the version is checked before any other field is touched', () {
       // arrange
-      const written = '{"version": 3, "heroes": "nonsense"}';
+      const written = '{"version": 99, "heroes": "nonsense"}';
 
       // act
       final reason = _reason(written);

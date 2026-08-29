@@ -29,6 +29,15 @@ final class PickUpPressed extends GameBlocEvent {
   const PickUpPressed();
 }
 
+/// The player asked to work the node they are standing on.
+///
+/// One event for both kinds, following [GatherAction]: the tile decides whether
+/// this is mining or gathering, and the control's label is the only place the
+/// difference is said.
+final class GatherPressed extends GameBlocEvent {
+  const GatherPressed();
+}
+
 final class EquipPressed extends GameBlocEvent {
   const EquipPressed(this.itemId);
 
@@ -229,6 +238,25 @@ class GameViewState {
       itemsUnderfoot.isNotEmpty &&
       game.inventory.length < inventoryCap;
 
+  /// What can be worked where the hero stands, or null when nothing can.
+  GatherKind? get nodeUnderfoot => game.nodeAt(game.hero.position);
+
+  /// Whether the crawl screen should offer a Mine or Gather control at all.
+  ///
+  /// **No pack-cap term, unlike [canPickUp].** Materials are counters and never
+  /// items, so there is no cap to run into — which is the whole reason they are
+  /// counters.
+  bool get canGather => !game.isGameOver && nodeUnderfoot != null;
+
+  /// What the hero has gathered so far, in a fixed order, counters and all.
+  ///
+  /// Every material is present even at zero, so the panel's rows never move: the
+  /// position of a row is information the player relies on, which is the same
+  /// rule the pack's sections follow.
+  Map<MaterialId, int> get materials => {
+    for (final id in MaterialId.values) id: countOf(game.materials, id),
+  };
+
   /// The potion a quick drink would reach for, or null when none is carried.
   Item? get firstPotion {
     for (final item in game.inventory) {
@@ -343,6 +371,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     on<AscendPressed>(_onAscendPressed);
     on<AutoWalkAdvanced>(_onAutoWalkAdvanced);
     on<PickUpPressed>(_onPickUpPressed);
+    on<GatherPressed>(_onGatherPressed);
     on<EquipPressed>(_onEquipPressed);
     on<UnequipPressed>(_onUnequipPressed);
     on<DrinkPressed>(_onDrinkPressed);
@@ -413,6 +442,9 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
 
   void _onPickUpPressed(PickUpPressed event, Emitter<GameViewState> emit) =>
       _act(const PickUpAction(), emit);
+
+  void _onGatherPressed(GatherPressed event, Emitter<GameViewState> emit) =>
+      _act(const GatherAction(), emit);
 
   void _onEquipPressed(EquipPressed event, Emitter<GameViewState> emit) =>
       _act(EquipAction(event.itemId), emit);

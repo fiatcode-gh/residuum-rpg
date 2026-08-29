@@ -619,4 +619,43 @@ void main() {
       expect(learn, throwsUnsupportedError);
     });
   });
+
+  group('the materials a crawl carries', () {
+    test('a crawl the hero has gathered nothing in carries no counters', () {
+      // arrange
+      // act
+      final game = crawl(ascii: _room, heroAt: const Position(1, 1));
+
+      // assert
+      expect(game.materials, isEmpty);
+    });
+
+    test('the counters cannot be written through', () {
+      // arrange
+      final game = crawl(
+        ascii: _room,
+        heroAt: const Position(1, 1),
+        materials: const {MaterialId.ore: 1},
+      );
+
+      // act
+      void write() => game.materials[MaterialId.herb] = 1;
+
+      // assert
+      expect(write, throwsUnsupportedError);
+    });
+
+    test('copyWith moves them, which gold has no need of', () {
+      // arrange
+      final game = crawl(ascii: _room, heroAt: const Position(1, 1));
+
+      // act
+      final after = game.copyWith(materials: const {MaterialId.ore: 2});
+
+      // assert - gathering is what moves these mid-crawl, and nothing in the
+      // rules moves gold, which is why only one of the two is in copyWith
+      expect(after.materials, const {MaterialId.ore: 2});
+      expect(game.materials, isEmpty);
+    });
+  });
 }

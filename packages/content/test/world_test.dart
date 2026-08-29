@@ -414,6 +414,41 @@ void main() {
       expect(danger, route.danger + 2);
     });
 
+    test('a forge-trained hero pays the road too', () {
+      // arrange
+      final route = residuumWorld.routeBetween(stonebridge, cryptNode)!;
+      final smith = _fresh().copyWith(
+        skills: const {
+          SkillId.herbcraft: SkillState(level: 8),
+          SkillId.blacksmith: SkillState(level: 8),
+        },
+      );
+
+      // act
+      final danger = dangerOn(route, smith);
+
+      // assert - the sum is unfiltered on purpose: what makes a road easier is
+      // the hero being further along, not the hero having trained any
+      // particular thing, and a tempered hero IS further along. It is also the
+      // one number that cannot be gamed by leaving a skill alone
+      expect(danger, route.danger + 2);
+    });
+
+    test('two heroes differing only in their crafts differ on the road', () {
+      // arrange
+      final route = residuumWorld.routeBetween(stonebridge, cryptNode)!;
+      final bare = _fresh();
+      final smith = bare.copyWith(
+        skills: const {SkillId.blacksmith: SkillState(level: 16)},
+      );
+
+      // act
+      final walk = (dangerOn(route, bare), dangerOn(route, smith));
+
+      // assert
+      expect(walk.$2, greaterThan(walk.$1));
+    });
+
     test('the notch stops climbing so the map stays crossable', () {
       // arrange
       final route = residuumWorld.routeBetween(northgate, ruinedKeep)!;
@@ -895,6 +930,14 @@ void main() {
       expect(travelSalt, isNot(ambushSalt));
       expect(travelSalt, isNot(lootStreamSalt));
       expect(ambushSalt, isNot(lootStreamSalt));
+    });
+
+    test('the gather salt is none of the three either', () {
+      // assert - a node stream that ran in step with a road or a shelf would
+      // make two unrelated things move together on one seed
+      expect(gatherSalt, isNot(travelSalt));
+      expect(gatherSalt, isNot(ambushSalt));
+      expect(gatherSalt, isNot(lootStreamSalt));
     });
   });
 }

@@ -342,6 +342,58 @@ void main() {
       expect(glyphs.intersection(taken), isEmpty);
     });
 
+    test('no node glyph collides with anything else the game draws', () {
+      // arrange - every glyph in the game: the terrain, the hero, every item,
+      // and every creature of every dungeon including the crypt's
+      final taken = {
+        '#',
+        '.',
+        '<',
+        '>',
+        '@',
+        for (final base in armory) base.glyph,
+        for (final creature in bestiary) creature.glyph,
+        for (final dungeon in themedDungeons)
+          for (final creature in dungeon.bestiary) creature.glyph,
+      };
+
+      // act
+      final glyphs = {for (final kind in GatherKind.values) kind.glyph};
+
+      // assert - a vein that drew as something the player had already learned
+      // to read would be worse than one that did not draw at all
+      expect(glyphs.intersection(taken), isEmpty);
+      expect(glyphs, hasLength(GatherKind.values.length));
+    });
+
+    test('every node yields a material this build has', () {
+      // act
+      final yielded = {for (final kind in GatherKind.values) kind.yields};
+
+      // assert
+      expect(yielded, everyElement(isIn(MaterialId.values)));
+    });
+
+    test('every dungeon in the world has a gathering band', () {
+      // arrange
+      final places = [cryptNode, for (final d in themedDungeons) d.node];
+
+      // act
+      final bands = {for (final node in places) node: gatherBandFor(node)};
+
+      // assert - a dungeon added to the world grows things without a second
+      // edit somewhere else, because the fallback is the crypt's band
+      for (final entry in bands.entries) {
+        expect(entry.value.fewest, greaterThan(0), reason: entry.key.value);
+        expect(
+          entry.value.most,
+          greaterThanOrEqualTo(entry.value.fewest),
+          reason: entry.key.value,
+        );
+        expect(entry.value.orePercent, inInclusiveRange(1, 99));
+      }
+    });
+
     test('every creature is one character, and it is a letter', () {
       // assert
       for (final dungeon in themedDungeons) {
@@ -1347,7 +1399,7 @@ void _armouryAndLoot() {
       expect(derived, ((3, 5), 0, 0, 20, 10));
     });
 
-    test('all four skills start untrained', () {
+    test('every skill in the enum starts untrained', () {
       // arrange
       final game = newGame();
 

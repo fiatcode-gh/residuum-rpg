@@ -59,11 +59,26 @@ void main() {
 
     test('is not any of the salts the world already mixes with', () {
       // act
-      final theirs = {lootStreamSalt, travelSalt, ambushSalt};
+      final theirs = {lootStreamSalt, travelSalt, ambushSalt, gatherSalt};
 
       // assert
       expect(theirs, isNot(contains(dungeonSalt(seaCave))));
       expect(theirs, isNot(contains(dungeonSalt(ruinedKeep))));
+    });
+
+    test('every salt and slot the game mixes with is its own number', () {
+      // act
+      final all = [
+        lootStreamSalt,
+        travelSalt,
+        ambushSalt,
+        gatherSalt,
+        depthSlot,
+      ];
+
+      // assert - the one place they are all named together, so a new one cannot
+      // be added at a number another already has
+      expect(all.toSet(), hasLength(all.length));
     });
 
     test('is read off the id text, so a new dungeon needs no second edit', () {

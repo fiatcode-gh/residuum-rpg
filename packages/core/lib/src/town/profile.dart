@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../craft/material.dart';
 import '../engine/actor.dart';
 import '../loot/item.dart';
 import '../loot/loadout.dart';
@@ -27,14 +28,17 @@ class Profile extends Equatable {
     List<Item> inventory = const [],
     List<Item> bank = const [],
     Set<String> knownSpells = const {},
+    Map<MaterialId, int> materials = const {},
     this.gold = 0,
     this.bankedGold = 0,
     this.visit = 0,
+    this.brewNumber = 1,
   }) : equipment = Map.unmodifiable(equipment),
        skills = Map.unmodifiable(skills),
        inventory = List.unmodifiable(inventory),
        bank = List.unmodifiable(bank),
-       knownSpells = Set.unmodifiable(knownSpells);
+       knownSpells = Set.unmodifiable(knownSpells),
+       materials = Map.unmodifiable(materials);
 
   /// The base body: base stats, and the hit points the hero walked out with.
   final Actor hero;
@@ -57,6 +61,15 @@ class Profile extends Equatable {
   /// What the hero carries into the dungeon, and loses by dying in it.
   final int gold;
 
+  /// What the hero has gathered, by kind, and loses by dying in it.
+  ///
+  /// **[gold]'s twin, deliberately, and not the bank's.** Materials are earned
+  /// underfoot several floors from home, so they ride the risk the purse rides;
+  /// the vault stays gear and coin only this unit, which means a hero who wants
+  /// to keep what they mined has to spend it before going back down. A material
+  /// a counter holds at zero has no entry at all — see [withMaterial].
+  final Map<MaterialId, int> materials;
+
   /// What the vault holds. Death cannot reach it, and it has no cap.
   ///
   /// No cap because the bank is the answer to the pack's cap, and a vault that
@@ -70,6 +83,19 @@ class Profile extends Equatable {
 
   /// How many times this hero has entered the dungeon.
   final int visit;
+
+  /// The number the next brewed potion's id is built from.
+  ///
+  /// **A counter and not a derivation, because uniqueness has to survive
+  /// spending.** An item id is unique within a crawl, which is a contract the
+  /// pack, the shelf and every action that names an item depend on. Brew, drink
+  /// the potion, brew again — anything read off what the hero is holding, or off
+  /// the visit, would hand out the id it just freed. This is the same shape
+  /// `nextDropNumber` has on the run state, and it lives here rather than there
+  /// because the alchemist is in town and a town has no run.
+  ///
+  /// Starts at one, so the first potion a hero ever brews is `brew-1`.
+  final int brewNumber;
 
   /// The gear and the training every derived hero stat reads from.
   Loadout get loadout => Loadout(equipment: equipment, skills: skills);
@@ -87,6 +113,8 @@ class Profile extends Equatable {
     int? bankedGold,
     int? visit,
     Set<String>? knownSpells,
+    Map<MaterialId, int>? materials,
+    int? brewNumber,
   }) => Profile(
     hero: hero ?? this.hero,
     worldSeed: worldSeed,
@@ -98,6 +126,8 @@ class Profile extends Equatable {
     bankedGold: bankedGold ?? this.bankedGold,
     visit: visit ?? this.visit,
     knownSpells: knownSpells ?? this.knownSpells,
+    materials: materials ?? this.materials,
+    brewNumber: brewNumber ?? this.brewNumber,
   );
 
   /// [Actor] is not a value object, so a profile's identity names the fields of
@@ -116,6 +146,8 @@ class Profile extends Equatable {
     worldSeed,
     visit,
     knownSpells,
+    materials,
+    brewNumber,
   ];
 
   @override

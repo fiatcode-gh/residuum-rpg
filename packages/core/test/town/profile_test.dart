@@ -150,4 +150,28 @@ void main() {
       expect(learn, throwsUnsupportedError);
     });
   });
+
+  group('a profile\'s materials', () {
+    test('two heroes differing only in what they mined are not equal', () {
+      // arrange
+      final bare = _townie();
+
+      // act
+      final laden = bare.copyWith(materials: const {MaterialId.ore: 1});
+
+      // assert - a hero holding an ingot is not the hero who is not
+      expect(laden, isNot(bare));
+    });
+
+    test('the counters cannot be written through', () {
+      // arrange
+      final profile = _townie().copyWith(materials: const {MaterialId.ore: 1});
+
+      // act
+      void write() => profile.materials[MaterialId.herb] = 1;
+
+      // assert
+      expect(write, throwsUnsupportedError);
+    });
+  });
 }

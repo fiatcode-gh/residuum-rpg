@@ -1,3 +1,4 @@
+import '../craft/material.dart';
 import '../dungeon/floor.dart';
 import '../dungeon/floor_memory.dart';
 import '../dungeon/flow_field.dart';
@@ -66,6 +67,8 @@ import 'position.dart';
   var hero = state.hero.copyWith(energy: state.hero.energy - actCost);
   var loadout = state.loadout;
   var groundItems = state.groundItems;
+  var nodes = state.nodes;
+  var materials = state.materials;
   var inventory = state.inventory;
   var nextDropNumber = state.nextDropNumber;
   var knownSpells = state.knownSpells;
@@ -151,6 +154,14 @@ import 'position.dart';
         groundItems = _withItem(groundItems, cast.spoils!.$1, cast.spoils!.$2);
         nextDropNumber++;
       }
+    case GatherAction():
+      final kind = nodes[hero.position]!;
+      nodes = {...nodes}..remove(hero.position);
+      materials = withMaterial(materials, kind.yields, 1);
+      events.add(
+        NodeGathered(kind: kind, at: hero.position, material: kind.yields),
+      );
+      loadout = loadout.withSkills(_train(kind.trains, loadout.skills, events));
     case DropAction(:final itemId):
       final put = inventory.firstWhere((item) => item.id == itemId);
       inventory = [
@@ -190,6 +201,8 @@ import 'position.dart';
       explored: {...state.explored, ...visible},
       isGameOver: !hero.isAlive,
       groundItems: groundItems,
+      nodes: nodes,
+      materials: materials,
       inventory: inventory,
       equipment: loadout.equipment,
       skills: loadout.skills,
@@ -404,6 +417,11 @@ GameEvent? _refuse(GameState state, GameAction action) {
         return const ActionRefused(reason: 'there is nothing here to take');
       }
       if (state.inventory.length >= inventoryCap) return const InventoryFull();
+      return null;
+    case GatherAction():
+      if (state.nodeAt(state.hero.position) == null) {
+        return const ActionRefused(reason: 'there is nothing here to gather');
+      }
       return null;
     case EquipAction(:final itemId):
       return _refusedBy(wearRefusal(state.loadout, state.inventory, itemId));
@@ -685,17 +703,21 @@ Map<SkillId, SkillState> _defend(
 }
 
 /// [skills] after one use of [skill], announcing a level-up if it crossed one.
+///
+/// The grant itself is [trainedIn]'s, so the crawl and the town train by exactly
+/// the same rule; the only thing this adds is the sentence.
 Map<SkillId, SkillState> _train(
   SkillId skill,
   Map<SkillId, SkillState> skills,
   List<GameEvent> events,
 ) {
   final before = skills[skill] ?? const SkillState();
-  final after = before.trained();
+  final trained = trainedIn(skills, skill);
+  final after = trained[skill]!;
   if (after.level > before.level) {
     events.add(SkillLevelledUp(skill: skill, level: after.level));
   }
-  return {...skills, skill: after};
+  return trained;
 }
 
 Map<Position, List<Item>> _withItem(
@@ -724,10 +746,15 @@ Set<Position> _occupiedTiles(Actor hero, List<Actor> monsters, String moving) =>
     };
 
 /// The floor the hero is standing on, frozen for its return.
+///
+/// The nodes ride beside the litter, and for the same reason: a vein the hero
+/// walked past is still there when they walk back, and one they worked is still
+/// gone.
 FloorMemory _snapshot(GameState state) => FloorMemory(
   map: state.map,
   monsters: state.monsters,
   groundItems: state.groundItems,
+  nodes: state.nodes,
   explored: state.explored,
   stairsDown: state.stairsDown,
   stairsUp: state.stairsUp,
@@ -749,6 +776,7 @@ FloorMemory _built(Floor floor) => FloorMemory(
       monster.copyWith(energy: actThreshold),
   ],
   groundItems: floor.groundItems,
+  nodes: floor.nodes,
   explored: const {},
   stairsDown: floor.stairsDown,
   stairsUp: floor.stairsUp ?? floor.heroSpawn,
@@ -807,6 +835,7 @@ FloorMemory _built(Floor floor) => FloorMemory(
       stairsUp: floor.stairsUp,
       clearStairsUp: floor.stairsUp == null,
       groundItems: floor.groundItems,
+      nodes: floor.nodes,
       floors: {...state.floors, state.depth: _snapshot(state)}..remove(depth),
     ),
     events,

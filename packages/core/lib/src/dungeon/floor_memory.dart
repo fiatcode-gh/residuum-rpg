@@ -1,3 +1,4 @@
+import '../craft/gather_node.dart';
 import '../engine/actor.dart';
 import '../engine/position.dart';
 import '../loot/item.dart';
@@ -32,7 +33,9 @@ class FloorMemory {
     required Set<Position> explored,
     required this.stairsDown,
     required this.stairsUp,
+    Map<Position, GatherKind> nodes = const {},
   }) : monsters = List.unmodifiable(monsters),
+       nodes = Map.unmodifiable(nodes),
        groundItems = Map.unmodifiable({
          for (final tile in groundItems.entries)
            tile.key: List<Item>.unmodifiable(tile.value),
@@ -45,6 +48,15 @@ class FloorMemory {
   final List<Actor> monsters;
 
   final Map<Position, List<Item>> groundItems;
+
+  /// What is still there to be worked on this floor.
+  ///
+  /// A worked node is gone from here for the rest of the run, which is
+  /// [groundItems]' lifetime exactly: a floor the hero stripped stays stripped
+  /// until the next entry reshuffles the dungeon. Optional with a default,
+  /// unlike its siblings, because seventy-odd rule tests build a floor memory to
+  /// ask one question about monsters and none of them is about gathering.
+  final Map<Position, GatherKind> nodes;
 
   /// What the hero had seen of this floor.
   ///

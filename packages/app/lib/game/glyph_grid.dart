@@ -65,6 +65,29 @@ DungeonPalette paletteFor(NodeId? node) {
   return DungeonPalette.crypt;
 }
 
+/// What the litter on a floor is drawn in.
+///
+/// Public so the palette tests can hold it apart from [nodeInk] in greyscale.
+/// Unthemed, like the hero and the monsters: those three and the litter are read
+/// against each other rather than against the place, so a colour that changed by
+/// dungeon would make the glyph that matters harder to find.
+const Color litterInk = Color(0xFF7FC8B8);
+
+/// What an ore vein or a herb patch is drawn in.
+///
+/// **Its own constant and deliberately not a [DungeonPalette] field.** That class
+/// is terrain-only by its own dartdoc, and for a stated reason: only terrain is
+/// themed, because everything a player walks toward is read against the other
+/// things they walk toward. A node is one of those, so it keeps one colour in
+/// every dungeon.
+///
+/// A clear step darker than [litterInk] and a clear step lighter than every
+/// floor tint, measured with the hue thrown away — the author is deuteranomalous,
+/// so a colour that separated only by hue would separate by nothing. The glyphs
+/// `*` and `"` carry the real signal either way, and they are outside every other
+/// glyph set the game draws.
+const Color nodeInk = Color(0xFFA87BC0);
+
 class GlyphGrid extends StatelessWidget {
   const GlyphGrid({
     required this.state,
@@ -112,6 +135,13 @@ class GlyphGrid extends StatelessWidget {
   );
 }
 
+/// Draws the crawl: terrain, then nodes, then litter, then monsters, then the
+/// hero.
+///
+/// **Nodes go between the terrain and the litter**, which is the order of what
+/// matters. A vein is part of the place — it is not going anywhere — so an item
+/// dropped on top of one has to be the glyph the player sees, and a monster
+/// standing on either has to be the glyph above both.
 class _GlyphPainter extends CustomPainter {
   _GlyphPainter({
     required this.state,
@@ -121,7 +151,8 @@ class _GlyphPainter extends CustomPainter {
 
   static const _hero = Color(0xFFFFFFFF);
   static const _monster = Color(0xFFD9A227);
-  static const _item = Color(0xFF7FC8B8);
+  static const _item = litterInk;
+  static const _node = nodeInk;
   static const _rememberedOpacity = 0.4;
 
   final GameViewState state;
@@ -144,6 +175,10 @@ class _GlyphPainter extends CustomPainter {
           visible,
         );
       }
+    }
+    for (final node in game.nodes.entries) {
+      if (!game.visible.contains(node.key)) continue;
+      _paintGlyph(canvas, node.key, node.value.glyph, _node, true);
     }
     for (final tile in game.groundItems.entries) {
       if (!game.visible.contains(tile.key) || tile.value.isEmpty) continue;

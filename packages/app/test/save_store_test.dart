@@ -237,8 +237,8 @@ void main() {
       await store.save(_one(_hero(gold: 7)));
       await store.save(_one(_hero(gold: 8)));
       files.contents[currentSlot] = files.contents[currentSlot]!.replaceFirst(
-        '"version":2',
-        '"version":3',
+        '"version":$saveVersion',
+        '"version":99',
       );
 
       // act

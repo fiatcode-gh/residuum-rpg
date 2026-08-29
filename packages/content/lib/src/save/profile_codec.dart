@@ -2,6 +2,7 @@ import 'package:residuum_core/core.dart';
 
 import '../new_game.dart';
 import '../spells.dart';
+import 'craft_codec.dart';
 import 'item_codec.dart';
 import 'save_json.dart';
 
@@ -32,6 +33,8 @@ Map<String, Object?> encodeProfile(Profile profile) => {
   'bank': encodeItems(profile.bank),
   'skills': encodeSkills(profile.skills),
   'knownSpells': encodeSpellIds(profile.knownSpells),
+  'materials': encodeMaterials(profile.materials),
+  'brewNumber': profile.brewNumber,
 };
 
 /// Every spell in [known], as sorted ids.
@@ -72,5 +75,7 @@ Profile decodeProfile(Map<String, Object?> from, String key) {
     bankedGold: intAt(written, 'bankedGold'),
     visit: intAt(written, 'visit'),
     knownSpells: decodeSpellIds(written, 'knownSpells'),
+    materials: decodeMaterials(written, 'materials'),
+    brewNumber: intAt(written, 'brewNumber'),
   );
 }

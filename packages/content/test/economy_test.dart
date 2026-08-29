@@ -220,4 +220,124 @@ void main() {
       expect(cheapest, lessThan(60));
     });
   });
+
+  group('what a temper is worth', () {
+    test('a tempered item never sells for its untempered price', () {
+      // arrange
+      final everything = _everything().where(
+        (item) => item.base.isWeapon || item.base.isArmour,
+      );
+
+      // act
+      final unmoved = [
+        for (final item in everything)
+          if (sellPriceOf(item.tempered(1)) == sellPriceOf(item))
+            item.displayName,
+      ];
+
+      // assert - sellPriceOf reads base.* by design, so temper is the one thing
+      // it would silently not see; a forge that changed nothing about a price
+      // would be a laundering hole in reverse
+      expect(unmoved, isEmpty);
+    });
+
+    test('a tier is worth two, which is what two of those stats cost', () {
+      // arrange
+      final sword = Item(id: 'drop-1', base: ironSword, rarity: Rarity.common);
+      final mail = Item(id: 'drop-2', base: mailHauberk, rarity: Rarity.common);
+
+      // act
+      final swordGain = sellPriceOf(sword.tempered(1)) - sellPriceOf(sword);
+      final mailGain = sellPriceOf(mail.tempered(1)) - sellPriceOf(mail);
+
+      // assert - worth weighs attackMin and attackMax at one each and armour at
+      // two, so one tier is exactly two either way: a weapon gains a point at
+      // both ends, and a piece of armour gains a doubled point of armour. Any
+      // other multiplier would price a temper differently from the way the same
+      // stats are priced when a dungeon hands them over
+      expect(swordGain, 2);
+      expect(mailGain, 2);
+    });
+
+    test('the tier multiplies with the rarity, as every other stat does', () {
+      // arrange
+      final rare = Item(
+        id: 'drop-1',
+        base: ironSword,
+        rarity: Rarity.rare,
+        affixes: const [keen, ofEmbers],
+      );
+
+      // act
+      final gain = sellPriceOf(rare.tempered(2)) - sellPriceOf(rare);
+
+      // assert - two tiers at two apiece, through a Rare's threefold multiplier
+      expect(gain, 12);
+    });
+
+    test('buying a tempered piece still costs twice selling it', () {
+      // arrange
+      final everything = _everything();
+
+      // act
+      final arbitrage = [
+        for (final item in everything)
+          for (var tier = 1; tier <= 3; tier++)
+            if (buyPriceOf(item.tempered(tier)) !=
+                sellPriceOf(item.tempered(tier)) * 2)
+              item.displayName,
+      ];
+
+      // assert
+      expect(arbitrage, isEmpty);
+    });
+
+    test('a potion and a book are worth no more for being worked', () {
+      // arrange
+      final potion = Item(
+        id: 'drop-1',
+        base: healingPotion,
+        rarity: Rarity.common,
+      );
+      final book = Item(
+        id: 'drop-2',
+        base: bookOfFirebolt,
+        rarity: Rarity.common,
+      );
+
+      // act
+      // assert - only steel takes a temper, and the price has to agree with the
+      // refusal rather than quietly disagree with it
+      expect(sellPriceOf(potion.tempered(3)), sellPriceOf(potion));
+      expect(sellPriceOf(book.tempered(3)), sellPriceOf(book));
+    });
+  });
+
+  group('the shelf and materials', () {
+    test('the merchant deals in no material at all', () {
+      // arrange
+      final words = {for (final id in MaterialId.values) id.name};
+
+      // act
+      final sold = {
+        for (final weighted in marketTable.items) weighted.value.id,
+      };
+
+      // assert - materials are counters and never items, so there is nothing
+      // here for a shelf to carry; pinned because the day one is added is the
+      // day the shelf golden has to be re-pinned knowingly
+      expect(sold.intersection(words), isEmpty);
+    });
+
+    test('nothing in the armory is a material either', () {
+      // arrange
+      final words = {for (final id in MaterialId.values) id.name};
+
+      // act
+      final bases = {for (final base in armory) base.id};
+
+      // assert
+      expect(bases.intersection(words), isEmpty);
+    });
+  });
 }
