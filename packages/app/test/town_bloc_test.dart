@@ -13,6 +13,13 @@ Profile _fresh() => newProfile(worldSeed: 4);
 
 Profile _rich() => _fresh().copyWith(gold: 500, inventory: [_cap('held-1')]);
 
+/// A hero schooled in two spells and stocked from the floors, for the road
+/// carry tests.
+Profile _schooled() => _rich().copyWith(
+  knownSpells: {firebolt.id, mend.id},
+  materials: const {MaterialId.ore: 3, MaterialId.herb: 1},
+);
+
 /// The shelf as it stood before the run, so the restock can be compared to it.
 /// A `blocTest` gives `act` and `verify` no other way to share a value.
 List<String> _shelfBefore = const [];
@@ -467,6 +474,22 @@ void main() {
   });
 
   group('coming home off the road', () {
+    blocTest<TownBloc, TownViewState>(
+      'brings the spells and the materials home too',
+      build: () => TownBloc(profile: _schooled()),
+      act: (bloc) => bloc.add(
+        EncounterEnded(
+          startRoadEncounter(bloc.state.profile, day: 4),
+          died: false,
+        ),
+      ),
+      verify: (bloc) {
+        expect(bloc.state.profile.knownSpells, {firebolt.id, mend.id});
+        expect(bloc.state.profile.materials[MaterialId.ore], 3);
+        expect(bloc.state.profile.materials[MaterialId.herb], 1);
+      },
+    );
+
     blocTest<TownBloc, TownViewState>(
       'brings back what was picked up out there',
       build: () => TownBloc(profile: _rich()),

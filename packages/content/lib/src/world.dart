@@ -7,6 +7,7 @@ import 'dungeon_spawn.dart';
 import 'new_game.dart';
 import 'ruined_keep.dart';
 import 'sea_cave.dart';
+import 'spells.dart';
 
 /// What the travel day's seed is offset by, so a road never draws in step with
 /// a floor or a shelf.
@@ -387,6 +388,18 @@ const DropTable roadDropTable = DropTable(
 /// [road] says which table stands the fight up. Left unsaid it is the lowland
 /// one, which is what the three original roads carry and what every test that
 /// is about the shape of an ambush rather than about its cast wants.
+///
+/// **Everything the profile owns rides through on the carry list rather than
+/// by luck.** This constructor was written in the m3-world era, when the carry
+/// list was purse, pack, gear, training and visit — and it missed every field
+/// the milestones after it added, so a road fight wiped the hero's spells and
+/// materials by leaving them to their defaults and carrying those home. The
+/// list now spells out the magic too: the whole spellbook to cast from, the
+/// words the hero has learned, the materials underfoot from the last delve,
+/// and mana at full — the same doctrine a delve start carries, so an ambush
+/// is a fair arena for a casting hero, not a mana-less one. A field the
+/// profile gains later goes on this list the day it lands, not when a
+/// playtest catches its absence.
 GameState startRoadEncounter(Profile profile, {required int day, Route? road}) {
   final table = road == null ? lowlandRoadTable : roadTableFor(road);
   final seed = ambushGroundSeed(profile.worldSeed, day);
@@ -421,6 +434,10 @@ GameState startRoadEncounter(Profile profile, {required int day, Route? road}) {
     inventory: profile.inventory,
     equipment: profile.equipment,
     skills: profile.skills,
+    spells: spellsById,
+    knownSpells: profile.knownSpells,
+    materials: profile.materials,
+    mana: heroMaxMana(profile.loadout),
     dropTables: const {roadDepth: roadDropTable},
     isEncounter: true,
   );

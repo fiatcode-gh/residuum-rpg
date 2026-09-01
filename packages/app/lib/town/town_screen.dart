@@ -7,7 +7,7 @@ import '../world/world_bloc.dart';
 import 'alchemist_screen.dart';
 import 'bank_screen.dart';
 import 'forge_screen.dart';
-import 'gear_screen.dart';
+import 'character_screen.dart';
 import 'inn_screen.dart';
 import 'merchant_screen.dart';
 import 'tavern_screen.dart';
@@ -99,8 +99,9 @@ class TownScreen extends StatelessWidget {
                         onPressed: () => _open(context, const InnScreen()),
                       ),
                       _Door(
-                        label: 'Gear',
-                        onPressed: () => _open(context, const GearScreen()),
+                        label: 'Character',
+                        onPressed: () =>
+                            _open(context, const CharacterScreen()),
                       ),
                       _Door(
                         label: 'Tavern',
