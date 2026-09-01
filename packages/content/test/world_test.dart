@@ -5,6 +5,14 @@ import 'package:test/test.dart';
 /// A hero at the start of everything, for the assembly tests.
 Profile _fresh({int worldSeed = 909}) => newProfile(worldSeed: worldSeed);
 
+/// A hero schooled in two spells and stocked from the floors, for the carry
+/// tests. Two opening spells — one per school gate — and one material per
+/// gathering kind, so a carry list that dropped either half fails on its own.
+Profile _schooled() => _fresh().copyWith(
+  knownSpells: {firebolt.id, mend.id},
+  materials: const {MaterialId.ore: 3, MaterialId.herb: 1},
+);
+
 /// What stood on the road on [day], as one line a golden can be written as.
 String _fingerprint(int day) => startRoadEncounter(_fresh(), day: day).monsters
     .map(
@@ -615,6 +623,57 @@ void main() {
   });
 
   group('walking into a road fight', () {
+    test('carries the schooling and the gathering home alive', () {
+      // arrange
+      final profile = _schooled();
+
+      // act
+      final home = endRun(
+        profile,
+        startRoadEncounter(profile, day: 3),
+        died: false,
+      );
+
+      // assert
+      expect(home.knownSpells, {firebolt.id, mend.id});
+      expect(home.materials, {MaterialId.ore: 3, MaterialId.herb: 1});
+    });
+
+    test('opens with the magic already in hand', () {
+      // arrange
+      final profile = _schooled();
+
+      // act
+      final fight = startRoadEncounter(profile, day: 3);
+
+      // assert
+      expect(fight.mana, heroMaxMana(profile.loadout));
+      expect(fight.knownSpells, profile.knownSpells);
+      expect(fight.spells.length, spellbook.length);
+      expect(fight.spells[firebolt.id], firebolt);
+    });
+
+    test(
+      'dying on the road keeps what was learned, burns what was gathered',
+      () {
+        // arrange
+        final profile = _schooled();
+
+        // act
+        final home = endRun(
+          profile,
+          startRoadEncounter(profile, day: 3),
+          died: true,
+        );
+
+        // assert
+        expect(home.knownSpells, {firebolt.id, mend.id});
+        expect(home.materials, isEmpty);
+        expect(home.gold, 0);
+        expect(home.inventory, isEmpty);
+      },
+    );
+
     test('lands the hero on open ground with creatures on it', () {
       // act
       final fight = startRoadEncounter(_fresh(), day: 3);

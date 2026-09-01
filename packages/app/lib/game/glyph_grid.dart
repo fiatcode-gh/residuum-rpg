@@ -3,6 +3,7 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import 'game_bloc.dart';
+import 'glyph_plan.dart';
 import 'grid_geometry.dart';
 
 /// The tints one dungeon's terrain is drawn in.
@@ -149,74 +150,23 @@ class _GlyphPainter extends CustomPainter {
     required this.palette,
   });
 
-  static const _hero = Color(0xFFFFFFFF);
-  static const _monster = Color(0xFFD9A227);
-  static const _item = litterInk;
-  static const _node = nodeInk;
-  static const _rememberedOpacity = 0.4;
-
   final GameViewState state;
   final GridGeometry geometry;
   final DungeonPalette palette;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final game = state.game;
-    for (var y = 0; y < game.map.height; y++) {
-      for (var x = 0; x < game.map.width; x++) {
-        final position = Position(x, y);
-        final visible = game.visible.contains(position);
-        if (!visible && !game.explored.contains(position)) continue;
-        _paintGlyph(
-          canvas,
-          position,
-          _glyphFor(game.map.tileAt(position)),
-          _colourFor(game.map.tileAt(position)),
-          visible,
-        );
-      }
+    for (final cell in glyphPlan(state.game, palette)) {
+      _paintCell(canvas, cell);
     }
-    for (final node in game.nodes.entries) {
-      if (!game.visible.contains(node.key)) continue;
-      _paintGlyph(canvas, node.key, node.value.glyph, _node, true);
-    }
-    for (final tile in game.groundItems.entries) {
-      if (!game.visible.contains(tile.key) || tile.value.isEmpty) continue;
-      _paintGlyph(canvas, tile.key, tile.value.last.base.glyph, _item, true);
-    }
-    for (final monster in game.monsters) {
-      if (!game.visible.contains(monster.position)) continue;
-      _paintGlyph(canvas, monster.position, monster.glyph, _monster, true);
-    }
-    _paintGlyph(canvas, game.hero.position, game.hero.glyph, _hero, true);
   }
 
-  static String _glyphFor(Tile tile) => switch (tile) {
-    Tile.wall => '#',
-    Tile.floor => '.',
-    Tile.stairsDown => '>',
-    Tile.stairsUp => '<',
-  };
-
-  Color _colourFor(Tile tile) => switch (tile) {
-    Tile.wall => palette.wall,
-    Tile.floor => palette.floor,
-    Tile.stairsDown => palette.stairs,
-    Tile.stairsUp => palette.stairs,
-  };
-
-  void _paintGlyph(
-    Canvas canvas,
-    Position position,
-    String glyph,
-    Color color,
-    bool visible,
-  ) {
+  void _paintCell(Canvas canvas, GlyphCell cell) {
     final painter = TextPainter(
       text: TextSpan(
-        text: glyph,
+        text: cell.glyph,
         style: TextStyle(
-          color: visible ? color : color.withValues(alpha: _rememberedOpacity),
+          color: cell.ink.withValues(alpha: cell.opacity),
           fontSize: geometry.cellSize,
           fontFamily: 'monospace',
           height: 1,
@@ -225,10 +175,10 @@ class _GlyphPainter extends CustomPainter {
       textAlign: TextAlign.center,
       textDirection: TextDirection.ltr,
     )..layout();
-    final cell = geometry.topLeftOf(position.x, position.y);
+    final origin = geometry.topLeftOf(cell.position.x, cell.position.y);
     painter.paint(
       canvas,
-      cell +
+      origin +
           Offset(
             (geometry.cellSize - painter.width) / 2,
             (geometry.cellSize - painter.height) / 2,

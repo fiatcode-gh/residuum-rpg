@@ -76,7 +76,7 @@ void main() {
         'Merchant',
         'Bank',
         'Inn',
-        'Gear',
+        'Character',
         'Tavern',
         'Forge',
         'Alchemist',
