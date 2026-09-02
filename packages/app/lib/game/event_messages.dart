@@ -5,10 +5,18 @@ import 'package:residuum_core/core.dart';
 /// [names] maps actor ids to what the log calls them, taken from the state
 /// *before* the turn ran — a monster that died this turn is gone from the state
 /// but still has to be named in the sentence announcing it.
+///
+/// [strikesFromAfar] carries the ids of monsters whose swing this turn was
+/// delivered from outside arm's length: the ranged verb is the sentence's way
+/// of saying the blow crossed the room. Adjacency is the caller's knowledge —
+/// it reads the start state — which is why the set rides in rather than the
+/// reach, and why an adjacent monster claws even when its reach is longer than
+/// one: a blow from arm's length is a claw, however long the arms.
 String? describeEvent(
   GameEvent event,
-  Map<String, String> names,
-) => switch (event) {
+  Map<String, String> names, {
+  Set<String> strikesFromAfar = const {},
+}) => switch (event) {
   ActorMoved(:final actorId, :final from, :final to) when actorId == heroId =>
     'You step ${_bearing(from, to)}.',
   ActorMoved() => null,
@@ -18,7 +26,10 @@ String? describeEvent(
       when attackerId == heroId =>
     'You hit ${_named(names, targetId)} for $damage.',
   AttackHit(:final attackerId, :final damage) =>
-    '${_capitalised(_named(names, attackerId))} claws you for $damage.',
+    strikesFromAfar.contains(attackerId)
+        ? '${_capitalised(_named(names, attackerId))} strikes you from afar '
+              'for $damage.'
+        : '${_capitalised(_named(names, attackerId))} claws you for $damage.',
   ActorDied(:final actorId) when actorId == heroId => 'You die.',
   ActorDied(:final actorId) => '${_capitalised(_named(names, actorId))} dies.',
   ActorNoticed(:final actorId) =>

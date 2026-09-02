@@ -6,6 +6,7 @@ import 'package:residuum_core/core.dart';
 import '../game/event_messages.dart' show skillName;
 import '../game/inventory_screen.dart' show slotLabel;
 import '../game/item_presentation.dart';
+import '../game/spell_row.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
 
@@ -62,7 +63,8 @@ class CharacterScreen extends StatelessWidget {
             const Heading('Spells'),
             if (known.isEmpty)
               const NothingHere('You have not learned any spell yet.'),
-            for (final spell in known) _SpellRow(spell: spell),
+            for (final spell in known)
+              SpellRow(spell: spell, style: mono, dimStyle: monoDim),
             const Heading('Worn'),
             for (final slot in EquipSlot.values)
               _WornRow(
@@ -154,42 +156,6 @@ class _Stats extends StatelessWidget {
         Text('Speed    $speed', style: mono),
         Text('Health   $hp/$maxHp', style: mono),
         Text('Mana     $mana', style: mono),
-      ],
-    ),
-  );
-}
-
-/// One known spell: what it is and what it costs, with no cast offered.
-///
-/// The school is a marking and a word, never a colour, in the Pack's own row
-/// grammar — read-only here, because a town has nothing to aim at.
-class _SpellRow extends StatelessWidget {
-  const _SpellRow({required this.spell});
-
-  final Spell spell;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 28,
-          child: Text(spell.school.schoolMarking, style: mono),
-        ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(spell.name, style: mono),
-              Text(
-                '${spell.school.schoolWord} · ${spell.manaCost} mana',
-                style: monoDim,
-              ),
-            ],
-          ),
-        ),
       ],
     ),
   );

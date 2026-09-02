@@ -5,6 +5,7 @@ import 'package:residuum_core/core.dart';
 import 'event_messages.dart';
 import 'game_bloc.dart';
 import 'item_presentation.dart';
+import 'spell_row.dart';
 
 const _ink = Color(0xFFE6EAF0);
 const _dim = Color(0xFF8A919E);
@@ -41,7 +42,24 @@ class InventoryScreen extends StatelessWidget {
             if (state.knownSpells.isNotEmpty) ...[
               const _Heading('Spells'),
               for (final spell in state.knownSpells)
-                _SpellRow(spell: spell, reason: state.castRefusal(spell)),
+                SpellRow(
+                  spell: spell,
+                  style: _mono,
+                  dimStyle: _monoDim,
+                  detail: effectOf(spell),
+                  reason: state.castRefusal(spell),
+                  trailing: TextButton(
+                    onPressed: state.castRefusal(spell) == null
+                        ? () => context.read<GameBloc>().add(
+                            CastPressed(spell.id),
+                          )
+                        : null,
+                    child: const Text(
+                      'Cast',
+                      style: TextStyle(fontFamily: 'monospace', fontSize: 12),
+                    ),
+                  ),
+                ),
             ],
             const _Heading('Worn'),
             for (final slot in EquipSlot.values)
@@ -206,75 +224,6 @@ String slotLabel(EquipSlot slot) => switch (slot) {
   EquipSlot.feet => 'feet',
 };
 
-/// One known spell: what it is, what it costs, and whether it can be cast now.
-///
-/// **The school is a marking and a word, never a colour.** The author is
-/// deuteranomalous and the standing rule is that no category may be carried by
-/// hue alone, so a Wrath row says so twice — the glyph and the word — and reads
-/// correctly in greyscale and aloud.
-///
-/// A spell that cannot be cast keeps its button and gains a sentence saying why,
-/// rather than going quietly grey. "Not enough mana" is a thing the player can
-/// act on; a dimmed control is a thing they have to guess at.
-class _SpellRow extends StatelessWidget {
-  const _SpellRow({required this.spell, required this.reason});
-
-  final Spell spell;
-
-  /// Why casting is refused right now, or null when it is not.
-  final String? reason;
-
-  @override
-  Widget build(BuildContext context) {
-    final bloc = context.read<GameBloc>();
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 28,
-            child: Text(spell.school.schoolMarking, style: _mono),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(spell.name, style: _mono),
-                Text(
-                  '${spell.school.schoolWord} · ${spell.manaCost} mana'
-                  '${_effectOf(spell)}',
-                  style: _monoDim,
-                ),
-                if (reason != null) Text(reason!, style: _monoDim),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: reason == null
-                ? () => bloc.add(CastPressed(spell.id))
-                : null,
-            child: const Text(
-              'Cast',
-              style: TextStyle(fontFamily: 'monospace', fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// What a spell does, in the numbers the player is choosing between.
-String _effectOf(Spell spell) => switch (spell.kind) {
-  SpellKind.bolt =>
-    ' · ${spell.min}-${spell.max} ${spell.type!.word} ${spell.type!.marking}',
-  SpellKind.mend => ' · heals ${spell.min}',
-  SpellKind.ward => ' · absorbs ${spell.min}',
-  SpellKind.bind => ' · holds ${spell.min} turns',
-  SpellKind.banish => ' · moves it away',
-};
-
 class _CarriedRow extends StatelessWidget {
   const _CarriedRow({
     required this.stack,
@@ -403,6 +352,7 @@ class _SkillRow extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(width: 88, child: Text(skillName(skill), style: _mono)),
+          const SizedBox(width: 8),
           SizedBox(width: 32, child: Text('${state.level}', style: _mono)),
           Expanded(
             child: ClipRRect(

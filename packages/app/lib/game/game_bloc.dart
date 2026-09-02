@@ -69,11 +69,16 @@ final class ReadPressed extends GameBlocEvent {
   final String itemId;
 }
 
-/// Cast the known spell with this id at whatever the rules choose.
+/// Cast the known spell with this id at the named target, or at whatever the
+/// rules choose when no target is named.
 final class CastPressed extends GameBlocEvent {
-  const CastPressed(this.spellId);
+  const CastPressed(this.spellId, {this.targetId});
 
   final String spellId;
+
+  /// The monster this cast names, or null for the nearest-enemy fallback —
+  /// the Pack's path, which has no aim to name.
+  final String? targetId;
 }
 
 /// Drink the first potion the hero is carrying, so the common case is one tap.
@@ -86,6 +91,14 @@ final class MapPanned extends GameBlocEvent {
   const MapPanned(this.delta);
 
   final Offset delta;
+}
+
+/// The player tapped a skill button in the battle bar, arming [spellId], or
+/// disarmed by naming null.
+final class SkillArmed extends GameBlocEvent {
+  const SkillArmed(this.spellId);
+
+  final String? spellId;
 }
 
 /// The player pressed the system back button while the crawl was on screen.
@@ -125,6 +138,7 @@ class GameViewState {
     this.walkId = 0,
     this.pan = Offset.zero,
     this.hasFled = false,
+    this.armedSpellId,
   });
 
   final GameState game;
@@ -154,6 +168,18 @@ class GameViewState {
   /// from the state, because fleeing changes nothing about the board — that is
   /// the whole of what fleeing is.
   final bool hasFled;
+
+  /// The spell the player armed in the battle skill bar, or null for none.
+  ///
+  /// A view-scoped fact like [pan] and [hasFled]: an aim is a fact about the
+  /// interface, not the rules. The same constructor-drop convention as [pan]
+  /// enforces its reset rule — any handler that builds a fresh view state
+  /// without naming this field disarms silently — and the handlers that name
+  /// it are exactly the ones that change nothing about the game: the pan, the
+  /// system back refusal, the walk refusal and the walk's own bookkeeping.
+  /// Everything that steps the game drops the arm, the completed cast
+  /// included, and the battle view closing always rides a stepped state.
+  final String? armedSpellId;
 
   int get depth => game.depth;
 
@@ -220,6 +246,76 @@ class GameViewState {
   /// Either flight of stairs is a way home, which is what makes a stairwell the
   /// place a player decides at rather than a place they pass through.
   bool get canLeave => !game.isGameOver && (canDescend || canAscend);
+
+  /// Every monster that can strike the hero right now, in floor order.
+  ///
+  /// The engine's rule mirrored exactly (`_holdsReach`): orthogonal adjacency
+  /// for every actor, and a reach greater than one reaching across the room —
+  /// but only along a line of sight the hero holds, and the distance is
+  /// Chebyshev's. One-way-sight corner pairs where the hero sees without being
+  /// seen are accepted and bounded (unit A's probe: 40 asymmetric pairs,
+  /// hero-safe direction).
+  List<Actor> get monstersHoldingReach => [
+    for (final monster in game.monsters)
+      if (GameBloc._holdsReachIn(game, monster)) monster,
+  ];
+
+  /// Whether [monster] can strike a hero standing where it stands.
+  bool _holdsReach(Actor monster) => GameBloc._holdsReachIn(game, monster);
+
+  /// The monsters that act before the hero may act again, in the order they
+  /// act — who the turn strip names.
+  ///
+  /// The exact call the engine's monster phase makes, over the state as the
+  /// hero left it: the hero's energy is what the phase schedules on **after
+  /// the action's own spend**, which is why the getter spends the threshold
+  /// here. Ambush-charged monsters already paid `actCost` from their live
+  /// energy, so the schedule reads them correctly from the state. A bound
+  /// monster owes no turn the player can watch — the clock holds it still —
+  /// so it is filtered out rather than named.
+  List<Actor> get upNext {
+    final owed = scheduleMonsterTurns(
+      heroSpeed: heroSpeed(game.hero, game.loadout),
+      heroEnergy: game.hero.energy - actCost,
+      monsterSpeeds: [for (final monster in game.monsters) monster.speed],
+      monsterEnergies: [for (final monster in game.monsters) monster.energy],
+    );
+    return [
+      for (final index in owed.monsterTurns)
+        if (!game.bound.containsKey(game.monsters[index].id))
+          game.monsters[index],
+    ];
+  }
+
+  /// The monsters still walking in, with the hero actions it takes each to
+  /// arrive — the turn strip's "n turns out" line.
+  ///
+  /// Every actor moves one tile per own turn, and a monster's turns arrive
+  /// every `heroSpeed / monsterSpeed` hero actions, so the clock-correct count
+  /// is the flow-field distance times the speed ratio, rounded up (D86). The
+  /// flow field is the same one the engine's chase runs down, so a monster
+  /// with no entry — walled off, however visible — has no way in and stands
+  /// still in the engine too; it is excluded rather than promised. Monsters
+  /// already holding reach are on the stage, not walking in.
+  List<(Actor, int)> get arrivals {
+    final field = computeFlowField(game.map, game.hero.position);
+    final walking = <(Actor, int)>[];
+    for (final monster in game.monsters) {
+      if (_holdsReach(monster)) continue;
+      final distance = field[monster.position];
+      if (distance == null) continue;
+      walking.add((monster, (distance * speed / monster.speed).ceil()));
+    }
+    return walking;
+  }
+
+  /// Whether the dungeon screen is showing a battle rather than the crawl.
+  ///
+  /// Open when something holds reach, closed when nothing does — a pure getter
+  /// over the state, with no hysteresis and no persisted flag: the fight the
+  /// rules see is the fight the player sees, and a flag that outlived the
+  /// reach would be the interface lying about the rules.
+  bool get isBattleOpen => monstersHoldingReach.isNotEmpty;
 
   /// Whether there is nothing below this floor.
   ///
@@ -321,12 +417,31 @@ class GameViewState {
   /// arithmetic would eventually offer a cast the rules refuse, or refuse one
   /// they would have allowed. The sentence it hands back is the one the log
   /// would have printed.
-  String? castRefusal(Spell spell) {
+  ///
+  /// The target branch is the mirror of core's `_castRefusal`, order included:
+  /// a named target the hero cannot see refuses before the room is called
+  /// empty, because a hero aiming at something specific should be told about
+  /// that aim and not sent looking for any enemy at all.
+  String? castRefusal(Spell spell, {String? targetId}) {
     if (game.isGameOver) return 'you are dead';
     if (game.mana < spell.manaCost) return 'not enough mana';
-    if (_needsATarget(spell) && enemiesInSight == 0) return 'no enemy in sight';
+    if (_needsATarget(spell)) {
+      if (targetId != null) {
+        if (!_namedVisibleEnemy(targetId)) {
+          return 'you cannot see that target';
+        }
+      } else if (enemiesInSight == 0) {
+        return 'no enemy in sight';
+      }
+    }
     return null;
   }
+
+  /// The monster [targetId] names, when it stands in the hero's sight.
+  bool _namedVisibleEnemy(String targetId) => game.monsters.any(
+    (monster) =>
+        monster.id == targetId && game.visible.contains(monster.position),
+  );
 
   bool _needsATarget(Spell spell) =>
       spell.kind == SpellKind.bolt ||
@@ -380,6 +495,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     on<CastPressed>(_onCastPressed);
     on<QuickDrinkPressed>(_onQuickDrinkPressed);
     on<MapPanned>(_onMapPanned);
+    on<SkillArmed>(_onSkillArmed);
     on<SystemBackPressed>(_onSystemBackPressed);
     on<FleePressed>(_onFleePressed);
   }
@@ -417,6 +533,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
           game: game,
           log: [...state.log, _watchedRefusal],
           walkId: state.walkId,
+          armedSpellId: state.armedSpellId,
         ),
       );
       return;
@@ -425,7 +542,13 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     if (path.isEmpty) return;
     final walkId = state.walkId + 1;
     emit(
-      GameViewState(game: game, log: state.log, autoPath: path, walkId: walkId),
+      GameViewState(
+        game: game,
+        log: state.log,
+        autoPath: path,
+        walkId: walkId,
+        armedSpellId: state.armedSpellId,
+      ),
     );
     add(AutoWalkAdvanced(walkId));
   }
@@ -462,7 +585,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       _act(ReadAction(event.itemId), emit);
 
   void _onCastPressed(CastPressed event, Emitter<GameViewState> emit) =>
-      _act(CastSpellAction(event.spellId), emit);
+      _act(CastSpellAction(event.spellId, targetId: event.targetId), emit);
 
   void _onQuickDrinkPressed(
     QuickDrinkPressed event,
@@ -472,6 +595,22 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     if (potion == null) return;
     _act(DrinkAction(potion.id), emit);
   }
+
+  /// Arms or disarms a skill without spending a turn.
+  ///
+  /// An aim is not a hero action: nothing steps, the walk in progress carries
+  /// through, and the same state comes back with the aim named. [pan] is not
+  /// carried — every handler but the pan's own resets the camera, and arming
+  /// is no exception.
+  void _onSkillArmed(SkillArmed event, Emitter<GameViewState> emit) => emit(
+    GameViewState(
+      game: state.game,
+      log: state.log,
+      autoPath: state.autoPath,
+      walkId: state.walkId,
+      armedSpellId: event.spellId,
+    ),
+  );
 
   /// Drags the view without spending a turn.
   ///
@@ -485,6 +624,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       autoPath: state.autoPath,
       walkId: state.walkId,
       pan: state.pan + event.delta,
+      armedSpellId: state.armedSpellId,
     ),
   );
 
@@ -524,6 +664,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
           state.game.isEncounter ? _roadBackRefusal : _backRefusal,
         ],
         walkId: state.walkId + 1,
+        armedSpellId: state.armedSpellId,
       ),
     );
   }
@@ -594,16 +735,90 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     );
   }
 
-  GameViewState _stopWalking() =>
-      GameViewState(game: state.game, log: state.log, walkId: state.walkId + 1);
+  GameViewState _stopWalking() => GameViewState(
+    game: state.game,
+    log: state.log,
+    walkId: state.walkId + 1,
+    armedSpellId: state.armedSpellId,
+  );
 
   Iterable<String> _describe(GameState before, List<GameEvent> events) {
     final names = namesIn(before);
-    return [
-      ...events.map((event) => describeEvent(event, names)).whereType<String>(),
-      ..._beats(before, events),
-    ];
+    final afar = {
+      for (final monster in before.monsters)
+        if (monster.reach > 1 &&
+            !monster.position.isOrthogonallyAdjacentTo(before.hero.position))
+          monster.id,
+    };
+    final beat = _ambushBeat(before, events, names);
+    final lines = <String>[];
+    var beatPending = beat != null;
+    for (final event in events) {
+      final sentence = describeEvent(event, names, strikesFromAfar: afar);
+      if (sentence == null) continue;
+      if (beatPending && _isMonsterAttackOnHero(event)) {
+        lines.add(beat!);
+        beatPending = false;
+      }
+      lines.add(sentence);
+    }
+    return [...lines, ..._beats(before, events)];
   }
+
+  /// The sentence that says the fight opened on the monster's terms, or null.
+  ///
+  /// **The detection rule is stateless, and its edge cases are its price.** The
+  /// beat fires when a step's events carry a monster attack on the hero and
+  /// the step's start state held no reach-holders — the fight opened because
+  /// the monster struck first. A dodged swing counts (the monster still acted
+  /// first), two monsters opening at once take one beat, and the hero's own
+  /// bump-attack never fires it: the adjacent defender is a start-state reach
+  /// holder by the snapshot rule. Two stateless mis-reads are accepted and
+  /// documented: the hero's own closing move takes the opening swing and the
+  /// beat — which reads true, the monster did strike first — and a paused
+  /// chase that re-catches fires the beat mid-fight, which is the cost of not
+  /// carrying a flag the rules never asked for.
+  String? _ambushBeat(
+    GameState before,
+    List<GameEvent> events,
+    Map<String, String> names,
+  ) {
+    if (!events.any(_isMonsterAttackOnHero)) return null;
+    if (before.monsters.any((monster) => _holdsReachIn(before, monster))) {
+      return null;
+    }
+    for (final event in events) {
+      if (_isMonsterAttackOnHero(event)) {
+        final attacker = switch (event) {
+          AttackHit(:final attackerId) => attackerId,
+          AttackDodged(:final attackerId) => attackerId,
+          _ => null,
+        };
+        if (attacker == null) continue;
+        return '${_capitalised(_nameOf(names, attacker))} gets the drop on you.';
+      }
+    }
+    return null;
+  }
+
+  /// Whether [event] is a monster swinging at the hero, hit or miss.
+  static bool _isMonsterAttackOnHero(GameEvent event) => switch (event) {
+    AttackHit(:final attackerId, :final targetId) =>
+      attackerId != heroId && targetId == heroId,
+    AttackDodged(:final attackerId) => attackerId != heroId,
+    _ => false,
+  };
+
+  /// Whether [monster] can strike a hero standing at the hero's tile in
+  /// [game] — the engine's `_holdsReach`, mirrored on public state.
+  static bool _holdsReachIn(GameState game, Actor monster) =>
+      monster.position.isOrthogonallyAdjacentTo(game.hero.position) ||
+      (monster.reach > 1 &&
+          game.visible.contains(monster.position) &&
+          monster.position.chebyshevTo(game.hero.position) <= monster.reach);
+
+  static String _nameOf(Map<String, String> names, String id) =>
+      names[id] ?? 'it';
 
   /// The lines a moment is worth, beyond the ones the rules described.
   ///

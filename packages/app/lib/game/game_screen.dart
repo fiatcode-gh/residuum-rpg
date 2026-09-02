@@ -6,6 +6,7 @@ import 'package:residuum_core/core.dart';
 import '../town/town_bloc.dart';
 import '../world/world_bloc.dart';
 import 'game_bloc.dart';
+import 'battle_view.dart';
 import 'glyph_grid.dart';
 import 'inventory_screen.dart';
 
@@ -49,15 +50,20 @@ class GameScreen extends StatelessWidget {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.all(8),
-                        child: GlyphGrid(
-                          state: state,
-                          palette: paletteFor(context.read<GameBloc>().dungeon),
-                          onTap: (position) => context.read<GameBloc>().add(
-                            TileTapped(position),
-                          ),
-                          onPan: (delta) =>
-                              context.read<GameBloc>().add(MapPanned(delta)),
-                        ),
+                        child: state.isBattleOpen
+                            ? BattleView(state: state)
+                            : GlyphGrid(
+                                state: state,
+                                palette: paletteFor(
+                                  context.read<GameBloc>().dungeon,
+                                ),
+                                onTap: (position) => context
+                                    .read<GameBloc>()
+                                    .add(TileTapped(position)),
+                                onPan: (delta) => context.read<GameBloc>().add(
+                                  MapPanned(delta),
+                                ),
+                              ),
                       ),
                     ),
                     _HitPoints(state: state),
