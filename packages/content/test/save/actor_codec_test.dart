@@ -53,6 +53,45 @@ void main() {
       expect(after.energy, 137);
     });
 
+    test('reach is read as one where the document does not name it', () {
+      // arrange — a version-3 document has no reach key; every creature the
+      // old build ever wrote strikes from adjacency
+      final written = encodeActor(_ghoul);
+      expect(written.containsKey('reach'), isFalse);
+
+      // act
+      final after = decodeActor(written);
+
+      // assert
+      expect(after.reach, 1);
+    });
+
+    test('a reach other than one survives the round trip', () {
+      // arrange
+      const spitter = Actor(
+        id: 'spitter-1',
+        name: 'the spitter',
+        glyph: 'p',
+        position: Position(3, 3),
+        hp: 7,
+        maxHp: 7,
+        attackMin: 2,
+        attackMax: 3,
+        speed: 5,
+        energy: 100,
+        reach: 3,
+      );
+
+      // act
+      final written = encodeActor(spitter);
+      final after = decodeActor(written);
+
+      // assert — omit-on-default: the key exists only when the value is not
+      // the one every older document already means
+      expect(written['reach'], 3);
+      expect(after.reach, 3);
+    });
+
     test('a list of actors keeps its order', () {
       // arrange
       final line = [

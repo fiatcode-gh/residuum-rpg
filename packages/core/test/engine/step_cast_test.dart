@@ -65,6 +65,23 @@ const Spell _banish = Spell(
   max: 0,
 );
 
+const _longRoom = '''
+####################
+#..................#
+####################''';
+
+const Set<String> _allSpells = {'firebolt', 'mend', 'ward', 'bind', 'banish'};
+
+GameState _longCaster({required Set<String> knownSpells, required int mana}) =>
+    crawl(
+      ascii: _longRoom,
+      heroAt: const Position(1, 1),
+      monsters: [ghoul('hidden', const Position(12, 1))],
+      spells: _spells,
+      knownSpells: knownSpells,
+      mana: mana,
+    );
+
 const Map<String, Spell> _spells = {
   'firebolt': _firebolt,
   'mend': _mend,
@@ -168,6 +185,19 @@ void main() {
       // assert
       expect(_reasonOf(bindEvents), 'no enemy in sight');
       expect(_reasonOf(banishEvents), 'no enemy in sight');
+    });
+
+    test('an unknown spell before it complains about the pool', () {
+      // arrange — both answers apply: the hero does not know the spell and
+      // the pool could not pay for it anyway
+      final game = _caster(mana: 0, knownSpells: const {});
+
+      // act
+      final (_, events) = step(game, const CastSpellAction('firebolt'));
+
+      // assert — the order is the contract: what the hero cannot do at all is
+      // answered before what the hero cannot pay for
+      expect(_reasonOf(events), 'you do not know that spell');
     });
 
     test('an empty pool before it complains about the empty room', () {
@@ -465,6 +495,147 @@ void main() {
       final held = [for (var x = 1; x <= 7; x++) Position(x, 2)];
       expect(held, isNot(contains(beat.to)));
       expect(beat.to, isNot(game.hero.position));
+    });
+  });
+
+  group('a cast that names its target', () {
+    test('hits the named enemy instead of the nearest', () {
+      // arrange
+      final game = _caster(
+        monsters: [
+          ghoul('near', const Position(4, 1)),
+          ghoul('far', const Position(7, 2)),
+        ],
+      );
+
+      // act
+      final (_, events) = step(
+        game,
+        const CastSpellAction('firebolt', targetId: 'far'),
+      );
+
+      // assert
+      expect(_hitIn(events).targetId, 'far');
+    });
+
+    test('refuses a target it cannot see, rather than correcting it', () {
+      // arrange — 'hidden' stands eleven tiles off in a long room, past the
+      // sight radius: a spell named at it is a refusal, never an
+      // auto-correction onto the nearest thing
+      final game = _longCaster(knownSpells: _allSpells, mana: 10);
+
+      // act
+      final (_, events) = step(
+        game,
+        const CastSpellAction('firebolt', targetId: 'hidden'),
+      );
+
+      // assert
+      expect(_reasonOf(events), 'you cannot see that target');
+    });
+
+    test('refuses a name that answers to nothing at all', () {
+      // arrange
+      final game = _caster(monsters: [ghoul('near', const Position(4, 1))]);
+
+      // act
+      final (_, events) = step(
+        game,
+        const CastSpellAction('firebolt', targetId: 'basilisk'),
+      );
+
+      // assert
+      expect(_reasonOf(events), 'you cannot see that target');
+    });
+
+    test('refuses an out-of-sight target before an empty room does', () {
+      // arrange — the named monster hides and no other enemy stands in sight;
+      // the refusal names the target the hero asked for, not the empty room
+      final game = _longCaster(knownSpells: _allSpells, mana: 10);
+
+      // act
+      final (_, named) = step(
+        game,
+        const CastSpellAction('firebolt', targetId: 'hidden'),
+      );
+      final (_, unnamed) = step(game, const CastSpellAction('firebolt'));
+
+      // assert — same room, same pool: only the named cast says the target
+      expect(_reasonOf(named), 'you cannot see that target');
+      expect(_reasonOf(unnamed), 'no enemy in sight');
+    });
+
+    test(
+      'keeps the refusal order: unknown spell before mana before target',
+      () {
+        // arrange — an unknown spell at an invisible target, in a dry pool
+        final game = _longCaster(knownSpells: const {}, mana: 0);
+
+        // act
+        final (_, events) = step(
+          game,
+          const CastSpellAction('firebolt', targetId: 'hidden'),
+        );
+
+        // assert
+        expect(_reasonOf(events), 'you do not know that spell');
+      },
+    );
+
+    test('binds the named monster, and nothing else', () {
+      // arrange
+      final game = _caster(
+        monsters: [
+          ghoul('near', const Position(4, 1)),
+          ghoul('far', const Position(7, 2)),
+        ],
+      );
+
+      // act
+      final (after, events) = step(
+        game,
+        const CastSpellAction('bind', targetId: 'far'),
+      );
+
+      // assert
+      expect(events.whereType<MonsterBound>().single.targetId, 'far');
+      expect(after.bound.keys, ['far']);
+    });
+
+    test('mends with a target named, and ignores it', () {
+      // arrange — mend and ward are cast on the hero; passing a target is not
+      // an error and not a redirection
+      final game = _caster(
+        heroHp: 12,
+        monsters: [ghoul('near', const Position(4, 1))],
+      );
+
+      // act
+      final (after, events) = step(
+        game,
+        const CastSpellAction('mend', targetId: 'near'),
+      );
+
+      // assert
+      expect(events.whereType<ActionRefused>(), isEmpty);
+      expect(events, contains(const MendCast(healed: 8)));
+      expect(after.hero.hp, 20);
+    });
+
+    test('a cast without a target keeps the nearest fallback', () {
+      // arrange
+      final game = _caster(
+        monsters: [
+          ghoul('near', const Position(4, 1)),
+          ghoul('far', const Position(7, 2)),
+        ],
+      );
+
+      // act
+      final (_, events) = step(game, const CastSpellAction('firebolt'));
+
+      // assert
+      expect(_hitIn(events).targetId, 'near');
     });
   });
 

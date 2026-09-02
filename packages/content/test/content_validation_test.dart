@@ -25,7 +25,7 @@ void main() {
       final glyphs = creatures.map((creature) => creature.glyph).toSet();
 
       // assert
-      expect(creatures, hasLength(5));
+      expect(creatures, hasLength(6));
       expect(ids, hasLength(creatures.length));
       expect(glyphs, hasLength(creatures.length));
     });
@@ -86,6 +86,73 @@ void main() {
       expect(actor.position, const Position(3, 4));
     });
 
+    test(
+      'every creature strikes from adjacency, until a ruling says otherwise',
+      () {
+        // arrange — every creature in the game, named by id: the fourteen the
+        // game shipped with and the one ruling that moved. (The old pin
+        // covered only the crypt's five, and its comment claimed the
+        // fourteen; the nine themed creatures and both bosses were unpinned.)
+
+        // act
+        final creatures = [
+          ...bestiary,
+          for (final dungeon in themedDungeons) ...dungeon.bestiary,
+          for (final dungeon in themedDungeons) dungeon.boss,
+        ];
+        final reaches = {
+          for (final creature in creatures) creature.id: creature.reach,
+        };
+
+        // assert — reach = 1 is what keeps every pre-spitter creature behaving
+        // exactly as it did before the field existed, which is what lets the
+        // band trail attribute all movement to the ambush rule and the
+        // spitter; the spitter's 3 is the D72/D74 ruling, verbatim
+        expect(reaches, {
+          'rat': 1,
+          'wolf': 1,
+          'ghoul': 1,
+          'skeleton': 1,
+          'wight': 1,
+          'crab': 1,
+          'drowned': 1,
+          'eel': 1,
+          'hag': 1,
+          'deserter': 1,
+          'hound': 1,
+          'man-at-arms': 1,
+          'drowned-captain': 1,
+          'castellan': 1,
+          'spitter': 3,
+        });
+      },
+    );
+
+    test('the spitter shoots from three tiles away', () {
+      // arrange
+      const creature = spitter;
+
+      // act
+      final stat = (
+        creature.id,
+        creature.name,
+        creature.glyph,
+        creature.hp,
+        creature.attackMin,
+        creature.attackMax,
+        creature.speed,
+        creature.dropChance,
+        creature.pierce,
+        creature.reach,
+      );
+
+      // assert — the bestiary ruling as ruled (D72/D74), amended by D78:
+      // the old pin read hp 7 and the glass-cannon ruling took it to four
+      expect(stat, ('spitter', 'the spitter', 'p', 4, 2, 3, 5, 40, 0, 3));
+      expect(creature.resists, isEmpty);
+      expect(creature.vulnerableTo, isEmpty);
+    });
+
     test('an unknown creature id is refused', () {
       // arrange
       const id = 'basilisk';
@@ -99,6 +166,41 @@ void main() {
   });
 
   group('the spawn tables', () {
+    test("the crypt's shallow tables carry the spitter at weight one", () {
+      // act
+      final shallow = {
+        for (final depth in [1, 2])
+          depth: spawnTableFor(
+            depth,
+          ).entries.map((entry) => (entry.creatureId, entry.weight)).toList(),
+      };
+
+      // assert — exact entries, counts unchanged
+      expect(shallow[1], [('rat', 6), ('wolf', 1), ('spitter', 1)]);
+      expect(shallow[2], [
+        ('rat', 3),
+        ('wolf', 2),
+        ('ghoul', 2),
+        ('spitter', 1),
+      ]);
+    });
+
+    test('the spitter is a shallow creature and stands nowhere deep', () {
+      // arrange — the shallow-exempt set earns its exemption by where a
+      // creature can stand, not by a list: the spitter is exempt because no
+      // depth three or deeper table can ever roll one
+      const deep = [3, 4, 5];
+
+      // act
+      final placed = [
+        for (final depth in deep)
+          for (final entry in spawnTableFor(depth).entries) entry.creatureId,
+      ];
+
+      // assert
+      expect(placed, isNot(contains('spitter')));
+    });
+
     test('every depth from one to five has a table', () {
       // arrange
       const depths = allDepths;
@@ -323,7 +425,7 @@ void main() {
       final glyphs = everything.map((creature) => creature.glyph).toSet();
 
       // assert
-      expect(everything, hasLength(14));
+      expect(everything, hasLength(15));
       expect(ids, hasLength(everything.length));
       expect(glyphs, hasLength(everything.length));
     });

@@ -110,9 +110,12 @@ void main() {
       // assert — named rather than counted, because a nuisance is a design
       // decision and a test that hides which ones is a test that lets a deep
       // creature quietly become one. The list is not a grant: nothing is
-      // written down as exempt anywhere. These four are the creatures that
-      // stand only on depths one and two, and the spawn tables are what say so.
-      expect(shallow, {'rat', 'wolf', 'ghoul', 'crab'});
+      // written down as exempt anywhere. These five are the creatures that
+      // stand only on depths one and two, and the spawn tables are what say
+      // so. The spitter joined them this unit (ledger D76); the old pin was
+      // {'rat', 'wolf', 'ghoul', 'crab'} and it moved because the set is
+      // computed from the tables, not because any exemption was granted.
+      expect(shallow, {'rat', 'wolf', 'ghoul', 'crab', 'spitter'});
     });
 
     test('the exempt four are still stopped by mail, which is the point', () {

@@ -16,9 +16,10 @@ class Actor {
     required this.energy,
     this.dropChance = 0,
     this.pierce = 0,
+    this.reach = 1,
     this.resists = const {},
     this.vulnerableTo = const {},
-  });
+  }) : assert(reach >= 1, 'reach must be at least one');
 
   /// Unique within a crawl: `hero`, or `ghoul-1`.
   final String id;
@@ -71,6 +72,15 @@ class Actor {
   /// monster has no armour to get through.
   final int pierce;
 
+  /// How many tiles away this actor can strike, measured by Chebyshev.
+  ///
+  /// One is melee: orthogonal adjacency only, exactly what every creature did
+  /// before the field existed. More than one reaches across the room — but
+  /// only along a line of sight, and the blow itself is an ordinary melee
+  /// blow: the same dodge gate, the same armour, the same floor of one. See
+  /// `step` for the branch that spends it.
+  final int reach;
+
   /// The damage types this actor shrugs off: a bolt of one is halved.
   ///
   /// **Not in [copyWith], and that is the contract rather than an omission.**
@@ -103,6 +113,7 @@ class Actor {
     energy: energy ?? this.energy,
     dropChance: dropChance,
     pierce: pierce,
+    reach: reach,
     resists: resists,
     vulnerableTo: vulnerableTo,
   );

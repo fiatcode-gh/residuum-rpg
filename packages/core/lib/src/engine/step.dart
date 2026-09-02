@@ -63,6 +63,7 @@ import 'position.dart';
 
   final events = <GameEvent>[];
   final seenBefore = _visibleMonsterIds(state);
+  final reachedAtStart = _reachedAtStart(state);
   final monsters = [...state.monsters];
   var hero = state.hero.copyWith(energy: state.hero.energy - actCost);
   var loadout = state.loadout;
@@ -140,9 +141,9 @@ import 'position.dart';
           if (item.id != itemId) item,
       ];
       events.add(SpellLearned(book: book, spell: learned));
-    case CastSpellAction(:final spellId):
+    case CastSpellAction(:final spellId, :final targetId):
       final spell = state.spells[spellId]!;
-      final cast = _castSpell(state, spell, hero, monsters, events);
+      final cast = _castSpell(state, spell, hero, monsters, events, targetId);
       hero = cast.hero;
       loadout = loadout.withSkills(
         _train(spell.school, loadout.skills, events),
@@ -179,6 +180,7 @@ import 'position.dart';
     monsters,
     warded,
     bound,
+    reachedAtStart,
     events,
   );
   hero = phase.hero;
@@ -221,16 +223,35 @@ import 'position.dart';
 /// **The order is the contract.** An empty pool is answered before an empty
 /// room, because a hero who could not have cast the spell at anything should be
 /// told that rather than sent looking for a target they could not have used.
-String? _castRefusal(GameState state, String spellId) {
+String? _castRefusal(GameState state, String spellId, String? targetId) {
   final spell = state.spells[spellId];
   if (spell == null || !state.knownSpells.contains(spellId)) {
     return 'you do not know that spell';
   }
   if (state.mana < spell.manaCost) return 'not enough mana';
-  if (_needsATarget(spell.kind) &&
-      nearestVisibleEnemy(state.monsters, state.visible, state.hero.position) ==
-          null) {
-    return 'no enemy in sight';
+  if (_needsATarget(spell.kind)) {
+    if (targetId != null) {
+      if (_namedVisibleEnemy(state, targetId) == null) {
+        return 'you cannot see that target';
+      }
+    } else if (nearestVisibleEnemy(
+          state.monsters,
+          state.visible,
+          state.hero.position,
+        ) ==
+        null) {
+      return 'no enemy in sight';
+    }
+  }
+  return null;
+}
+
+/// The monster [targetId] names, when it stands in the hero's sight.
+Actor? _namedVisibleEnemy(GameState state, String targetId) {
+  for (final monster in state.monsters) {
+    if (monster.id == targetId && state.visible.contains(monster.position)) {
+      return monster;
+    }
   }
   return null;
 }
@@ -271,6 +292,7 @@ _Cast _castSpell(
   Actor hero,
   List<Actor> monsters,
   List<GameEvent> events,
+  String? targetId,
 ) {
   switch (spell.kind) {
     case SpellKind.mend:
@@ -283,13 +305,13 @@ _Cast _castSpell(
       events.add(WardRaised(absorbs: spell.min));
       return _Cast(hero, warded: spell.min);
     case SpellKind.bolt:
-      return _boltAt(state, spell, hero, monsters, events);
+      return _boltAt(state, spell, hero, monsters, events, targetId);
     case SpellKind.bind:
-      final target = _targetOf(state, monsters);
+      final target = _targetOf(state, monsters, targetId);
       events.add(MonsterBound(targetId: target.id, turns: spell.min));
       return _Cast(hero, bound: {...state.bound, target.id: spell.min});
     case SpellKind.banish:
-      _banish(state, monsters, events);
+      _banish(state, monsters, events, targetId);
       return _Cast(hero);
   }
 }
@@ -300,8 +322,9 @@ _Cast _boltAt(
   Actor hero,
   List<Actor> monsters,
   List<GameEvent> events,
+  String? targetId,
 ) {
-  final target = _targetOf(state, monsters);
+  final target = _targetOf(state, monsters, targetId);
   final index = monsters.indexOf(target);
   final roll = state.rng.rollRange(spell.min, spell.max);
   final bite = _biteOf(target, spell.type!);
@@ -341,8 +364,13 @@ SpellBite _biteOf(Actor target, DamageType type) {
 /// order is [byRowThenColumn]'s, walked rather than sorted, and it is what makes
 /// the draw mean the same thing twice: an index only names a tile if the list it
 /// indexes into is in a stated order.
-void _banish(GameState state, List<Actor> monsters, List<GameEvent> events) {
-  final target = _targetOf(state, monsters);
+void _banish(
+  GameState state,
+  List<Actor> monsters,
+  List<GameEvent> events,
+  String? targetId,
+) {
+  final target = _targetOf(state, monsters, targetId);
   final index = monsters.indexOf(target);
   final taken = _occupiedTiles(state.hero, monsters, target.id);
   final candidates = <Position>[
@@ -361,8 +389,17 @@ void _banish(GameState state, List<Actor> monsters, List<GameEvent> events) {
   );
 }
 
-Actor _targetOf(GameState state, List<Actor> monsters) =>
-    nearestVisibleEnemy(monsters, state.visible, state.hero.position)!;
+/// What this cast lands on: the monster it named, or the nearest enemy in
+/// sight.
+///
+/// A named target was validated visible by `_castRefusal` before this ran, so
+/// the fallback can never fire for one; the `!` reads the rule, not a guess.
+Actor _targetOf(GameState state, List<Actor> monsters, String? targetId) {
+  if (targetId != null) {
+    return _namedVisibleEnemy(state, targetId)!;
+  }
+  return nearestVisibleEnemy(monsters, state.visible, state.hero.position)!;
+}
 
 /// [bound] with every counter whose monster is no longer on the floor dropped.
 ///
@@ -445,8 +482,8 @@ GameEvent? _refuse(GameState state, GameAction action) {
           itemId,
         ),
       );
-    case CastSpellAction(:final spellId):
-      return _refusedBy(_castRefusal(state, spellId));
+    case CastSpellAction(:final spellId, :final targetId):
+      return _refusedBy(_castRefusal(state, spellId, targetId));
     case DropAction(:final itemId):
       if (_carried(state, itemId) == null) {
         return const ActionRefused(reason: 'you are not carrying that');
@@ -562,6 +599,7 @@ _MonsterPhase _monsterPhase(
   List<Actor> monsters,
   int warded,
   Map<String, int> bound,
+  Set<String> reachedAtStart,
   List<GameEvent> events,
 ) {
   final owed = scheduleMonsterTurns(
@@ -575,7 +613,44 @@ _MonsterPhase _monsterPhase(
   var trained = loadout;
   var standing = warded;
   var held = bound;
-  for (final index in owed.monsterTurns) {
+
+  // **The ambush opening: reach is a debt the monster collects.** A monster
+  // the hero's own move just handed reach to — walked up to, or closed with —
+  // swings in this phase even when the clock owes it nothing, and an owed
+  // opener's opening IS its owed turn, spent here rather than again below.
+  // The opening is a turn, never a bonus: an unowed opener's energy is
+  // charged at the end of the phase, an owed one's was spent by the schedule,
+  // and either way the monster swings once and once only. Bound monsters get
+  // nothing: the clock is holding them still, and a hold that granted a free
+  // swing would be a hold worth less than standing still.
+  final pending = [...owed.monsterTurns];
+  final charged = <int>{};
+  for (var index = 0; index < monsters.length; index++) {
+    final monster = monsters[index];
+    if (!monster.isAlive) continue;
+    if (bound.containsKey(monster.id)) continue;
+    if (reachedAtStart.contains(monster.id)) continue;
+    if (!_holdsReach(state, monster, wounded.position)) continue;
+    final strike = _monsterStrikes(
+      state,
+      monster,
+      trained,
+      wounded,
+      standing,
+      events,
+    );
+    wounded = strike.hero;
+    trained = trained.withSkills(strike.skills);
+    standing = strike.standing;
+    final owedIndex = pending.indexOf(index);
+    if (owedIndex >= 0) {
+      pending.removeAt(owedIndex);
+    } else {
+      charged.add(index);
+    }
+  }
+
+  for (final index in pending) {
     if (!wounded.isAlive) break;
     final monster = monsters[index];
     if (held[monster.id] case final turns?) {
@@ -583,15 +658,34 @@ _MonsterPhase _monsterPhase(
       continue;
     }
     if (monster.position.isOrthogonallyAdjacentTo(wounded.position)) {
-      trained = trained.withSkills(
-        _defend(state, monster, trained, events, wounded.id, standing, (
-          damage,
-          left,
-        ) {
-          wounded = wounded.copyWith(hp: wounded.hp - damage);
-          standing = left;
-        }),
+      final strike = _monsterStrikes(
+        state,
+        monster,
+        trained,
+        wounded,
+        standing,
+        events,
       );
+      wounded = strike.hero;
+      trained = trained.withSkills(strike.skills);
+      standing = strike.standing;
+      continue;
+    }
+    if (_holdsReach(state, monster, wounded.position)) {
+      // **A spitter stands its ground while it can shoot.** The blow is an
+      // ordinary melee blow — _defend verbatim, no to-hit roll, no damage
+      // type — only delivered from where the monster stands.
+      final strike = _monsterStrikes(
+        state,
+        monster,
+        trained,
+        wounded,
+        standing,
+        events,
+      );
+      wounded = strike.hero;
+      trained = trained.withSkills(strike.skills);
+      standing = strike.standing;
       continue;
     }
     final target = flowFieldStep(
@@ -604,11 +698,38 @@ _MonsterPhase _monsterPhase(
     events.add(
       ActorMoved(actorId: monster.id, from: monster.position, to: target),
     );
-    monsters[index] = monster.copyWith(position: target);
+    final moved = monster.copyWith(position: target);
+    monsters[index] = moved;
+    // **The lunge is the chase catching the hero.** A monster whose step
+    // lands it in reach swings in the same phase, with _defend's own draws —
+    // and the swing is an ambush, not a free rider on the move: the monster's
+    // owed turn bought the step, so the swing is charged [actCost] and spent
+    // against the turn the clock would have owed it next. Front-loaded, not
+    // doubled. The gate is the snapshot: the ambush fires on reach *newly
+    // created* this turn, so a monster that held reach at the turn's start
+    // and merely re-caught the fleeing hero waits for the swing it is owed —
+    // measured: without the gate, the charged lunge on every chaser dropped
+    // the crypt to 17/40, under the suite's own still-unfair floor.
+    if (!reachedAtStart.contains(monster.id) &&
+        _holdsReach(state, moved, wounded.position)) {
+      final strike = _monsterStrikes(
+        state,
+        moved,
+        trained,
+        wounded,
+        standing,
+        events,
+      );
+      wounded = strike.hero;
+      trained = trained.withSkills(strike.skills);
+      standing = strike.standing;
+      charged.add(index);
+    }
   }
   for (var index = 0; index < monsters.length; index++) {
     monsters[index] = monsters[index].copyWith(
-      energy: owed.monsterEnergies[index],
+      energy:
+          owed.monsterEnergies[index] - (charged.contains(index) ? actCost : 0),
     );
   }
   return _MonsterPhase(
@@ -617,6 +738,62 @@ _MonsterPhase _monsterPhase(
     standing,
     held,
   );
+}
+
+/// Whether [monster] can strike a hero standing at [heroPosition] right now.
+///
+/// Adjacency for every actor; a reach greater than one reaches across the
+/// room — but only along a line of sight the hero holds, and the distance is
+/// Chebyshev's. It draws nothing: every input is already on the state.
+bool _holdsReach(GameState state, Actor monster, Position heroPosition) {
+  if (monster.position.isOrthogonallyAdjacentTo(heroPosition)) return true;
+  return monster.reach > 1 &&
+      state.visible.contains(monster.position) &&
+      monster.position.chebyshevTo(heroPosition) <= monster.reach;
+}
+
+/// Every monster holding reach on the hero, as the turn begins.
+///
+/// The snapshot is what makes the ambush an opening and not a tax: a monster
+/// that could already strike gains nothing it did not have, and one that the
+/// hero's own move just armed does.
+Set<String> _reachedAtStart(GameState state) => {
+  for (final monster in state.monsters)
+    if (_holdsReach(state, monster, state.hero.position)) monster.id,
+};
+
+/// The hero, defence and skills after one monster's swing.
+///
+/// Every branch that resolves a monster attack — the owed turn, the lunge,
+/// the ambush opening — spends [ _defend] through this one shape, so the
+/// dodge gate, the armour and the ward behave identically no matter which of
+/// the three reasons the swing happened for.
+class _Strike {
+  const _Strike(this.hero, this.skills, this.standing);
+
+  final Actor hero;
+  final Map<SkillId, SkillState> skills;
+  final int standing;
+}
+
+_Strike _monsterStrikes(
+  GameState state,
+  Actor monster,
+  Loadout loadout,
+  Actor hero,
+  int standing,
+  List<GameEvent> events,
+) {
+  var wounded = hero;
+  var left = standing;
+  final skills = _defend(state, monster, loadout, events, hero.id, standing, (
+    damage,
+    warded,
+  ) {
+    wounded = wounded.copyWith(hp: wounded.hp - damage);
+    left = warded;
+  });
+  return _Strike(wounded, skills, left);
 }
 
 /// [bound] with [id]'s count spent by one, and the entry gone when it runs out.

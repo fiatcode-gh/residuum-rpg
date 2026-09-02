@@ -63,7 +63,11 @@ const Map<int, SpawnTable> spawnTables = {
   1: SpawnTable(
     minCount: 3,
     maxCount: 4,
-    entries: [SpawnEntry('rat', 6), SpawnEntry('wolf', 1)],
+    entries: [
+      SpawnEntry('rat', 6),
+      SpawnEntry('wolf', 1),
+      SpawnEntry('spitter', 1),
+    ],
   ),
   2: SpawnTable(
     minCount: 4,
@@ -72,6 +76,7 @@ const Map<int, SpawnTable> spawnTables = {
       SpawnEntry('rat', 3),
       SpawnEntry('wolf', 2),
       SpawnEntry('ghoul', 2),
+      SpawnEntry('spitter', 1),
     ],
   ),
   3: SpawnTable(

@@ -42,14 +42,21 @@ int _digest(Floor floor) {
 /// the last existing draw, from a generator of their own, so not one of these
 /// numbers may move — and the reason to pin them rather than to argue it is that
 /// the argument was made once before, about drop tables, and was wrong.
+/// **The spitter re-pinned three of these digests** (the old values were
+/// `crypt 1 1: 635912583`, `crypt 1 2: 1016437778`, `crypt 909 2: 600797202`):
+/// the digest covers the monster roster as well as the terrain, and the
+/// depth-one and depth-two tables now roll the spitter. Every other floor —
+/// world 909's whole crypt and every themed dungeon — is digest-identical,
+/// which is the claim the pin was built to hold and the reason the three that
+/// moved are the only floors the tables were allowed to move.
 const Map<String, int> _layoutsBeforeGathering = {
-  'crypt 1 1': 635912583,
-  'crypt 1 2': 1016437778,
+  'crypt 1 1': 483268997,
+  'crypt 1 2': 923568553,
   'crypt 1 3': 39520538,
   'crypt 1 4': 490748196,
   'crypt 1 5': 236594728,
   'crypt 909 1': 274595190,
-  'crypt 909 2': 600797202,
+  'crypt 909 2': 462066987,
   'crypt 909 3': 24071604,
   'crypt 909 4': 283613421,
   'crypt 909 5': 705801560,

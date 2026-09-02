@@ -41,6 +41,12 @@ Set<Position> decodePositions(Map<String, Object?> from, String key) => {
 /// from content, and the reason is [FloorMemory]'s: a suspended crawl is frozen
 /// mid-fight, so a monster that came back on full hit points at its spawn tile
 /// would be a different monster from the one the player walked away from.
+///
+/// [reach] is the one exception, and it is deliberate: the field defaults to
+/// one, and one is what every document written before the field existed means,
+/// so it is written **only when it is not one** and read as one where absent.
+/// An unconditional encode would rewrite every golden document in the game for
+/// a number nobody's creature carries.
 Map<String, Object?> encodeActor(Actor actor) => {
   'id': actor.id,
   'name': actor.name,
@@ -57,6 +63,7 @@ Map<String, Object?> encodeActor(Actor actor) => {
   'pierce': actor.pierce,
   'resists': encodeDamageTypes(actor.resists),
   'vulnerableTo': encodeDamageTypes(actor.vulnerableTo),
+  if (actor.reach != 1) 'reach': actor.reach,
 };
 
 /// Every damage type in [types], as sorted names.
@@ -108,6 +115,7 @@ Actor decodeActor(Object? from) {
     energy: intAt(from, 'energy'),
     dropChance: intAt(from, 'dropChance'),
     pierce: intAt(from, 'pierce'),
+    reach: from.containsKey('reach') ? intAt(from, 'reach') : 1,
     resists: decodeDamageTypes(from, 'resists'),
     vulnerableTo: decodeDamageTypes(from, 'vulnerableTo'),
   );

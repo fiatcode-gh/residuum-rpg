@@ -16,6 +16,7 @@ class CreatureSpec {
     required this.speed,
     required this.dropChance,
     this.pierce = 0,
+    this.reach = 1,
     this.resists = const {},
     this.vulnerableTo = const {},
   });
@@ -46,6 +47,13 @@ class CreatureSpec {
   /// difficulty curve can be bought off in the armoury is not a dungeon.
   final int pierce;
 
+  /// How many tiles away this creature strikes: one is orthogonal adjacency
+  /// and nothing else, more than one reaches across the room along a line of
+  /// sight. Defaults to one, which is the behavior every creature shipped
+  /// with — a validation test pins that by id, and the save codec omits the
+  /// field whenever it holds the default so older documents read unchanged.
+  final int reach;
+
   /// The damage types this creature shrugs off: a bolt of one is halved.
   ///
   /// **A content field and nothing more.** It changes no melee number, so a
@@ -74,6 +82,7 @@ class CreatureSpec {
     energy: actThreshold,
     dropChance: dropChance,
     pierce: pierce,
+    reach: reach,
     resists: resists,
     vulnerableTo: vulnerableTo,
   );
@@ -144,10 +153,35 @@ const CreatureSpec wight = CreatureSpec(
   vulnerableTo: {DamageType.fire},
 );
 
+/// The first creature that does not have to walk up to you.
+///
+/// It stands where it can see you and spits from up to three tiles away —
+/// Chebyshev, along a line of sight — and walks only when nothing is in
+/// reach or in view. A glass cannon: four hit points — one clean exchange
+/// for a kit sword — a slow crawl, and a blow that mail mostly turns aside.
+/// Its teeth are the ambush: the turn it steps into a shooting line is the
+/// turn it shoots, and the chase is no longer a matter of outrunning claws.
+/// (The ruling's history is in the ledger: D72/D74 wrote it modest at seven
+/// hit points; D78 took the seven to four after the trail showed the shots,
+/// not the shooter, carry the danger.)
+
+const CreatureSpec spitter = CreatureSpec(
+  id: 'spitter',
+  name: 'the spitter',
+  glyph: 'p',
+  hp: 4,
+  attackMin: 2,
+  attackMax: 3,
+  speed: 5,
+  dropChance: 40,
+  reach: 3,
+);
+
 /// Every creature in the game, in the order they are first met.
 const List<CreatureSpec> bestiary = [
   giantRat,
   direWolf,
+  spitter,
   ghoul,
   skeleton,
   wight,
