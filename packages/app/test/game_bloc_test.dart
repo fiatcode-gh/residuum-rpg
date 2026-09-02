@@ -1637,4 +1637,624 @@ void _lootTests() {
       addTearDown(bloc.close);
     });
   });
+
+  group('the cast refusal mirror (core contract)', () {
+    Actor spitter(Position at) => Actor(
+      id: 'spitter-1',
+      name: 'the spitter',
+      glyph: 'p',
+      position: at,
+      hp: 4,
+      maxHp: 4,
+      attackMin: 2,
+      attackMax: 3,
+      speed: 5,
+      energy: actThreshold,
+      reach: 3,
+    );
+
+    test('a named target out of sight refuses with the sentence core uses', () {
+      // arrange - one ghoul in sight, one spitter standing behind the hero's
+      // sight line: the nearest-fallback path is live, the named one is not
+      final game = arenaGame(
+        heroAt: const Position(1, 1),
+        monsters: [ghoul(const Position(1, 2)), spitter(const Position(5, 3))],
+        spells: spellsById,
+        knownSpells: const {'firebolt'},
+        mana: 10,
+      ).copyWith(visible: {const Position(1, 1), const Position(1, 2)});
+      final state = GameViewState(game: game, log: const []);
+
+      // act
+      final appSentence = state.castRefusal(
+        state.knownSpells.single,
+        targetId: 'spitter-1',
+      );
+      final (_, events) = step(
+        game,
+        CastSpellAction('firebolt', targetId: 'spitter-1'),
+      );
+      final coreSentence = events
+          .whereType<ActionRefused>()
+          .map((event) => event.reason)
+          .single;
+
+      // assert - both sides quoted, the same sentence by pin
+      expect(appSentence, 'you cannot see that target');
+      expect(coreSentence, 'you cannot see that target');
+      expect(appSentence, coreSentence);
+    });
+
+    test(
+      'the pack path keeps the nearest fallback when no target is named',
+      () {
+        // arrange
+        final game = arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [
+            ghoul(const Position(1, 2)),
+            spitter(const Position(5, 3)),
+          ],
+          spells: spellsById,
+          knownSpells: const {'firebolt'},
+          mana: 10,
+        ).copyWith(visible: {const Position(1, 1), const Position(1, 2)});
+        final state = GameViewState(game: game, log: const []);
+
+        // act
+        final refusal = state.castRefusal(state.knownSpells.single);
+
+        // assert
+        expect(refusal, isNull);
+      },
+    );
+  });
+
+  group('the battle derived state', () {
+    Actor spitter(Position at, {int energy = actThreshold}) => Actor(
+      id: 'spitter-1',
+      name: 'the spitter',
+      glyph: 'p',
+      position: at,
+      hp: 4,
+      maxHp: 4,
+      attackMin: 2,
+      attackMax: 3,
+      speed: 5,
+      energy: energy,
+      reach: 3,
+    );
+
+    GameState inSight(GameState game, Set<Position> visible) =>
+        game.copyWith(visible: visible);
+
+    test('an adjacent monster holds reach', () {
+      // arrange
+      final state = GameViewState(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [ghoul(const Position(3, 1))],
+        ),
+        log: const [],
+      );
+
+      // act
+      final holders = state.monstersHoldingReach;
+
+      // assert
+      expect(holders.map((monster) => monster.id), ['ghoul-1']);
+    });
+
+    test('a spitter within reach along the line of sight holds reach', () {
+      // arrange - two tiles away, seen, inside its reach of three
+      final game = arenaGame(
+        heroAt: const Position(1, 1),
+        monsters: [spitter(const Position(1, 3))],
+      );
+      final state = GameViewState(
+        game: inSight(game, {const Position(1, 1), const Position(1, 3)}),
+        log: const [],
+      );
+
+      // act
+      final holders = state.monstersHoldingReach;
+
+      // assert
+      expect(holders.map((monster) => monster.id), ['spitter-1']);
+    });
+
+    test('a spitter out of sight holds no reach, however near', () {
+      // arrange - two tiles away but behind the hero's sight line
+      final game = arenaGame(
+        heroAt: const Position(1, 1),
+        monsters: [spitter(const Position(1, 3))],
+      );
+      final state = GameViewState(
+        game: inSight(game, {const Position(1, 1)}),
+        log: const [],
+      );
+
+      // act
+      final holders = state.monstersHoldingReach;
+
+      // assert
+      expect(holders, isEmpty);
+    });
+
+    test('a spitter beyond its reach holds no reach, however visible', () {
+      // arrange - four tiles away, seen, outside a reach of three
+      final game = arenaGame(
+        heroAt: const Position(1, 1),
+        monsters: [spitter(const Position(1, 5))],
+      );
+      final state = GameViewState(
+        game: inSight(game, {const Position(1, 1), const Position(1, 5)}),
+        log: const [],
+      );
+
+      // act
+      final holders = state.monstersHoldingReach;
+
+      // assert
+      expect(holders, isEmpty);
+    });
+
+    test('an empty room holds no reach', () {
+      // arrange
+      final state = GameViewState(
+        game: arenaGame(heroAt: const Position(3, 2)),
+        log: const [],
+      );
+
+      // act
+      final holders = state.monstersHoldingReach;
+
+      // assert
+      expect(holders, isEmpty);
+    });
+
+    test('upNext names the monsters that act before the hero again', () {
+      // arrange - a fast ghoul that owes two turns and a spitter that owes
+      // none: the hero has just spent its threshold
+      final game = arenaGame(
+        heroAt: const Position(3, 2),
+        monsters: [
+          ghoul(const Position(3, 1), speed: 20),
+          spitter(const Position(5, 2), energy: 0),
+        ],
+      );
+      final state = GameViewState(game: game, log: const []);
+
+      // act
+      final upNext = state.upNext;
+
+      // assert - the fast monster twice, the spent spitter not at all
+      expect(upNext.map((monster) => monster.id), ['ghoul-1', 'ghoul-1']);
+    });
+
+    test('upNext sits a bound monster out', () {
+      // arrange - the ghoul owes a turn but the clock is holding it
+      final game = arenaGame(
+        heroAt: const Position(3, 2),
+        monsters: [ghoul(const Position(3, 1)), spitter(const Position(5, 2))],
+      ).copyWith(bound: {'ghoul-1': 3});
+      final state = GameViewState(game: game, log: const []);
+
+      // act
+      final upNext = state.upNext;
+
+      // assert
+      expect(upNext.map((monster) => monster.id), ['spitter-1']);
+    });
+
+    test(
+      'the battle view opens when reach is held and closes when it empties',
+      () {
+        // arrange - adjacent, then disengaged by one step of distance
+        final engaged = GameViewState(
+          game: arenaGame(
+            heroAt: const Position(3, 2),
+            monsters: [ghoul(const Position(3, 1))],
+          ),
+          log: const [],
+        );
+        final disengaged = GameViewState(
+          game: engaged.game.copyWith(monsters: [ghoul(const Position(3, 4))]),
+          log: const [],
+        );
+
+        // act
+        final open = engaged.isBattleOpen;
+        final closed = disengaged.isBattleOpen;
+
+        // assert
+        expect(open, isTrue);
+        expect(closed, isFalse);
+      },
+    );
+
+    test('a dead monster closes the battle view', () {
+      // arrange
+      final engaged = GameViewState(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [ghoul(const Position(3, 1))],
+        ),
+        log: const [],
+      );
+      final cleared = GameViewState(
+        game: engaged.game.copyWith(monsters: const []),
+        log: const [],
+      );
+
+      // act
+      final open = engaged.isBattleOpen;
+      final closed = cleared.isBattleOpen;
+
+      // assert
+      expect(open, isTrue);
+      expect(closed, isFalse);
+    });
+  });
+
+  group('arrivals (turns to arrival, D86 formula)', () {
+    Actor spitterAt(Position at) => Actor(
+      id: 'spitter-1',
+      name: 'the spitter',
+      glyph: 'p',
+      position: at,
+      hp: 4,
+      maxHp: 4,
+      attackMin: 2,
+      attackMax: 3,
+      speed: 5,
+      energy: actThreshold,
+      reach: 3,
+    );
+
+    Actor walker(Position at, {int speed = 10, String id = 'walker-1'}) =>
+        Actor(
+          id: id,
+          name: 'the walker',
+          glyph: 'w',
+          position: at,
+          hp: 10,
+          maxHp: 10,
+          attackMin: 1,
+          attackMax: 1,
+          speed: speed,
+          energy: actThreshold,
+        );
+
+    test(
+      'a monster five tiles out at equal speed reads five turns, not one',
+      () {
+        // arrange - the D86 counterexample: the spec's ÷ would have read 1
+        const long = '''
+#########
+#.......#
+#.......#
+#.......#
+#.......#
+#.......#
+#.......#
+#########''';
+        final game = arenaGame(
+          ascii: long,
+          heroAt: const Position(1, 1),
+          monsters: [walker(const Position(1, 6))],
+        );
+        final state = GameViewState(game: game, log: const []);
+
+        // act
+        final arrivals = state.arrivals;
+
+        // assert
+        expect(arrivals.single.$1.id, 'walker-1');
+        expect(arrivals.single.$2, 5);
+      },
+    );
+
+    test('a slower monster takes more hero actions to arrive', () {
+      // arrange - two tiles of floor, monster half the hero's speed
+      final game = arenaGame(
+        heroAt: const Position(3, 2),
+        monsters: [walker(const Position(5, 2), speed: 5)],
+      );
+      final state = GameViewState(game: game, log: const []);
+
+      // act
+      final arrivals = state.arrivals;
+
+      // assert - ceil(2 × 10 / 5): more than the walked distance proves the
+      // ratio is doing work
+      expect(arrivals.single.$2, 4);
+    });
+
+    test('a fast monster arrives in fewer hero actions', () {
+      // arrange - two tiles of floor, monster twice the hero's speed
+      final game = arenaGame(
+        heroAt: const Position(3, 2),
+        monsters: [walker(const Position(5, 2), speed: 20)],
+      );
+      final state = GameViewState(game: game, log: const []);
+
+      // act
+      final arrivals = state.arrivals;
+
+      // assert - ceil(2 × 10 / 20)
+      expect(arrivals.single.$2, 1);
+    });
+
+    test('a monster holding reach is on the stage, not walking in', () {
+      // arrange
+      final game = arenaGame(
+        heroAt: const Position(3, 2),
+        monsters: [
+          ghoul(const Position(3, 1)),
+          spitterAt(const Position(5, 2)),
+        ],
+      );
+      final state = GameViewState(
+        game: game.copyWith(visible: {...game.visible, const Position(5, 2)}),
+        log: const [],
+      );
+
+      // act
+      final arrivals = state.arrivals;
+
+      // assert - both hold reach, neither is walking in
+      expect(state.monstersHoldingReach, isNotEmpty);
+      expect(arrivals, isEmpty);
+    });
+
+    test('a walled-off monster never arrives, however visible', () {
+      // arrange - the wall column keeps the flow field out of its room
+      const split = '''
+#########
+#...#...#
+#...#...#
+#...#...#
+#########''';
+      final game = arenaGame(
+        ascii: split,
+        heroAt: const Position(1, 1),
+        monsters: [walker(const Position(6, 1))],
+      );
+      final state = GameViewState(
+        game: game.copyWith(
+          visible: {const Position(1, 1), const Position(6, 1)},
+        ),
+        log: const [],
+      );
+
+      // act
+      final arrivals = state.arrivals;
+
+      // assert - visible and unreachable: it stands still in the engine too
+      expect(arrivals, isEmpty);
+    });
+  });
+
+  group('the armed skill (view state on the hasFled shape)', () {
+    GameState armedArena({List<Item> inventory = const []}) => arenaGame(
+      heroAt: const Position(3, 2),
+      monsters: [ghoul(const Position(3, 1))],
+      spells: spellsById,
+      knownSpells: const {'firebolt'},
+      mana: 10,
+      inventory: inventory,
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a skill button arms its spell',
+      build: () => GameBloc(game: armedArena()),
+      act: (bloc) => bloc.add(const SkillArmed('firebolt')),
+      expect: () => [
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a pan does not disarm',
+      build: () => GameBloc(game: armedArena()),
+      act: (bloc) {
+        bloc.add(const SkillArmed('firebolt'));
+        bloc.add(const MapPanned(Offset(4, 0)));
+      },
+      expect: () => [
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a system back press does not disarm',
+      build: () => GameBloc(game: armedArena()),
+      act: (bloc) {
+        bloc.add(const SkillArmed('firebolt'));
+        bloc.add(const SystemBackPressed());
+      },
+      expect: () => [
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a refused walk does not disarm',
+      build: () => GameBloc(game: armedArena()),
+      act: (bloc) {
+        bloc.add(const SkillArmed('firebolt'));
+        bloc.add(const TileTapped(Position(1, 1)));
+      },
+      expect: () => [
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a completed cast disarms',
+      build: () => GameBloc(game: armedArena()),
+      act: (bloc) {
+        bloc.add(const SkillArmed('firebolt'));
+        bloc.add(const CastPressed('firebolt'));
+      },
+      expect: () => [
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', isNull),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'any new game state disarms',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          spells: spellsById,
+          knownSpells: const {'firebolt'},
+          mana: 10,
+          inventory: [
+            Item(id: 'potion-1', base: healingPotion, rarity: Rarity.common),
+          ],
+        ),
+      ),
+      act: (bloc) {
+        bloc.add(const SkillArmed('firebolt'));
+        bloc.add(const QuickDrinkPressed());
+      },
+      expect: () => [
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', isNull),
+      ],
+    );
+  });
+
+  group('the battle log flavor (D83)', () {
+    Actor rangedSpitter(Position at, {int energy = actThreshold}) => Actor(
+      id: 'spitter-1',
+      name: 'the spitter',
+      glyph: 'p',
+      position: at,
+      hp: 4,
+      maxHp: 4,
+      attackMin: 2,
+      attackMax: 3,
+      speed: 5,
+      energy: energy,
+      reach: 3,
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a ranged monster reads its shots as strikes from afar',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [rangedSpitter(const Position(1, 3))],
+        ).copyWith(visible: {const Position(1, 1), const Position(1, 3)}),
+        stepDelay: Duration.zero,
+      ),
+      act: (bloc) => bloc.add(const TileTapped(Position(1, 0))),
+      expect: () => [
+        isA<GameViewState>().having(
+          (s) => s.log.where((line) => line.contains('spitter')).toList(),
+          'spitter lines',
+          predicate<List<String>>(
+            (lines) =>
+                lines.length == 1 &&
+                lines.single.startsWith('The spitter strikes you from afar'),
+          ),
+        ),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'an adjacent monster keeps the claws verb, spitter or not',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [rangedSpitter(const Position(1, 2))],
+        ),
+        stepDelay: Duration.zero,
+      ),
+      act: (bloc) => bloc.add(const TileTapped(Position(1, 0))),
+      expect: () => [
+        isA<GameViewState>().having(
+          (s) => s.log.last,
+          'last line',
+          predicate<String>(
+            (line) => line.startsWith('The spitter claws you for '),
+          ),
+        ),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'the ambush beat opens on the monster attacking first',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(3, 1))],
+        ),
+        stepDelay: Duration.zero,
+      ),
+      act: (bloc) => bloc.add(const TileTapped(Position(2, 1))),
+      expect: () => [
+        isA<GameViewState>().having((s) => s.log, 'log', [
+          'You step east.',
+          'The ghoul gets the drop on you.',
+          'The ghoul claws you for 3.',
+        ]),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'an ordinary swing takes no beat',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(1, 2))],
+        ),
+        stepDelay: Duration.zero,
+      ),
+      act: (bloc) => bloc.add(const TileTapped(Position(1, 0))),
+      expect: () => [
+        isA<GameViewState>().having((s) => s.log, 'log', [
+          'The way is blocked.',
+          'The ghoul claws you for 3.',
+        ]),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'two monsters opening at once still take one beat',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [
+            ghoul(const Position(3, 1)),
+            ghoul(const Position(2, 2), id: 'ghoul-2'),
+          ],
+        ),
+        stepDelay: Duration.zero,
+      ),
+      act: (bloc) => bloc.add(const TileTapped(Position(2, 1))),
+      expect: () => [
+        isA<GameViewState>()
+            .having(
+              (s) => s.log.where((line) => line.contains('drop on you')).length,
+              'beat count',
+              1,
+            )
+            .having(
+              (s) => s.log.indexOf(
+                s.log.firstWhere((line) => line.contains('drop on you')),
+              ),
+              'beat position',
+              1,
+            ),
+      ],
+    );
+  });
 }
