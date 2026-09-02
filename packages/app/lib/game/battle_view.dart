@@ -5,21 +5,31 @@ import 'package:residuum_core/core.dart';
 import '../town/town_style.dart';
 import 'game_bloc.dart';
 
-/// The battle screen: what holds reach on the hero, played per round.
+/// The battle dock: what holds reach on the hero, played per round, over a map
+/// that never leaves the screen.
 ///
-/// **A view over the map, not a second board.** Every fact here is a pure
-/// getter over the state the crawl already shows — the stage reads
-/// `monstersHoldingReach`, the strip reads the turn schedule, the bar reads
-/// the known spells — so the fight the rules see is exactly the fight this
-/// tree draws. The section swaps in for the map while something holds reach
-/// and out again when nothing does; the vitals row, the control row, the log
-/// and the death overlay never move.
+/// **A view over the map, not a second board — and the map is why this is a
+/// dock.** Every fact here is a pure getter over the state the crawl already
+/// shows — the stage reads `monstersHoldingReach`, the strip reads the turn
+/// schedule, the bar reads the known spells — so the fight the rules see is
+/// exactly the fight this tree draws. The dock's rows sit above the map slot
+/// while the fight holds and leave when nothing does; the map itself is drawn
+/// and tappable the whole time, because a view over a live simulation shows the
+/// field the simulation runs on — hiding it, as the full-screen swap once did,
+/// stranded every player whose only reach-holder stood beyond arm's length.
+/// **The swap stays retired on purpose:** a fight is rows docked over the
+/// crawl, never a screen that replaces it, so nobody restores the full-screen
+/// battle as a cleanup.
+///
+/// **The watched auto-path refusal during a fight is deliberate.** Closing on a
+/// shooter means tile-by-tile taps while it shoots — the map below the dock
+/// makes that cost visible instead of papering over it with a free auto-walk.
 ///
 /// Nothing is told apart by hue: a creature is its glyph and its name, its
 /// wound is a bar's length and two numbers, its reach is a word, and an armed
 /// spell is a word beside its own name.
-class BattleView extends StatelessWidget {
-  const BattleView({super.key, required this.state});
+class BattleDock extends StatelessWidget {
+  const BattleDock({super.key, required this.state});
 
   final GameViewState state;
 
@@ -27,31 +37,14 @@ class BattleView extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = context.read<GameBloc>();
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              children: [
-                for (final monster in state.monstersHoldingReach)
-                  _StageCard(
-                    monster: monster,
-                    onTap: () => bloc.add(
-                      state.armedSpellId == null
-                          ? TileTapped(monster.position)
-                          : CastPressed(
-                              state.armedSpellId!,
-                              targetId: monster.id,
-                            ),
-                    ),
-                  ),
-              ],
-            ),
+        for (final monster in state.monstersHoldingReach)
+          _StageCard(
+            monster: monster,
+            onTap: () => bloc.add(StageCardTapped(monster)),
           ),
-        ),
         _TurnStrip(state: state),
-        if (state.game.knownSpells.isNotEmpty)
-          _SkillBar(state: state, bloc: bloc),
       ],
     );
   }
@@ -200,8 +193,8 @@ class _TurnStrip extends StatelessWidget {
 /// sentence in the log, never a dimmed button: the bar does not read
 /// `castRefusal` at all, because a greyed control is a guess the player has
 /// to work past.
-class _SkillBar extends StatelessWidget {
-  const _SkillBar({required this.state, required this.bloc});
+class BattleSkillBar extends StatelessWidget {
+  const BattleSkillBar({super.key, required this.state, required this.bloc});
 
   final GameViewState state;
   final GameBloc bloc;

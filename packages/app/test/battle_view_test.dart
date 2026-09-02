@@ -5,17 +5,18 @@ import 'package:residuum_app/game/battle_view.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/glyph_grid.dart';
+import 'package:residuum_app/game/grid_geometry.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-/// The battle view: stage cards, turn strip, skill bar, and the gestures that
+/// The battle dock: stage cards, turn strip, skill bar, and the gestures that
 /// carry an armed cast through core's `targetId`.
 ///
-/// Every test pumps the real [GameScreen] over a real [GameBloc] — the swap
-/// between crawl and battle is the unit's subject, and a fake screen would
-/// test the test. Neither bloc is closed, per the suite's standing rule: the
-/// widget test's clock is fake and the bloc closes itself on the event loop.
+/// Every test pumps the real [GameScreen] over a real [GameBloc] — the dock's
+/// presence over an always-visible map is the unit's subject, and a fake screen
+/// would test the test. Neither bloc is closed, per the suite's standing rule:
+/// the widget test's clock is fake and the bloc closes itself on the event loop.
 
 const _arena = '''
 #######
@@ -123,23 +124,79 @@ Future<GameBloc> _pushGame(WidgetTester tester, GameState game) async {
   return bloc;
 }
 
+/// Taps one tile of the map, through the grid's own geometry.
+///
+/// Both axes of the test arena fit any surface this suite pumps, so the camera
+/// centres them and ignores its focus and pan; the hero position passed here is
+/// only the state the suite ever taps from.
+Future<void> _tapTile(WidgetTester tester, Position tile) async {
+  final grid = find.byType(GlyphGrid);
+  final size = tester.getSize(grid);
+  final geometry = GridGeometry.camera(size, 7, 5, const Position(1, 1));
+  final local =
+      geometry.topLeftOf(tile.x, tile.y) +
+      Offset(geometry.cellSize / 2, geometry.cellSize / 2);
+  await tester.tapAt(tester.getTopLeft(grid) + local);
+}
+
 void main() {
-  group('the battle view swap', () {
-    testWidgets('the battle view swaps in for the map while reach is held', (
-      tester,
-    ) async {
-      // arrange - a ghoul standing right there
-      final game = battleGame(monsters: [ghoulAt(const Position(1, 2))]);
+  group('the dock', () {
+    testWidgets('the map stays on screen while the dock is up', (tester) async {
+      // arrange - the D90 standoff: a spitter holding reach three tiles out
+      final game = battleGame(monsters: [spitterAt(const Position(4, 1))]);
 
       // act
       await _pushGame(tester, game);
 
-      // assert
-      expect(find.byType(BattleView), findsOneWidget);
-      expect(find.byType(GlyphGrid), findsNothing);
+      // assert - map and stage card visible in one pump
+      expect(find.byType(GlyphGrid), findsOneWidget);
+      expect(find.text('the spitter'), findsOneWidget);
     });
 
-    testWidgets('the crawl view returns when nothing holds reach', (
+    testWidgets(
+      'a floor tile one step toward the spitter moves the hero while the dock '
+      'is up',
+      (tester) async {
+        // arrange - the D90 standoff
+        final game = battleGame(monsters: [spitterAt(const Position(4, 1))]);
+        final bloc = await _pushGame(tester, game);
+
+        // act - tap the floor between hero and spitter
+        await _tapTile(tester, const Position(2, 1));
+        await tester.pumpAndSettle();
+
+        // assert - the hero walked, the fight still holds, the map stayed
+        expect(bloc.state.game.hero.position, const Position(2, 1));
+        expect(find.byType(GlyphGrid), findsOneWidget);
+        expect(find.text('the spitter'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a far stage-card tap says so in the log and changes nothing else',
+      (tester) async {
+        // arrange - the D90 standoff: the spitter three tiles out
+        final game = battleGame(monsters: [spitterAt(const Position(4, 1))]);
+        final bloc = await _pushGame(tester, game);
+        final logBefore = bloc.state.log.length;
+
+        // act
+        await tester.tap(find.text('the spitter'));
+        await tester.pumpAndSettle();
+
+        // assert - the sentence names the monster and says walk; the game
+        // stands exactly where it stood
+        expect(
+          bloc.state.log.skip(logBefore).single,
+          'the spitter is out of reach. Walk to it.',
+        );
+        expect(bloc.state.game.hero.position, const Position(1, 1));
+        expect(bloc.state.game.monsters.single.hp, 4);
+        expect(bloc.state.armedSpellId, isNull);
+      },
+    );
+
+    testWidgets('the dock rows leave when the last reach-holder dies', (
       tester,
     ) async {
       // arrange - three clean swings put the ten-hit ghoul down
@@ -156,8 +213,49 @@ void main() {
 
       // assert
       expect(bloc.state.game.monsters, isEmpty);
-      expect(find.byType(BattleView), findsNothing);
+      expect(find.byType(BattleDock), findsNothing);
       expect(find.byType(GlyphGrid), findsOneWidget);
+    });
+
+    testWidgets('the screen fits a phone with the dock up and with it down', (
+      tester,
+    ) async {
+      // arrange - a caster in a fight, at the phone surface
+      tester.view.physicalSize = _phone;
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        knownSpells: const {'firebolt'},
+        mana: 10,
+      );
+      final bloc = await _pushGame(tester, game);
+
+      // assert - dock up: map, stage, bar, HP and log all on one screen
+      expect(tester.takeException(), isNull);
+      expect(find.byType(GlyphGrid), findsOneWidget);
+      expect(find.text('the ghoul'), findsOneWidget);
+      expect(find.text('✳ Firebolt 2'), findsOneWidget);
+      expect(find.textContaining('Engaged'), findsOneWidget);
+      await tester.tap(find.text('the ghoul'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('You hit the ghoul for 4.'), findsOneWidget);
+
+      // act - two more swings end the fight
+      bloc.add(const TileTapped(Position(1, 2)));
+      await tester.pumpAndSettle();
+      bloc.add(const TileTapped(Position(1, 2)));
+      await tester.pumpAndSettle();
+
+      // assert - dock down: the crawl, unchanged; the log row still speaks
+      expect(bloc.state.game.monsters, isEmpty);
+      expect(bloc.state.log.last, 'The ghoul dies.');
+      expect(find.byType(BattleDock), findsNothing);
+      expect(find.byType(BattleSkillBar), findsNothing);
+      expect(find.byType(GlyphGrid), findsOneWidget);
+      expect(find.byType(ListView), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 
@@ -165,10 +263,10 @@ void main() {
     testWidgets('the stage names, numbers and marks what holds reach', (
       tester,
     ) async {
-      // arrange - adjacent ghoul, spitter two tiles out along the sight line
+      // arrange - adjacent wounded ghoul, spitter two tiles out along the sight line
       final game = battleGame(
         monsters: [
-          ghoulAt(const Position(1, 2)),
+          ghoulAt(const Position(1, 2), hp: 6),
           spitterAt(const Position(3, 1)),
         ],
         visible: {
@@ -183,10 +281,14 @@ void main() {
 
       // assert - name and hit points by bar and number, range by word
       expect(find.text('the ghoul'), findsOneWidget);
-      expect(find.text('10 / 10'), findsOneWidget);
+      expect(find.text('6 / 10'), findsOneWidget);
       expect(find.text('the spitter'), findsOneWidget);
       expect(find.text('4 / 4'), findsOneWidget);
       expect(find.text('at range'), findsOneWidget);
+      final bars = tester.widgetList<LinearProgressIndicator>(
+        find.byType(LinearProgressIndicator),
+      );
+      expect(bars.map((bar) => bar.value), contains(closeTo(6 / 10, 0.001)));
     });
 
     testWidgets('the turn strip names who acts next and who walks in', (
@@ -235,8 +337,8 @@ void main() {
       // act
       await _pushGame(tester, game);
 
-      // assert - nothing overflows: the strip, the bar and the word all render
-      expect(find.byType(BattleView), findsOneWidget);
+      // assert - nothing overflows: the dock, the strip, the bar and the word all render
+      expect(find.byType(BattleDock), findsOneWidget);
       expect(find.text('the ghoul'), findsOneWidget);
       expect(find.text('the spitter'), findsOneWidget);
       expect(find.text('at range'), findsOneWidget);
@@ -296,7 +398,7 @@ void main() {
     testWidgets('an armed cast at a stage card names the target', (
       tester,
     ) async {
-      // arrange - the ghoul is nearer; the spitter is the named target
+      // arrange - the ghoul adjacent; the spitter holds reach further out
       final game = battleGame(
         monsters: [
           ghoulAt(const Position(1, 2)),
@@ -312,16 +414,17 @@ void main() {
       );
       final bloc = await _pushGame(tester, game);
 
-      // act - arm, then tap the spitter's card
+      // act - arm, then tap the adjacent ghoul's card; a card beyond one step
+      // is the walk sentence now, so the named cast lives on the adjacent card
       await tester.tap(find.text('✳ Firebolt 2'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('the spitter'));
+      await tester.tap(find.text('the ghoul'));
       await tester.pumpAndSettle();
 
-      // assert - the shot landed on the named target, not the nearest
+      // assert - the shot landed on the named target, not the further one
       expect(
         bloc.state.log.where(
-          (line) => line.startsWith('Firebolt burns the spitter'),
+          (line) => line.startsWith('Firebolt burns the ghoul'),
         ),
         isNotEmpty,
       );

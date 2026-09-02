@@ -16,6 +16,20 @@ final class TileTapped extends GameBlocEvent {
   final Position position;
 }
 
+/// The player tapped a stage card in the battle dock.
+///
+/// Adjacent, the card is the D89 grammar exactly: no armed skill is the
+/// bump-attack ([TileTapped] at the monster's tile), an armed spell is
+/// [CastPressed] at the named target. Beyond one orthogonal step, **core never
+/// sees the tap** — the dock's sentence is the app translating a useless
+/// gesture into information, a presentation refusal and not an engine one, so
+/// the rules layer gains no verb and no exception to carry.
+final class StageCardTapped extends GameBlocEvent {
+  const StageCardTapped(this.monster);
+
+  final Actor monster;
+}
+
 final class DescendPressed extends GameBlocEvent {
   const DescendPressed();
 }
@@ -482,6 +496,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
          ),
        ) {
     on<TileTapped>(_onTileTapped);
+    on<StageCardTapped>(_onStageCardTapped);
     on<DescendPressed>(_onDescendPressed);
     on<AscendPressed>(_onAscendPressed);
     on<AutoWalkAdvanced>(_onAutoWalkAdvanced);
@@ -551,6 +566,27 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       ),
     );
     add(AutoWalkAdvanced(walkId));
+  }
+
+  void _onStageCardTapped(StageCardTapped event, Emitter<GameViewState> emit) {
+    if (state.game.isGameOver) return;
+    final monster = event.monster;
+    if (state.game.hero.position.isOrthogonallyAdjacentTo(monster.position)) {
+      add(
+        state.armedSpellId == null
+            ? TileTapped(monster.position)
+            : CastPressed(state.armedSpellId!, targetId: monster.id),
+      );
+      return;
+    }
+    emit(
+      GameViewState(
+        game: state.game,
+        log: [...state.log, _outOfReach(monster.name)],
+        walkId: state.walkId,
+        armedSpellId: state.armedSpellId,
+      ),
+    );
   }
 
   void _onDescendPressed(DescendPressed event, Emitter<GameViewState> emit) {
@@ -868,6 +904,14 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
 /// — until now it refused in silence, which read to the player as a dead tap
 /// rather than a decision the game had made.
 const String _watchedRefusal = 'Something is watching. You stay put.';
+
+/// What a stage card says when its monster stands beyond one orthogonal step.
+///
+/// Names the monster and names the walk — the two things the player needs and
+/// the two things the tap took away. Core is not told: the hero's position is
+/// unchanged, the fight is unchanged, and the only fact added is the sentence
+/// itself.
+String _outOfReach(String name) => '$name is out of reach. Walk to it.';
 
 /// What the log says when the system back button is pressed in the dungeon.
 ///
