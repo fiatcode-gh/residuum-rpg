@@ -43,37 +43,35 @@ class GameScreen extends StatelessWidget {
       child: Scaffold(
         body: SafeArea(
           child: BlocBuilder<GameBloc, GameViewState>(
-            builder: (context, state) => Stack(
-              children: [
-                Column(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: state.isBattleOpen
-                            ? BattleView(state: state)
-                            : GlyphGrid(
-                                state: state,
-                                palette: paletteFor(
-                                  context.read<GameBloc>().dungeon,
-                                ),
-                                onTap: (position) => context
-                                    .read<GameBloc>()
-                                    .add(TileTapped(position)),
-                                onPan: (delta) => context.read<GameBloc>().add(
-                                  MapPanned(delta),
-                                ),
-                              ),
+            builder: (context, state) {
+              final bloc = context.read<GameBloc>();
+              return Stack(
+                children: [
+                  Column(
+                    children: [
+                      if (state.isBattleOpen) BattleDock(state: state),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: GlyphGrid(
+                            state: state,
+                            palette: paletteFor(bloc.dungeon),
+                            onTap: (position) => bloc.add(TileTapped(position)),
+                            onPan: (delta) => bloc.add(MapPanned(delta)),
+                          ),
+                        ),
                       ),
-                    ),
-                    _HitPoints(state: state),
-                    _Controls(state: state),
-                    _MessageLog(log: state.log),
-                  ],
-                ),
-                if (state.game.isGameOver) _DeathOverlay(state: state),
-              ],
-            ),
+                      if (state.isBattleOpen && state.knownSpells.isNotEmpty)
+                        BattleSkillBar(state: state, bloc: bloc),
+                      _HitPoints(state: state),
+                      _Controls(state: state),
+                      _MessageLog(log: state.log),
+                    ],
+                  ),
+                  if (state.game.isGameOver) _DeathOverlay(state: state),
+                ],
+              );
+            },
           ),
         ),
       ),
