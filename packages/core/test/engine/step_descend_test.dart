@@ -61,6 +61,35 @@ void main() {
       expect(next.monsters.map((m) => m.id), ['ghoul-9']);
     });
 
+    test('arrival runs no monster phase, even with a monster adjacent', () {
+      // arrange — the generated floor's monster stands right beside the
+      // arrival tile, the position an ambush would strike from
+      Floor adjacentArrival(int depth) => Floor(
+        map: FloorMap.parse(downstairs),
+        heroSpawn: const Position(1, 1),
+        monsters: [ghoul('ghoul-9', const Position(1, 2))],
+        stairsDown: const Position(8, 1),
+        stairsUp: const Position(1, 1),
+      );
+      final withBuilder = crawl(
+        ascii: upstairs,
+        heroAt: const Position(3, 1),
+        monsters: [ghoul('ghoul-1', const Position(1, 2))],
+        depth: 1,
+        stairsDown: const Position(3, 1),
+        buildFloor: adjacentArrival,
+      );
+
+      // act
+      final (next, events) = step(withBuilder, const DescendAction());
+
+      // assert
+      expect(next.monsters.single.position, const Position(1, 2));
+      expect(next.monsters.map((m) => m.energy), everyElement(actThreshold));
+      expect(events.whereType<AttackHit>(), isEmpty);
+      expect(next.hero.hp, 20);
+    });
+
     test('the hero carries its wounds down the stairs', () {
       // arrange
       final state = onTheStairs(heroHp: 7);

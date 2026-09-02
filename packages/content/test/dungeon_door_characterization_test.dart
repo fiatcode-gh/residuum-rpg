@@ -38,7 +38,15 @@ const String _firstFloor =
 /// The order is as load-bearing as the names: monster ids carry their place in
 /// the list, and a reshuffled draw would rename every creature on the floor
 /// while leaving the count and the cast identical.
-const List<String> _openingMonsters = ['rat-1', 'wolf-2', 'rat-3'];
+///
+/// **The old pin was `['rat-1', 'wolf-2', 'rat-3']`, and it moved by design
+/// when the spitter joined the depth-one table** (weight one against the
+/// rat's six and the wolf's one): the draw that used to land on the wolf now
+/// lands one short of it, and the third rat took its place. The floor layout,
+/// the monsters' tiles and both stream states are untouched — only the
+/// roster's names moved, which is exactly the band the spawn-table change
+/// was allowed to move.
+const List<String> _openingMonsters = ['rat-1', 'rat-2', 'rat-3'];
 
 void main() {
   group('the town door into the crypt', () {

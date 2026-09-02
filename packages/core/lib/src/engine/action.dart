@@ -85,17 +85,26 @@ final class ReadAction extends GameAction {
 /// Cast the known spell with this id.
 ///
 /// Refused when the hero does not know it, when the pool is short of its cost,
-/// and — for the kinds that need something to land on — when no enemy is in
-/// sight. Casting Mend at full health is *not* refused: it spends the turn and
-/// the mana and heals nothing, for [DrinkAction]'s reason.
+/// and — for the kinds that need something to land on — when the target named
+/// is not a visible enemy, or when none is named and no enemy is in sight.
+/// Casting Mend at full health is *not* refused: it spends the turn and the
+/// mana and heals nothing, for [DrinkAction]'s reason.
 ///
-/// **Nothing here says what to cast it at.** A targeted spell finds the nearest
-/// enemy the hero can see, breaking ties by row and then column; see
-/// `nearestVisibleEnemy` for why the rule is a rule and not a tap.
+/// **[targetId] widens choice, never the rules' power.** A targeted spell may
+/// name the monster it lands on; a name that answers to nothing, or to a
+/// monster the hero cannot see, is refused with its own sentence rather than
+/// corrected onto the nearest thing in sight. A cast that names nothing keeps
+/// the nearest-enemy rule — see `nearestVisibleEnemy` for why that rule is a
+/// rule and not a tap. Mend and Ward ignore the name entirely: they are cast
+/// on the hero, and saying otherwise would be a second rule where one answer
+/// exists.
 final class CastSpellAction extends GameAction {
-  const CastSpellAction(this.spellId);
+  const CastSpellAction(this.spellId, {this.targetId});
 
   final String spellId;
+
+  /// The monster this cast names, or null for the nearest-enemy fallback.
+  final String? targetId;
 }
 
 /// Work whatever ore vein or herb patch the hero is standing on.

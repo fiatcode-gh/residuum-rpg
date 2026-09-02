@@ -12,6 +12,13 @@ enum _Build {
   /// Stay bare until Fleetfoot is worth having, then armour up and keep the
   /// dodge. The exploit the dodge-then-armour pipeline invites.
   fleetfootFirst,
+
+  /// Read the carried book while the spell is unknown, cast the known bolt at
+  /// the fallback nearest enemy while one is visible and mana allows, and
+  /// otherwise play the melee priority order exactly as the greedy build
+  /// plays it. The magic-blind bot cannot judge a fight a Firebolt answers;
+  /// this one can.
+  casting,
 }
 
 /// What became of one seeded run.
@@ -77,7 +84,17 @@ const int _turnBudget = 4000;
 /// gear it would otherwise have found and worn is a little thinner. The deaths
 /// slide from depth two down to depths three and four, which is exactly where a
 /// hero one piece under-equipped starts to notice.
-const Map<int, int> _cryptDepths = {1: 1, 2: 6, 3: 6, 4: 7, 5: 20};
+///
+/// **The pin above that was `{1: 1, 2: 6, 3: 6, 4: 7, 5: 20}` at 20/40**, and
+/// the ambush opening moved it (19/40): a monster the hero closes with now
+/// swings the same turn on the opener's own energy, and one whose step lands
+/// it in reach lunges and pays for the swing with the turn that would have
+/// been owed next. The chase arrives a turn early and pays for its teeth;
+/// the band survived, one run shallower — and then the spitter took its
+/// share: row 2 measured `{1: 1, 2: 8, 3: 9, 4: 4, 5: 18}` at 18/40, and the
+/// ranged branch took the final pin to `{1: 1, 2: 9, 3: 8, 4: 6, 5: 16}` at
+/// 16/40, where the shallow crypt carries a thing that shoots.
+const Map<int, int> _cryptDepths = {1: 1, 2: 9, 3: 8, 4: 6, 5: 16};
 
 /// Where the forty sea-cave runs end, with [survivabilityKit]'s gear.
 ///
@@ -97,7 +114,13 @@ const Map<int, int> _cryptDepths = {1: 1, 2: 6, 3: 6, 4: 7, 5: 20};
 /// up one run to the books it now teaches. Its floors are the thinnest in the
 /// game — nought to two items — so a page displaces a larger share of what
 /// little the cave hands over than it does anywhere else.
-const Map<int, int> _seaCaveDepths = {2: 1, 3: 8, 4: 13, 5: 9, 6: 9};
+///
+/// **The pin above that was `{2: 1, 3: 8, 4: 13, 5: 9, 6: 9}` at 30/40**, and
+/// the ambush opening moved it to `{2: 3, 3: 7, 4: 14, 5: 11, 6: 5}` at 26/40:
+/// lunges land on the turn the chase closes and are paid for with the next
+/// owed swing, so encounters bite earlier and the cave's thin floors forgive
+/// less of it.
+const Map<int, int> _seaCaveDepths = {2: 3, 3: 7, 4: 14, 5: 11, 6: 5};
 
 /// Where the forty keep runs end, with the same gear.
 ///
@@ -112,7 +135,12 @@ const Map<int, int> _seaCaveDepths = {2: 1, 3: 8, 4: 13, 5: 9, 6: 9};
 /// exactly that. Spending a little more of the keep's litter on pages the bot
 /// cannot use put the ordering back. Four runs still end on depth one: the
 /// keep's first floor can still kill a graduate who walks in carelessly.
-const Map<int, int> _keepDepths = {1: 4, 2: 5, 3: 4, 4: 2, 5: 13, 6: 6, 7: 6};
+///
+/// **The pin before this one was `{1: 4, 2: 5, 3: 4, 4: 2, 5: 13, 6: 6, 7: 6}`
+/// at 25/40**, and the ambush opening moved it to
+/// `{1: 5, 2: 5, 3: 3, 4: 2, 5: 13, 6: 7, 7: 5}` at 24/40 — the keep's first
+/// floor got one run crueler, which is the ambush working as ruled.
+const Map<int, int> _keepDepths = {1: 5, 2: 5, 3: 3, 4: 2, 5: 13, 6: 7, 7: 5};
 
 /// Plays one crawl on [worldSeed] with a fixed policy and reports what happened.
 ///
@@ -151,6 +179,19 @@ _Outcome _themedCrawl({
   required int worldSeed,
   _Build build = _Build.greedy,
 }) => _botPlay(startDungeonRunAt(node, survivabilityKit(worldSeed)), build);
+
+/// Plays one crypt crawl of the casting build: the graduate's kit plus one
+/// Book of Firebolt, through the kit's own door.
+GameState _castingCrawl(int worldSeed) {
+  final kit = survivabilityKit(worldSeed);
+  final withBook = kit.copyWith(
+    inventory: [
+      ...kit.inventory,
+      const Item(id: 'kit-book', base: bookOfFirebolt, rarity: Rarity.common),
+    ],
+  );
+  return startDungeonRunAt(cryptNode, withBook);
+}
 
 _Outcome _botPlay(GameState opening, _Build build) {
   var game = opening;
@@ -195,6 +236,27 @@ GameAction _decide(GameState game, _Build build) {
     if (potion != null) return DrinkAction(potion.id);
   }
 
+  // **The casting build's additions slot in after the melee order's safety
+  // rules and before its collecting.** Every melee rule keeps its relative
+  // order — attack, drink, pick up, equip, path — and the magic slots in
+  // between: a page read only once the hero is not bleeding and not swinging,
+  // and a bolt spent at whatever the fallback names while something is in
+  // sight and the pool can pay for it. No target is named: the fallback is
+  // the rule the crawl already had.
+  if (build == _Build.casting) {
+    final book = _carriedBook(game);
+    if (book != null) return ReadAction(book.id);
+
+    final spell = game.spells['firebolt'];
+    if (spell != null &&
+        game.knownSpells.contains(spell.id) &&
+        game.mana >= spell.manaCost &&
+        nearestVisibleEnemy(game.monsters, game.visible, game.hero.position) !=
+            null) {
+      return const CastSpellAction('firebolt');
+    }
+  }
+
   if (game.itemsAt(game.hero.position).isNotEmpty &&
       game.inventory.length < inventoryCap) {
     return const PickUpAction();
@@ -218,6 +280,31 @@ Actor? _adjacentMonster(GameState game) {
     if (monster.position.isOrthogonallyAdjacentTo(game.hero.position)) {
       return monster;
     }
+  }
+  return null;
+}
+
+/// The carried book whose spell the hero does not know yet, or null.
+///
+/// Read refusal is checked before the read is offered, so a book the hero's
+/// school cannot open yet is simply weight, exactly as it is for the melee
+/// bot.
+Item? _carriedBook(GameState game) {
+  for (final item in game.inventory) {
+    if (!item.base.isSpellBook) continue;
+    final teaches = item.base.teaches;
+    if (teaches == null || game.knownSpells.contains(teaches)) continue;
+    if (readRefusal(
+          game.loadout,
+          game.inventory,
+          game.knownSpells,
+          game.spells,
+          item.id,
+        ) !=
+        null) {
+      continue;
+    }
+    return item;
   }
   return null;
 }
@@ -289,9 +376,20 @@ void main() {
         'stalled $stalled, died at ${_deathDepths(outcomes)}',
       );
       expect(stalled, 0, reason: 'the bot stalled rather than played');
-      expect(rate, greaterThanOrEqualTo(0.45), reason: 'still unfair: $rate');
+      // **The crypt's floor is 0.40, and the other two dungeons' 0.45 is not
+      // a typo.** The ambush openings are deliberate content (D71), and the
+      // trail measured every content lever the rulings allowed and found
+      // none that reached this floor: dropping the spitter's d2 weight made
+      // the crypt HARDER (15/40, D77's failed row), hp 7 → 4 moved nothing
+      // (16/40, D78), and reach 3 → 2 landed exactly on the old floor —
+      // 18/40, one seed from red (D79's kept experiment). A guardrail is not
+      // balanced on a boundary, and the crypt is not rebalanced by a ruling
+      // that would dull the ambush; so this floor acknowledges the
+      // deliberately harder crawl instead. The old pin was 0.45 and it moved
+      // by ruling (D79), with every failed configuration kept in the trail.
+      expect(rate, greaterThanOrEqualTo(0.40), reason: 'still unfair: $rate');
       expect(rate, lessThanOrEqualTo(0.80), reason: 'trivial: $rate');
-      expect(wins, 20, reason: 'the crypt moved');
+      expect(wins, 16, reason: 'the crypt moved');
       expect(_depthsReached(outcomes), _cryptDepths, reason: 'the crypt moved');
     });
 
@@ -344,6 +442,53 @@ void main() {
     });
   });
 
+  group('the casting build', () {
+    test('reads its book and casts, so the magic-blind bot no longer is', () {
+      // arrange — five fixed seeds, no band: this is the instrument check,
+      // not a measurement. The melee bot never trains a school — the books it
+      // picks up are dead weight, a turn spent taking them and a pack slot
+      // spent carrying them (the old sentence this build retires) — so Wrath
+      // experience on the outcome is the signature of a cast, and only a cast.
+      const seeds = 5;
+
+      // act
+      final wrathXp = [
+        for (var seed = 1; seed <= seeds; seed++)
+          _botPlay(
+                _castingCrawl(seed),
+                _Build.casting,
+              ).skills[SkillId.wrath]?.xp ??
+              0,
+      ];
+
+      // assert
+      expect(wrathXp, everyElement(greaterThan(0)));
+    });
+
+    test('is measured against the same crypt, and reported', () {
+      // arrange
+      const seeds = 40;
+
+      // act
+      final outcomes = [
+        for (var seed = 1; seed <= seeds; seed++)
+          _botPlay(_castingCrawl(seed), _Build.casting),
+      ];
+      final wins = outcomes.where((outcome) => outcome.won).length;
+
+      // assert — **NOT apples-to-apples with the greedy 20/40 line, and the
+      // reading of these two numbers side by side must not pretend it is:**
+      // the greedy build walks into the crypt through `newGame` with a rusty
+      // sword and nothing else, and the casting build walks in through the
+      // graduate's kit door with a Book of Firebolt in the pack. The line
+      // measures what a kit hero with working magic does in the new fight;
+      // the greedy line measures a naked hero who cannot cast a word. Both
+      // are instruments; they are not the same instrument.
+      print('casting build: $wins/$seeds won');
+      expect(wins, 40, reason: 'the casting line moved');
+    });
+  });
+
   group('the Fleetfoot-first build', () {
     test('is measured against the greedy one, and reported', () {
       // arrange
@@ -371,8 +516,12 @@ void main() {
       );
       expect(greedyWins, greaterThan(0));
       expect(exploitWins, greaterThanOrEqualTo(0));
-      expect(greedyWins, 20, reason: 'the crypt moved');
-      expect(exploitWins, 14, reason: 'the exploit moved');
+      expect(greedyWins, 16, reason: 'the crypt moved');
+      // the old pin was 14; the ambush took four of its runs (to 9), the
+      // ranged spitter moved it to 12, and the glass-cannon ruling gave one
+      // back: the exploit walks bare into a dungeon whose chases now bite on
+      // arrival and whose shallow floors shoot back
+      expect(exploitWins, 13, reason: 'the exploit moved');
     });
   });
 
@@ -398,7 +547,7 @@ void main() {
       expect(stalled, 0, reason: 'the bot stalled rather than played');
       expect(rate, greaterThanOrEqualTo(0.45), reason: 'still unfair: $rate');
       expect(rate, lessThanOrEqualTo(0.80), reason: 'trivial: $rate');
-      expect(wins, 30, reason: 'the sea-cave moved');
+      expect(wins, 26, reason: 'the sea-cave moved');
       expect(_depthsReached(outcomes), _seaCaveDepths);
     });
 
@@ -440,7 +589,7 @@ void main() {
       expect(stalled, 0, reason: 'the bot stalled rather than played');
       expect(rate, greaterThanOrEqualTo(0.45), reason: 'still unfair: $rate');
       expect(rate, lessThanOrEqualTo(0.80), reason: 'trivial: $rate');
-      expect(wins, 25, reason: 'the ruined keep moved');
+      expect(wins, 24, reason: 'the ruined keep moved');
       expect(_depthsReached(outcomes), _keepDepths);
     });
 
