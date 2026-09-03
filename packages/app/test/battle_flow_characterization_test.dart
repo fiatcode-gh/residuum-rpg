@@ -9,14 +9,16 @@ import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-/// Characterization for m3-battle-flow: the gestures this unit retires, pinned
-/// green against unmodified `6a1500a` before the first change lands.
+/// Characterization for m3-battle-flow: the gestures this unit retires or
+/// rebuilds, pinned against unmodified `6a1500a` before the first change and
+/// flipped in the commit that moves them.
 ///
 /// The far-card sentence, the bump on a bare stage-card tap, the turn strip's
 /// words, the `Engaged` suffix, the non-caster bar and the watched refusal are
 /// already pinned in their home suites; this file holds the one behavior no
-/// suite pins — the map's tap-to-attack on an adjacent monster tile — so its
-/// retirement in the map-tap task has a named red.
+/// suite pinned — the map's tap-to-attack on an adjacent monster tile — now
+/// flipped: the tap is refused like watched ground, and the fight happens
+/// through the dock.
 
 const _arena = '''
 #######
@@ -114,21 +116,23 @@ Future<void> _tapTile(WidgetTester tester, Position tile) async {
 }
 
 void main() {
-  testWidgets('a map tap on an adjacent monster tile swings at it', (
-    tester,
-  ) async {
-    // arrange - the ghoul stands one step below; the map is the second surface
-    final game = battleGame(monsters: [ghoulAt(const Position(1, 2))]);
-    final bloc = await _pushGame(tester, game);
+  testWidgets(
+    'a map tap on an adjacent monster tile refuses like watched ground',
+    (tester) async {
+      // arrange - the ghoul stands one step below, in sight
+      final game = battleGame(monsters: [ghoulAt(const Position(1, 2))]);
+      final bloc = await _pushGame(tester, game);
 
-    // act - tap the monster's tile on the map itself
-    await _tapTile(tester, const Position(1, 2));
-    await tester.pumpAndSettle();
+      // act - tap the monster's tile on the map itself
+      await _tapTile(tester, const Position(1, 2));
+      await tester.pumpAndSettle();
 
-    // assert - the bump fired: the hero swung, the ghoul clawed back
-    expect(find.text('You hit the ghoul for 4.'), findsOneWidget);
-    expect(bloc.state.game.monsters.single.hp, 6);
-    expect(bloc.state.game.hero.hp, 17);
-    expect(find.byType(GlyphGrid), findsOneWidget);
-  });
+      // assert - the map never swings: the tap is refused, one sentence
+      expect(find.textContaining('You hit the ghoul'), findsNothing);
+      expect(find.text('Something is watching. You stay put.'), findsOneWidget);
+      expect(bloc.state.game.monsters.single.hp, 10);
+      expect(bloc.state.game.hero.hp, 20);
+      expect(bloc.state.game.hero.position, const Position(1, 1));
+    },
+  );
 }

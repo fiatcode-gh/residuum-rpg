@@ -304,8 +304,15 @@ void main() {
           monsters: [ghoul(const Position(4, 2), hp: 4)],
         ),
       ),
-      act: (bloc) => bloc.add(const TileTapped(Position(4, 2))),
+      act: (bloc) => bloc
+        ..add(const AttackArmed())
+        ..add(StageCardTapped(bloc.state.game.monsters.single)),
       expect: () => [
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedAttack(),
+        ),
         isA<GameViewState>()
             .having((s) => s.game.monsters, 'monsters', isEmpty)
             .having((s) => s.log, 'log', [
@@ -324,8 +331,15 @@ void main() {
           monsters: [ghoul(const Position(4, 2), attack: 3)],
         ),
       ),
-      act: (bloc) => bloc.add(const TileTapped(Position(4, 2))),
+      act: (bloc) => bloc
+        ..add(const AttackArmed())
+        ..add(StageCardTapped(bloc.state.game.monsters.single)),
       expect: () => [
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedAttack(),
+        ),
         isA<GameViewState>()
             .having((s) => s.game.isGameOver, 'isGameOver', isTrue)
             .having((s) => s.log, 'log', contains('You die.'))
@@ -347,9 +361,15 @@ void main() {
         ),
       ),
       act: (bloc) => bloc
-        ..add(const TileTapped(Position(4, 2)))
+        ..add(const AttackArmed())
+        ..add(StageCardTapped(bloc.state.game.monsters.single))
         ..add(const TileTapped(Position(2, 2))),
       expect: () => [
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedAttack(),
+        ),
         isA<GameViewState>().having((s) => s.game.isGameOver, 'over', isTrue),
       ],
     );
@@ -782,7 +802,9 @@ void _lootTests() {
           monsters: [ghoul(const Position(2, 1), id: 'boss-crypt', hp: 1)],
         ),
       ),
-      act: (bloc) => bloc.add(const TileTapped(Position(2, 1))),
+      act: (bloc) => bloc
+        ..add(const AttackArmed())
+        ..add(StageCardTapped(bloc.state.game.monsters.single)),
       verify: (bloc) => expect(
         bloc.state.log.last,
         'The ghoul is slain. The delve is yours.',
@@ -797,7 +819,9 @@ void _lootTests() {
           monsters: [ghoul(const Position(2, 1), hp: 1)],
         ),
       ),
-      act: (bloc) => bloc.add(const TileTapped(Position(2, 1))),
+      act: (bloc) => bloc
+        ..add(const AttackArmed())
+        ..add(StageCardTapped(bloc.state.game.monsters.single)),
       verify: (bloc) => expect(
         bloc.state.log,
         isNot(contains(contains('The delve is yours'))),
@@ -1050,8 +1074,15 @@ void _lootTests() {
           skills: const {SkillId.arms: SkillState(level: 0, xp: 3)},
         ),
       ),
-      act: (bloc) => bloc.add(const TileTapped(Position(4, 2))),
+      act: (bloc) => bloc
+        ..add(const AttackArmed())
+        ..add(StageCardTapped(bloc.state.game.monsters.single)),
       expect: () => [
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedAttack(),
+        ),
         isA<GameViewState>()
             .having((s) => s.game.skills[SkillId.arms]?.level, 'Arms', 1)
             .having((s) => s.log, 'log', contains('Arms rises to 1.')),

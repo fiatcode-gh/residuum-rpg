@@ -231,13 +231,13 @@ void main() {
       final game = battleGame(monsters: [ghoulAt(const Position(1, 2))]);
       final bloc = await _pushGame(tester, game);
 
-      // act
-      bloc.add(const TileTapped(Position(1, 2)));
-      await tester.pumpAndSettle();
-      bloc.add(const TileTapped(Position(1, 2)));
-      await tester.pumpAndSettle();
-      bloc.add(const TileTapped(Position(1, 2)));
-      await tester.pumpAndSettle();
+      // act - the armed flow swings, one arm per swing: a step disarms
+      for (var swing = 0; swing < 3; swing++) {
+        bloc.add(const AttackArmed());
+        await tester.pumpAndSettle();
+        bloc.add(StageCardTapped(bloc.state.game.monsters.single));
+        await tester.pumpAndSettle();
+      }
 
       // assert
       expect(bloc.state.game.monsters, isEmpty);
@@ -272,11 +272,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('You hit the ghoul for 4.'), findsOneWidget);
 
-      // act - two more swings end the fight
-      bloc.add(const TileTapped(Position(1, 2)));
-      await tester.pumpAndSettle();
-      bloc.add(const TileTapped(Position(1, 2)));
-      await tester.pumpAndSettle();
+      // act - two more swings end the fight, one arm per swing
+      for (var swing = 0; swing < 2; swing++) {
+        bloc.add(const AttackArmed());
+        bloc.add(StageCardTapped(bloc.state.game.monsters.single));
+        await tester.pumpAndSettle();
+      }
 
       // assert - dock down: the crawl, unchanged; the log row still speaks
       expect(bloc.state.game.monsters, isEmpty);

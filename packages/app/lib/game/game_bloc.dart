@@ -599,7 +599,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       return;
     }
     final direction = game.hero.position.directionTo(event.position);
-    if (direction != null) {
+    if (direction != null && game.monsterAt(event.position) == null) {
       emit(_afterAction(MoveAction(direction)));
       return;
     }
@@ -635,9 +635,11 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   ///
   /// The view only sends this event with an armed slot; a bare tap is the
   /// enemy's numbers, which costs no turn and reaches no rule. Adjacent, the
-  /// armed attack is the bump dispatch core always answered and the armed
-  /// spell is the named cast; beyond the action's targets, the walk sentence
-  /// — log-only, the arm carried so the next tap keeps it.
+  /// armed spell is the named cast and the armed attack is the bump dispatch
+  /// core always answered — the same [MoveAction] a blocked move is, swung
+  /// from the dock now that the map refuses to swing. Beyond the action's
+  /// targets, the walk sentence — log-only, the arm carried so the next tap
+  /// keeps it.
   void _onStageCardTapped(StageCardTapped event, Emitter<GameViewState> emit) {
     if (state.game.isGameOver) return;
     final armed = state.armedAction;
@@ -647,7 +649,10 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       if (armed case ArmedSpell(spellId: final spellId)) {
         add(CastPressed(spellId, targetId: monster.id));
       } else {
-        add(TileTapped(monster.position));
+        final direction = state.game.hero.position.directionTo(
+          monster.position,
+        );
+        if (direction != null) emit(_afterAction(MoveAction(direction)));
       }
       return;
     }

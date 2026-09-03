@@ -171,7 +171,9 @@ void main() {
 
       // act
       for (var swing = 0; swing < 3; swing++) {
-        game.add(TileTapped(game.state.game.monsters.single.position));
+        game.add(const AttackArmed());
+        await game.stream.first;
+        game.add(StageCardTapped(game.state.game.monsters.single));
         await game.stream.first;
       }
       await saver.settled();
@@ -714,7 +716,9 @@ void main() {
         final game = GameBloc(game: resumed.run!, stepDelay: Duration.zero);
         games.add(game);
         saver.watchGame(game);
-        game.add(TileTapped(game.state.game.monsters.single.position));
+        game.add(const AttackArmed());
+        await game.stream.first;
+        game.add(StageCardTapped(game.state.game.monsters.single));
         await game.stream.first;
         town.add(RunSuspended(game.state.game, day: 0));
         await town.stream.first;
