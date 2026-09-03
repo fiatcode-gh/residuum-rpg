@@ -72,6 +72,7 @@ import 'position.dart';
   var materials = state.materials;
   var inventory = state.inventory;
   var nextDropNumber = state.nextDropNumber;
+  var itemNumber = state.itemNumber;
   var knownSpells = state.knownSpells;
   var mana = state.mana;
   var warded = state.warded;
@@ -108,8 +109,16 @@ import 'position.dart';
       final here = groundItems[hero.position]!;
       final taken = here.last;
       groundItems = _withoutLastItem(groundItems, hero.position);
-      inventory = [...inventory, taken];
-      events.add(ItemPickedUp(item: taken));
+      // The mint at the pack's door: the ground id is transient state — a
+      // litter id is minted on every visit and a drop id on every delve, so a
+      // pack that persisted across delves could hold two items answering to
+      // one id, and every removal would take both. The pack item's id is
+      // durable identity, so it is re-minted here off the hero-scoped
+      // counter, once per item, while the ground keeps its frozen litter ids.
+      final carried = taken.withId('item-$itemNumber');
+      itemNumber++;
+      inventory = [...inventory, carried];
+      events.add(ItemPickedUp(item: carried));
     case EquipAction(:final itemId):
       final worn = wear(loadout.equipment, inventory, itemId);
       _announce(worn, events);
@@ -213,6 +222,7 @@ import 'position.dart';
       warded: warded,
       bound: _stillStanding(bound, monsters),
       nextDropNumber: nextDropNumber,
+      itemNumber: itemNumber,
     ),
     events,
   );

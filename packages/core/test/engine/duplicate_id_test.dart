@@ -143,27 +143,30 @@ void main() {
     });
   });
 
-  group('characterization: pickup keeps the ground id (no mint today)', () {
-    test('the taken item carries its litter id into the pack', () {
-      // arrange
-      final litter = Item(
-        id: 'floor-3-2',
-        base: _potion,
-        rarity: Rarity.common,
-      );
-      final game = _duplicated(
-        groundItems: {
-          _here: [litter],
-        },
-      );
+  group(
+    'characterization: pickup re-ids at the pack door (the m3-itemids flip)',
+    () {
+      test('the taken item leaves its litter id on the ground', () {
+        // arrange
+        final litter = Item(
+          id: 'floor-3-2',
+          base: _potion,
+          rarity: Rarity.common,
+        );
+        final game = _duplicated(
+          groundItems: {
+            _here: [litter],
+          },
+        );
 
-      // act
-      final (after, events) = step(game, const PickUpAction());
+        // act
+        final (after, events) = step(game, const PickUpAction());
 
-      // assert
-      expect(events.whereType<ItemPickedUp>().single.item.id, 'floor-3-2');
-      expect(after.inventory.single.id, 'floor-3-2');
-      expect(after.groundItems[_here], isNull);
-    });
-  });
+        // assert
+        expect(events.whereType<ItemPickedUp>().single.item.id, 'item-1');
+        expect(after.inventory.single.id, 'item-1');
+        expect(after.groundItems[_here], isNull);
+      });
+    },
+  );
 }
