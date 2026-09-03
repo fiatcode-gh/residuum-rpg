@@ -252,25 +252,34 @@ Transacted brewPotion(Profile profile, BaseItem potion) {
 /// a hit-point term, this is the line that is already right.
 ///
 /// This is the only thing in the game that changes [Item.temper].
+///
+/// **The piece [heldItem] found is the piece that gets worked** — the first
+/// match in the pack, else the first match among the worn, in that order. A
+/// legacy pack can hold duplicate ids, and one hammer blow does not temper
+/// every twin.
 Transacted temperItem(Profile profile, String itemId) {
   final refusal = temperRefusal(profile, itemId);
   if (refusal != null) return (profile, TownRefusal(refusal));
   final item = heldItem(profile, itemId)!;
   final worked = item.tempered(item.temper + 1);
   final price = temperPriceFrom(item.temper);
-  return (
-    _clamped(
-      profile.copyWith(
-        inventory: [
-          for (final carried in profile.inventory)
-            carried.id == itemId ? worked : carried,
-        ],
-        equipment: {
+  final at = profile.inventory.indexWhere((carried) => carried.id == itemId);
+  final inventory = at < 0
+      ? profile.inventory
+      : ([...profile.inventory]..[at] = worked);
+  final equipment = at >= 0
+      ? profile.equipment
+      : {
           for (final slot in profile.equipment.keys)
             slot: profile.equipment[slot]!.id == itemId
                 ? worked
                 : profile.equipment[slot]!,
-        },
+        };
+  return (
+    _clamped(
+      profile.copyWith(
+        inventory: inventory,
+        equipment: equipment,
         gold: profile.gold - price.gold,
         materials: withMaterial(
           profile.materials,
@@ -354,7 +363,5 @@ Item? _find(List<Item> items, String itemId) {
   return null;
 }
 
-List<Item> _without(List<Item> items, String itemId) => [
-  for (final item in items)
-    if (item.id != itemId) item,
-];
+List<Item> _without(List<Item> items, String itemId) =>
+    withoutFirst(items, itemId);

@@ -62,6 +62,7 @@ class GameState {
     this.mana = 0,
     this.warded = 0,
     this.nextDropNumber = 1,
+    this.itemNumber = 1,
     this.isEncounter = false,
   }) : monsters = List.unmodifiable(monsters),
        visible = Set.unmodifiable(visible),
@@ -209,6 +210,15 @@ class GameState {
   /// The number the next kill's item id is built from.
   final int nextDropNumber;
 
+  /// The number the next pack item's id is built from.
+  ///
+  /// [Profile.itemNumber]'s run-side copy, on the [nextDropNumber] model: the
+  /// profile owns the never-resetting number, the run carries it while the hero
+  /// is underground, and every boundary that carries inventory carries it — a
+  /// field that copies the pack but not the counter would mint a second
+  /// `item-1` into a pack that already has one.
+  final int itemNumber;
+
   /// Every spell this build knows how to cast, by id.
   ///
   /// Content data carried by identity, exactly as [dropTables] are, and injected
@@ -307,6 +317,7 @@ class GameState {
     Equipment? equipment,
     Map<SkillId, SkillState>? skills,
     int? nextDropNumber,
+    int? itemNumber,
     Set<String>? knownSpells,
     Map<String, int>? bound,
     Map<MaterialId, int>? materials,
@@ -343,6 +354,7 @@ class GameState {
     mana: mana ?? this.mana,
     warded: warded ?? this.warded,
     nextDropNumber: nextDropNumber ?? this.nextDropNumber,
+    itemNumber: itemNumber ?? this.itemNumber,
     isEncounter: isEncounter,
   );
 }
