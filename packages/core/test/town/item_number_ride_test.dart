@@ -19,14 +19,6 @@ const _potion = BaseItem(
   heal: 8,
 );
 
-const _cap = BaseItem(
-  id: 'leather-cap',
-  name: 'Leather Cap',
-  glyph: '[',
-  slot: EquipSlot.head,
-  armor: 1,
-);
-
 Item _item(String id) => Item(id: id, base: _potion, rarity: Rarity.common);
 
 Dungeon _flat() =>
