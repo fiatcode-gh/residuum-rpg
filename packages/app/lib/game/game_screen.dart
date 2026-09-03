@@ -148,7 +148,7 @@ class _HitPoints extends StatelessWidget {
     BuildContext context,
     GameViewState state,
   ) {
-    final battle = _battleWord(state) == null ? '' : '  ${_battleWord(state)}';
+    final battle = _battleWord(state).isEmpty ? '' : '  ${_battleWord(state)}';
     return '$shown / $ceiling  ${_condition(fraction)}  '
         '${_whereabouts(context, state)}$battle${_magic(state)}';
   }
