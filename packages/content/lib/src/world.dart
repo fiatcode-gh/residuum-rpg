@@ -434,6 +434,7 @@ GameState startRoadEncounter(Profile profile, {required int day, Route? road}) {
     inventory: profile.inventory,
     equipment: profile.equipment,
     skills: profile.skills,
+    itemNumber: profile.itemNumber,
     spells: spellsById,
     knownSpells: profile.knownSpells,
     materials: profile.materials,

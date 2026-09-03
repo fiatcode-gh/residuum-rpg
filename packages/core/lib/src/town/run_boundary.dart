@@ -87,6 +87,7 @@ GameState startRun(
     equipment: profile.equipment,
     skills: profile.skills,
     gold: profile.gold,
+    itemNumber: profile.itemNumber,
     dropTables: dropTables,
     spells: spells,
     knownSpells: profile.knownSpells,
@@ -121,6 +122,7 @@ Profile endRun(Profile entered, GameState state, {required bool died}) {
     visit: state.visit,
     knownSpells: state.knownSpells,
     materials: state.materials,
+    itemNumber: state.itemNumber,
   );
   if (!died) return carried;
   final stripped = carried.copyWith(
@@ -165,6 +167,7 @@ Profile suspendRun(Profile entered, GameState state) => entered.copyWith(
   visit: state.visit,
   knownSpells: state.knownSpells,
   materials: state.materials,
+  itemNumber: state.itemNumber,
 );
 
 /// The crawl [suspended] was, with [profile] walking back down into it.
@@ -208,6 +211,14 @@ Profile suspendRun(Profile entered, GameState state) => entered.copyWith(
 /// and no town transaction disturbs. Stated rather than asserted, for
 /// [suspendRun]'s reason.
 ///
+/// **The item counter reconciles by taking the greater of the two**, where
+/// every other carried field takes one side outright. A camp is exactly where
+/// the two halves can drift — the suspended crawl minted `item-<n>` underground
+/// while nothing in town can, but a profile restored from an older save could
+/// carry a counter from a later delve — and a resume that took the smaller
+/// number would mint a second `item-<n>` into a pack that already has one. The
+/// larger count is the honest one in both directions.
+///
 /// Built field by field rather than copied, because [GameState.copyWith] has no
 /// gold: gold rides a run as a passenger and only the town moves it, so the one
 /// door that moves it back in has to say the whole state out loud.
@@ -242,4 +253,7 @@ GameState resumeRun(Profile profile, GameState suspended) => GameState(
   warded: suspended.warded,
   bound: suspended.bound,
   nextDropNumber: suspended.nextDropNumber,
+  itemNumber: profile.itemNumber > suspended.itemNumber
+      ? profile.itemNumber
+      : suspended.itemNumber,
 );
