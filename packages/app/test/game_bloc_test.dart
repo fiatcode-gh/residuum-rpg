@@ -2051,7 +2051,11 @@ void _lootTests() {
       build: () => GameBloc(game: armedArena()),
       act: (bloc) => bloc.add(const SkillArmed('firebolt')),
       expect: () => [
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
       ],
     );
 
@@ -2063,8 +2067,16 @@ void _lootTests() {
         bloc.add(const MapPanned(Offset(4, 0)));
       },
       expect: () => [
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
       ],
     );
 
@@ -2076,8 +2088,16 @@ void _lootTests() {
         bloc.add(const SystemBackPressed());
       },
       expect: () => [
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
       ],
     );
 
@@ -2089,8 +2109,16 @@ void _lootTests() {
         bloc.add(const TileTapped(Position(1, 1)));
       },
       expect: () => [
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
       ],
     );
 
@@ -2102,8 +2130,12 @@ void _lootTests() {
         bloc.add(const CastPressed('firebolt'));
       },
       expect: () => [
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', isNull),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
+        isA<GameViewState>().having((s) => s.armedAction, 'armed', isNull),
       ],
     );
 
@@ -2125,8 +2157,12 @@ void _lootTests() {
         bloc.add(const QuickDrinkPressed());
       },
       expect: () => [
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', isNull),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
+        isA<GameViewState>().having((s) => s.armedAction, 'armed', isNull),
       ],
     );
   });
@@ -2343,8 +2379,12 @@ void _lootTests() {
         bloc.add(const WaitPressed());
       },
       expect: () => [
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', isNull),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
+        isA<GameViewState>().having((s) => s.armedAction, 'armed', isNull),
       ],
     );
   });

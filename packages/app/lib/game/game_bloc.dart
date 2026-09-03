@@ -107,6 +107,47 @@ final class MapPanned extends GameBlocEvent {
   final Offset delta;
 }
 
+/// What the player armed in the battle skill bar, one slot at a time.
+///
+/// A view-scoped fact, not a rule: the armed slot names the action the next
+/// legal target tap will apply. Attack arms like a spell does — the bump is
+/// still core's blocked move, but the gesture that reaches it is the armed
+/// flow now.
+sealed class ArmedAction {
+  const ArmedAction();
+}
+
+/// The armed slot holds the attack.
+final class ArmedAttack extends ArmedAction {
+  const ArmedAttack();
+
+  @override
+  bool operator ==(Object other) => other is ArmedAttack;
+
+  @override
+  int get hashCode => 'ArmedAttack'.hashCode;
+
+  @override
+  String toString() => 'ArmedAttack()';
+}
+
+/// The armed slot holds the spell with this id.
+final class ArmedSpell extends ArmedAction {
+  const ArmedSpell(this.spellId);
+
+  final String spellId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ArmedSpell && other.spellId == spellId;
+
+  @override
+  int get hashCode => Object.hash(ArmedSpell, spellId);
+
+  @override
+  String toString() => 'ArmedSpell($spellId)';
+}
+
 /// The player tapped a skill button in the battle bar, arming [spellId], or
 /// disarmed by naming null.
 final class SkillArmed extends GameBlocEvent {
@@ -157,7 +198,7 @@ class GameViewState {
     this.walkId = 0,
     this.pan = Offset.zero,
     this.hasFled = false,
-    this.armedSpellId,
+    this.armedAction,
   });
 
   final GameState game;
@@ -188,7 +229,7 @@ class GameViewState {
   /// the whole of what fleeing is.
   final bool hasFled;
 
-  /// The spell the player armed in the battle skill bar, or null for none.
+  /// The action the player armed in the battle skill bar, or null for none.
   ///
   /// A view-scoped fact like [pan] and [hasFled]: an aim is a fact about the
   /// interface, not the rules. The same constructor-drop convention as [pan]
@@ -198,7 +239,14 @@ class GameViewState {
   /// system back refusal, the walk refusal and the walk's own bookkeeping.
   /// Everything that steps the game drops the arm, the completed cast
   /// included, and the battle view closing always rides a stepped state.
-  final String? armedSpellId;
+  final ArmedAction? armedAction;
+
+  /// The spell the armed slot holds, or null when it holds nothing or holds
+  /// the attack — the bar's spell buttons read only their own arming.
+  String? get armedSpellId => switch (armedAction) {
+    ArmedSpell(spellId: final id) => id,
+    _ => null,
+  };
 
   int get depth => game.depth;
 
@@ -554,7 +602,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
           game: game,
           log: [...state.log, _watchedRefusal],
           walkId: state.walkId,
-          armedSpellId: state.armedSpellId,
+          armedAction: state.armedAction,
         ),
       );
       return;
@@ -568,7 +616,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         log: state.log,
         autoPath: path,
         walkId: walkId,
-        armedSpellId: state.armedSpellId,
+        armedAction: state.armedAction,
       ),
     );
     add(AutoWalkAdvanced(walkId));
@@ -578,11 +626,12 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     if (state.game.isGameOver) return;
     final monster = event.monster;
     if (state.game.hero.position.isOrthogonallyAdjacentTo(monster.position)) {
-      add(
-        state.armedSpellId == null
-            ? TileTapped(monster.position)
-            : CastPressed(state.armedSpellId!, targetId: monster.id),
-      );
+      final armed = state.armedAction;
+      if (armed case ArmedSpell(spellId: final spellId)) {
+        add(CastPressed(spellId, targetId: monster.id));
+      } else {
+        add(TileTapped(monster.position));
+      }
       return;
     }
     emit(
@@ -590,7 +639,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         game: state.game,
         log: [...state.log, _outOfReach(monster.name)],
         walkId: state.walkId,
-        armedSpellId: state.armedSpellId,
+        armedAction: state.armedAction,
       ),
     );
   }
@@ -650,7 +699,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       log: state.log,
       autoPath: state.autoPath,
       walkId: state.walkId,
-      armedSpellId: event.spellId,
+      armedAction: event.spellId == null ? null : ArmedSpell(event.spellId!),
     ),
   );
 
@@ -666,7 +715,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       autoPath: state.autoPath,
       walkId: state.walkId,
       pan: state.pan + event.delta,
-      armedSpellId: state.armedSpellId,
+      armedAction: state.armedAction,
     ),
   );
 
@@ -715,7 +764,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
           state.game.isEncounter ? _roadBackRefusal : _backRefusal,
         ],
         walkId: state.walkId + 1,
-        armedSpellId: state.armedSpellId,
+        armedAction: state.armedAction,
       ),
     );
   }
@@ -790,7 +839,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     game: state.game,
     log: state.log,
     walkId: state.walkId + 1,
-    armedSpellId: state.armedSpellId,
+    armedAction: state.armedAction,
   );
 
   Iterable<String> _describe(GameState before, List<GameEvent> events) {

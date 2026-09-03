@@ -194,7 +194,7 @@ void main() {
         );
         expect(bloc.state.game.hero.position, const Position(1, 1));
         expect(bloc.state.game.monsters.single.hp, 4);
-        expect(bloc.state.armedSpellId, isNull);
+        expect(bloc.state.armedAction, isNull);
       },
     );
 
@@ -337,7 +337,7 @@ void main() {
       final container = tester.widget<Container>(backing);
       final color =
           container.color ?? (container.decoration! as BoxDecoration).color!;
-      expect(color.alpha, lessThan(255));
+      expect(color.a, lessThan(1.0));
       expect(
         find.descendant(of: backing, matching: find.text('the ghoul')),
         findsOneWidget,
@@ -423,7 +423,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(bloc.state.armedSpellId, 'firebolt');
+      expect(bloc.state.armedAction, const ArmedSpell('firebolt'));
       expect(find.text('✳ Firebolt 2 — armed'), findsOneWidget);
     });
 
@@ -479,7 +479,7 @@ void main() {
 
       // assert
       expect(find.text('You hit the ghoul for 4.'), findsOneWidget);
-      expect(bloc.state.armedSpellId, isNull);
+      expect(bloc.state.armedAction, isNull);
     });
 
     testWidgets('mend casts on the hero without a card tap', (tester) async {
