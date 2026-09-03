@@ -4,8 +4,6 @@ import 'package:residuum_content/src/save/run_codec.dart';
 import 'package:residuum_core/core.dart';
 import 'package:test/test.dart';
 
-import 'support/deep_run.dart';
-
 Profile _reread(Profile profile) =>
     decodeProfile({'profile': encodeProfile(profile)}, 'profile');
 
