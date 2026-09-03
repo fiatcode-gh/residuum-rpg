@@ -232,6 +232,16 @@ class BattleSkillBar extends StatelessWidget {
               ),
             ),
           ),
+        TextButton(
+          onPressed: () => bloc.add(const WaitPressed()),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+          ),
+          child: const Text(
+            'Wait',
+            style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: ink),
+          ),
+        ),
       ],
     ),
   );

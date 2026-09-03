@@ -2257,4 +2257,95 @@ void _lootTests() {
       ],
     );
   });
+
+  group('the wait verb on the crawl screen', () {
+    blocTest<GameBloc, GameViewState>(
+      'a wait spends the turn and the world ticks',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(1, 2))],
+        ),
+      ),
+      act: (bloc) => bloc.add(const WaitPressed()),
+      verify: (bloc) {
+        expect(bloc.state.log.first, 'You hold your ground.');
+        expect(bloc.state.game.hero.position, const Position(1, 1));
+        expect(bloc.state.game.hero.hp, lessThan(20));
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a reach-holder shoots a waiting hero',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [
+            Actor(
+              id: 'spitter-1',
+              name: 'the spitter',
+              glyph: 'p',
+              position: const Position(1, 3),
+              hp: 4,
+              maxHp: 4,
+              attackMin: 2,
+              attackMax: 3,
+              speed: 5,
+              energy: actThreshold,
+              reach: 3,
+            ),
+          ],
+        ).copyWith(visible: {const Position(1, 1), const Position(1, 3)}),
+      ),
+      act: (bloc) => bloc.add(const WaitPressed()),
+      verify: (bloc) {
+        expect(
+          bloc.state.log.where((line) => line.contains('from afar')),
+          isNotEmpty,
+        );
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a wait stops the walk in progress and spends the turn',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(5, 3))],
+        ),
+      ),
+      act: (bloc) async {
+        bloc.add(const TileTapped(Position(5, 1)));
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const WaitPressed());
+      },
+      wait: const Duration(milliseconds: 100),
+      verify: (bloc) {
+        expect(bloc.state.isWalking, isFalse);
+        expect(bloc.state.log.last, 'You hold your ground.');
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a wait disarms like any step',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [ghoul(const Position(3, 1))],
+          spells: spellsById,
+          knownSpells: const {'firebolt'},
+          mana: 10,
+        ),
+        stepDelay: Duration.zero,
+      ),
+      act: (bloc) {
+        bloc.add(const SkillArmed('firebolt'));
+        bloc.add(const WaitPressed());
+      },
+      expect: () => [
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', isNull),
+      ],
+    );
+  });
 }

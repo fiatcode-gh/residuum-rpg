@@ -315,6 +315,14 @@ class _Controls extends StatelessWidget {
                         context.read<GameBloc>().add(const FleePressed()),
                   ),
                 ),
+              if (state.isEncounter && !state.isRoadClear)
+                Expanded(
+                  child: _Control(
+                    label: 'Wait',
+                    onPressed: () =>
+                        context.read<GameBloc>().add(const WaitPressed()),
+                  ),
+                ),
               if (state.isRoadClear)
                 Expanded(
                   child: _Control(

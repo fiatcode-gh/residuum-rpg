@@ -67,6 +67,7 @@ GameState battleGame({
   Set<String> knownSpells = const {},
   int mana = 0,
   Set<Position>? visible,
+  bool isEncounter = false,
 }) {
   final map = FloorMap.parse(_arena);
   final seen = visible ?? computeFov(map, heroAt, fovRadius);
@@ -93,6 +94,7 @@ GameState battleGame({
     spells: spellsById,
     knownSpells: knownSpells,
     mana: mana,
+    isEncounter: isEncounter,
   );
 }
 
@@ -493,6 +495,63 @@ void main() {
         bloc.state.log.where((line) => line.startsWith('Not enough mana')),
         isNotEmpty,
       );
+    });
+  });
+
+  group('the wait surfaces', () {
+    testWidgets('the bar offers Wait and tapping it holds ground', (
+      tester,
+    ) async {
+      // arrange - a caster in a fight
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        knownSpells: const {'firebolt'},
+        mana: 10,
+      );
+      final bloc = await _pushGame(tester, game);
+
+      // act
+      await tester.tap(find.text('Wait'));
+      await tester.pumpAndSettle();
+
+      // assert - the sentence and the turn: the ghoul answered
+      expect(find.text('You hold your ground.'), findsOneWidget);
+      expect(bloc.state.game.hero.position, const Position(1, 1));
+      expect(bloc.state.game.hero.hp, lessThan(20));
+    });
+
+    testWidgets('a live road encounter offers Wait in its control row', (
+      tester,
+    ) async {
+      // arrange - an encounter-flagged arena, nothing holding reach
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(5, 1), speed: 1)],
+        isEncounter: true,
+      );
+      await _pushGame(tester, game);
+
+      // act + assert - the row's Wait exists while the fight is live
+      expect(find.text('Wait'), findsOneWidget);
+    });
+
+    testWidgets('a cleared road has no Wait control', (tester) async {
+      // arrange - an encounter with every monster gone
+      final game = battleGame(isEncounter: true);
+      await _pushGame(tester, game);
+
+      // assert
+      expect(find.text('Wait'), findsNothing);
+    });
+
+    testWidgets('a crawl with no fight live has no Wait control', (
+      tester,
+    ) async {
+      // arrange
+      final game = battleGame();
+      await _pushGame(tester, game);
+
+      // assert - the bar is closed and the row is the crawl's own
+      expect(find.text('Wait'), findsNothing);
     });
   });
 }

@@ -136,6 +136,11 @@ final class FleePressed extends GameBlocEvent {
   const FleePressed();
 }
 
+/// The player asked to hold ground for one turn.
+final class WaitPressed extends GameBlocEvent {
+  const WaitPressed();
+}
+
 /// One step of a walk in progress. Carries the [walkId] it belongs to so a
 /// step left over from a cancelled walk cannot resume it.
 final class AutoWalkAdvanced extends GameBlocEvent {
@@ -497,6 +502,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
        ) {
     on<TileTapped>(_onTileTapped);
     on<StageCardTapped>(_onStageCardTapped);
+    on<WaitPressed>(_onWaitPressed);
     on<DescendPressed>(_onDescendPressed);
     on<AscendPressed>(_onAscendPressed);
     on<AutoWalkAdvanced>(_onAutoWalkAdvanced);
@@ -672,6 +678,15 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   /// screen and the event is a press nobody made.
   void _onFleePressed(FleePressed event, Emitter<GameViewState> emit) {
     if (state.wayOut case final Direction out) _act(MoveAction(out), emit);
+  }
+
+  /// Holds ground for one turn, stopping any walk in progress first.
+  ///
+  /// Every control tap interrupts a walk; spending the turn is what [_act]
+  /// already does to the arm and the path by building a fresh view state.
+  void _onWaitPressed(WaitPressed event, Emitter<GameViewState> emit) {
+    if (state.game.isGameOver) return;
+    _act(const WaitAction(), emit);
   }
 
   /// Says where the way out is, and stops any walk in progress.
