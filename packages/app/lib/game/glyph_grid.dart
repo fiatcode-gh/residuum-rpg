@@ -156,12 +156,31 @@ class _GlyphPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    for (final cell in glyphPlan(state.game, palette)) {
+    for (final cell in glyphPlan(
+      state.game,
+      palette,
+      markedIds: state.armedTargets,
+    )) {
       _paintCell(canvas, cell);
     }
   }
 
   void _paintCell(Canvas canvas, GlyphCell cell) {
+    final origin = geometry.topLeftOf(cell.position.x, cell.position.y);
+    if (cell.marked) {
+      canvas.drawRect(
+        Rect.fromLTWH(
+          origin.dx,
+          origin.dy,
+          geometry.cellSize,
+          geometry.cellSize,
+        ).deflate(1),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = cell.ink,
+      );
+    }
     final painter = TextPainter(
       text: TextSpan(
         text: cell.glyph,
@@ -175,7 +194,6 @@ class _GlyphPainter extends CustomPainter {
       textAlign: TextAlign.center,
       textDirection: TextDirection.ltr,
     )..layout();
-    final origin = geometry.topLeftOf(cell.position.x, cell.position.y);
     painter.paint(
       canvas,
       origin +

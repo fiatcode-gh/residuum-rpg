@@ -49,6 +49,7 @@ class BattleDock extends StatelessWidget {
           for (final monster in state.monstersHoldingReach)
             _StageCard(
               monster: monster,
+              marked: state.armedTargets.contains(monster.id),
               onTap: () => state.armedAction == null
                   ? showEnemyInfo(context, monster)
                   : bloc.add(StageCardTapped(monster)),
@@ -61,10 +62,19 @@ class BattleDock extends StatelessWidget {
 }
 
 /// One creature on the stage: glyph, name, wound, and how far it stands.
+///
+/// A legal target of the armed action carries the ink border — the same mark
+/// the bar's armed button wears — so a marked-card tap applies the action and
+/// an unmarked one does not.
 class _StageCard extends StatelessWidget {
-  const _StageCard({required this.monster, required this.onTap});
+  const _StageCard({
+    required this.monster,
+    required this.marked,
+    required this.onTap,
+  });
 
   final Actor monster;
+  final bool marked;
   final VoidCallback onTap;
 
   @override
@@ -76,10 +86,12 @@ class _StageCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(4),
         child: Container(
+          key: Key('stage-card-${monster.id}'),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: panel,
             borderRadius: BorderRadius.circular(4),
+            border: marked ? Border.all(color: ink) : null,
           ),
           child: Row(
             children: [

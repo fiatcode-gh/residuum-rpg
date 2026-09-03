@@ -408,6 +408,68 @@ void main() {
     });
   });
 
+  group('the target mark on the stage', () {
+    testWidgets(
+      'an armed attack marks the legal target card with the ink border',
+      (tester) async {
+        // arrange - the ghoul adjacent and a far spitter on the stage
+        final game = battleGame(
+          monsters: [
+            ghoulAt(const Position(1, 2)),
+            spitterAt(const Position(4, 1)),
+          ],
+          visible: {
+            const Position(1, 1),
+            const Position(1, 2),
+            const Position(4, 1),
+          },
+        );
+        final bloc = await _pushGame(tester, game);
+
+        // act - arm the attack
+        await tester.tap(find.text('Attack'));
+        await tester.pumpAndSettle();
+
+        // assert - the adjacent card carries the border; the far one does not
+        expect(
+          tester.widget<Container>(find.byKey(const Key('stage-card-ghoul-1'))),
+          predicate<Container>(
+            (container) =>
+                (container.decoration! as BoxDecoration).border != null,
+          ),
+        );
+        expect(
+          tester.widget<Container>(
+            find.byKey(const Key('stage-card-spitter-1')),
+          ),
+          predicate<Container>(
+            (container) =>
+                (container.decoration! as BoxDecoration).border == null,
+          ),
+        );
+        expect(bloc.state.armedTargets, {'ghoul-1'});
+      },
+    );
+
+    testWidgets('nothing is marked when nothing is armed', (tester) async {
+      // arrange
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        visible: {const Position(1, 1), const Position(1, 2)},
+      );
+      await _pushGame(tester, game);
+
+      // assert
+      expect(
+        tester.widget<Container>(find.byKey(const Key('stage-card-ghoul-1'))),
+        predicate<Container>(
+          (container) =>
+              (container.decoration! as BoxDecoration).border == null,
+        ),
+      );
+    });
+  });
+
   group('the skill bar', () {
     testWidgets('the bar lists marking, name and cost, school first', (
       tester,

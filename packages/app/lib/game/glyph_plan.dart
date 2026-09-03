@@ -21,7 +21,13 @@ const double fullOpacity = 1.0;
 /// hold the painter to what it draws without a screenshot. The painter is the
 /// brush; this is the picture.
 class GlyphCell {
-  const GlyphCell(this.position, this.glyph, this.ink, this.opacity);
+  const GlyphCell(
+    this.position,
+    this.glyph,
+    this.ink,
+    this.opacity, {
+    this.marked = false,
+  });
 
   final Position position;
   final String glyph;
@@ -30,6 +36,11 @@ class GlyphCell {
   /// 1.0 for everything the hero is looking at, [rememberedOpacity] for
   /// anything only the map remembers.
   final double opacity;
+
+  /// Whether this cell is a legal target of the armed action: the painter
+  /// strokes an outline around the glyph, shape and position carrying the
+  /// state — never hue.
+  final bool marked;
 }
 
 /// What the hero's own glyph is drawn in.
@@ -51,7 +62,11 @@ const Color _monsterInk = Color(0xFFD9A227);
 /// terrain's rule and stays drawn on the remembered map at
 /// [rememberedOpacity]. Litter and monsters are events: they exist only where
 /// the hero is looking, and a remembered map says nothing about them.
-List<GlyphCell> glyphPlan(GameState game, DungeonPalette palette) {
+List<GlyphCell> glyphPlan(
+  GameState game,
+  DungeonPalette palette, {
+  Set<String> markedIds = const {},
+}) {
   final cells = <GlyphCell>[];
   for (var y = 0; y < game.map.height; y++) {
     for (var x = 0; x < game.map.width; x++) {
@@ -90,7 +105,13 @@ List<GlyphCell> glyphPlan(GameState game, DungeonPalette palette) {
   for (final monster in game.monsters) {
     if (!game.visible.contains(monster.position)) continue;
     cells.add(
-      GlyphCell(monster.position, monster.glyph, _monsterInk, fullOpacity),
+      GlyphCell(
+        monster.position,
+        monster.glyph,
+        _monsterInk,
+        fullOpacity,
+        marked: markedIds.contains(monster.id),
+      ),
     );
   }
   cells.add(

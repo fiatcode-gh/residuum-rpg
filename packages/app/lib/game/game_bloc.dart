@@ -256,6 +256,24 @@ class GameViewState {
     _ => null,
   };
 
+  /// The monsters the armed action may land on, by id, in stage order.
+  ///
+  /// Attack reaches what the bump rule reaches: the orthogonally adjacent.
+  /// A target-needing spell keeps the sight rule it has always had: anything
+  /// the hero can see. Nothing armed marks nothing.
+  Set<String> get armedTargets => switch (armedAction) {
+    ArmedAttack() => {
+      for (final monster in game.monsters)
+        if (monster.position.isOrthogonallyAdjacentTo(game.hero.position))
+          monster.id,
+    },
+    ArmedSpell() => {
+      for (final monster in game.monsters)
+        if (game.visible.contains(monster.position)) monster.id,
+    },
+    null => const {},
+  };
+
   int get depth => game.depth;
 
   /// How many floors the delve the hero is in laid out.
