@@ -37,6 +37,7 @@ Map<String, Object?> encodeRun(GameState run) => {
   'gold': run.gold,
   'isGameOver': run.isGameOver,
   'nextDropNumber': run.nextDropNumber,
+  if (run.itemNumber != 1) 'itemNumber': run.itemNumber,
   'rngState': encodeWide(run.rng.state),
   'lootRngState': encodeWide(run.lootRng.state),
   'map': run.map.toAscii(),
@@ -144,6 +145,9 @@ GameState loadRun(
     bound: _decodeBound(written, 'bound'),
     materials: decodeMaterials(written, 'materials'),
     nextDropNumber: intAt(written, 'nextDropNumber'),
+    itemNumber: written.containsKey('itemNumber')
+        ? intAt(written, 'itemNumber')
+        : 1,
   );
 }
 

@@ -22,6 +22,12 @@ import 'save_json.dart';
 ///
 /// The hero's tile and held energy are not earned and are not written: a hero in
 /// town stands nowhere, and `startRun` sets both at the door.
+///
+/// **[Profile.itemNumber] encodes omit-on-default, on the `reach` precedent's
+/// own argument:** an unconditional encode would rewrite every golden document
+/// the v3 pins hold, and a field absent from every golden document is the only
+/// shape that proves nothing bot-visible moved. An absent key reads as one, the
+/// field's default — which is also why no refusal path exists for it.
 Map<String, Object?> encodeProfile(Profile profile) => {
   'hp': profile.hero.hp,
   'gold': profile.gold,
@@ -35,6 +41,7 @@ Map<String, Object?> encodeProfile(Profile profile) => {
   'knownSpells': encodeSpellIds(profile.knownSpells),
   'materials': encodeMaterials(profile.materials),
   'brewNumber': profile.brewNumber,
+  if (profile.itemNumber != 1) 'itemNumber': profile.itemNumber,
 };
 
 /// Every spell in [known], as sorted ids.
@@ -77,5 +84,8 @@ Profile decodeProfile(Map<String, Object?> from, String key) {
     knownSpells: decodeSpellIds(written, 'knownSpells'),
     materials: decodeMaterials(written, 'materials'),
     brewNumber: intAt(written, 'brewNumber'),
+    itemNumber: written.containsKey('itemNumber')
+        ? intAt(written, 'itemNumber')
+        : 1,
   );
 }
