@@ -216,6 +216,12 @@ class BattleSkillBar extends StatelessWidget {
       spacing: 6,
       runSpacing: 4,
       children: [
+        _BarButton(
+          label: 'Attack',
+          armedLabel: 'Attack — armed',
+          armed: state.armedAction == const ArmedAttack(),
+          onPressed: () => bloc.add(const AttackArmed()),
+        ),
         for (final spell in state.knownSpells)
           TextButton(
             onPressed: () => bloc.add(
@@ -242,17 +248,44 @@ class BattleSkillBar extends StatelessWidget {
               ),
             ),
           ),
-        TextButton(
+        _BarButton(
+          label: 'Wait',
+          armedLabel: null,
+          armed: false,
           onPressed: () => bloc.add(const WaitPressed()),
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-          ),
-          child: const Text(
-            'Wait',
-            style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: ink),
-          ),
         ),
       ],
+    ),
+  );
+}
+
+/// One button of the battle bar: label, arm marking by border and word.
+class _BarButton extends StatelessWidget {
+  const _BarButton({
+    required this.label,
+    required this.armedLabel,
+    required this.armed,
+    required this.onPressed,
+  });
+
+  final String label;
+
+  /// The word the button reads while it is the armed slot, or null for a
+  /// button that never arms.
+  final String? armedLabel;
+  final bool armed;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => TextButton(
+    onPressed: onPressed,
+    style: TextButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      side: armed ? const BorderSide(color: ink) : null,
+    ),
+    child: Text(
+      armed ? (armedLabel ?? label) : label,
+      style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: ink),
     ),
   );
 }

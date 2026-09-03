@@ -61,7 +61,7 @@ class GameScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (state.isBattleOpen && state.knownSpells.isNotEmpty)
+                      if (state.isBattleOpen)
                         BattleSkillBar(state: state, bloc: bloc),
                       _HitPoints(state: state),
                       _Controls(state: state),

@@ -398,14 +398,16 @@ void main() {
       expect(find.text('✚ Mend 3'), findsOneWidget);
     });
 
-    testWidgets('a non-caster sees no bar', (tester) async {
-      // arrange
+    testWidgets('a non-caster sees the bar: Attack and Wait', (tester) async {
+      // arrange - the bar renders for every hero now; no spells to list
       final game = battleGame(monsters: [ghoulAt(const Position(1, 2))]);
 
       // act
       await _pushGame(tester, game);
 
       // assert
+      expect(find.text('Attack'), findsOneWidget);
+      expect(find.text('Wait'), findsOneWidget);
       expect(find.textContaining('Firebolt'), findsNothing);
     });
 
@@ -462,7 +464,115 @@ void main() {
       );
     });
 
-    testWidgets('tapping a card with no armed skill is the bump-attack', (
+    testWidgets('tapping Attack arms it, marked by a word', (tester) async {
+      // arrange
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        knownSpells: const {'firebolt'},
+        mana: 10,
+      );
+      final bloc = await _pushGame(tester, game);
+
+      // act
+      await tester.tap(find.text('Attack'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(bloc.state.armedAction, const ArmedAttack());
+      expect(find.text('Attack — armed'), findsOneWidget);
+    });
+
+    testWidgets('tapping armed Attack again disarms it', (tester) async {
+      // arrange
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        knownSpells: const {'firebolt'},
+        mana: 10,
+      );
+      final bloc = await _pushGame(tester, game);
+
+      // act
+      await tester.tap(find.text('Attack'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Attack — armed'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(bloc.state.armedAction, isNull);
+      expect(find.text('Attack'), findsOneWidget);
+    });
+
+    testWidgets('the bar reads Attack, the spells, then Wait', (tester) async {
+      // arrange
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        knownSpells: const {'firebolt'},
+        mana: 10,
+      );
+      await _pushGame(tester, game);
+
+      // act + assert - document order: Attack before the spell before Wait
+      final labels = find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            widget.data != null &&
+            const ['Attack', '✳ Firebolt 2', 'Wait'].contains(widget.data),
+      );
+      final texts = labels.evaluate().map((element) {
+        final text = element.widget as Text;
+        return text.data;
+      }).toList();
+      expect(texts, ['Attack', '✳ Firebolt 2', 'Wait']);
+    });
+
+    testWidgets('armed Attack and a marked card tap is the bump', (
+      tester,
+    ) async {
+      // arrange
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        knownSpells: const {'firebolt'},
+        mana: 10,
+      );
+      final bloc = await _pushGame(tester, game);
+
+      // act - arm attack, then tap the adjacent ghoul's card
+      await tester.tap(find.text('Attack'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('the ghoul'));
+      await tester.pumpAndSettle();
+
+      // assert - the bump fired through the armed flow
+      expect(find.text('You hit the ghoul for 4.'), findsOneWidget);
+      expect(bloc.state.armedAction, isNull);
+    });
+
+    testWidgets(
+      'armed Attack at an unmarked card says walk and keeps the arm',
+      (tester) async {
+        // arrange - the spitter holds reach three tiles out: a stage card,
+        // but not an attack target
+        final game = battleGame(
+          monsters: [spitterAt(const Position(4, 1))],
+          knownSpells: const {'firebolt'},
+          mana: 10,
+        );
+        final bloc = await _pushGame(tester, game);
+
+        // act
+        await tester.tap(find.text('Attack'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('the spitter'));
+        await tester.pumpAndSettle();
+
+        // assert - the sentence, and the arm stays for the next tap
+        expect(bloc.state.log.last, 'the spitter is out of reach. Walk to it.');
+        expect(bloc.state.armedAction, const ArmedAttack());
+        expect(bloc.state.game.hero.position, const Position(1, 1));
+      },
+    );
+
+    testWidgets('arming the attack disarms the spell and the other way', (
       tester,
     ) async {
       // arrange
@@ -474,12 +584,15 @@ void main() {
       final bloc = await _pushGame(tester, game);
 
       // act
-      await tester.tap(find.text('the ghoul'));
+      await tester.tap(find.text('✳ Firebolt 2'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Attack'));
       await tester.pumpAndSettle();
 
-      // assert
-      expect(find.text('You hit the ghoul for 4.'), findsOneWidget);
-      expect(bloc.state.armedAction, isNull);
+      // assert - one armed slot at a time
+      expect(bloc.state.armedAction, const ArmedAttack());
+      expect(find.text('Attack — armed'), findsOneWidget);
+      expect(find.text('✳ Firebolt 2 — armed'), findsNothing);
     });
 
     testWidgets('mend casts on the hero without a card tap', (tester) async {

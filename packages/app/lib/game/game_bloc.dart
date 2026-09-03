@@ -156,6 +156,14 @@ final class SkillArmed extends GameBlocEvent {
   final String? spellId;
 }
 
+/// The player tapped Attack in the battle bar, arming the bump.
+///
+/// Tapping it again disarms: an armed slot nobody can put down would make the
+/// second tap a guess.
+final class AttackArmed extends GameBlocEvent {
+  const AttackArmed();
+}
+
 /// The player pressed the system back button while the crawl was on screen.
 ///
 /// The crawl has an event for this because the crawl refuses it. Android's back
@@ -565,6 +573,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     on<QuickDrinkPressed>(_onQuickDrinkPressed);
     on<MapPanned>(_onMapPanned);
     on<SkillArmed>(_onSkillArmed);
+    on<AttackArmed>(_onAttackArmed);
     on<SystemBackPressed>(_onSystemBackPressed);
     on<FleePressed>(_onFleePressed);
   }
@@ -700,6 +709,22 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       autoPath: state.autoPath,
       walkId: state.walkId,
       armedAction: event.spellId == null ? null : ArmedSpell(event.spellId!),
+    ),
+  );
+
+  /// Arms the attack, or puts it down when it is already the armed slot.
+  ///
+  /// One armed slot at a time: arming the attack disarms whatever spell held
+  /// the slot, and nothing steps — an aim is not a hero action.
+  void _onAttackArmed(AttackArmed event, Emitter<GameViewState> emit) => emit(
+    GameViewState(
+      game: state.game,
+      log: state.log,
+      autoPath: state.autoPath,
+      walkId: state.walkId,
+      armedAction: state.armedAction == const ArmedAttack()
+          ? null
+          : const ArmedAttack(),
     ),
   );
 
