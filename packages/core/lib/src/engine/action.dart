@@ -135,3 +135,12 @@ final class DropAction extends GameAction {
 
   final String itemId;
 }
+
+/// Hold ground and let the world tick.
+///
+/// Always legal — the turn is spent exactly as a wall-bump is, and the
+/// monster phase runs exactly as it does after any other action, which is the
+/// whole point: a hero standing still at a shooter's reach is shot for it.
+final class WaitAction extends GameAction {
+  const WaitAction();
+}

@@ -439,3 +439,18 @@ final class MonsterBanished extends GameEvent with Equatable {
   @override
   String toString() => 'MonsterBanished($targetId, $from -> $to)';
 }
+
+/// The hero held ground: the turn passed and nothing else changed.
+///
+/// The one event that names no change, because no change happened — the world
+/// simply got a turn. Everything the turn cost is already true of the state
+/// the event rides with.
+final class HeroWaited extends GameEvent with Equatable {
+  const HeroWaited();
+
+  @override
+  List<Object?> get props => const [];
+
+  @override
+  String toString() => 'HeroWaited()';
+}

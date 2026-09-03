@@ -28,6 +28,10 @@ import 'game_bloc.dart';
 /// Nothing is told apart by hue: a creature is its glyph and its name, its
 /// wound is a bar's length and two numbers, its reach is a word, and an armed
 /// spell is a word beside its own name.
+/// The translucent dark backing one dock header draws behind its cards and
+/// chips, so every dock string reads over any map tile.
+const Color dockBacking = Color(0xB30E1015);
+
 class BattleDock extends StatelessWidget {
   const BattleDock({super.key, required this.state});
 
@@ -36,25 +40,41 @@ class BattleDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<GameBloc>();
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (final monster in state.monstersHoldingReach)
-          _StageCard(
-            monster: monster,
-            onTap: () => bloc.add(StageCardTapped(monster)),
-          ),
-        _TurnStrip(state: state),
-      ],
+    return Container(
+      key: const Key('dock-backing'),
+      color: dockBacking,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final monster in state.monstersHoldingReach)
+            _StageCard(
+              monster: monster,
+              marked: state.armedTargets.contains(monster.id),
+              onTap: () => state.armedAction == null
+                  ? showEnemyInfo(context, monster)
+                  : bloc.add(StageCardTapped(monster)),
+            ),
+          _TurnChips(state: state),
+        ],
+      ),
     );
   }
 }
 
 /// One creature on the stage: glyph, name, wound, and how far it stands.
+///
+/// A legal target of the armed action carries the ink border — the same mark
+/// the bar's armed button wears — so a marked-card tap applies the action and
+/// an unmarked one does not.
 class _StageCard extends StatelessWidget {
-  const _StageCard({required this.monster, required this.onTap});
+  const _StageCard({
+    required this.monster,
+    required this.marked,
+    required this.onTap,
+  });
 
   final Actor monster;
+  final bool marked;
   final VoidCallback onTap;
 
   @override
@@ -66,10 +86,12 @@ class _StageCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(4),
         child: Container(
+          key: Key('stage-card-${monster.id}'),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: panel,
             borderRadius: BorderRadius.circular(4),
+            border: marked ? Border.all(color: ink) : null,
           ),
           child: Row(
             children: [
@@ -146,37 +168,39 @@ class _StageCard extends StatelessWidget {
   }
 }
 
-/// One line under the stage: who acts before the hero again, who walks in.
+/// One row of chips: who acts before the hero again, who walks in.
 ///
-/// Greyscale-safe by position and word: `Next:` names the schedule's first,
-/// each walker-in carries its own count of the hero actions it needs.
-class _TurnStrip extends StatelessWidget {
-  const _TurnStrip({required this.state});
+/// Greyscale-safe by position and word: `NOW —` names the schedule's first —
+/// the monster whose turn is next — and each walker-in carries `IN n —` with
+/// the hero actions it needs. The words carry the state; the row renders in
+/// ink on the dock's backing, never dim over the map.
+class _TurnChips extends StatelessWidget {
+  const _TurnChips({required this.state});
 
   final GameViewState state;
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
     child: Wrap(
       spacing: 12,
       children: [
         if (state.upNext.isNotEmpty)
           Text(
-            'Next: ${state.upNext.first.name}',
+            'NOW — ${state.upNext.first.name}',
             style: const TextStyle(
               fontFamily: 'monospace',
               fontSize: 12,
-              color: dim,
+              color: ink,
             ),
           ),
         for (final (monster, turns) in state.arrivals)
           Text(
-            '${monster.name} — $turns turns out',
+            'IN $turns — ${monster.name}',
             style: const TextStyle(
               fontFamily: 'monospace',
               fontSize: 12,
-              color: dim,
+              color: ink,
             ),
           ),
       ],
@@ -206,6 +230,12 @@ class BattleSkillBar extends StatelessWidget {
       spacing: 6,
       runSpacing: 4,
       children: [
+        _BarButton(
+          label: 'Attack',
+          armedLabel: 'Attack — armed',
+          armed: state.armedAction == const ArmedAttack(),
+          onPressed: () => bloc.add(const AttackArmed()),
+        ),
         for (final spell in state.knownSpells)
           TextButton(
             onPressed: () => bloc.add(
@@ -232,7 +262,123 @@ class BattleSkillBar extends StatelessWidget {
               ),
             ),
           ),
+        _BarButton(
+          label: 'Wait',
+          armedLabel: null,
+          armed: false,
+          onPressed: () => bloc.add(const WaitPressed()),
+        ),
       ],
+    ),
+  );
+}
+
+/// One button of the battle bar: label, arm marking by border and word.
+class _BarButton extends StatelessWidget {
+  const _BarButton({
+    required this.label,
+    required this.armedLabel,
+    required this.armed,
+    required this.onPressed,
+  });
+
+  final String label;
+
+  /// The word the button reads while it is the armed slot, or null for a
+  /// button that never arms.
+  final String? armedLabel;
+  final bool armed;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => TextButton(
+    onPressed: onPressed,
+    style: TextButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      side: armed ? const BorderSide(color: ink) : null,
+    ),
+    child: Text(
+      armed ? (armedLabel ?? label) : label,
+      style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: ink),
+    ),
+  );
+}
+
+/// Opens the enemy's numbers over the crawl: name, glyph, wounds, attack,
+/// reach, speed, and what the creature's make of.
+///
+/// Words carry everything — greyscale-safe by construction — and the numbers
+/// come off the [Actor] the card already holds: no bestiary lore, no new core
+/// read. Dismissal is a tap outside the sheet and costs no turn; nothing is
+/// mutated, nothing is dispatched.
+void showEnemyInfo(BuildContext context, Actor monster) {
+  final actor = monster;
+  showModalBottomSheet<void>(
+    context: context,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    actor.glyph,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 18,
+                      color: ink,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      actor.name,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 13,
+                        color: ink,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _EnemyInfoLine('Wounds ${actor.hp} / ${actor.maxHp}'),
+              _EnemyInfoLine('${actor.attackMin}–${actor.attackMax}'),
+              _EnemyInfoLine(
+                actor.reach > 1
+                    ? 'strikes at range ${actor.reach}'
+                    : 'strikes adjacent',
+              ),
+              _EnemyInfoLine('Speed ${actor.speed}'),
+              for (final type in actor.resists)
+                _EnemyInfoLine('Resists ${type.word}'),
+              for (final type in actor.vulnerableTo)
+                _EnemyInfoLine('Burns at ${type.word}'),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// One line of the enemy sheet, monospace and dim.
+class _EnemyInfoLine extends StatelessWidget {
+  const _EnemyInfoLine(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Text(
+      text,
+      style: const TextStyle(fontFamily: 'monospace', fontSize: 13, color: ink),
     ),
   );
 }

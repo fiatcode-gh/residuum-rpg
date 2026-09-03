@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/battle_view.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/inventory_screen.dart';
@@ -210,10 +211,42 @@ void main() {
       // act
       await _pushCrawl(tester, game);
 
-      // assert
+      // assert - engaged: the crossed mark and the word in the line
       expect(find.byType(GameScreen), findsOneWidget);
+      expect(find.text('✖'), findsOneWidget);
       expect(find.textContaining('Engaged 1'), findsOneWidget);
+      expect(find.textContaining('Watched'), findsNothing);
       expect(find.textContaining('Pack (0)'), findsOneWidget);
+    });
+
+    testWidgets('a monster in sight beyond reach reads as watched', (
+      tester,
+    ) async {
+      // arrange - the ghoul stands far down the corridor, in sight, out of reach
+      final game = _crawl(monsters: [_ghoul(const Position(5, 1))]);
+
+      // act
+      await _pushCrawl(tester, game);
+
+      // assert - watched: the eye mark and the word; no dock, no Engaged
+      expect(find.text('◉'), findsOneWidget);
+      expect(find.textContaining('Watched 1'), findsOneWidget);
+      expect(find.textContaining('Engaged'), findsNothing);
+      expect(find.byType(BattleDock), findsNothing);
+    });
+
+    testWidgets('nothing in sight leaves the glyph cell empty', (tester) async {
+      // arrange
+      final game = _crawl();
+
+      // act
+      await _pushCrawl(tester, game);
+
+      // assert - neither mark, neither word
+      expect(find.text('◉'), findsNothing);
+      expect(find.text('✖'), findsNothing);
+      expect(find.textContaining('Watched'), findsNothing);
+      expect(find.textContaining('Engaged'), findsNothing);
     });
 
     testWidgets('a bump on an adjacent monster keeps the claws verb', (
@@ -223,8 +256,10 @@ void main() {
       final game = _crawl(monsters: [_ghoul(const Position(1, 2))]);
       final bloc = await _pushCrawl(tester, game);
 
-      // act
-      bloc.add(const TileTapped(Position(1, 2)));
+      // act - the dock's armed flow reaches the same core bump
+      bloc.add(const AttackArmed());
+      await tester.pumpAndSettle();
+      bloc.add(StageCardTapped(bloc.state.game.monsters.single));
       await tester.pumpAndSettle();
 
       // assert

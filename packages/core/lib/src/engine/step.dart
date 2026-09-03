@@ -165,6 +165,8 @@ import 'position.dart';
       inventory = withoutFirst(inventory, itemId);
       groundItems = _withItem(groundItems, hero.position, put);
       events.add(ItemDropped(item: put, at: hero.position));
+    case WaitAction():
+      events.add(const HeroWaited());
   }
 
   final phase = _monsterPhase(
@@ -483,6 +485,8 @@ GameEvent? _refuse(GameState state, GameAction action) {
       if (_carried(state, itemId) == null) {
         return const ActionRefused(reason: 'you are not carrying that');
       }
+      return null;
+    case WaitAction():
       return null;
   }
 }

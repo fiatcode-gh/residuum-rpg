@@ -61,7 +61,7 @@ class GameScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (state.isBattleOpen && state.knownSpells.isNotEmpty)
+                      if (state.isBattleOpen)
                         BattleSkillBar(state: state, bloc: bloc),
                       _HitPoints(state: state),
                       _Controls(state: state),
@@ -107,6 +107,8 @@ class _HitPoints extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
+          _BattleGlyph(state: state),
+          const SizedBox(width: 12),
           Expanded(
             child: FittedBox(
               fit: BoxFit.scaleDown,
@@ -146,11 +148,20 @@ class _HitPoints extends StatelessWidget {
     BuildContext context,
     GameViewState state,
   ) {
-    final engaged = state.enemiesInSight > 0
-        ? '  Engaged ${state.enemiesInSight}'
-        : '';
+    final battle = _battleWord(state).isEmpty ? '' : '  ${_battleWord(state)}';
     return '$shown / $ceiling  ${_condition(fraction)}  '
-        '${_whereabouts(context, state)}$engaged${_magic(state)}';
+        '${_whereabouts(context, state)}$battle${_magic(state)}';
+  }
+
+  /// The battle word in the status line, or the empty string.
+  ///
+  /// Engaged names a fight the dock is holding open; watched names eyes with
+  /// no reach on the hero. The count persists for both states — the word and
+  /// the glyph beside the bar carry the difference, never a hue.
+  static String _battleWord(GameViewState state) {
+    if (state.isBattleOpen) return 'Engaged ${state.enemiesInSight}';
+    if (state.enemiesInSight > 0) return 'Watched ${state.enemiesInSight}';
+    return '';
   }
 
   /// The pool and the ward, as words and numbers, and only when they say
@@ -214,6 +225,40 @@ class _HitPoints extends StatelessWidget {
 /// the stairs with something underfoot that is four ways. 'Drink potion (2)'
 /// ellipsized to 'Drink poti…' there, which threw away the count — the one part
 /// of that label the player cannot get anywhere else.
+
+/// The fixed-size battle glyph cell in the status row: empty when nothing is
+/// in sight, the eye when watched, the crossed marks when engaged.
+///
+/// Shape and word carry the state — never hue — and the word repeats in the
+/// scaled line beside it, so greyscale reading has two backstops. The cell is
+/// fixed-width so the HP bar and the line keep their columns either way.
+class _BattleGlyph extends StatelessWidget {
+  const _BattleGlyph({required this.state});
+
+  final GameViewState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final glyph = state.isBattleOpen
+        ? '✖'
+        : state.enemiesInSight > 0
+        ? '◉'
+        : null;
+    return SizedBox(
+      width: 18,
+      child: Text(
+        glyph ?? '',
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 14,
+          color: Color(0xFFDDE1E7),
+        ),
+      ),
+    );
+  }
+}
+
 class _Controls extends StatelessWidget {
   const _Controls({required this.state});
 
@@ -313,6 +358,14 @@ class _Controls extends StatelessWidget {
                     label: 'Flee',
                     onPressed: () =>
                         context.read<GameBloc>().add(const FleePressed()),
+                  ),
+                ),
+              if (state.isEncounter && !state.isRoadClear)
+                Expanded(
+                  child: _Control(
+                    label: 'Wait',
+                    onPressed: () =>
+                        context.read<GameBloc>().add(const WaitPressed()),
                   ),
                 ),
               if (state.isRoadClear)

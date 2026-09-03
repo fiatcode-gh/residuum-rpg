@@ -304,8 +304,15 @@ void main() {
           monsters: [ghoul(const Position(4, 2), hp: 4)],
         ),
       ),
-      act: (bloc) => bloc.add(const TileTapped(Position(4, 2))),
+      act: (bloc) => bloc
+        ..add(const AttackArmed())
+        ..add(StageCardTapped(bloc.state.game.monsters.single)),
       expect: () => [
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedAttack(),
+        ),
         isA<GameViewState>()
             .having((s) => s.game.monsters, 'monsters', isEmpty)
             .having((s) => s.log, 'log', [
@@ -324,8 +331,15 @@ void main() {
           monsters: [ghoul(const Position(4, 2), attack: 3)],
         ),
       ),
-      act: (bloc) => bloc.add(const TileTapped(Position(4, 2))),
+      act: (bloc) => bloc
+        ..add(const AttackArmed())
+        ..add(StageCardTapped(bloc.state.game.monsters.single)),
       expect: () => [
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedAttack(),
+        ),
         isA<GameViewState>()
             .having((s) => s.game.isGameOver, 'isGameOver', isTrue)
             .having((s) => s.log, 'log', contains('You die.'))
@@ -347,9 +361,15 @@ void main() {
         ),
       ),
       act: (bloc) => bloc
-        ..add(const TileTapped(Position(4, 2)))
+        ..add(const AttackArmed())
+        ..add(StageCardTapped(bloc.state.game.monsters.single))
         ..add(const TileTapped(Position(2, 2))),
       expect: () => [
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedAttack(),
+        ),
         isA<GameViewState>().having((s) => s.game.isGameOver, 'over', isTrue),
       ],
     );
@@ -782,7 +802,9 @@ void _lootTests() {
           monsters: [ghoul(const Position(2, 1), id: 'boss-crypt', hp: 1)],
         ),
       ),
-      act: (bloc) => bloc.add(const TileTapped(Position(2, 1))),
+      act: (bloc) => bloc
+        ..add(const AttackArmed())
+        ..add(StageCardTapped(bloc.state.game.monsters.single)),
       verify: (bloc) => expect(
         bloc.state.log.last,
         'The ghoul is slain. The delve is yours.',
@@ -797,7 +819,9 @@ void _lootTests() {
           monsters: [ghoul(const Position(2, 1), hp: 1)],
         ),
       ),
-      act: (bloc) => bloc.add(const TileTapped(Position(2, 1))),
+      act: (bloc) => bloc
+        ..add(const AttackArmed())
+        ..add(StageCardTapped(bloc.state.game.monsters.single)),
       verify: (bloc) => expect(
         bloc.state.log,
         isNot(contains(contains('The delve is yours'))),
@@ -1050,8 +1074,15 @@ void _lootTests() {
           skills: const {SkillId.arms: SkillState(level: 0, xp: 3)},
         ),
       ),
-      act: (bloc) => bloc.add(const TileTapped(Position(4, 2))),
+      act: (bloc) => bloc
+        ..add(const AttackArmed())
+        ..add(StageCardTapped(bloc.state.game.monsters.single)),
       expect: () => [
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedAttack(),
+        ),
         isA<GameViewState>()
             .having((s) => s.game.skills[SkillId.arms]?.level, 'Arms', 1)
             .having((s) => s.log, 'log', contains('Arms rises to 1.')),
@@ -2051,7 +2082,11 @@ void _lootTests() {
       build: () => GameBloc(game: armedArena()),
       act: (bloc) => bloc.add(const SkillArmed('firebolt')),
       expect: () => [
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
       ],
     );
 
@@ -2063,8 +2098,16 @@ void _lootTests() {
         bloc.add(const MapPanned(Offset(4, 0)));
       },
       expect: () => [
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
       ],
     );
 
@@ -2076,8 +2119,16 @@ void _lootTests() {
         bloc.add(const SystemBackPressed());
       },
       expect: () => [
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
       ],
     );
 
@@ -2089,8 +2140,16 @@ void _lootTests() {
         bloc.add(const TileTapped(Position(1, 1)));
       },
       expect: () => [
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
       ],
     );
 
@@ -2102,8 +2161,12 @@ void _lootTests() {
         bloc.add(const CastPressed('firebolt'));
       },
       expect: () => [
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', isNull),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
+        isA<GameViewState>().having((s) => s.armedAction, 'armed', isNull),
       ],
     );
 
@@ -2125,8 +2188,12 @@ void _lootTests() {
         bloc.add(const QuickDrinkPressed());
       },
       expect: () => [
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
-        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', isNull),
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
+        isA<GameViewState>().having((s) => s.armedAction, 'armed', isNull),
       ],
     );
   });
@@ -2254,6 +2321,101 @@ void _lootTests() {
               'beat position',
               1,
             ),
+      ],
+    );
+  });
+
+  group('the wait verb on the crawl screen', () {
+    blocTest<GameBloc, GameViewState>(
+      'a wait spends the turn and the world ticks',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(1, 2))],
+        ),
+      ),
+      act: (bloc) => bloc.add(const WaitPressed()),
+      verify: (bloc) {
+        expect(bloc.state.log.first, 'You hold your ground.');
+        expect(bloc.state.game.hero.position, const Position(1, 1));
+        expect(bloc.state.game.hero.hp, lessThan(20));
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a reach-holder shoots a waiting hero',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [
+            Actor(
+              id: 'spitter-1',
+              name: 'the spitter',
+              glyph: 'p',
+              position: const Position(1, 3),
+              hp: 4,
+              maxHp: 4,
+              attackMin: 2,
+              attackMax: 3,
+              speed: 5,
+              energy: actThreshold,
+              reach: 3,
+            ),
+          ],
+        ).copyWith(visible: {const Position(1, 1), const Position(1, 3)}),
+      ),
+      act: (bloc) => bloc.add(const WaitPressed()),
+      verify: (bloc) {
+        expect(
+          bloc.state.log.where((line) => line.contains('from afar')),
+          isNotEmpty,
+        );
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a wait stops the walk in progress and spends the turn',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(5, 3))],
+        ),
+      ),
+      act: (bloc) async {
+        bloc.add(const TileTapped(Position(5, 1)));
+        await Future<void>.delayed(Duration.zero);
+        bloc.add(const WaitPressed());
+      },
+      wait: const Duration(milliseconds: 100),
+      verify: (bloc) {
+        expect(bloc.state.isWalking, isFalse);
+        expect(bloc.state.log.last, 'You hold your ground.');
+      },
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a wait disarms like any step',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [ghoul(const Position(3, 1))],
+          spells: spellsById,
+          knownSpells: const {'firebolt'},
+          mana: 10,
+        ),
+        stepDelay: Duration.zero,
+      ),
+      act: (bloc) {
+        bloc.add(const SkillArmed('firebolt'));
+        bloc.add(const WaitPressed());
+      },
+      expect: () => [
+        isA<GameViewState>().having(
+          (s) => s.armedAction,
+          'armed',
+          const ArmedSpell('firebolt'),
+        ),
+        isA<GameViewState>().having((s) => s.armedAction, 'armed', isNull),
       ],
     );
   });

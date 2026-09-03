@@ -34,6 +34,8 @@ Actor ghoulAt(
   int hp = 10,
   int speed = 10,
   int energy = actThreshold,
+  Set<DamageType> resists = const {},
+  Set<DamageType> vulnerableTo = const {},
 }) => Actor(
   id: id,
   name: 'the ghoul',
@@ -45,6 +47,8 @@ Actor ghoulAt(
   attackMax: 3,
   speed: speed,
   energy: energy,
+  resists: resists,
+  vulnerableTo: vulnerableTo,
 );
 
 Actor spitterAt(Position at) => Actor(
@@ -67,6 +71,7 @@ GameState battleGame({
   Set<String> knownSpells = const {},
   int mana = 0,
   Set<Position>? visible,
+  bool isEncounter = false,
 }) {
   final map = FloorMap.parse(_arena);
   final seen = visible ?? computeFov(map, heroAt, fovRadius);
@@ -93,6 +98,7 @@ GameState battleGame({
     spells: spellsById,
     knownSpells: knownSpells,
     mana: mana,
+    isEncounter: isEncounter,
   );
 }
 
@@ -173,10 +179,28 @@ void main() {
     );
 
     testWidgets(
-      'a far stage-card tap says so in the log and changes nothing else',
+      'a far stage-card tap with nothing armed opens the enemy info',
       (tester) async {
         // arrange - the D90 standoff: the spitter three tiles out
-        final game = battleGame(monsters: [spitterAt(const Position(4, 1))]);
+        final game = battleGame(
+          monsters: [
+            Actor(
+              id: 'spitter-1',
+              name: 'the spitter',
+              glyph: 'p',
+              position: const Position(4, 1),
+              hp: 4,
+              maxHp: 4,
+              attackMin: 2,
+              attackMax: 3,
+              speed: 5,
+              energy: actThreshold,
+              reach: 3,
+              resists: const {DamageType.fire},
+              vulnerableTo: const {DamageType.frost},
+            ),
+          ],
+        );
         final bloc = await _pushGame(tester, game);
         final logBefore = bloc.state.log.length;
 
@@ -184,15 +208,19 @@ void main() {
         await tester.tap(find.text('the spitter'));
         await tester.pumpAndSettle();
 
-        // assert - the sentence names the monster and says walk; the game
-        // stands exactly where it stood
-        expect(
-          bloc.state.log.skip(logBefore).single,
-          'the spitter is out of reach. Walk to it.',
-        );
+        // assert - the numbers on a sheet; nothing else happened
+        expect(find.text('the spitter'), findsWidgets);
+        expect(find.text('p'), findsWidgets);
+        expect(find.text('4 / 4'), findsWidgets);
+        expect(find.text('2–3'), findsOneWidget);
+        expect(find.text('strikes at range 3'), findsOneWidget);
+        expect(find.text('Speed 5'), findsOneWidget);
+        expect(find.text('Resists fire'), findsOneWidget);
+        expect(find.text('Burns at frost'), findsOneWidget);
+        expect(bloc.state.log.length, logBefore);
         expect(bloc.state.game.hero.position, const Position(1, 1));
         expect(bloc.state.game.monsters.single.hp, 4);
-        expect(bloc.state.armedSpellId, isNull);
+        expect(bloc.state.armedAction, isNull);
       },
     );
 
@@ -203,13 +231,13 @@ void main() {
       final game = battleGame(monsters: [ghoulAt(const Position(1, 2))]);
       final bloc = await _pushGame(tester, game);
 
-      // act
-      bloc.add(const TileTapped(Position(1, 2)));
-      await tester.pumpAndSettle();
-      bloc.add(const TileTapped(Position(1, 2)));
-      await tester.pumpAndSettle();
-      bloc.add(const TileTapped(Position(1, 2)));
-      await tester.pumpAndSettle();
+      // act - the armed flow swings, one arm per swing: a step disarms
+      for (var swing = 0; swing < 3; swing++) {
+        bloc.add(const AttackArmed());
+        await tester.pumpAndSettle();
+        bloc.add(StageCardTapped(bloc.state.game.monsters.single));
+        await tester.pumpAndSettle();
+      }
 
       // assert
       expect(bloc.state.game.monsters, isEmpty);
@@ -238,15 +266,18 @@ void main() {
       expect(find.text('the ghoul'), findsOneWidget);
       expect(find.text('✳ Firebolt 2'), findsOneWidget);
       expect(find.textContaining('Engaged'), findsOneWidget);
+      await tester.tap(find.text('Attack'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('the ghoul'));
       await tester.pumpAndSettle();
       expect(find.textContaining('You hit the ghoul for 4.'), findsOneWidget);
 
-      // act - two more swings end the fight
-      bloc.add(const TileTapped(Position(1, 2)));
-      await tester.pumpAndSettle();
-      bloc.add(const TileTapped(Position(1, 2)));
-      await tester.pumpAndSettle();
+      // act - two more swings end the fight, one arm per swing
+      for (var swing = 0; swing < 2; swing++) {
+        bloc.add(const AttackArmed());
+        bloc.add(StageCardTapped(bloc.state.game.monsters.single));
+        await tester.pumpAndSettle();
+      }
 
       // assert - dock down: the crawl, unchanged; the log row still speaks
       expect(bloc.state.game.monsters, isEmpty);
@@ -291,7 +322,7 @@ void main() {
       expect(bars.map((bar) => bar.value), contains(closeTo(6 / 10, 0.001)));
     });
 
-    testWidgets('the turn strip names who acts next and who walks in', (
+    testWidgets('the chip row names NOW first, then arrivals as IN n', (
       tester,
     ) async {
       // arrange - the adjacent ghoul owes the next turn; a second ghoul walks
@@ -311,9 +342,39 @@ void main() {
       // act
       await _pushGame(tester, game);
 
-      // assert
-      expect(find.text('Next: the ghoul'), findsOneWidget);
-      expect(find.text('the ghoul — 4 turns out'), findsOneWidget);
+      // assert - NOW first, then the arrivals by count; the words carry the
+      // state, never dim-on-map
+      expect(find.text('NOW — the ghoul'), findsOneWidget);
+      expect(find.text('IN 4 — the ghoul'), findsOneWidget);
+    });
+
+    testWidgets('the dock header backs the cards and the chips in one panel', (
+      tester,
+    ) async {
+      // arrange
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        visible: {const Position(1, 1), const Position(1, 2)},
+      );
+      await _pushGame(tester, game);
+
+      // act
+      final backing = find.byKey(const Key('dock-backing'));
+
+      // assert - one translucent dark panel holds the stage and the chips
+      expect(backing, findsOneWidget);
+      final container = tester.widget<Container>(backing);
+      final color =
+          container.color ?? (container.decoration! as BoxDecoration).color!;
+      expect(color.a, lessThan(1.0));
+      expect(
+        find.descendant(of: backing, matching: find.text('the ghoul')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: backing, matching: find.text('NOW — the ghoul')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('the stage reads on a phone-sized surface', (tester) async {
@@ -337,13 +398,75 @@ void main() {
       // act
       await _pushGame(tester, game);
 
-      // assert - nothing overflows: the dock, the strip, the bar and the word all render
+      // assert - nothing overflows: the dock, the chips, the bar and the word all render
       expect(find.byType(BattleDock), findsOneWidget);
       expect(find.text('the ghoul'), findsOneWidget);
       expect(find.text('the spitter'), findsOneWidget);
       expect(find.text('at range'), findsOneWidget);
-      expect(find.text('Next: the ghoul'), findsOneWidget);
+      expect(find.text('NOW — the ghoul'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('the target mark on the stage', () {
+    testWidgets(
+      'an armed attack marks the legal target card with the ink border',
+      (tester) async {
+        // arrange - the ghoul adjacent and a far spitter on the stage
+        final game = battleGame(
+          monsters: [
+            ghoulAt(const Position(1, 2)),
+            spitterAt(const Position(4, 1)),
+          ],
+          visible: {
+            const Position(1, 1),
+            const Position(1, 2),
+            const Position(4, 1),
+          },
+        );
+        final bloc = await _pushGame(tester, game);
+
+        // act - arm the attack
+        await tester.tap(find.text('Attack'));
+        await tester.pumpAndSettle();
+
+        // assert - the adjacent card carries the border; the far one does not
+        expect(
+          tester.widget<Container>(find.byKey(const Key('stage-card-ghoul-1'))),
+          predicate<Container>(
+            (container) =>
+                (container.decoration! as BoxDecoration).border != null,
+          ),
+        );
+        expect(
+          tester.widget<Container>(
+            find.byKey(const Key('stage-card-spitter-1')),
+          ),
+          predicate<Container>(
+            (container) =>
+                (container.decoration! as BoxDecoration).border == null,
+          ),
+        );
+        expect(bloc.state.armedTargets, {'ghoul-1'});
+      },
+    );
+
+    testWidgets('nothing is marked when nothing is armed', (tester) async {
+      // arrange
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        visible: {const Position(1, 1), const Position(1, 2)},
+      );
+      await _pushGame(tester, game);
+
+      // assert
+      expect(
+        tester.widget<Container>(find.byKey(const Key('stage-card-ghoul-1'))),
+        predicate<Container>(
+          (container) =>
+              (container.decoration! as BoxDecoration).border == null,
+        ),
+      );
     });
   });
 
@@ -366,14 +489,16 @@ void main() {
       expect(find.text('✚ Mend 3'), findsOneWidget);
     });
 
-    testWidgets('a non-caster sees no bar', (tester) async {
-      // arrange
+    testWidgets('a non-caster sees the bar: Attack and Wait', (tester) async {
+      // arrange - the bar renders for every hero now; no spells to list
       final game = battleGame(monsters: [ghoulAt(const Position(1, 2))]);
 
       // act
       await _pushGame(tester, game);
 
       // assert
+      expect(find.text('Attack'), findsOneWidget);
+      expect(find.text('Wait'), findsOneWidget);
       expect(find.textContaining('Firebolt'), findsNothing);
     });
 
@@ -391,7 +516,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(bloc.state.armedSpellId, 'firebolt');
+      expect(bloc.state.armedAction, const ArmedSpell('firebolt'));
       expect(find.text('✳ Firebolt 2 — armed'), findsOneWidget);
     });
 
@@ -430,7 +555,147 @@ void main() {
       );
     });
 
-    testWidgets('tapping a card with no armed skill is the bump-attack', (
+    testWidgets('tapping Attack arms it, marked by a word', (tester) async {
+      // arrange
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        knownSpells: const {'firebolt'},
+        mana: 10,
+      );
+      final bloc = await _pushGame(tester, game);
+
+      // act
+      await tester.tap(find.text('Attack'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(bloc.state.armedAction, const ArmedAttack());
+      expect(find.text('Attack — armed'), findsOneWidget);
+    });
+
+    testWidgets('tapping armed Attack again disarms it', (tester) async {
+      // arrange
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        knownSpells: const {'firebolt'},
+        mana: 10,
+      );
+      final bloc = await _pushGame(tester, game);
+
+      // act
+      await tester.tap(find.text('Attack'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Attack — armed'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(bloc.state.armedAction, isNull);
+      expect(find.text('Attack'), findsOneWidget);
+    });
+
+    testWidgets('the bar reads Attack, the spells, then Wait', (tester) async {
+      // arrange
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        knownSpells: const {'firebolt'},
+        mana: 10,
+      );
+      await _pushGame(tester, game);
+
+      // act + assert - document order: Attack before the spell before Wait
+      final labels = find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            widget.data != null &&
+            const ['Attack', '✳ Firebolt 2', 'Wait'].contains(widget.data),
+      );
+      final texts = labels.evaluate().map((element) {
+        final text = element.widget as Text;
+        return text.data;
+      }).toList();
+      expect(texts, ['Attack', '✳ Firebolt 2', 'Wait']);
+    });
+
+    testWidgets('a bare card tap opens the enemy info, never the bump', (
+      tester,
+    ) async {
+      // arrange - the ghoul adjacent; nothing armed
+      final game = battleGame(
+        monsters: [
+          ghoulAt(
+            const Position(1, 2),
+            resists: const {DamageType.fire},
+            vulnerableTo: const {DamageType.frost},
+          ),
+        ],
+        knownSpells: const {'firebolt'},
+        mana: 10,
+      );
+      final bloc = await _pushGame(tester, game);
+
+      // act
+      await tester.tap(find.text('the ghoul'));
+      await tester.pumpAndSettle();
+
+      // assert - the sheet, and the turn unbought: no swing, no claws
+      expect(find.text('strikes adjacent'), findsOneWidget);
+      expect(find.text('3–3'), findsOneWidget);
+      expect(find.text('Resists fire'), findsOneWidget);
+      expect(find.text('Burns at frost'), findsOneWidget);
+      expect(find.textContaining('You hit the ghoul'), findsNothing);
+      expect(bloc.state.game.monsters.single.hp, 10);
+      expect(bloc.state.game.hero.hp, 20);
+      expect(bloc.state.armedAction, isNull);
+    });
+
+    testWidgets('armed Attack and a marked card tap is the bump', (
+      tester,
+    ) async {
+      // arrange
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        knownSpells: const {'firebolt'},
+        mana: 10,
+      );
+      final bloc = await _pushGame(tester, game);
+
+      // act - arm attack, then tap the adjacent ghoul's card
+      await tester.tap(find.text('Attack'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('the ghoul'));
+      await tester.pumpAndSettle();
+
+      // assert - the bump fired through the armed flow
+      expect(find.text('You hit the ghoul for 4.'), findsOneWidget);
+      expect(bloc.state.armedAction, isNull);
+    });
+
+    testWidgets(
+      'armed Attack at an unmarked card says walk and keeps the arm',
+      (tester) async {
+        // arrange - the spitter holds reach three tiles out: a stage card,
+        // but not an attack target
+        final game = battleGame(
+          monsters: [spitterAt(const Position(4, 1))],
+          knownSpells: const {'firebolt'},
+          mana: 10,
+        );
+        final bloc = await _pushGame(tester, game);
+
+        // act
+        await tester.tap(find.text('Attack'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('the spitter'));
+        await tester.pumpAndSettle();
+
+        // assert - the sentence, and the arm stays for the next tap
+        expect(bloc.state.log.last, 'the spitter is out of reach. Walk to it.');
+        expect(bloc.state.armedAction, const ArmedAttack());
+        expect(bloc.state.game.hero.position, const Position(1, 1));
+      },
+    );
+
+    testWidgets('arming the attack disarms the spell and the other way', (
       tester,
     ) async {
       // arrange
@@ -442,12 +707,15 @@ void main() {
       final bloc = await _pushGame(tester, game);
 
       // act
-      await tester.tap(find.text('the ghoul'));
+      await tester.tap(find.text('✳ Firebolt 2'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Attack'));
       await tester.pumpAndSettle();
 
-      // assert
-      expect(find.text('You hit the ghoul for 4.'), findsOneWidget);
-      expect(bloc.state.armedSpellId, isNull);
+      // assert - one armed slot at a time
+      expect(bloc.state.armedAction, const ArmedAttack());
+      expect(find.text('Attack — armed'), findsOneWidget);
+      expect(find.text('✳ Firebolt 2 — armed'), findsNothing);
     });
 
     testWidgets('mend casts on the hero without a card tap', (tester) async {
@@ -493,6 +761,63 @@ void main() {
         bloc.state.log.where((line) => line.startsWith('Not enough mana')),
         isNotEmpty,
       );
+    });
+  });
+
+  group('the wait surfaces', () {
+    testWidgets('the bar offers Wait and tapping it holds ground', (
+      tester,
+    ) async {
+      // arrange - a caster in a fight
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        knownSpells: const {'firebolt'},
+        mana: 10,
+      );
+      final bloc = await _pushGame(tester, game);
+
+      // act
+      await tester.tap(find.text('Wait'));
+      await tester.pumpAndSettle();
+
+      // assert - the sentence and the turn: the ghoul answered
+      expect(find.text('You hold your ground.'), findsOneWidget);
+      expect(bloc.state.game.hero.position, const Position(1, 1));
+      expect(bloc.state.game.hero.hp, lessThan(20));
+    });
+
+    testWidgets('a live road encounter offers Wait in its control row', (
+      tester,
+    ) async {
+      // arrange - an encounter-flagged arena, nothing holding reach
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(5, 1), speed: 1)],
+        isEncounter: true,
+      );
+      await _pushGame(tester, game);
+
+      // act + assert - the row's Wait exists while the fight is live
+      expect(find.text('Wait'), findsOneWidget);
+    });
+
+    testWidgets('a cleared road has no Wait control', (tester) async {
+      // arrange - an encounter with every monster gone
+      final game = battleGame(isEncounter: true);
+      await _pushGame(tester, game);
+
+      // assert
+      expect(find.text('Wait'), findsNothing);
+    });
+
+    testWidgets('a crawl with no fight live has no Wait control', (
+      tester,
+    ) async {
+      // arrange
+      final game = battleGame();
+      await _pushGame(tester, game);
+
+      // assert - the bar is closed and the row is the crawl's own
+      expect(find.text('Wait'), findsNothing);
     });
   });
 }
