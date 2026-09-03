@@ -293,7 +293,7 @@ void main() {
       expect(bars.map((bar) => bar.value), contains(closeTo(6 / 10, 0.001)));
     });
 
-    testWidgets('the turn strip names who acts next and who walks in', (
+    testWidgets('the chip row names NOW first, then arrivals as IN n', (
       tester,
     ) async {
       // arrange - the adjacent ghoul owes the next turn; a second ghoul walks
@@ -313,9 +313,39 @@ void main() {
       // act
       await _pushGame(tester, game);
 
-      // assert
-      expect(find.text('Next: the ghoul'), findsOneWidget);
-      expect(find.text('the ghoul — 4 turns out'), findsOneWidget);
+      // assert - NOW first, then the arrivals by count; the words carry the
+      // state, never dim-on-map
+      expect(find.text('NOW — the ghoul'), findsOneWidget);
+      expect(find.text('IN 4 — the ghoul'), findsOneWidget);
+    });
+
+    testWidgets('the dock header backs the cards and the chips in one panel', (
+      tester,
+    ) async {
+      // arrange
+      final game = battleGame(
+        monsters: [ghoulAt(const Position(1, 2))],
+        visible: {const Position(1, 1), const Position(1, 2)},
+      );
+      await _pushGame(tester, game);
+
+      // act
+      final backing = find.byKey(const Key('dock-backing'));
+
+      // assert - one translucent dark panel holds the stage and the chips
+      expect(backing, findsOneWidget);
+      final container = tester.widget<Container>(backing);
+      final color =
+          container.color ?? (container.decoration! as BoxDecoration).color!;
+      expect(color.alpha, lessThan(255));
+      expect(
+        find.descendant(of: backing, matching: find.text('the ghoul')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: backing, matching: find.text('NOW — the ghoul')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('the stage reads on a phone-sized surface', (tester) async {
@@ -339,12 +369,12 @@ void main() {
       // act
       await _pushGame(tester, game);
 
-      // assert - nothing overflows: the dock, the strip, the bar and the word all render
+      // assert - nothing overflows: the dock, the chips, the bar and the word all render
       expect(find.byType(BattleDock), findsOneWidget);
       expect(find.text('the ghoul'), findsOneWidget);
       expect(find.text('the spitter'), findsOneWidget);
       expect(find.text('at range'), findsOneWidget);
-      expect(find.text('Next: the ghoul'), findsOneWidget);
+      expect(find.text('NOW — the ghoul'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

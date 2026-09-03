@@ -28,6 +28,10 @@ import 'game_bloc.dart';
 /// Nothing is told apart by hue: a creature is its glyph and its name, its
 /// wound is a bar's length and two numbers, its reach is a word, and an armed
 /// spell is a word beside its own name.
+/// The translucent dark backing one dock header draws behind its cards and
+/// chips, so every dock string reads over any map tile.
+const Color dockBacking = Color(0xB30E1015);
+
 class BattleDock extends StatelessWidget {
   const BattleDock({super.key, required this.state});
 
@@ -36,16 +40,20 @@ class BattleDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<GameBloc>();
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (final monster in state.monstersHoldingReach)
-          _StageCard(
-            monster: monster,
-            onTap: () => bloc.add(StageCardTapped(monster)),
-          ),
-        _TurnStrip(state: state),
-      ],
+    return Container(
+      key: const Key('dock-backing'),
+      color: dockBacking,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final monster in state.monstersHoldingReach)
+            _StageCard(
+              monster: monster,
+              onTap: () => bloc.add(StageCardTapped(monster)),
+            ),
+          _TurnChips(state: state),
+        ],
+      ),
     );
   }
 }
@@ -146,37 +154,39 @@ class _StageCard extends StatelessWidget {
   }
 }
 
-/// One line under the stage: who acts before the hero again, who walks in.
+/// One row of chips: who acts before the hero again, who walks in.
 ///
-/// Greyscale-safe by position and word: `Next:` names the schedule's first,
-/// each walker-in carries its own count of the hero actions it needs.
-class _TurnStrip extends StatelessWidget {
-  const _TurnStrip({required this.state});
+/// Greyscale-safe by position and word: `NOW —` names the schedule's first —
+/// the monster whose turn is next — and each walker-in carries `IN n —` with
+/// the hero actions it needs. The words carry the state; the row renders in
+/// ink on the dock's backing, never dim over the map.
+class _TurnChips extends StatelessWidget {
+  const _TurnChips({required this.state});
 
   final GameViewState state;
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
     child: Wrap(
       spacing: 12,
       children: [
         if (state.upNext.isNotEmpty)
           Text(
-            'Next: ${state.upNext.first.name}',
+            'NOW — ${state.upNext.first.name}',
             style: const TextStyle(
               fontFamily: 'monospace',
               fontSize: 12,
-              color: dim,
+              color: ink,
             ),
           ),
         for (final (monster, turns) in state.arrivals)
           Text(
-            '${monster.name} — $turns turns out',
+            'IN $turns — ${monster.name}',
             style: const TextStyle(
               fontFamily: 'monospace',
               fontSize: 12,
-              color: dim,
+              color: ink,
             ),
           ),
       ],
