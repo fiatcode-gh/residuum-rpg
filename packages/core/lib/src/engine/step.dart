@@ -109,13 +109,7 @@ import 'position.dart';
       final here = groundItems[hero.position]!;
       final taken = here.last;
       groundItems = _withoutLastItem(groundItems, hero.position);
-      // The mint at the pack's door: the ground id is transient state — a
-      // litter id is minted on every visit and a drop id on every delve, so a
-      // pack that persisted across delves could hold two items answering to
-      // one id, and every removal would take both. The pack item's id is
-      // durable identity, so it is re-minted here off the hero-scoped
-      // counter, once per item, while the ground keeps its frozen litter ids.
-      final carried = taken.withId('item-$itemNumber');
+      final carried = _minted(taken, itemNumber);
       itemNumber++;
       inventory = [...inventory, carried];
       events.add(ItemPickedUp(item: carried));
@@ -915,6 +909,18 @@ Map<Position, List<Item>> _withoutLastItem(
   final without = {...groundItems}..remove(at);
   return left.isEmpty ? without : {...without, at: left};
 }
+
+/// The pack item a ground item [taken] becomes, minted `item-<n>` at the
+/// pack's door off the hero-scoped counter.
+///
+/// **Why re-id here and not at the drop:** floor content is deterministic from
+/// the seed and byte-frozen, so re-id-ing at the moment of pickup leaves every
+/// floor document untouched while making the pack's namespace hero-unique. The
+/// ground id is transient state — a litter id is minted on every visit and a
+/// drop id on every delve, so a pack that persists across delves could hold two
+/// items answering to one id, and every removal would take both. The pack
+/// item's id is durable identity, and the counter makes it once-per-item.
+Item _minted(Item taken, int itemNumber) => taken.withId('item-$itemNumber');
 
 Set<Position> _occupiedTiles(Actor hero, List<Actor> monsters, String moving) =>
     {

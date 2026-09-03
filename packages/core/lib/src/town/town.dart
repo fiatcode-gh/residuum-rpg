@@ -252,15 +252,17 @@ Transacted brewPotion(Profile profile, BaseItem potion) {
 /// a hit-point term, this is the line that is already right.
 ///
 /// This is the only thing in the game that changes [Item.temper].
+///
+/// **The piece [heldItem] found is the piece that gets worked** — the first
+/// match in the pack, else the first match among the worn, in that order. A
+/// legacy pack can hold duplicate ids, and one hammer blow does not temper
+/// every twin.
 Transacted temperItem(Profile profile, String itemId) {
   final refusal = temperRefusal(profile, itemId);
   if (refusal != null) return (profile, TownRefusal(refusal));
   final item = heldItem(profile, itemId)!;
   final worked = item.tempered(item.temper + 1);
   final price = temperPriceFrom(item.temper);
-  // The piece [heldItem] found is the piece that gets worked — the first match
-  // in the pack, else the first match among the worn. A legacy pack can hold
-  // duplicate ids, and one hammer blow does not temper every twin.
   final at = profile.inventory.indexWhere((carried) => carried.id == itemId);
   final inventory = at < 0
       ? profile.inventory
