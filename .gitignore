@@ -8,3 +8,6 @@ packages/content/pubspec.lock
 
 # Handover reports are working artifacts, never committed (global convention)
 docs/reports/
+
+# pi harness workdir
+.pi/
