@@ -49,7 +49,9 @@ class BattleDock extends StatelessWidget {
           for (final monster in state.monstersHoldingReach)
             _StageCard(
               monster: monster,
-              onTap: () => bloc.add(StageCardTapped(monster)),
+              onTap: () => state.armedAction == null
+                  ? showEnemyInfo(context, monster)
+                  : bloc.add(StageCardTapped(monster)),
             ),
           _TurnChips(state: state),
         ],
@@ -286,6 +288,85 @@ class _BarButton extends StatelessWidget {
     child: Text(
       armed ? (armedLabel ?? label) : label,
       style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: ink),
+    ),
+  );
+}
+
+/// Opens the enemy's numbers over the crawl: name, glyph, wounds, attack,
+/// reach, speed, and what the creature's make of.
+///
+/// Words carry everything — greyscale-safe by construction — and the numbers
+/// come off the [Actor] the card already holds: no bestiary lore, no new core
+/// read. Dismissal is a tap outside the sheet and costs no turn; nothing is
+/// mutated, nothing is dispatched.
+void showEnemyInfo(BuildContext context, Actor monster) {
+  final actor = monster;
+  showModalBottomSheet<void>(
+    context: context,
+    builder: (sheetContext) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    actor.glyph,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 18,
+                      color: ink,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      actor.name,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 13,
+                        color: ink,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _EnemyInfoLine('Wounds ${actor.hp} / ${actor.maxHp}'),
+              _EnemyInfoLine('${actor.attackMin}–${actor.attackMax}'),
+              _EnemyInfoLine(
+                actor.reach > 1
+                    ? 'strikes at range ${actor.reach}'
+                    : 'strikes adjacent',
+              ),
+              _EnemyInfoLine('Speed ${actor.speed}'),
+              for (final type in actor.resists)
+                _EnemyInfoLine('Resists ${type.word}'),
+              for (final type in actor.vulnerableTo)
+                _EnemyInfoLine('Burns at ${type.word}'),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// One line of the enemy sheet, monospace and dim.
+class _EnemyInfoLine extends StatelessWidget {
+  const _EnemyInfoLine(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Text(
+      text,
+      style: const TextStyle(fontFamily: 'monospace', fontSize: 13, color: ink),
     ),
   );
 }
