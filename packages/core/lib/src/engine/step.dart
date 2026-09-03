@@ -72,6 +72,7 @@ import 'position.dart';
   var materials = state.materials;
   var inventory = state.inventory;
   var nextDropNumber = state.nextDropNumber;
+  var itemNumber = state.itemNumber;
   var knownSpells = state.knownSpells;
   var mana = state.mana;
   var warded = state.warded;
@@ -108,8 +109,10 @@ import 'position.dart';
       final here = groundItems[hero.position]!;
       final taken = here.last;
       groundItems = _withoutLastItem(groundItems, hero.position);
-      inventory = [...inventory, taken];
-      events.add(ItemPickedUp(item: taken));
+      final carried = _minted(taken, itemNumber);
+      itemNumber++;
+      inventory = [...inventory, carried];
+      events.add(ItemPickedUp(item: carried));
     case EquipAction(:final itemId):
       final worn = wear(loadout.equipment, inventory, itemId);
       _announce(worn, events);
@@ -127,19 +130,13 @@ import 'position.dart';
       final missing = heroMaxHp(hero, loadout) - hero.hp;
       final healed = potion.base.heal < missing ? potion.base.heal : missing;
       hero = hero.copyWith(hp: hero.hp + (healed > 0 ? healed : 0));
-      inventory = [
-        for (final item in inventory)
-          if (item.id != itemId) item,
-      ];
+      inventory = withoutFirst(inventory, itemId);
       events.add(PotionDrunk(item: potion, healed: healed > 0 ? healed : 0));
     case ReadAction(:final itemId):
       final book = inventory.firstWhere((item) => item.id == itemId);
       final learned = state.spells[book.base.teaches]!;
       knownSpells = {...knownSpells, learned.id};
-      inventory = [
-        for (final item in inventory)
-          if (item.id != itemId) item,
-      ];
+      inventory = withoutFirst(inventory, itemId);
       events.add(SpellLearned(book: book, spell: learned));
     case CastSpellAction(:final spellId, :final targetId):
       final spell = state.spells[spellId]!;
@@ -165,10 +162,7 @@ import 'position.dart';
       loadout = loadout.withSkills(_train(kind.trains, loadout.skills, events));
     case DropAction(:final itemId):
       final put = inventory.firstWhere((item) => item.id == itemId);
-      inventory = [
-        for (final item in inventory)
-          if (item.id != itemId) item,
-      ];
+      inventory = withoutFirst(inventory, itemId);
       groundItems = _withItem(groundItems, hero.position, put);
       events.add(ItemDropped(item: put, at: hero.position));
   }
@@ -213,6 +207,7 @@ import 'position.dart';
       warded: warded,
       bound: _stillStanding(bound, monsters),
       nextDropNumber: nextDropNumber,
+      itemNumber: itemNumber,
     ),
     events,
   );
@@ -914,6 +909,18 @@ Map<Position, List<Item>> _withoutLastItem(
   final without = {...groundItems}..remove(at);
   return left.isEmpty ? without : {...without, at: left};
 }
+
+/// The pack item a ground item [taken] becomes, minted `item-<n>` at the
+/// pack's door off the hero-scoped counter.
+///
+/// **Why re-id here and not at the drop:** floor content is deterministic from
+/// the seed and byte-frozen, so re-id-ing at the moment of pickup leaves every
+/// floor document untouched while making the pack's namespace hero-unique. The
+/// ground id is transient state — a litter id is minted on every visit and a
+/// drop id on every delve, so a pack that persists across delves could hold two
+/// items answering to one id, and every removal would take both. The pack
+/// item's id is durable identity, and the counter makes it once-per-item.
+Item _minted(Item taken, int itemNumber) => taken.withId('item-$itemNumber');
 
 Set<Position> _occupiedTiles(Actor hero, List<Actor> monsters, String moving) =>
     {

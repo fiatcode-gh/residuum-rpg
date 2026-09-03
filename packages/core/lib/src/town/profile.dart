@@ -33,6 +33,7 @@ class Profile extends Equatable {
     this.bankedGold = 0,
     this.visit = 0,
     this.brewNumber = 1,
+    this.itemNumber = 1,
   }) : equipment = Map.unmodifiable(equipment),
        skills = Map.unmodifiable(skills),
        inventory = List.unmodifiable(inventory),
@@ -97,6 +98,22 @@ class Profile extends Equatable {
   /// Starts at one, so the first potion a hero ever brews is `brew-1`.
   final int brewNumber;
 
+  /// The number the next pack item's id is built from.
+  ///
+  /// **A counter and not a derivation, for [brewNumber]'s reason exactly:** an
+  /// id has to be unique among everything the hero holds, and anything read off
+  /// the pack, the visit or the dungeon would hand out a number some earlier
+  /// delve already spent. The pack persists across delves while ground ids do
+  /// not — `drop-1` is minted on every descent, `floor-<depth>-<n>` on every
+  /// visit — so a pack that kept litter ids could hold two items answering to
+  /// the same name, and every removal would take both. This counter is the
+  /// fix's mint: every item that enters the pack is re-id-ed `item-<n>` at the
+  /// pack's door, and the number never resets, so a hero-scoped id is unique
+  /// for the hero's whole life.
+  ///
+  /// Starts at one, so the first item a hero ever picks up is `item-1`.
+  final int itemNumber;
+
   /// The gear and the training every derived hero stat reads from.
   Loadout get loadout => Loadout(equipment: equipment, skills: skills);
 
@@ -115,6 +132,7 @@ class Profile extends Equatable {
     Set<String>? knownSpells,
     Map<MaterialId, int>? materials,
     int? brewNumber,
+    int? itemNumber,
   }) => Profile(
     hero: hero ?? this.hero,
     worldSeed: worldSeed,
@@ -128,6 +146,7 @@ class Profile extends Equatable {
     knownSpells: knownSpells ?? this.knownSpells,
     materials: materials ?? this.materials,
     brewNumber: brewNumber ?? this.brewNumber,
+    itemNumber: itemNumber ?? this.itemNumber,
   );
 
   /// [Actor] is not a value object, so a profile's identity names the fields of
@@ -148,6 +167,7 @@ class Profile extends Equatable {
     knownSpells,
     materials,
     brewNumber,
+    itemNumber,
   ];
 
   @override

@@ -844,7 +844,7 @@ void _lootTests() {
       expect: () => [
         isA<GameViewState>()
             .having((s) => s.game.inventory.map((item) => item.id), 'carried', [
-              'floor-1-1',
+              'item-1',
             ])
             .having((s) => s.log, 'log', ['You pick up Common Iron Sword.']),
       ],

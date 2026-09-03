@@ -174,4 +174,28 @@ void main() {
       expect(write, throwsUnsupportedError);
     });
   });
+
+  group("a profile's item number", () {
+    test('starts at one, like its sibling brewNumber', () {
+      // arrange
+      final profile = _townie();
+
+      // act
+
+      // assert
+      expect(profile.itemNumber, 1);
+    });
+
+    test('copyWith moves it, and the mover is a different hero', () {
+      // arrange
+      final profile = _townie();
+
+      // act
+      final advanced = profile.copyWith(itemNumber: 7);
+
+      // assert
+      expect(advanced.itemNumber, 7);
+      expect(advanced, isNot(profile));
+    });
+  });
 }

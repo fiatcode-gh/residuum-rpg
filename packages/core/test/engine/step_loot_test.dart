@@ -88,9 +88,14 @@ void main() {
       final (after, events) = step(game, const PickUpAction());
 
       // assert
-      expect(after.inventory, [newer]);
+      expect(after.inventory.single.base, newer.base);
+      expect(
+        after.inventory.single.id,
+        'item-1',
+        reason: 'the pack mint re-ids what the tile called floor-1-2',
+      );
       expect(after.itemsAt(_here), [older]);
-      expect(events, contains(ItemPickedUp(item: newer)));
+      expect(events, contains(ItemPickedUp(item: after.inventory.single)));
     });
 
     test('leaves the tile with no entry once the last item is gone', () {
@@ -616,7 +621,12 @@ void main() {
       final (again, _) = step(dropped, const PickUpAction());
 
       // assert
-      expect(again.inventory, [carried]);
+      expect(
+        again.inventory.single.base,
+        carried.base,
+        reason: 'the same thing comes home, re-minted item-1 at the door',
+      );
+      expect(again.inventory.single.id, 'item-1');
       expect(again.groundItems, isEmpty);
     });
   });
