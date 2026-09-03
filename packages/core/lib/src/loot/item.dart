@@ -247,6 +247,21 @@ class Item extends Equatable {
     temper: temper,
   );
 
+  /// This item answering to [id] instead.
+  ///
+  /// Narrower than a `copyWith` on purpose, for [tempered]'s reason: every other
+  /// field of an item is settled the moment it is rolled, and the only reason to
+  /// change an id is the mint at the pack's door — the moment a ground item
+  /// becomes a pack item, its transient litter id gives way to the hero's
+  /// durable `item-<n>`. Everything else about the item travels untouched.
+  Item withId(String id) => Item(
+    id: id,
+    base: base,
+    rarity: rarity,
+    affixes: affixes,
+    temper: temper,
+  );
+
   @override
   List<Object?> get props => [id, base, rarity, affixes, temper];
 
