@@ -3,13 +3,14 @@ import 'package:test/test.dart';
 
 import '../support/fixtures.dart';
 
-/// What duplicate ids do to the dungeon half today, pinned before m3-itemids
-/// changes it.
+/// What a duplicate id does at the dungeon half, after the m3-itemids flip.
 ///
-/// Every test here states CURRENT behaviour on a hand-built duplicate-id pack.
-/// The unit that follows flips removals to remove-one and mints `item-<n>` at
-/// pickup; these tests are the record of what the flip walks away from. Where
-/// a test pins a defect (remove-ALL), it says so in the assertion reason.
+/// These tests were written first as characterization against unmodified
+/// `a567c19` — where one tap took EVERY match, and where they passed — then
+/// flipped with the change. The pre-flip reds are on the record: run against
+/// `a567c19`, every remove-one assertion here failed, which is what proved the
+/// defect and proved the fix bites. The mint's own record lives in
+/// [item_mint_test.dart]; this file keeps the removal contract.
 const _room = '''
 #######
 #.....#
@@ -57,8 +58,8 @@ Item _twin(BaseItem base) =>
 
 const _here = Position(3, 1);
 
-/// A crawl holding two items that share one id, the shape a second delve
-/// leaves in the pack today.
+/// A crawl holding two items that share one id — the shape an un-migrated
+/// legacy save can still arrive in. Nothing the game mints any more.
 GameState _duplicated({
   List<Item> inventory = const [],
   int heroHp = 20,
@@ -77,8 +78,8 @@ int _held(List<Item> inventory, String id) =>
     inventory.where((item) => item.id == id).length;
 
 void main() {
-  group('characterization: drinking a duplicate id (remove-ALL today)', () {
-    test('drinks both twins and reports the first', () {
+  group('drinking a duplicate id takes exactly one', () {
+    test('the first twin is drunk, the sibling survives', () {
       // arrange
       final first = _twin(_potion);
       final second = _twin(_potion);
@@ -88,18 +89,14 @@ void main() {
       final (after, events) = step(game, const DrinkAction('drop-1'));
 
       // assert
-      expect(
-        _held(after.inventory, 'drop-1'),
-        0,
-        reason: 'current behaviour: one tap takes every match',
-      );
+      expect(_held(after.inventory, 'drop-1'), 1);
       expect(events.whereType<PotionDrunk>().single.item, first);
       expect(after.hero.hp, 18);
     });
   });
 
-  group('characterization: reading a duplicate id (remove-ALL today)', () {
-    test('consumes both books and learns the spell once', () {
+  group('reading a duplicate id takes exactly one', () {
+    test('the first twin is read, the sibling survives', () {
       // arrange
       final first = _twin(_book);
       final second = _twin(_book);
@@ -112,18 +109,14 @@ void main() {
       final (after, events) = step(game, const ReadAction('drop-1'));
 
       // assert
-      expect(
-        _held(after.inventory, 'drop-1'),
-        0,
-        reason: 'current behaviour: one tap takes every match',
-      );
+      expect(_held(after.inventory, 'drop-1'), 1);
       expect(events.whereType<SpellLearned>().single.book, first);
       expect(after.knownSpells, contains('firebolt'));
     });
   });
 
-  group('characterization: dropping a duplicate id (remove-ALL today)', () {
-    test('puts the first match on the ground and takes every match', () {
+  group('dropping a duplicate id takes exactly one', () {
+    test('the first match is the one put down, the sibling survives', () {
       // arrange
       final first = _twin(_sword);
       final second = _twin(_sword);
@@ -133,40 +126,33 @@ void main() {
       final (after, events) = step(game, const DropAction('drop-1'));
 
       // assert
-      expect(
-        _held(after.inventory, 'drop-1'),
-        0,
-        reason: 'current behaviour: one tap takes every match',
-      );
+      expect(_held(after.inventory, 'drop-1'), 1);
       expect(events.whereType<ItemDropped>().single.item, first);
       expect(after.groundItems[_here]!.single, first);
     });
   });
 
-  group(
-    'characterization: pickup re-ids at the pack door (the m3-itemids flip)',
-    () {
-      test('the taken item leaves its litter id on the ground', () {
-        // arrange
-        final litter = Item(
-          id: 'floor-3-2',
-          base: _potion,
-          rarity: Rarity.common,
-        );
-        final game = _duplicated(
-          groundItems: {
-            _here: [litter],
-          },
-        );
+  group('pickup re-ids at the pack door (the m3-itemids flip)', () {
+    test('the taken item leaves its litter id on the ground', () {
+      // arrange
+      final litter = Item(
+        id: 'floor-3-2',
+        base: _potion,
+        rarity: Rarity.common,
+      );
+      final game = _duplicated(
+        groundItems: {
+          _here: [litter],
+        },
+      );
 
-        // act
-        final (after, events) = step(game, const PickUpAction());
+      // act
+      final (after, events) = step(game, const PickUpAction());
 
-        // assert
-        expect(events.whereType<ItemPickedUp>().single.item.id, 'item-1');
-        expect(after.inventory.single.id, 'item-1');
-        expect(after.groundItems[_here], isNull);
-      });
-    },
-  );
+      // assert
+      expect(events.whereType<ItemPickedUp>().single.item.id, 'item-1');
+      expect(after.inventory.single.id, 'item-1');
+      expect(after.groundItems[_here], isNull);
+    });
+  });
 }

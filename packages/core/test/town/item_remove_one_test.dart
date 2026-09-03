@@ -3,13 +3,8 @@ import 'package:test/test.dart';
 
 import '../support/fixtures.dart';
 
-/// What a duplicate id does at the town half, after the m3-itemids flip.
-///
-/// These tests were written first as characterization against unmodified
-/// `a567c19` — where one sale, deposit, withdrawal or read took EVERY match,
-/// and where they passed — then flipped with the change. The pre-flip reds are
-/// on the record; this file keeps the contract, plus the pricing pin that was
-/// true before the flip and stays true after it.
+/// Remove-one at the town half: an id-based removal takes exactly one item —
+/// the first match in the list's order — and the sibling survives with its id.
 const _potion = BaseItem(
   id: 'healing-potion',
   name: 'Healing Potion',
@@ -52,7 +47,6 @@ Profile _townie({
   List<Item> inventory = const [],
   List<Item> bank = const [],
   Equipment equipment = const {},
-  Set<String> knownSpells = const {},
 }) => Profile(
   hero: hero(const Position(0, 0)),
   worldSeed: 1,
@@ -60,15 +54,14 @@ Profile _townie({
   inventory: inventory,
   bank: bank,
   equipment: equipment,
-  knownSpells: knownSpells,
 );
 
 int _held(List<Item> items, String id) =>
     items.where((item) => item.id == id).length;
 
 void main() {
-  group('selling a duplicate id takes exactly one', () {
-    test('the first twin is sold, the sibling survives', () {
+  group('remove-one at the town half', () {
+    test('selling a duplicate id takes exactly one, the sibling survives', () {
       // arrange
       final profile = _townie(inventory: [_twin(_potion), _twin(_potion)]);
 
@@ -81,21 +74,7 @@ void main() {
       expect(after.gold, 9, reason: 'one item sold, one price taken');
     });
 
-    test('the sale prices off the first match', () {
-      // arrange
-      final profile = _townie(inventory: [_twin(_potion), _twin(_potion)]);
-
-      // act
-      final (after, refusal) = sellItem(profile, 'drop-1', 9);
-
-      // assert
-      expect(refusal, isNull);
-      expect(after.gold, 9, reason: 'the first match answers, as before');
-    });
-  });
-
-  group('depositing a duplicate id moves exactly one', () {
-    test('one twin to the vault, one stays carried', () {
+    test('depositing a duplicate id moves exactly one into the vault', () {
       // arrange
       final profile = _townie(inventory: [_twin(_potion), _twin(_potion)]);
 
@@ -107,10 +86,8 @@ void main() {
       expect(_held(after.inventory, 'drop-1'), 1);
       expect(_held(after.bank, 'drop-1'), 1);
     });
-  });
 
-  group('withdrawing a duplicate id moves exactly one', () {
-    test('one twin out of the vault, one stays banked', () {
+    test('withdrawing a duplicate id moves exactly one out of the vault', () {
       // arrange
       final profile = _townie(bank: [_twin(_potion), _twin(_potion)]);
 
@@ -122,10 +99,8 @@ void main() {
       expect(_held(after.bank, 'drop-1'), 1);
       expect(_held(after.inventory, 'drop-1'), 1);
     });
-  });
 
-  group('reading a duplicate id in town takes exactly one', () {
-    test('the first twin is read, the sibling survives', () {
+    test('reading a duplicate id consumes exactly one book', () {
       // arrange
       final profile = _townie(inventory: [_twin(_book), _twin(_book)]);
 
@@ -139,10 +114,8 @@ void main() {
       expect(_held(after.inventory, 'drop-1'), 1);
       expect(after.knownSpells, contains('firebolt'));
     });
-  });
 
-  group('tempering a duplicate id works exactly one', () {
-    test('the first carried match is worked, the sibling untouched', () {
+    test('tempering works the first carried match only', () {
       // arrange
       final profile = _townie(inventory: [_twin(_cap), _twin(_cap)], gold: 100);
       final ingots = temperPriceFrom(_twin(_cap).temper).ingots;
@@ -159,7 +132,7 @@ void main() {
       expect(after.inventory.last.temper, 0, reason: 'the sibling untouched');
     });
 
-    test('the worn piece is worked on its own', () {
+    test('tempering a worn piece works the worn piece', () {
       // arrange
       final profile = _townie(
         equipment: {EquipSlot.head: _twin(_cap)},

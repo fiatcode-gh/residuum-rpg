@@ -268,3 +268,18 @@ class Item extends Equatable {
   @override
   String toString() => 'Item($id, $displayName)';
 }
+
+/// The list with its FIRST item answering to [id] gone, in order.
+///
+/// **One tap, one item.** After the mint at the pack's door, ids are unique by
+/// construction, so removing the first match and removing every match coincide
+/// on every pack the game can mint. On a pack inherited from an older save the
+/// two differ — legacy saves can hold duplicate ids — and removing exactly one
+/// is the honest semantics: the tap named one thing, and one thing is what it
+/// takes. The first match in the list's existing order is the oldest, which
+/// makes the removal deterministic through every sell-and-rebuy cycle.
+List<Item> withoutFirst(List<Item> items, String id) {
+  final at = items.indexWhere((item) => item.id == id);
+  if (at < 0) return items;
+  return [...items]..removeAt(at);
+}

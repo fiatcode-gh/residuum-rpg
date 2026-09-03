@@ -104,10 +104,7 @@ Worn wear(Equipment equipment, List<Item> inventory, String itemId) {
   final item = inventory.firstWhere((carried) => carried.id == itemId);
   final slot = item.base.slot!;
   final worn = {...equipment};
-  final carried = [
-    for (final held in inventory)
-      if (held.id != itemId) held,
-  ];
+  final carried = withoutFirst(inventory, itemId);
   final emptying = _displacedBy(equipment, item);
   final taken = <(Item, EquipSlot)>[];
   for (final emptied in emptying) {

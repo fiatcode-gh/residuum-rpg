@@ -136,19 +136,13 @@ import 'position.dart';
       final missing = heroMaxHp(hero, loadout) - hero.hp;
       final healed = potion.base.heal < missing ? potion.base.heal : missing;
       hero = hero.copyWith(hp: hero.hp + (healed > 0 ? healed : 0));
-      inventory = [
-        for (final item in inventory)
-          if (item.id != itemId) item,
-      ];
+      inventory = withoutFirst(inventory, itemId);
       events.add(PotionDrunk(item: potion, healed: healed > 0 ? healed : 0));
     case ReadAction(:final itemId):
       final book = inventory.firstWhere((item) => item.id == itemId);
       final learned = state.spells[book.base.teaches]!;
       knownSpells = {...knownSpells, learned.id};
-      inventory = [
-        for (final item in inventory)
-          if (item.id != itemId) item,
-      ];
+      inventory = withoutFirst(inventory, itemId);
       events.add(SpellLearned(book: book, spell: learned));
     case CastSpellAction(:final spellId, :final targetId):
       final spell = state.spells[spellId]!;
@@ -174,10 +168,7 @@ import 'position.dart';
       loadout = loadout.withSkills(_train(kind.trains, loadout.skills, events));
     case DropAction(:final itemId):
       final put = inventory.firstWhere((item) => item.id == itemId);
-      inventory = [
-        for (final item in inventory)
-          if (item.id != itemId) item,
-      ];
+      inventory = withoutFirst(inventory, itemId);
       groundItems = _withItem(groundItems, hero.position, put);
       events.add(ItemDropped(item: put, at: hero.position));
   }

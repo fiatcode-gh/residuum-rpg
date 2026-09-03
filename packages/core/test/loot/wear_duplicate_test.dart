@@ -1,13 +1,12 @@
 import 'package:residuum_core/core.dart';
 import 'package:test/test.dart';
 
-
-/// What duplicate ids do at the wear door today, pinned before m3-itemids
-/// changes it.
+/// What a duplicate id does at the wear door, after the m3-itemids flip.
 ///
-/// The refusal reads the first match (`_find`), the rebuild removes every
-/// match. Both lines are pinned here on a hand-built duplicate-id pack; the
-/// unit flips the rebuild to first-match-only and leaves the refusal alone.
+/// The refusal always read the first match (`_find`) and stays untouched —
+/// that pin was true before the flip and stays true after it. The rebuild was
+/// characterized against unmodified `a567c19` as remove-ALL, then flipped with
+/// the change; the pre-flip red is on the record.
 const _helmet = BaseItem(
   id: 'leather-cap',
   name: 'Leather Cap',
@@ -33,7 +32,7 @@ int _held(List<Item> items, String id) =>
     items.where((item) => item.id == id).length;
 
 void main() {
-  group('characterization: wearRefusal reads the first match', () {
+  group('wearRefusal reads the first match', () {
     test('the first twin answers, whatever the second would say', () {
       // arrange
       final pack = [_twin(_potion), _twin(_helmet)];
@@ -45,13 +44,13 @@ void main() {
       expect(
         refusal,
         'Healing Potion is not worn',
-        reason: 'current behaviour: the refusal names the first match',
+        reason: 'the first match answers, as before the flip',
       );
     });
   });
 
-  group('characterization: wear removes every match', () {
-    test('both twins leave the pack, one goes on', () {
+  group('wear takes exactly one match', () {
+    test('one twin goes on, the sibling survives carried', () {
       // arrange
       final pack = [_twin(_helmet), _twin(_helmet)];
 
@@ -59,11 +58,7 @@ void main() {
       final worn = wear(const {}, pack, 'drop-1');
 
       // assert
-      expect(
-        _held(worn.inventory, 'drop-1'),
-        0,
-        reason: 'current behaviour: one wear takes every match',
-      );
+      expect(_held(worn.inventory, 'drop-1'), 1);
       expect(worn.equipment[EquipSlot.head], isNotNull);
     });
   });
