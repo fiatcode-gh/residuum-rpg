@@ -4,7 +4,9 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../game/game_bloc.dart';
+import '../notice/notice.dart';
 import '../town/town_bloc.dart';
+import '../town/town_crawl.dart';
 import '../world/world_bloc.dart';
 import 'boot.dart';
 import 'save_store.dart';
@@ -24,7 +26,7 @@ import 'save_store.dart';
 /// or a hero who walked out at the stairs and left it standing — and the next
 /// launch opens a different screen for each.
 class Autosaver {
-  Autosaver(this._store, {required Boot from})
+  Autosaver(this._store, {required Boot from, this.onSaveFailed})
     : _roster = from.document,
       _profile = from.profile,
       _run = from.run,
@@ -35,6 +37,23 @@ class Autosaver {
       _world = from.world;
 
   final SaveStore _store;
+
+  /// Where a save-write failure is told, once per streak.
+  ///
+  /// The session wires this to a town event, so the sentence reaches the
+  /// screen through the same notice channel every other sentence rides. Null
+  /// in tests that only care about the queue.
+  void Function(SaveWriteFailedNotice)? onSaveFailed;
+
+  /// Whether the current streak of failed saves is still running.
+  ///
+  /// The FIRST failure of a streak emits the notice; every later failure in
+  /// the same streak is silence, because the sentence names a fact the player
+  /// has already been told and a queue that retries into the same full disk
+  /// must not repeat itself with every emission. The streak ends at the first
+  /// save that lands.
+  bool _failing = false;
+
   final List<StreamSubscription<Object?>> _watching = [];
 
   /// Every hero, so the ones nobody is playing are written back out as they were.
@@ -79,11 +98,24 @@ class Autosaver {
     _watching.add(
       town.stream.listen((state) {
         _profile = state.profile;
-        _run = state.run ?? state.suspended;
-        _dungeon = state.dungeon;
-        _inside = state.run != null;
+        switch (state.crawl) {
+          case final CrawlOpening opening:
+            _run = opening.run;
+            _dungeon = opening.dungeon;
+            _inside = true;
+            _campDay = null;
+          case final CampStanding camp:
+            _run = camp.crawl;
+            _dungeon = camp.dungeon;
+            _inside = false;
+            _campDay = camp.campDay;
+          case null:
+            _run = null;
+            _dungeon = null;
+            _inside = false;
+            _campDay = null;
+        }
         _merchant = state.merchant;
-        _campDay = state.run == null ? state.campDay : null;
         saveNow();
       }),
     );
@@ -171,7 +203,19 @@ class Autosaver {
   void saveNow() {
     final written = document;
     _queue = _queue.then((_) async {
-      await _store.save(written);
+      final landed = await _store.save(written);
+      if (landed) {
+        _failing = false;
+        return;
+      }
+      if (!_failing) {
+        _failing = true;
+        onSaveFailed?.call(
+          const SaveWriteFailedNotice(
+            'the game could not be saved; your last save still stands',
+          ),
+        );
+      }
     });
   }
 

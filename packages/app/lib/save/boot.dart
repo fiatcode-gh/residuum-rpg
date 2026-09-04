@@ -2,6 +2,7 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../notice/notice.dart';
+import '../town/town_crawl.dart';
 import 'save_store.dart';
 
 /// What the app opens onto.
@@ -48,6 +49,20 @@ class Boot {
 
   /// Where in the world the active hero is, and what they know of it.
   Whereabouts get world => document.world;
+
+  /// The crawl the town bloc opens on: the hero's camp, or nothing.
+  ///
+  /// A hero standing INSIDE their crawl hands it to the [GameBloc] that opens
+  /// below the session, never to the town — so `inside` means the town opens
+  /// with no crawl at all, and only a hero camped away from theirs hands the
+  /// town a camp to stand next to. The document's own pairing rules guarantee
+  /// the shapes: a run with a dungeon together, a campDay with a camp together.
+  TownCrawl? get crawl {
+    final run = document.run;
+    if (document.inside || run == null) return null;
+    final dungeon = document.dungeon!;
+    return CampStanding(run, dungeon, document.campDay!);
+  }
 }
 
 /// The label a hero is offered when nobody has typed one.

@@ -60,15 +60,15 @@ final class ResumeRefusedNotice extends SaveNotice {
   List<Object?> get props => [sentence];
 }
 
-/// A transaction or control the rules refused, in the rule's own words.
+/// A sentence the interface owes with no kind of its own.
 ///
-/// The generic variant: the town's transactions and the world's travels
-/// already carry refusals as sentences (`TownRefusal.reason`), and the notice
-/// channel is where those sentences are read out. They ride here rather than
-/// gaining a variant apiece — only the channel was sealed, not every refusal
-/// a rule can produce.
-final class RefusedNotice extends SaveNotice {
-  const RefusedNotice(this.sentence);
+/// The generic variant: the town's transactions carry their refusals as
+/// sentences (`TownRefusal.reason`) and the forge carries its level-up
+/// announcements, and the notice channel is where both are read out. They ride
+/// here rather than gaining a variant apiece — only the channel was sealed,
+/// not every sentence a rule can produce.
+final class SentenceNotice extends SaveNotice {
+  const SentenceNotice(this.sentence);
 
   @override
   final String sentence;

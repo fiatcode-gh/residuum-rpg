@@ -4,6 +4,8 @@ import 'package:residuum_app/save/save_store.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import 'package:residuum_app/notice/notice.dart';
+
 import 'support/memory_save_files.dart';
 
 Profile _hero({int gold = 0}) => newProfile(worldSeed: 5).copyWith(gold: gold);
@@ -209,7 +211,9 @@ void main() {
         expect(loaded.document!.profile.gold, 7);
         expect(
           loaded.report,
-          'your last save could not be read; an older one was restored',
+          const LoadNotice(
+            'your last save could not be read; an older one was restored',
+          ),
         );
       },
     );
@@ -230,7 +234,7 @@ void main() {
       expect(loaded.document, isNull);
       expect(
         loaded.report,
-        'your last save could not be read; a new hero begins',
+        const LoadNotice('your last save could not be read; a new hero begins'),
       );
     });
 
@@ -304,7 +308,7 @@ void main() {
       expect(loaded.document, isNull);
       expect(
         loaded.report,
-        'your last save could not be read; a new hero begins',
+        const LoadNotice('your last save could not be read; a new hero begins'),
       );
     });
 

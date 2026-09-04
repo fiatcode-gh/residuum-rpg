@@ -41,7 +41,7 @@ void main() {
       build: _bloc,
       act: (bloc) => bloc.add(TravelRequested(northgate)),
       verify: (bloc) {
-        expect(bloc.state.notice, 'you have not heard of that place');
+        expect(bloc.state.notice?.sentence, 'you have not heard of that place');
         expect(bloc.state.world, newWhereabouts());
       },
     );
@@ -138,7 +138,7 @@ void main() {
         bloc.add(TravelRequested(cryptNode));
       },
       verify: (bloc) =>
-          expect(bloc.state.notice, 'you are already on the road'),
+          expect(bloc.state.notice?.sentence, 'you are already on the road'),
     );
   });
 
@@ -337,7 +337,7 @@ void main() {
       ),
       verify: (bloc) {
         expect(bloc.state.world.discovered, isNot(contains(northgate)));
-        expect(bloc.state.notice, 'you cannot afford that');
+        expect(bloc.state.notice?.sentence, 'you cannot afford that');
         expect(bloc.state.log, isEmpty);
       },
     );

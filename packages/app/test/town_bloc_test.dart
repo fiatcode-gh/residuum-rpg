@@ -2,6 +2,8 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
+import 'package:residuum_app/notice/notice.dart';
+import 'package:residuum_app/town/town_crawl.dart';
 import 'package:residuum_core/core.dart';
 
 Item _cap(String id) => Item(id: id, base: leatherCap, rarity: Rarity.common);
@@ -208,7 +210,7 @@ void main() {
       act: (bloc) => bloc.add(BuyPressed(bloc.state.stock.first.id)),
       verify: (bloc) {
         expect(bloc.state.profile.gold, 0);
-        expect(bloc.state.notice, 'you cannot afford that');
+        expect(bloc.state.notice?.sentence, 'you cannot afford that');
         expect(bloc.state.stock.length, greaterThan(0));
       },
     );
@@ -256,7 +258,7 @@ void main() {
       act: (bloc) => bloc.add(const RestPressed()),
       verify: (bloc) {
         expect(bloc.state.profile.gold, 500);
-        expect(bloc.state.notice, 'there is nothing wrong with you');
+        expect(bloc.state.notice?.sentence, 'there is nothing wrong with you');
       },
     );
 
@@ -300,7 +302,10 @@ void main() {
       act: (bloc) => bloc.add(const WithdrawGoldPressed(50)),
       verify: (bloc) {
         expect(bloc.state.bankedGold, 0);
-        expect(bloc.state.notice, 'the vault does not hold that much');
+        expect(
+          bloc.state.notice?.sentence,
+          'the vault does not hold that much',
+        );
       },
     );
 
@@ -340,7 +345,7 @@ void main() {
       build: () => TownBloc(profile: _fresh()),
       act: (bloc) => bloc.add(const WearPressed('nowhere-1')),
       verify: (bloc) {
-        expect(bloc.state.notice, 'you are not carrying that');
+        expect(bloc.state.notice?.sentence, 'you are not carrying that');
         expect(bloc.state.profile.inventory, _fresh().inventory);
       },
     );
@@ -352,7 +357,7 @@ void main() {
       ),
       act: (bloc) => bloc.add(const WearPressed('held-1')),
       verify: (bloc) {
-        expect(bloc.state.notice, 'Healing Potion is not worn');
+        expect(bloc.state.notice?.sentence, 'Healing Potion is not worn');
         expect(bloc.state.profile.equipment[EquipSlot.offHand], isNull);
       },
     );
@@ -367,7 +372,7 @@ void main() {
       ),
       act: (bloc) => bloc.add(const WearPressed('held-1')),
       verify: (bloc) {
-        expect(bloc.state.notice, 'both hands are on the weapon');
+        expect(bloc.state.notice?.sentence, 'both hands are on the weapon');
         expect(bloc.state.profile.equipment[EquipSlot.offHand], isNull);
       },
     );
@@ -392,7 +397,8 @@ void main() {
       'taking off an empty slot says why',
       build: () => TownBloc(profile: _fresh().copyWith(equipment: const {})),
       act: (bloc) => bloc.add(const TakeOffPressed(EquipSlot.head)),
-      verify: (bloc) => expect(bloc.state.notice, 'nothing is on your head'),
+      verify: (bloc) =>
+          expect(bloc.state.notice?.sentence, 'nothing is on your head'),
     );
 
     blocTest<TownBloc, TownViewState>(
@@ -408,7 +414,10 @@ void main() {
       ),
       act: (bloc) => bloc.add(const TakeOffPressed(EquipSlot.head)),
       verify: (bloc) {
-        expect(bloc.state.notice, 'your hands are too full to stow it');
+        expect(
+          bloc.state.notice?.sentence,
+          'your hands are too full to stow it',
+        );
         expect(bloc.state.profile.equipment[EquipSlot.head]?.id, 'worn-1');
       },
     );
@@ -454,15 +463,21 @@ void main() {
           'your last save could not be read; an older one was restored';
 
       // act
-      final bloc = TownBloc(profile: _fresh(), notice: report);
+      final bloc = TownBloc(
+        profile: _fresh(),
+        notice: const LoadNotice(report),
+      );
 
       // assert
-      expect(bloc.state.notice, report);
+      expect(bloc.state.notice, const LoadNotice(report));
     });
 
     test('the next thing that works clears it', () async {
       // arrange
-      final bloc = TownBloc(profile: _rich(), notice: 'something went wrong');
+      final bloc = TownBloc(
+        profile: _rich(),
+        notice: const LoadNotice('something went wrong'),
+      );
 
       // act
       bloc.add(const DepositGoldPressed(10));
@@ -534,9 +549,11 @@ void main() {
       'dying out there leaves the camp standing at the crypt',
       build: () => TownBloc(
         profile: _rich(),
-        suspended: startDungeonRunAt(cryptNode, _rich()).copyWith(depth: 3),
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _rich()).copyWith(depth: 3),
+          cryptNode,
+          0,
+        ),
       ),
       act: (bloc) => bloc.add(
         EncounterEnded(
@@ -554,9 +571,11 @@ void main() {
       'walking away from a fight leaves the camp standing too',
       build: () => TownBloc(
         profile: _rich(),
-        suspended: startDungeonRunAt(cryptNode, _rich()).copyWith(depth: 2),
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _rich()).copyWith(depth: 2),
+          cryptNode,
+          0,
+        ),
       ),
       act: (bloc) => bloc.add(
         EncounterEnded(
@@ -576,9 +595,11 @@ void main() {
         );
         return TownBloc(
           profile: camped,
-          suspended: startDungeonRunAt(cryptNode, _rich()),
-          dungeon: cryptNode,
-          campDay: 0,
+          crawl: CampStanding(
+            startDungeonRunAt(cryptNode, _rich()),
+            cryptNode,
+            0,
+          ),
         );
       },
       act: (bloc) => bloc.add(
@@ -681,9 +702,11 @@ void main() {
       build: () => TownBloc(
         profile: _rich(),
         town: stonebridge,
-        suspended: startDungeonRunAt(cryptNode, _rich()),
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _rich()),
+          cryptNode,
+          0,
+        ),
       ),
       act: (bloc) => bloc.add(ArrivedInTown(northgate)),
       verify: (bloc) {
@@ -731,7 +754,7 @@ void main() {
       act: (bloc) => bloc.add(BuyPressed(bloc.state.stock.first.id)),
       verify: (bloc) {
         expect(bloc.state.merchant.bought, isEmpty);
-        expect(bloc.state.notice, 'you cannot afford that');
+        expect(bloc.state.notice?.sentence, 'you cannot afford that');
       },
     );
 
@@ -799,7 +822,7 @@ void main() {
         bloc.add(const BuyBackPressed('held-1'));
       },
       verify: (bloc) {
-        expect(bloc.state.notice, 'you cannot afford that');
+        expect(bloc.state.notice?.sentence, 'you cannot afford that');
         expect(bloc.state.merchant.sold.single.id, 'held-1');
       },
     );
@@ -861,6 +884,7 @@ void main() {
               depth: 2,
             ),
             day: 0,
+            dungeon: cryptNode,
           ),
         );
       },
@@ -884,7 +908,7 @@ void main() {
         await bloc.stream.first;
         bloc.add(EnterDungeonPressed(cryptNode));
         await bloc.stream.first;
-        bloc.add(RunSuspended(bloc.state.run!, day: 0));
+        bloc.add(RunSuspended(bloc.state.run!, day: 0, dungeon: cryptNode));
       },
       verify: (bloc) {
         expect(bloc.state.merchant, MerchantVisit.none);
@@ -898,7 +922,7 @@ void main() {
       act: (bloc) async {
         bloc.add(EnterDungeonPressed(cryptNode));
         await bloc.stream.first;
-        bloc.add(RunSuspended(bloc.state.run!, day: 0));
+        bloc.add(RunSuspended(bloc.state.run!, day: 0, dungeon: cryptNode));
       },
       verify: (bloc) {
         expect(
@@ -916,9 +940,11 @@ void main() {
       'shopping while camped does not lose the camp',
       build: () => TownBloc(
         profile: _rich(),
-        suspended: startDungeonRunAt(cryptNode, _rich()),
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _rich()),
+          cryptNode,
+          0,
+        ),
       ),
       act: (bloc) async {
         bloc.add(BuyPressed(bloc.state.stock.first.id));
@@ -934,9 +960,11 @@ void main() {
       'selling while camped keeps the camp, streams and all',
       build: () => TownBloc(
         profile: _rich(),
-        suspended: startDungeonRunAt(cryptNode, _rich()),
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _rich()),
+          cryptNode,
+          0,
+        ),
       ),
       act: (bloc) => bloc.add(const SellPressed('held-1')),
       verify: (bloc) {
@@ -951,9 +979,11 @@ void main() {
       'a refused transaction does not lose the camp either',
       build: () => TownBloc(
         profile: _fresh(),
-        suspended: startDungeonRunAt(cryptNode, _fresh()),
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _fresh()),
+          cryptNode,
+          0,
+        ),
       ),
       act: (bloc) => bloc.add(const WithdrawGoldPressed(9999)),
       verify: (bloc) {
@@ -966,9 +996,11 @@ void main() {
       'resuming hands back the crawl with the town business in it',
       build: () => TownBloc(
         profile: _rich(),
-        suspended: startDungeonRunAt(cryptNode, _fresh()),
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _fresh()),
+          cryptNode,
+          0,
+        ),
       ),
       act: (bloc) async {
         bloc.add(BuyPressed(bloc.state.stock.first.id));
@@ -990,9 +1022,11 @@ void main() {
       'resuming does not reshuffle the dungeon',
       build: () => TownBloc(
         profile: _fresh().copyWith(visit: 1),
-        suspended: startDungeonRunAt(cryptNode, _fresh()),
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _fresh()),
+          cryptNode,
+          0,
+        ),
       ),
       act: (bloc) => bloc.add(const ResumeCrawlPressed(day: 0)),
       verify: (bloc) {
@@ -1010,7 +1044,7 @@ void main() {
       act: (bloc) async {
         bloc.add(EnterDungeonPressed(cryptNode));
         await bloc.stream.first;
-        bloc.add(RunSuspended(bloc.state.run!, day: 9));
+        bloc.add(RunSuspended(bloc.state.run!, day: 9, dungeon: cryptNode));
       },
       verify: (bloc) => expect(bloc.state.campDay, 9),
     );
@@ -1019,21 +1053,31 @@ void main() {
       'a camp three days old is overrun and cannot be walked back into',
       build: () => TownBloc(
         profile: _fresh(),
-        suspended: startDungeonRunAt(cryptNode, _fresh()),
-        dungeon: cryptNode,
-        campDay: 4,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _fresh()),
+          cryptNode,
+          4,
+        ),
       ),
       act: (bloc) => bloc.add(const ResumeCrawlPressed(day: 7)),
-      expect: () => [],
+      verify: (bloc) {
+        expect(
+          bloc.state.notice?.sentence,
+          'the camp at the crypt has been taken back by the residue',
+        );
+        expect(bloc.state.suspended, isNotNull);
+      },
     );
 
     blocTest<TownBloc, TownViewState>(
       'a camp two days old is still there to walk back into',
       build: () => TownBloc(
         profile: _fresh(),
-        suspended: startDungeonRunAt(cryptNode, _fresh()),
-        dungeon: cryptNode,
-        campDay: 4,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _fresh()),
+          cryptNode,
+          4,
+        ),
       ),
       act: (bloc) => bloc.add(const ResumeCrawlPressed(day: 6)),
       verify: (bloc) => expect(bloc.state.run, isNotNull),
@@ -1043,9 +1087,11 @@ void main() {
       'walking back down forgets the day the camp was pitched',
       build: () => TownBloc(
         profile: _fresh(),
-        suspended: startDungeonRunAt(cryptNode, _fresh()),
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _fresh()),
+          cryptNode,
+          0,
+        ),
       ),
       act: (bloc) => bloc.add(const ResumeCrawlPressed(day: 0)),
       verify: (bloc) => expect(bloc.state.campDay, isNull),
@@ -1055,9 +1101,11 @@ void main() {
       'giving the camp up forgets the day it was pitched',
       build: () => TownBloc(
         profile: _fresh(),
-        suspended: startDungeonRunAt(cryptNode, _fresh()),
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _fresh()),
+          cryptNode,
+          0,
+        ),
       ),
       act: (bloc) => bloc.add(DelveAnewPressed(cryptNode)),
       verify: (bloc) => expect(bloc.state.campDay, isNull),
@@ -1067,28 +1115,35 @@ void main() {
       'a transaction in town leaves the day the camp was pitched alone',
       build: () => TownBloc(
         profile: _rich(),
-        suspended: startDungeonRunAt(cryptNode, _fresh()),
-        dungeon: cryptNode,
-        campDay: 6,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _fresh()),
+          cryptNode,
+          6,
+        ),
       ),
       act: (bloc) => bloc.add(BuyPressed(bloc.state.stock.first.id)),
       verify: (bloc) => expect(bloc.state.campDay, 6),
     );
 
     blocTest<TownBloc, TownViewState>(
-      'resuming a crawl nobody camped in does nothing at all',
+      'resuming a crawl nobody camped in says there is no camp',
       build: () => TownBloc(profile: _fresh()),
       act: (bloc) => bloc.add(const ResumeCrawlPressed(day: 0)),
-      expect: () => [],
+      verify: (bloc) => expect(
+        bloc.state.notice?.sentence,
+        'there is no camp to walk back into',
+      ),
     );
 
     blocTest<TownBloc, TownViewState>(
       'delving anew gives the camp up and reshuffles',
       build: () => TownBloc(
         profile: _fresh().copyWith(visit: 1),
-        suspended: startDungeonRunAt(cryptNode, _fresh()),
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _fresh()),
+          cryptNode,
+          0,
+        ),
       ),
       act: (bloc) => bloc.add(DelveAnewPressed(cryptNode)),
       verify: (bloc) {
@@ -1102,9 +1157,11 @@ void main() {
       'dying in a resumed crawl leaves no camp behind',
       build: () => TownBloc(
         profile: _fresh(),
-        suspended: startDungeonRunAt(cryptNode, _fresh()),
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _fresh()),
+          cryptNode,
+          0,
+        ),
       ),
       act: (bloc) async {
         bloc.add(const ResumeCrawlPressed(day: 0));
@@ -1139,9 +1196,7 @@ void main() {
         final camp = startDungeonRunAt(cryptNode, _rich());
         return TownBloc(
           profile: suspendRun(_rich(), camp),
-          suspended: camp,
-          dungeon: cryptNode,
-          campDay: 0,
+          crawl: CampStanding(camp, cryptNode, 0),
         );
       },
       act: (bloc) async {
@@ -1150,7 +1205,7 @@ void main() {
         await bloc.stream.first;
         bloc.add(const ResumeCrawlPressed(day: 0));
         await bloc.stream.first;
-        bloc.add(RunSuspended(bloc.state.run!, day: 0));
+        bloc.add(RunSuspended(bloc.state.run!, day: 0, dungeon: cryptNode));
       },
       verify: (bloc) {
         expect(bloc.state.merchant.bought, [_boughtId]);
@@ -1171,9 +1226,7 @@ void main() {
         final camp = startDungeonRunAt(cryptNode, _rich());
         return TownBloc(
           profile: suspendRun(_rich(), camp),
-          suspended: camp,
-          dungeon: cryptNode,
-          campDay: 0,
+          crawl: CampStanding(camp, cryptNode, 0),
         );
       },
       act: (bloc) async {
@@ -1204,9 +1257,7 @@ void main() {
         final camp = startDungeonRunAt(cryptNode, _rich());
         return TownBloc(
           profile: suspendRun(_rich(), camp),
-          suspended: camp,
-          dungeon: cryptNode,
-          campDay: 0,
+          crawl: CampStanding(camp, cryptNode, 0),
         );
       },
       act: (bloc) async {
@@ -1233,9 +1284,7 @@ void main() {
         final camp = startDungeonRunAt(cryptNode, _rich());
         return TownBloc(
           profile: suspendRun(_rich(), camp),
-          suspended: camp,
-          dungeon: cryptNode,
-          campDay: 0,
+          crawl: CampStanding(camp, cryptNode, 0),
         );
       },
       act: (bloc) async {
@@ -1243,7 +1292,7 @@ void main() {
         await bloc.stream.first;
         bloc.add(const ResumeCrawlPressed(day: 0));
         await bloc.stream.first;
-        bloc.add(RunSuspended(bloc.state.run!, day: 0));
+        bloc.add(RunSuspended(bloc.state.run!, day: 0, dungeon: cryptNode));
       },
       verify: (bloc) => expect(bloc.state.merchant.sold.single.id, 'held-1'),
     );
@@ -1253,16 +1302,18 @@ void main() {
       // arrange
       final bloc = TownBloc(
         profile: _fresh(),
-        suspended: startDungeonRunAt(cryptNode, _fresh()),
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _fresh()),
+          cryptNode,
+          0,
+        ),
       );
       final seen = <(bool, bool)>[];
 
       // act
       bloc.add(const ResumeCrawlPressed(day: 0));
       final resumed = await bloc.stream.first;
-      bloc.add(RunSuspended(resumed.run!, day: 0));
+      bloc.add(RunSuspended(resumed.run!, day: 0, dungeon: cryptNode));
       final camped = await bloc.stream.first;
       for (final state in [bloc.state, resumed, camped]) {
         seen.add((state.run != null, state.suspended != null));
@@ -1305,9 +1356,11 @@ void main() {
       'delving anew at a node gives the camp up for that node',
       build: () => TownBloc(
         profile: _fresh(),
-        suspended: startDungeonRunAt(cryptNode, _fresh()),
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(cryptNode, _fresh()),
+          cryptNode,
+          0,
+        ),
       ),
       act: (bloc) => bloc.add(DelveAnewPressed(seaCave)),
       verify: (bloc) {
@@ -1326,7 +1379,7 @@ void main() {
       act: (bloc) async {
         bloc.add(EnterDungeonPressed(seaCave));
         final entered = await bloc.stream.first;
-        bloc.add(RunSuspended(entered.run!, day: 0));
+        bloc.add(RunSuspended(entered.run!, day: 0, dungeon: seaCave));
       },
       verify: (bloc) {
         expect(bloc.state.suspended, isNotNull);
@@ -1338,9 +1391,7 @@ void main() {
       'a transaction while camped carries the camp\'s dungeon forward',
       build: () => TownBloc(
         profile: _rich(),
-        suspended: startDungeonRunAt(seaCave, _rich()),
-        dungeon: seaCave,
-        campDay: 0,
+        crawl: CampStanding(startDungeonRunAt(seaCave, _rich()), seaCave, 0),
       ),
       act: (bloc) => bloc.add(const RestPressed()),
       verify: (bloc) {
@@ -1353,9 +1404,11 @@ void main() {
       'arriving in a town carries the camp\'s dungeon forward',
       build: () => TownBloc(
         profile: _rich(),
-        suspended: startDungeonRunAt(ruinedKeep, _rich()),
-        dungeon: ruinedKeep,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(ruinedKeep, _rich()),
+          ruinedKeep,
+          0,
+        ),
       ),
       act: (bloc) => bloc.add(ArrivedInTown(northgate)),
       verify: (bloc) {
@@ -1368,9 +1421,7 @@ void main() {
       'a fight on the road leaves the camp\'s dungeon where it was',
       build: () => TownBloc(
         profile: _rich(),
-        suspended: startDungeonRunAt(seaCave, _rich()),
-        dungeon: seaCave,
-        campDay: 0,
+        crawl: CampStanding(startDungeonRunAt(seaCave, _rich()), seaCave, 0),
       ),
       act: (bloc) => bloc.add(
         EncounterEnded(startRoadEncounter(_rich(), day: 3), died: true),
@@ -1400,9 +1451,11 @@ void main() {
       'walking back into a camp keeps saying which dungeon it is',
       build: () => TownBloc(
         profile: _fresh(),
-        suspended: startDungeonRunAt(ruinedKeep, _fresh()),
-        dungeon: ruinedKeep,
-        campDay: 0,
+        crawl: CampStanding(
+          startDungeonRunAt(ruinedKeep, _fresh()),
+          ruinedKeep,
+          0,
+        ),
       ),
       act: (bloc) => bloc.add(const ResumeCrawlPressed(day: 0)),
       verify: (bloc) {
@@ -1455,7 +1508,7 @@ void main() {
       verify: (bloc) {
         expect(bloc.state.profile.knownSpells, isEmpty);
         expect(bloc.state.profile.inventory, hasLength(1));
-        expect(bloc.state.notice, 'needs Wrath 4');
+        expect(bloc.state.notice?.sentence, 'needs Wrath 4');
       },
     );
 
@@ -1485,7 +1538,7 @@ void main() {
       act: (bloc) => bloc.add(const ReadBookPressed('held-9')),
       verify: (bloc) {
         expect(bloc.state.profile.inventory, hasLength(1));
-        expect(bloc.state.notice, 'you already know Firebolt');
+        expect(bloc.state.notice?.sentence, 'you already know Firebolt');
       },
     );
 
@@ -1523,7 +1576,7 @@ void main() {
       ),
       act: (bloc) => bloc.add(const SmeltPressed()),
       verify: (bloc) {
-        expect(bloc.state.notice, 'that takes 2 ore');
+        expect(bloc.state.notice?.sentence, 'that takes 2 ore');
         expect(bloc.state.profile.materials, const {MaterialId.ore: 1});
       },
     );
@@ -1541,7 +1594,7 @@ void main() {
       ),
       act: (bloc) => bloc.add(const SmeltPressed()),
       verify: (bloc) {
-        expect(bloc.state.notice, 'Blacksmith rises to 1');
+        expect(bloc.state.notice?.sentence, 'Blacksmith rises to 1');
         expect(bloc.state.profile.skills[SkillId.blacksmith]!.level, 1);
       },
     );
@@ -1585,7 +1638,7 @@ void main() {
       ),
       act: (bloc) => bloc.add(const TemperPressed('kit-2')),
       verify: (bloc) {
-        expect(bloc.state.notice, 'only steel takes a temper');
+        expect(bloc.state.notice?.sentence, 'only steel takes a temper');
       },
     );
 
@@ -1652,7 +1705,7 @@ void main() {
       build: () => TownBloc(profile: _fresh()),
       act: (bloc) => bloc.add(const BrewPressed()),
       verify: (bloc) {
-        expect(bloc.state.notice, 'that takes 3 herbs');
+        expect(bloc.state.notice?.sentence, 'that takes 3 herbs');
       },
     );
 
@@ -1669,7 +1722,7 @@ void main() {
       ),
       act: (bloc) => bloc.add(const BrewPressed()),
       verify: (bloc) {
-        expect(bloc.state.notice, 'you cannot carry any more');
+        expect(bloc.state.notice?.sentence, 'you cannot carry any more');
       },
     );
   });
@@ -1682,7 +1735,9 @@ void main() {
       ),
       act: (bloc) {
         bloc.add(EnterDungeonPressed(cryptNode));
-        bloc.add(RunSuspended(bloc.state.run ?? _anyRun(), day: 4));
+        bloc.add(
+          RunSuspended(bloc.state.run ?? _anyRun(), day: 4, dungeon: cryptNode),
+        );
         bloc.add(const SmeltPressed());
       },
       verify: (bloc) {
@@ -1725,7 +1780,9 @@ void main() {
       ),
       act: (bloc) {
         bloc.add(EnterDungeonPressed(cryptNode));
-        bloc.add(RunSuspended(bloc.state.run ?? _anyRun(), day: 2));
+        bloc.add(
+          RunSuspended(bloc.state.run ?? _anyRun(), day: 2, dungeon: cryptNode),
+        );
         bloc.add(const TemperPressed('drop-1'));
       },
       verify: (bloc) {

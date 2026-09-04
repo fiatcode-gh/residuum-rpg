@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
@@ -9,6 +11,7 @@ import 'save/autosaver.dart';
 import 'save/boot.dart';
 import 'save/save_files_io.dart';
 import 'save/save_store.dart';
+import 'notice/notice.dart';
 import 'town/roster_screen.dart';
 import 'town/town_bloc.dart';
 import 'town/town_screen.dart';
@@ -17,9 +20,123 @@ import 'world/world_screen.dart';
 
 Future<void> main() async {
   final store = SaveStore(IoSaveFiles());
-  final boot = await bootFrom(store, rollWorldSeed: rollWorldSeedFromClock);
-  runApp(ResiduumApp(store: store, boot: boot));
+  runApp(await guardedBoot(store, rollWorldSeed: rollWorldSeedFromClock));
 }
+
+/// Boots, or fails onto the app's first failure screen.
+///
+/// **Boot has one door and it must never be a black screen.** Every throw on
+/// the way up — an unreadable save the platform refuses to even name, a
+/// fresh-install write the disk refuses, anything — lands here instead of
+/// escaping `main()`, and the screen that renders offers exactly one way
+/// forward: begin fresh. A retry that throws again re-renders the screen with
+/// its sentence; the sentence is fixed and safe because a thrown error's own
+/// text is an internal fact, not a sentence a player can use.
+Future<Widget> guardedBoot(
+  SaveStore store, {
+  required int Function() rollWorldSeed,
+}) async {
+  try {
+    final boot = await bootFrom(store, rollWorldSeed: rollWorldSeed);
+    return ResiduumApp(store: store, boot: boot);
+  } on Object {
+    return BootFailureScreen(store: store, rollWorldSeed: rollWorldSeed);
+  }
+}
+
+/// What booting failed with, in one safe sentence.
+const String _bootFailed = 'the game could not start from your save';
+
+/// The screen a thrown boot opens on, and the one door out of it.
+///
+/// Nothing here is told apart by colour: the sentence says what happened, the
+/// button says what it does, and both read in greyscale.
+class BootFailureScreen extends StatefulWidget {
+  const BootFailureScreen({
+    required this.store,
+    required this.rollWorldSeed,
+    super.key,
+  });
+
+  final SaveStore store;
+  final int Function() rollWorldSeed;
+
+  @override
+  State<BootFailureScreen> createState() => _BootFailureScreenState();
+}
+
+class _BootFailureScreenState extends State<BootFailureScreen> {
+  Future<Widget>? _retrying;
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    title: 'Residuum',
+    debugShowCheckedModeBanner: false,
+    theme: ThemeData(
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: const Color(0xFF0E1014),
+      useMaterial3: true,
+    ),
+    home: _retrying == null
+        ? _screen()
+        : FutureBuilder(
+            future: _retrying,
+            builder: (context, retried) {
+              final Widget next;
+              if (retried.hasData) {
+                next = retried.data!;
+              } else {
+                next = _screen();
+              }
+              return next;
+            },
+          ),
+  );
+
+  /// Asks for one more boot, the same way the first one was asked.
+  void _beginFresh() {
+    setState(() {
+      _retrying = guardedBoot(
+        widget.store,
+        rollWorldSeed: widget.rollWorldSeed,
+      );
+    });
+  }
+
+  Widget _screen() => Scaffold(
+    body: SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Spacer(),
+            const Text(
+              'The crawl is unreachable.',
+              style: TextStyle(fontFamily: 'monospace', fontSize: 20),
+            ),
+            const SizedBox(height: 12),
+            Text(_bootFailed, style: monoLike),
+            const Spacer(),
+            FilledButton(
+              onPressed: _beginFresh,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text(
+                'Begin fresh',
+                style: TextStyle(fontFamily: 'monospace', fontSize: 15),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// The failure screen's one style: the same monospace the screens above use.
+const TextStyle monoLike = TextStyle(fontFamily: 'monospace', fontSize: 13);
 
 /// The app, and the one thing it can do that no screen can: play somebody else.
 ///
@@ -53,6 +170,7 @@ class _ResiduumAppState extends State<ResiduumApp> {
       store: widget.store,
       boot: _boot,
       onRoster: _rosterChose,
+      onRosterLanded: _rosterLanded,
     ),
   );
 
@@ -79,8 +197,8 @@ class _ResiduumAppState extends State<ResiduumApp> {
   /// underneath the old hero's route, holding blocs that [_SessionState.dispose]
   /// has just closed. The Heroes door therefore lives on the world screen, which
   /// *is* the bottom route, and nowhere else.
-  Future<void> _rosterChose(RosterChoice chosen, SaveDocument document) async {
-    final fresh = switch (chosen) {
+  Future<Boot?> _rosterChose(RosterChoice chosen, SaveDocument document) async {
+    return switch (chosen) {
       PlayHero(:final id) => await switchHero(widget.store, document, id),
       DropHero(:final id) => await deleteHero(widget.store, document, id),
       MakeHero(:final label, :final replacing) =>
@@ -98,7 +216,14 @@ class _ResiduumAppState extends State<ResiduumApp> {
                 rollWorldSeed: rollWorldSeedFromClock,
               ),
     };
-    if (fresh == null || !mounted) return;
+  }
+
+  /// Rebuilds the session onto a roster edit that LANDED.
+  ///
+  /// Split from [_rosterChose] so the refusal loop can live in the session
+  /// (where the autosaver and the roster route are) while the rebuild stays
+  /// here, where the boot and the generation counter are.
+  void _rosterLanded(Boot fresh) {
     setState(() {
       _boot = fresh;
       _generation++;
@@ -118,14 +243,19 @@ class _Session extends StatefulWidget {
     required this.store,
     required this.boot,
     required this.onRoster,
+    required this.onRosterLanded,
     super.key,
   });
 
   final SaveStore store;
   final Boot boot;
 
-  /// Carries out what the roster answered with, on the document as it stands.
-  final Future<void> Function(RosterChoice, SaveDocument) onRoster;
+  /// Carries out what the roster answered with, on the document as it stands,
+  /// answering the boot that landed — or null when the save did not.
+  final Future<Boot?> Function(RosterChoice, SaveDocument) onRoster;
+
+  /// Rebuilds the app onto a roster edit that landed on disk.
+  final void Function(Boot boot) onRosterLanded;
 
   @override
   State<_Session> createState() => _SessionState();
@@ -142,9 +272,7 @@ class _SessionState extends State<_Session> {
     town: _townFor(widget.boot.world),
     merchant: widget.boot.merchant,
     notice: widget.boot.notice,
-    suspended: widget.boot.inside ? null : widget.boot.run,
-    dungeon: widget.boot.dungeon,
-    campDay: widget.boot.campDay,
+    crawl: widget.boot.crawl,
   );
 
   /// Where the hero is in the world, and every day they spend walking it.
@@ -157,7 +285,22 @@ class _SessionState extends State<_Session> {
     worldSeed: widget.boot.profile.worldSeed,
     dangerFor: (route) => dangerOn(route, _town.state.profile),
   );
-  late final Autosaver _saver = Autosaver(widget.store, from: widget.boot);
+  late Autosaver _saver = Autosaver(widget.store, from: widget.boot);
+
+  /// Builds a fresh autosaver over the session that is already on screen.
+  ///
+  /// Only a refused roster edit calls this: the old autosaver was closed on the
+  /// way into the roster — the rebuild tears it down, and a write still queued
+  /// when the document changed underneath it would put the hero who was just
+  /// left back over the hero who was just chosen — so a refusal that keeps the
+  /// session alive needs a new one, seeded from the document AS IT STANDS.
+  /// The boot's copy is as old as the launch; rewiring from it would hand the
+  /// hero back every coin they had spent since.
+  void _rewireSaver(SaveDocument live) {
+    _saver = Autosaver(widget.store, from: Boot(document: live))
+      ..watchTown(_town)
+      ..watchWorld(_world);
+  }
 
   /// The town whose shelf the hero should be looking at.
   ///
@@ -179,6 +322,7 @@ class _SessionState extends State<_Session> {
   @override
   void initState() {
     super.initState();
+    _saver.onSaveFailed = (notice) => _town.add(SaveWriteFailed(notice));
     _saver.watchTown(_town);
     _saver.watchWorld(_world);
     if (widget.boot.inside) {
@@ -305,14 +449,34 @@ class _SessionState extends State<_Session> {
   /// when the document changed underneath it would put the hero who was just left
   /// back over the hero who was just chosen.
   Future<void> _openRoster() async {
-    final chosen = await Navigator.of(context).push<RosterChoice>(
-      MaterialPageRoute<RosterChoice>(
-        builder: (_) => RosterScreen(document: _saver.document),
-      ),
-    );
-    if (chosen == null || !mounted) return;
-    await _saver.close();
-    await widget.onRoster(chosen, _saver.document);
+    SaveWriteFailedNotice? refused;
+    while (true) {
+      if (!mounted) return;
+      final chosen = await Navigator.of(context).push<RosterChoice>(
+        MaterialPageRoute<RosterChoice>(
+          builder: (_) =>
+              RosterScreen(document: _saver.document, notice: refused),
+        ),
+      );
+      if (chosen == null || !mounted) return;
+      final live = _saver.document;
+      await _saver.close();
+      final outcome = await widget.onRoster(chosen, live);
+      if (outcome case final Boot fresh) {
+        widget.onRosterLanded(fresh);
+        return;
+      }
+      // The save did not land and the session refuses to advance: the hero on
+      // screen keeps standing, and the roster comes back with the sentence on
+      // it. The old autosaver was closed on the way in, so a working one is
+      // rebuilt before the player can change anything else.
+      refused = SaveWriteFailedNotice(switch (chosen) {
+        MakeHero() => 'the new hero could not be saved; nothing was lost',
+        DropHero() => 'the hero could not be deleted; nothing was lost',
+        PlayHero() => 'the hero could not be switched; nothing was lost',
+      });
+      _rewireSaver(live);
+    }
   }
 
   Future<void> _enterDungeon(NodeId node) async =>
@@ -344,11 +508,38 @@ class _SessionState extends State<_Session> {
     required bool resumed,
     required NodeId dungeon,
   }) async {
-    _town.add(door);
-    await _town.stream.firstWhere((state) => state.run != null);
-    if (!mounted) return;
-    await _openCrawl(_town.state.run!, resumed: resumed, dungeon: dungeon);
+    if (_opening) return;
+    _opening = true;
+    try {
+      final answer = Completer<TownViewState>();
+      final subscription = _town.stream.listen((state) {
+        if (!answer.isCompleted &&
+            (state.run != null || state.notice != null)) {
+          answer.complete(state);
+        }
+      });
+      _town.add(door);
+      final TownViewState answered;
+      try {
+        answered = await answer.future;
+      } finally {
+        unawaited(subscription.cancel());
+      }
+      if (!mounted) return;
+      // A notice-only answer names a refusal: the state carries the sentence,
+      // and nothing opens. Resolving on a notice is what makes a refused
+      // resume answer the press instead of leaving it hanging on a wait that
+      // only a later, unrelated crawl would complete.
+      if (answered.run case final GameState run) {
+        await _openCrawl(run, resumed: resumed, dungeon: dungeon);
+      }
+    } finally {
+      _opening = false;
+    }
   }
+
+  /// Whether a door opening is between the press and the town's answer.
+  bool _opening = false;
 
   /// Puts the crawl on top of the town.
   ///
@@ -417,7 +608,8 @@ class _SessionState extends State<_Session> {
     final report = _reported ? null : widget.boot.notice;
     _reported = true;
     return [
-      if (report case final String recovered) _asSentence(recovered),
+      if (report case final SaveNotice recovered)
+        _asSentence(recovered.sentence),
       _resumed,
     ];
   }

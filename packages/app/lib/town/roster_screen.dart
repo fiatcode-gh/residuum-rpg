@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:residuum_content/content.dart';
 
+import '../notice/notice.dart';
 import '../save/boot.dart';
 import 'town_style.dart';
 
@@ -80,14 +81,18 @@ final class DropHero extends RosterChoice {
 /// `playing`, and where each hero is standing is the last clause of their own
 /// line.
 class RosterScreen extends StatelessWidget {
-  const RosterScreen({required this.document, super.key});
+  const RosterScreen({required this.document, this.notice, super.key});
 
   final SaveDocument document;
+
+  /// A save write that did not land, carried back from the session, or null.
+  final SaveNotice? notice;
 
   @override
   Widget build(BuildContext context) => TownRoom(
     title: 'Heroes',
     children: [
+      Notice(notice),
       for (final id in document.heroes.keys)
         _HeroRow(
           hero: document.heroes[id]!,

@@ -27,7 +27,7 @@ void main() {
         'the camp at the crypt has been taken back by the residue',
       );
       expect(
-        const RefusedNotice('you cannot afford a bed').sentence,
+        const SentenceNotice('you cannot afford a bed').sentence,
         'you cannot afford a bed',
       );
     });
@@ -35,16 +35,16 @@ void main() {
     test('two notices of one kind and sentence are equal', () {
       // assert
       expect(
-        const RefusedNotice('you cannot afford a bed'),
-        const RefusedNotice('you cannot afford a bed'),
+        const SentenceNotice('you cannot afford a bed'),
+        const SentenceNotice('you cannot afford a bed'),
       );
       expect(
-        const RefusedNotice('you cannot afford a bed'),
-        isNot(const RefusedNotice('you are not carrying that')),
+        const SentenceNotice('you cannot afford a bed'),
+        isNot(const SentenceNotice('you are not carrying that')),
       );
       expect(
         const LoadNotice('a sentence'),
-        isNot(const RefusedNotice('a sentence')),
+        isNot(const SentenceNotice('a sentence')),
       );
     });
   });

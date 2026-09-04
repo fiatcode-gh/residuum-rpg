@@ -23,7 +23,7 @@ SaveDocument _campedAtTheSeaCave(Profile profile, GameState camp) =>
 
 void main() {
   group('the door press while an opening is pending', () {
-    testWidgets('today a double tap opens the crawl twice', (tester) async {
+    testWidgets('a double tap opens the crawl once', (tester) async {
       // arrange
       final profile = newProfile(worldSeed: 909);
       final camp = startDungeonRunAt(seaCave, profile).copyWith(depth: 3);
@@ -41,9 +41,9 @@ void main() {
       tester.binding.handlePointerEvent(PointerUpEvent(position: door));
       await tester.pumpAndSettle();
 
-      // assert — today both pending waits resolve on the one emission and the
-      // crawl is pushed twice; the in-flight guard makes this one.
-      expect(find.byType(GameScreen, skipOffstage: false), findsNWidgets(2));
+      // assert — the in-flight guard ignores the second press while the first
+      // opening is pending.
+      expect(find.byType(GameScreen, skipOffstage: false), findsOneWidget);
     });
 
     testWidgets('a single tap opens the crawl once', (tester) async {
