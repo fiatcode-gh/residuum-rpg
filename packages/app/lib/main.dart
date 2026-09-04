@@ -524,12 +524,21 @@ class _SessionState extends State<_Session> {
         answered = await answer.future;
       } finally {
         unawaited(subscription.cancel());
+        // The guard's window is the press, not the crawl: it ends the moment
+        // the town has answered. Waiting for the crawl route to close would
+        // stand the door open for nothing — the screen is covered from here
+        // on — and would hold the flag through the route's whole lifetime.
+        _opening = false;
       }
       if (!mounted) return;
       // A notice-only answer names a refusal: the state carries the sentence,
       // and nothing opens. Resolving on a notice is what makes a refused
       // resume answer the press instead of leaving it hanging on a wait that
       // only a later, unrelated crawl would complete.
+      // ignore: avoid_print
+      print(
+        'OPEN ANSWER: answered run=${answered.run != null} notice=${answered.notice != null} mounted=$mounted',
+      );
       if (answered.run case final GameState run) {
         await _openCrawl(run, resumed: resumed, dungeon: dungeon);
       }
