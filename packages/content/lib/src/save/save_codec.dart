@@ -217,6 +217,18 @@ SavedHero _decodeHero(String id, Object? written) {
     );
   }
   final run = crawling ? loadRun(written, 'run', dungeon: dungeon!) : null;
+  final profile = decodeProfile(written, 'profile');
+  refuseRepeatedItemIds([
+    ...profile.equipment.values.map((item) => item.id),
+    ...profile.inventory.map((item) => item.id),
+    ...profile.bank.map((item) => item.id),
+  ]);
+  if (run case final GameState crawl) {
+    refuseRepeatedItemIds([
+      ...crawl.equipment.values.map((item) => item.id),
+      ...crawl.inventory.map((item) => item.id),
+    ]);
+  }
   final inside = boolAt(written, 'inside');
   if (inside && run == null) {
     throw SaveMalformed(
@@ -239,7 +251,7 @@ SavedHero _decodeHero(String id, Object? written) {
   }
   return SavedHero(
     label: stringAt(written, 'label'),
-    profile: decodeProfile(written, 'profile'),
+    profile: profile,
     world: world,
     run: run,
     dungeon: dungeon,

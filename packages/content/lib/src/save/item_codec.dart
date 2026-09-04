@@ -180,5 +180,45 @@ SkillState _skillFrom(String name, Object? written) {
   if (written is! Map<String, Object?>) {
     throw SaveMalformed('the skill "$name" in the save file is not an object');
   }
-  return SkillState(level: intAt(written, 'level'), xp: intAt(written, 'xp'));
+  final level = intAt(written, 'level');
+  final xp = intAt(written, 'xp');
+  if (level < 0 || level > maxSkillLevel) {
+    throw SaveMalformed(
+      'the save file has the skill "$name" trained to level $level, and a '
+      'skill goes to $maxSkillLevel',
+    );
+  }
+  if (xp < 0) {
+    throw SaveMalformed(
+      'the save file has the skill "$name" holding $xp experience, and '
+      'nobody holds less than none',
+    );
+  }
+  return SkillState(level: level, xp: xp);
+}
+
+/// Refuses the document when two of [ids] are the same, naming the repeat.
+///
+/// **The scope is the pack and the worn gear, and nothing else.** Every hero's
+/// profile carries equipment, inventory and bank under ids the town's by-id
+/// operations join on — a repeat makes "remove one" ambiguous — so those are
+/// one group. A run block carries the same two bags frozen mid-fight and gets
+/// its own group: it is a copy of the same pack at another moment, and the
+/// resume takes the profile's side, so ids are never compared across the two.
+/// Litter on the floor is floor-scoped and the merchant's counter is
+/// visit-scoped: their ids are never compared, here or anywhere.
+///
+/// **Refused, not tolerated** — the amended D108 ruling. Legacy saves could
+/// hold a repeat because a bought-back sale put two items under one id, and
+/// removing exactly one was the honest removal there; but a document that
+/// names one id twice no longer describes a pack the rules can operate on, so
+/// decode refuses it and the slot chain moves on. [withoutFirst] stays the
+/// removal semantics for ids unique by construction.
+void refuseRepeatedItemIds(Iterable<String> ids) {
+  final seen = <String>{};
+  for (final id in ids) {
+    if (!seen.add(id)) {
+      throw SaveMalformed('the save file has two items named "$id"');
+    }
+  }
 }
