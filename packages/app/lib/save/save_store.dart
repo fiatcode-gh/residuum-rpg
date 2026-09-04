@@ -1,5 +1,6 @@
 import 'package:residuum_content/content.dart';
 
+import '../notice/notice.dart';
 import 'save_files.dart';
 
 /// What booting found on disk, and what to tell the player about it.
@@ -9,8 +10,10 @@ class LoadedSave {
   /// The save to play from, or null when there is nothing readable.
   final SaveDocument? document;
 
-  /// What went wrong on the way here, in a sentence, or null when nothing did.
-  final String? report;
+  /// What went wrong on the way here, or null when nothing did. A load
+  /// failure is always a [LoadNotice]: the sentences are the fallback chain's
+  /// own, unchanged.
+  final SaveNotice? report;
 }
 
 /// The two save slots, and the rules for moving between them.
@@ -77,12 +80,16 @@ class SaveStore {
     if (await _readable(previousSlot) case final SaveDocument document) {
       return LoadedSave(
         document: document,
-        report: 'your last save could not be read; an older one was restored',
+        report: const LoadNotice(
+          'your last save could not be read; an older one was restored',
+        ),
       );
     }
     return LoadedSave(
       report: somethingWasThere
-          ? 'your last save could not be read; a new hero begins'
+          ? const LoadNotice(
+              'your last save could not be read; a new hero begins',
+            )
           : null,
     );
   }

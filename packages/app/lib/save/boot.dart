@@ -1,6 +1,7 @@
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import '../notice/notice.dart';
 import 'save_store.dart';
 
 /// What the app opens onto.
@@ -13,9 +14,13 @@ class Boot {
   /// autosaver has to write the others back out untouched on every save.
   final SaveDocument document;
 
-  /// What to tell the player about the save that was read, or null when there is
-  /// nothing to say.
-  final String? notice;
+  /// What to tell the player about the save that was read, or null when there
+  /// is nothing to say.
+  ///
+  /// Also carries the fresh-boot save that did not land: booting keeps going
+  /// either way (the document is in memory), so the notice is where a failed
+  /// write is said out loud.
+  final SaveNotice? notice;
 
   /// The hero being played.
   Profile get profile => document.profile;
@@ -73,9 +78,23 @@ Future<Boot> bootFrom(
     label: heroLabelFor(0),
     profile: newProfile(worldSeed: stamp),
   );
-  await store.save(document);
-  return Boot(document: document, notice: loaded.report);
+  final landed = await store.save(document);
+  return Boot(
+    document: document,
+    notice: switch ((loaded.report, landed)) {
+      (null, true) => null,
+      (final SaveNotice report, true) => report,
+      (null, false) => const SaveWriteFailedNotice(_aNewHeroCouldNotBeSaved),
+      (final SaveNotice report, false) => LoadNotice(
+        '${report.sentence}, and $_aNewHeroCouldNotBeSaved',
+      ),
+    },
+  );
 }
+
+/// What a fresh-hero save that did not land says, in one breath.
+const String _aNewHeroCouldNotBeSaved =
+    'the new hero could not be saved; nothing was lost';
 
 /// The roster [was] with one more hero on a world of their own, played, and
 /// written down before they are played.
@@ -84,7 +103,7 @@ Future<Boot> bootFrom(
 /// has to outlive the first crash, or a player killed by the task switcher on
 /// the way to their first fight comes back to a different dungeon and never
 /// knows one was lost.
-Future<Boot> createHero(
+Future<Boot?> createHero(
   SaveStore store,
   SaveDocument was, {
   required String label,
@@ -96,7 +115,7 @@ Future<Boot> createHero(
     label: label,
     profile: newProfile(worldSeed: stamp),
   );
-  await store.save(document);
+  if (!await store.save(document)) return null;
   return Boot(document: document);
 }
 
@@ -105,9 +124,9 @@ Future<Boot> createHero(
 /// Saved before the session is rebuilt rather than after: the rebuild tears the
 /// autosaver down, so a switch that had not landed on disk first would be undone
 /// by the next launch while the player was already looking at the other hero.
-Future<Boot> switchHero(SaveStore store, SaveDocument was, String id) async {
+Future<Boot?> switchHero(SaveStore store, SaveDocument was, String id) async {
   final document = was.playing(id);
-  await store.save(document);
+  if (!await store.save(document)) return null;
   return Boot(document: document);
 }
 
@@ -119,7 +138,7 @@ Future<Boot> switchHero(SaveStore store, SaveDocument was, String id) async {
 /// roster, not even for the length of one save.
 Future<Boot?> deleteHero(SaveStore store, SaveDocument was, String id) async {
   if (was.without(id) case final SaveDocument left) {
-    await store.save(left);
+    if (!await store.save(left)) return null;
     return Boot(document: left);
   }
   return null;
@@ -133,7 +152,7 @@ Future<Boot?> deleteHero(SaveStore store, SaveDocument was, String id) async {
 /// decoder refuses such a document, and a player who reached it would be looking
 /// at a screen with nothing behind it. So that delete flows straight into
 /// creating the next hero, and the two edits are one write.
-Future<Boot> replaceOnlyHero(
+Future<Boot?> replaceOnlyHero(
   SaveStore store,
   SaveDocument was, {
   required String label,
@@ -145,7 +164,7 @@ Future<Boot> replaceOnlyHero(
     label: label,
     profile: newProfile(worldSeed: stamp),
   );
-  await store.save(document);
+  if (!await store.save(document)) return null;
   return Boot(document: document);
 }
 
