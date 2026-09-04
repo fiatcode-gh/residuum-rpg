@@ -39,21 +39,29 @@ class SaveStore {
   /// backwards. The window that remains is between the two renames, where the
   /// current slot is briefly absent and the previous slot holds the last good
   /// save; the load chain reads that as a fallback and loses nothing.
+  ///
+  /// **Both renames are inside the failure handling.** The rotate is the part
+  /// of a save most exposed to the disk — a locked target, a full volume — and
+  /// a rename that threw used to escape as a crash, contradicting everything
+  /// this dartdoc promises. Any failure anywhere in the write, the read-back or
+  /// either rename forgets the pending slot and answers false: the save did
+  /// not land, the previous slots stand exactly as they were, and the caller
+  /// is the one who decides what the player is told.
   Future<bool> save(SaveDocument roster) async {
     final document = encodeSave(roster);
     try {
       await _files.write(pendingSlot, document);
+      if (await _files.read(pendingSlot) != document) {
+        await _forget(pendingSlot);
+        return false;
+      }
+      await _files.rename(currentSlot, previousSlot);
+      await _files.rename(pendingSlot, currentSlot);
+      return true;
     } on Object {
       await _forget(pendingSlot);
       return false;
     }
-    if (await _files.read(pendingSlot) != document) {
-      await _forget(pendingSlot);
-      return false;
-    }
-    await _files.rename(currentSlot, previousSlot);
-    await _files.rename(pendingSlot, currentSlot);
-    return true;
   }
 
   /// The best readable save, and what had to be given up to reach it.
@@ -65,8 +73,7 @@ class SaveStore {
       return LoadedSave(document: document);
     }
     final somethingWasThere =
-        await _files.read(currentSlot) != null ||
-        await _files.read(previousSlot) != null;
+        await _hasContent(currentSlot) || await _hasContent(previousSlot);
     if (await _readable(previousSlot) case final SaveDocument document) {
       return LoadedSave(
         document: document,
@@ -80,8 +87,27 @@ class SaveStore {
     );
   }
 
+  /// Whether a file with [slot]'s name stands on the disk, unreadable or not.
+  ///
+  /// [read] never throws by contract, and this is what makes that contract
+  /// honest in the other direction: an implementation that throws anyway is
+  /// describing a file that is *there* — unreadable is not absent — so the
+  /// fallback chain treats it as content and says what it gave up.
+  Future<bool> _hasContent(String slot) async {
+    try {
+      return await _files.read(slot) != null;
+    } on Object {
+      return true;
+    }
+  }
+
   Future<SaveDocument?> _readable(String slot) async {
-    final written = await _files.read(slot);
+    final String? written;
+    try {
+      written = await _files.read(slot);
+    } on Object {
+      return null;
+    }
     if (written == null) return null;
     return switch (decodeSave(written)) {
       SaveDocument document => document,

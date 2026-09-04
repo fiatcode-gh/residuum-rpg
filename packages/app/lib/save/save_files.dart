@@ -17,14 +17,22 @@ const String pendingSlot = 'save.json.tmp';
 /// enough to check by running the game once on a device.
 abstract interface class SaveFiles {
   /// The contents of [name], or null when it is absent or unreadable.
+  ///
+  /// **Read never throws.** Every failure — an absent file, an unreadable one,
+  /// a platform that cannot even answer where its documents live — comes back
+  /// as null, so the caller sees "absent or unreadable" and no implementation
+  /// detail of one adapter can crash the chain above it.
   Future<String?> read(String name);
 
-  /// Puts [contents] in [name], replacing whatever was there.
+  /// Puts [contents] in [name], replacing whatever was there. Throws when the
+  /// write fails.
   Future<void> write(String name, String contents);
 
-  /// Moves [from] onto [to]. Does nothing when [from] is absent.
+  /// Moves [from] onto [to]. Does nothing when [from] is absent. Throws when
+  /// the move fails — including when the disk refuses the target.
   Future<void> rename(String from, String to);
 
-  /// Removes [name]. Does nothing when it is already gone.
+  /// Removes [name]. Does nothing when it is already gone. Throws when a
+  /// present file cannot be removed.
   Future<void> delete(String name);
 }
