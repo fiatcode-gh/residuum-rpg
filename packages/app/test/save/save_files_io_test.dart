@@ -26,14 +26,14 @@ void main() {
       expect(contents, isNull);
     });
 
-    test('an unreadable file reads null', () async {
-      // arrange — a directory where a file was expected: reading through it
-      // is what an unreadable file looks like to the platform.
-      final blocked = File('${home.path}/${currentSlot}blocked');
-      await blocked.create();
+    test('an unreadable slot reads null', () async {
+      // arrange — a directory standing where a file was expected: the read
+      // is refused by the platform, which is what an unreadable slot is.
+      final locked = Directory('${home.path}/$currentSlot');
+      await locked.create();
 
       // act
-      final contents = await files.read('${currentSlot}blocked/nested');
+      final contents = await files.read(currentSlot);
 
       // assert
       expect(contents, isNull);

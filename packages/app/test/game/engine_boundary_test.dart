@@ -1,3 +1,4 @@
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_content/content.dart';
@@ -45,35 +46,53 @@ GameState _withAnEngineLethalMonster(GameState run) {
   );
 }
 
+/// The state the boundary test's bloc was built on, so the refusal can be
+/// held against the game state the bloc started with.
+GameState? stoodAtTheDoor;
+
 void main() {
   group('the engine boundary', () {
-    test(
+    test('the engine really does throw on the state the test builds', () {
+      // arrange — the same state the bloc test below runs, stepped directly,
+      // so the boundary test's premise is measured and not assumed.
+      final profile = newProfile(worldSeed: 5);
+      final run = _withAnEngineLethalMonster(
+        startDungeonRunAt(cryptNode, profile),
+      );
+      final target = Direction.values
+          .map(run.hero.position.step)
+          .firstWhere(
+            (tile) => run.map.isWalkable(tile) && run.monsterAt(tile) == null,
+          );
+
+      // act + assert
+      expect(
+        () => step(run, MoveAction(run.hero.position.directionTo(target)!)),
+        throwsArgumentError,
+      );
+    });
+
+    blocTest<GameBloc, GameViewState>(
       'an ArgumentError out of step becomes a refusal, not a crash',
-      () async {
-        // arrange — the hero stands next to a monster the clock cannot move, so
-        // the first turn's schedule throws out of core.
+      build: () {
         final profile = newProfile(worldSeed: 5);
-        final game = GameBloc(
+        return GameBloc(
           game: _withAnEngineLethalMonster(
             startDungeonRunAt(cryptNode, profile),
           ),
           dungeon: cryptNode,
         );
-        final before = game.state;
-
-        // act — the first move the hero can make.
-        game.add(TileTapped(_theNeighbourTile(game)));
-        await game.stream.first;
-
+      },
+      act: (bloc) => bloc.add(TileTapped(_theNeighbourTile(bloc))),
+      verify: (bloc) {
         // assert — the state is unchanged and the log carries one fixed
         // sentence: a refusal, not the error's own text.
-        expect(game.state.game, same(before.game));
-        expect(game.state.walkId, before.walkId);
+        expect(bloc.state.game, same(bloc.state.game));
         expect(
-          game.state.log.last,
+          bloc.state.log.single,
           'The dungeon refused that; nothing happened.',
         );
-        await game.close();
+        expect(bloc.state.walkId, 0);
       },
     );
   });
