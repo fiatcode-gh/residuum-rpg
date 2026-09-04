@@ -833,7 +833,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   void _act(GameAction action, Emitter<GameViewState> emit) {
     if (state.game.isGameOver) return;
     final before = state.game;
-    final (after, events) = step(before, action);
+    final (after, events) = _step(before, action);
     emit(
       GameViewState(
         game: after,
@@ -842,6 +842,22 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         hasFled: events.contains(const Fled()),
       ),
     );
+  }
+
+  /// One turn through the engine, with the boundary guarded.
+  ///
+  /// **An [ArgumentError] out of `step` is a refusal, not a crash.** Core's
+  /// step has no error channel — the event list is its only one — so a rule
+  /// that throws means the rules refused what was asked, and the answer is the
+  /// same shape as every other refusal: an `ActionRefused` with a fixed safe
+  /// sentence, nothing applied. The error's own text is an internal fact and
+  /// never reaches the log.
+  (GameState, List<GameEvent>) _step(GameState before, GameAction action) {
+    try {
+      return step(before, action);
+    } on ArgumentError {
+      return (before, const [ActionRefused(reason: _theDungeonRefusedThat)]);
+    }
   }
 
   Future<void> _onAutoWalkAdvanced(
@@ -863,7 +879,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       return;
     }
 
-    final (after, events) = step(game, MoveAction(direction));
+    final (after, events) = _step(game, MoveAction(direction));
     final interrupted = _interrupts(events, after, game.hero.id);
     final remaining = state.autoPath.sublist(1);
     emit(
@@ -882,7 +898,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
 
   GameViewState _afterAction(GameAction action) {
     final before = state.game;
-    final (after, events) = step(before, action);
+    final (after, events) = _step(before, action);
     return GameViewState(
       game: after,
       log: [...state.log, ..._describe(before, events)],
@@ -1038,6 +1054,10 @@ String _outOfReach(String name) => '$name is out of reach. Walk to it.';
 /// Phrased as where the exit *is* rather than as what the button is not, so a
 /// player who pressed it by habit learns the rule instead of being told off.
 const String _backRefusal = 'You can only leave at the stairs.';
+
+/// What the boundary guard says when the engine refuses an action.
+const String _theDungeonRefusedThat =
+    'the dungeon refused that; nothing happened';
 
 /// What names a boss apart from anything else standing on a floor.
 ///
