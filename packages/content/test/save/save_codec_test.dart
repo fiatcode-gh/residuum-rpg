@@ -275,6 +275,21 @@ void main() {
       expect(reads, everyElement(isA<SaveFailure>()));
     });
 
+    test('a speed of zero decodes today', () {
+      // arrange — the engine-lethal value the clock cannot survive: a hero
+      // who never reaches the threshold. Today the codec accepts it and the
+      // scheduler is the thing that dies; the refusal fixtures flip this.
+      final run = deepRun(depth: 1);
+      final written = _asMap(_save(newProfile(), run: run));
+      (_runBlock(written)['hero']! as Map<String, Object?>)['speed'] = 0;
+
+      // act
+      final read = decodeSave(jsonEncode(written));
+
+      // assert
+      expect(read, isA<SaveDocument>());
+    });
+
     test('a broken map in the run block is refused rather than parsed', () {
       // arrange
       final written = _asMap(_save(newProfile(), run: deepRun(depth: 1)));

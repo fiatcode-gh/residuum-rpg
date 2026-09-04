@@ -284,6 +284,31 @@ void main() {
         'your last save could not be read; a new hero begins',
       );
     });
+
+    test('a thrown read escapes load() today and the previous slot is never '
+        'consulted', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+      await store.save(_one(_hero(gold: 7)));
+      await store.save(_one(_hero(gold: 8)));
+      files.throwReadsTo.add(currentSlot);
+
+      // act
+      LoadedSave? loaded;
+      Object? thrown;
+      try {
+        loaded = await store.load();
+      } on Object catch (error) {
+        thrown = error;
+      }
+
+      // assert — today the throw escapes and the fallback chain never runs;
+      // the fix flips this onto the previous slot instead.
+      expect(thrown, isA<StateError>());
+      expect(loaded, isNull);
+      expect(files.contents[previousSlot], isNotNull);
+    });
   });
 }
 
