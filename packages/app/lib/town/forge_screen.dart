@@ -138,8 +138,7 @@ class _TemperRow extends StatelessWidget {
             child: Text(
               reason ??
                   'Next tier: ${price!.ingots} '
-                      '${price.ingots == 1 ? 'ingot' : 'ingots'} and '
-                      '${price.gold} gold.',
+                      '${price.ingots == 1 ? 'ingot' : 'ingots'}.',
               style: monoDim,
             ),
           ),

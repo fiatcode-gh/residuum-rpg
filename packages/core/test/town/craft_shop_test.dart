@@ -313,7 +313,7 @@ void main() {
       expect(after.inventory.single.attackMax, 6);
     });
 
-    test('spends the tier\'s ingots and gold', () {
+    test('spends the tier\'s ingots, and gold changes hands nowhere', () {
       // arrange
       final profile = _hero(
         inventory: [_item('drop-1', _sword)],
@@ -324,9 +324,9 @@ void main() {
       // act
       final (after, _) = temperItem(profile, 'drop-1');
 
-      // assert
+      // assert - the bench is a workshop, not a shop
       expect(after.materials, const {MaterialId.ingot: 3});
-      expect(after.gold, 90);
+      expect(after.gold, 100);
     });
 
     test('the second tier costs more than the first', () {
@@ -343,7 +343,6 @@ void main() {
       // assert
       expect(after.inventory.single.temper, 2);
       expect(after.materials, const {MaterialId.ingot: 2});
-      expect(after.gold, 75);
     });
 
     test('trains Blacksmith', () {
@@ -405,11 +404,10 @@ void main() {
         worked = temperItem(worked, 'drop-1').$1;
       }
 
-      // assert - six ingots and eighty-five gold for the whole way up, and the
-      // fourth attempt buys nothing
+      // assert - six ingots for the whole way up, and the fourth attempt buys
+      // nothing
       expect(worked.inventory.single.temper, maxTemper);
       expect(worked.materials, const {MaterialId.ingot: 3});
-      expect(worked.gold, 1000 - 85);
     });
 
     test('a refused temper spends nothing', () {

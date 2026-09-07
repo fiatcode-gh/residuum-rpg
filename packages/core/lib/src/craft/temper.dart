@@ -20,41 +20,36 @@ const int maxTemper = 3;
 
 /// What the forge asks for one tier of temper.
 class TemperPrice {
-  const TemperPrice({
-    required this.blacksmith,
-    required this.ingots,
-    required this.gold,
-  });
+  const TemperPrice({required this.blacksmith, required this.ingots});
 
   /// The Blacksmith level the hero has to have reached.
   final int blacksmith;
 
   final int ingots;
-  final int gold;
 }
 
 /// What each tier costs, cheapest first.
 ///
 /// **The first tier is ungated on purpose.** A hero who has never swung a pick
-/// has to be able to buy the tier that teaches them what tempering is for, and a
-/// gate on the first one would make the forge a door that stays shut until
-/// something else has already happened.
+/// has to be able to work the tier that teaches them what tempering is for,
+/// and a gate on the first one would make the forge a door that stays shut
+/// until something else has already happened.
 ///
-/// After that the curve is [xpToNext]'s shape applied to a purse: every tier
-/// costs strictly more training, more iron and more coin than the one below it,
-/// so a third tier is a real investment. Twelve ore and eighty-five gold takes a
-/// piece all the way — several delves' worth of looking down, against gold sinks
-/// of twelve for a bed and fifteen for a rumor, so the forge competes with the
-/// inn for a purse rather than dwarfing it.
+/// After that the curve is [xpToNext]'s shape applied to a workshop: every tier
+/// costs strictly more training and more iron than the one below it, so a third
+/// tier is a real investment. Twelve ore takes a piece all the way — several
+/// delves' worth of looking down — and nothing about the bench competes with
+/// the inn for a purse, because the bench is a workshop and not a shop: the
+/// balancer is training, not the purse.
 ///
-/// The gates at five and ten are reachable by doing the work: gathering, smelting
-/// and tempering each grant one point, so a delve that turns up half a dozen
-/// veins moves Blacksmith about eight points, and five arrives inside a few trips
-/// while ten stays a goal.
+/// The gates at five and ten are reachable by doing the work: gathering,
+/// smelting and tempering each grant one point, so a delve that turns up half a
+/// dozen veins moves Blacksmith about eight points, and five arrives inside a
+/// few trips while ten stays a goal.
 const List<TemperPrice> temperPrices = [
-  TemperPrice(blacksmith: 0, ingots: 1, gold: 10),
-  TemperPrice(blacksmith: 5, ingots: 2, gold: 25),
-  TemperPrice(blacksmith: 10, ingots: 3, gold: 50),
+  TemperPrice(blacksmith: 0, ingots: 1),
+  TemperPrice(blacksmith: 5, ingots: 2),
+  TemperPrice(blacksmith: 10, ingots: 3),
 ];
 
 /// What it costs to take a piece already at [temper] up one tier.
@@ -81,9 +76,9 @@ TemperPrice temperPriceFrom(int temper) => temperPrices[temper];
 /// 3. the ceiling — before the gate, because a piece at `+3` is finished and
 ///    telling its owner to go and train would be a lie;
 /// 4. the training;
-/// 5. the iron, then the coin. Iron before coin because iron is what the forge
-///    is *for*: a hero sent to look for gold when they are also out of ore would
-///    go and do the wrong thing first.
+/// 5. the iron, which is the whole price — the bench is a workshop, and a hero
+///    who walked out of the dungeon broke can still turn their haul into
+///    something.
 ///
 /// Public because the screen reads it for its dead-row reasons, following
 /// [readRefusal]: a button that greyed itself out on its own arithmetic would
@@ -103,7 +98,6 @@ String? temperRefusal(Profile profile, String itemId) {
     return 'that takes ${price.ingots} '
         '${price.ingots == 1 ? 'ingot' : 'ingots'}';
   }
-  if (profile.gold < price.gold) return 'you cannot afford that';
   return null;
 }
 

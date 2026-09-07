@@ -235,9 +235,10 @@ Transacted brewPotion(Profile profile, BaseItem potion) {
 
 /// Works the carried or worn item [itemId] up one tier of temper.
 ///
-/// Spends the tier's ingots and gold, trains Blacksmith, and refuses in
+/// Spends the tier's ingots, trains Blacksmith, and refuses in
 /// [temperRefusal]'s sentences — which the screen reads too, so a dead row says
-/// exactly what the transaction would have said.
+/// exactly what the transaction would have said. Gold changes hands nowhere:
+/// the bench is a workshop, and the balancer is training, not the purse.
 ///
 /// **Applies to a worn piece as well as a carried one**, so the hero does not
 /// have to undress to visit the forge; the piece most worth working is usually
@@ -280,7 +281,6 @@ Transacted temperItem(Profile profile, String itemId) {
       profile.copyWith(
         inventory: inventory,
         equipment: equipment,
-        gold: profile.gold - price.gold,
         materials: withMaterial(
           profile.materials,
           MaterialId.ingot,

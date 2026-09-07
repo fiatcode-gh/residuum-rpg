@@ -193,7 +193,7 @@ void main() {
       await _openRoom(tester, const ForgeScreen(), ready);
 
       // assert
-      expect(find.text('Next tier: 1 ingot and 10 gold.'), findsOneWidget);
+      expect(find.text('Next tier: 1 ingot.'), findsOneWidget);
     });
 
     testWidgets('a worn piece says it is worn', (tester) async {

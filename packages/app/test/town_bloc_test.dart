@@ -1600,7 +1600,7 @@ void main() {
     );
 
     blocTest<TownBloc, TownViewState>(
-      'tempers a carried weapon, spending the iron and the gold',
+      'tempers a carried weapon, spending the iron and no gold',
       build: () => TownBloc(
         profile: _fresh().copyWith(
           gold: 100,
@@ -1611,7 +1611,7 @@ void main() {
       act: (bloc) => bloc.add(const TemperPressed('drop-1')),
       verify: (bloc) {
         expect(bloc.state.profile.inventory.single.temper, 1);
-        expect(bloc.state.profile.gold, 90);
+        expect(bloc.state.profile.gold, 100);
         expect(bloc.state.profile.materials, const {MaterialId.ingot: 1});
       },
     );
