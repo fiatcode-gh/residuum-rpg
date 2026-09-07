@@ -3,38 +3,6 @@ import 'package:test/test.dart';
 
 import '../support/fixtures.dart';
 
-/// A craft-stream state whose next percent roll lands at or above [floor].
-int stateRollingAtLeast(int floor) {
-  for (var state = 1; state < 100000; state++) {
-    final rng = Rng.fromState(state);
-    if (rng.rollRange(0, 99) >= floor) return state;
-  }
-  throw StateError('no state rolls at or above $floor');
-}
-
-/// A craft-stream state whose next percent roll lands below [ceiling].
-int stateRollingBelow(int ceiling) {
-  for (var state = 1; state < 100000; state++) {
-    final rng = Rng.fromState(state);
-    if (rng.rollRange(0, 99) < ceiling) return state;
-  }
-  throw StateError('no state rolls below $ceiling');
-}
-
-/// A craft-stream state whose next [draws] percent rolls all land at or above
-/// [floor].
-int stateRollingAtLeastFor(int floor, int draws) {
-  for (var state = 1; state < 100000; state++) {
-    final rng = Rng.fromState(state);
-    var clean = true;
-    for (var roll = 0; roll < draws; roll++) {
-      if (rng.rollRange(0, 99) < floor) clean = false;
-    }
-    if (clean) return state;
-  }
-  throw StateError('no state rolls at or above $floor for $draws draws');
-}
-
 const _sword = BaseItem(
   id: 'iron-sword',
   name: 'Iron Sword',

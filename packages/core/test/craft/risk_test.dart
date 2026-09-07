@@ -3,24 +3,6 @@ import 'package:test/test.dart';
 
 import '../support/fixtures.dart';
 
-/// A craft-stream state whose next percent roll lands at or above [floor].
-int stateRollingAtLeast(int floor) {
-  for (var state = 1; state < 100000; state++) {
-    final rng = Rng.fromState(state);
-    if (rng.rollRange(0, 99) >= floor) return state;
-  }
-  throw StateError('no state rolls at or above $floor');
-}
-
-/// A craft-stream state whose next percent roll lands below [ceiling].
-int stateRollingBelow(int ceiling) {
-  for (var state = 1; state < 100000; state++) {
-    final rng = Rng.fromState(state);
-    if (rng.rollRange(0, 99) < ceiling) return state;
-  }
-  throw StateError('no state rolls below $ceiling');
-}
-
 void main() {
   group('temperFailChance', () {
     test('tier 1 never fails', () {
