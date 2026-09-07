@@ -233,7 +233,18 @@ is the real set. Total is still six, split 3 test + 1 lib + 2 test.
 
 ### Task 7: Verification + REPORT.md
 
-- [ ] Close with flow-verification: quote every gate output into
+Recorded minor findings from the whole-branch review (APPROVED, none
+blocking):
+1. `generator_items_test.dart:58-67` — the three braced ifs sit denser than
+   the plan snippet; cosmetically equivalent, format clean. No action.
+2. Commit hygiene — c563a38 ticked Task 7 before REPORT.md existed;
+   1ae03e1 unticked it. Net state correct.
+3. `.github/workflows/ci.yml` ends without a trailing newline. Valid YAML,
+   GitHub-accepted; cosmetic.
+
+**Files:** `REPORT.md` (channel directory, gitignored)
+
+- [x] Close with flow-verification: quote every gate output into
       `REPORT.md` in the channel directory; mirror the full verification
       block from the build prompt section 10, including the named M3/M4 skip
       and the step.dart ruling outcome; append done notice to `worker.md`.
