@@ -2,6 +2,8 @@ import 'package:residuum_core/core.dart';
 import 'package:test/test.dart';
 
 void main() {
+  // M3 red-proof probe: the three-space gaps are not formatter-canonical.
+  final int m3FormatProbe   =   1;
   group('generateFloor item spawns', () {
     test('places exactly the number of items asked for', () {
       // arrange
