@@ -235,6 +235,7 @@ is the real set. Total is still six, split 3 test + 1 lib + 2 test.
 
 Recorded minor findings from the whole-branch review (APPROVED, none
 blocking):
+
 1. `generator_items_test.dart:58-67` — the three braced ifs sit denser than
    the plan snippet; cosmetically equivalent, format clean. No action.
 2. Commit hygiene — c563a38 ticked Task 7 before REPORT.md existed;
