@@ -10,6 +10,8 @@ jobs:
   gates:
     runs-on: ubuntu-latest
     strategy:
+      # one red leg must not cancel its siblings and hide their results
+      fail-fast: false
       matrix:
         package: [core, content, app]
     steps:
@@ -26,6 +28,11 @@ jobs:
         if: matrix.package == 'app'
         working-directory: packages/${{ matrix.package }}
         run: flutter pub get
+      - name: lockfile drift gate (the committed pin must survive pub get)
+        working-directory: packages/${{ matrix.package }}
+        run: |
+          git ls-files --error-unmatch pubspec.lock
+          git diff --exit-code -- pubspec.lock
       - name: format
         working-directory: packages/${{ matrix.package }}
         run: dart format --set-exit-if-changed --output=none .
