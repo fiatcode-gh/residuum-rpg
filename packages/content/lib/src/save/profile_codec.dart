@@ -42,6 +42,8 @@ Map<String, Object?> encodeProfile(Profile profile) => {
   'materials': encodeMaterials(profile.materials),
   'brewNumber': profile.brewNumber,
   if (profile.itemNumber != 1) 'itemNumber': profile.itemNumber,
+  if (profile.craftRngState != 0)
+    'craftRngState': encodeWide(profile.craftRngState),
 };
 
 /// Every spell in [known], as sorted ids.
@@ -94,6 +96,9 @@ Profile decodeProfile(Map<String, Object?> from, String key) {
     itemNumber: written.containsKey('itemNumber')
         ? intAt(written, 'itemNumber')
         : 1,
+    craftRngState: written.containsKey('craftRngState')
+        ? wideAt(written, 'craftRngState')
+        : 0,
   );
   if (hp < 0) {
     throw SaveMalformed(
