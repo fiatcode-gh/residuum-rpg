@@ -11,17 +11,34 @@ import 'save_files.dart';
 /// Every decision lives in [SaveStore], which is tested against a map, so what
 /// is left here is small enough to verify by running the game once on a device.
 /// The directory is asked for rather than built, because an emulator's path and
-/// a phone's are not the same and neither of them is ours to guess.
+/// a phone's are not the same and neither of them is ours to guess — and when
+/// one is injected the class is pure Dart, so it can be verified against a real
+/// temp directory without a platform at all.
+///
+/// **The exception contract is the interface's, and this is where it is kept.**
+/// [read] maps every failure — an absent file, an unreadable one, a platform
+/// that refuses to name its documents directory — to null, because the caller
+/// above is deciding what to do about "absent or unreadable" and must not also
+/// have to catch platform exceptions. [write], [rename] and [delete] throw when
+/// the disk refuses them; their no-ops are documented on the interface.
 class IoSaveFiles implements SaveFiles {
+  /// The directory the files live in, or null to fetch it from the platform.
+  ///
+  /// Injectable so a test can hand in a real `Directory.systemTemp` and drive
+  /// every failure the platform can produce; production always passes nothing.
+  IoSaveFiles([this._homeOverride]);
+
+  final Directory? _homeOverride;
+
   Directory? _home;
 
   @override
   Future<String?> read(String name) async {
-    final file = File(await _path(name));
     try {
+      final file = File(await _path(name));
       if (!file.existsSync()) return null;
       return await file.readAsString();
-    } on FileSystemException {
+    } on Object {
       return null;
     }
   }
@@ -52,7 +69,8 @@ class IoSaveFiles implements SaveFiles {
   }
 
   Future<String> _path(String name) async {
-    final home = _home ??= await getApplicationDocumentsDirectory();
+    final home = _home ??=
+        _homeOverride ?? await getApplicationDocumentsDirectory();
     return '${home.path}/$name';
   }
 }

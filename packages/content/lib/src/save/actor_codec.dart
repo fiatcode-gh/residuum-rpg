@@ -98,28 +98,75 @@ List<Object?> encodeActors(List<Actor> actors) => [
 ];
 
 /// One actor, from the object [from].
+///
+/// **The checks refuse; the codec never repairs.** A saved number outside what
+/// a real play can produce is refused with a sentence, never clamped to the
+/// nearest legal value, for the temper check's reason: a hero handed back a
+/// weaker number than the file says they own would have no way to know it.
+/// The hero's `hp` is deliberately *not* checked against `maxHp` here — gear
+/// lifts the hero's ceiling above its body ([heroMaxHp]), so the run block
+/// checks the hero against the loadout its own equipment describes, and this
+/// check stays for the actors a body really is a ceiling for.
 Actor decodeActor(Object? from) {
   if (from is! Map<String, Object?>) {
     throw SaveMalformed('an actor in the save file is not an object');
+  }
+  final speed = intAt(from, 'speed');
+  final energy = intAt(from, 'energy');
+  final hp = intAt(from, 'hp');
+  final reach = from.containsKey('reach') ? intAt(from, 'reach') : 1;
+  if (speed < 1) {
+    throw SaveMalformed(
+      'the save file has an actor with speed $speed, and the clock would '
+      'never move them',
+    );
+  }
+  if (energy < 0 || energy > maxSaveEnergy) {
+    throw SaveMalformed(
+      'the save file has an actor holding $energy energy, and energy '
+      'never leaves the range 0 to $maxSaveEnergy',
+    );
+  }
+  if (hp < 0) {
+    throw SaveMalformed(
+      'the save file has ${_who(stringAt(from, 'id'), stringAt(from, 'name'))} '
+      'holding $hp hit points, and nobody holds fewer than none',
+    );
+  }
+  if (stringAt(from, 'id') != 'hero' && hp > intAt(from, 'maxHp')) {
+    throw SaveMalformed(
+      'the save file has ${stringAt(from, 'name')} holding $hp hit points, '
+      'and a body holds at most ${intAt(from, 'maxHp')}',
+    );
+  }
+  if (reach < 1) {
+    throw SaveMalformed(
+      'the save file has an actor that strikes $reach tiles away, and '
+      'nobody reaches less than one',
+    );
   }
   return Actor(
     id: stringAt(from, 'id'),
     name: stringAt(from, 'name'),
     glyph: stringAt(from, 'glyph'),
     position: Position(intAt(from, 'x'), intAt(from, 'y')),
-    hp: intAt(from, 'hp'),
+    hp: hp,
     maxHp: intAt(from, 'maxHp'),
     attackMin: intAt(from, 'attackMin'),
     attackMax: intAt(from, 'attackMax'),
-    speed: intAt(from, 'speed'),
-    energy: intAt(from, 'energy'),
+    speed: speed,
+    energy: energy,
     dropChance: intAt(from, 'dropChance'),
     pierce: intAt(from, 'pierce'),
-    reach: from.containsKey('reach') ? intAt(from, 'reach') : 1,
+    reach: reach,
     resists: decodeDamageTypes(from, 'resists'),
     vulnerableTo: decodeDamageTypes(from, 'vulnerableTo'),
   );
 }
+
+/// How a message names the actor it is about: the hero by their role, everyone
+/// else by the name the message log would have used.
+String _who(String id, String name) => id == 'hero' ? 'the hero' : name;
 
 /// Every actor in the list at [key], in the order written.
 List<Actor> decodeActors(Map<String, Object?> from, String key) => [

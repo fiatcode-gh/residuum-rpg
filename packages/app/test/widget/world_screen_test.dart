@@ -80,7 +80,7 @@ Future<(TownBloc, WorldBloc)> _pushRoadFight(
   final placed = heroAt == null
       ? fight
       : fight.copyWith(hero: fight.hero.copyWith(position: heroAt));
-  final town = TownBloc(profile: profile, suspended: null, dungeon: cryptNode);
+  final town = TownBloc(profile: profile);
   final worldBloc = WorldBloc(
     world: world ?? _knowingAll(),
     worldSeed: profile.worldSeed,

@@ -6,6 +6,19 @@ const int actThreshold = 100;
 /// The energy one action costs.
 const int actCost = 100;
 
+/// The most energy a decoded actor may hold.
+///
+/// **The arithmetic is the schedule's, and the bound is ten fights deep.** A
+/// monster holding energy E drains [actCost] every time it acts, so E /
+/// [actCost] is the worst-case number of scheduled turns a resumed crawl owes
+/// before the hero moves again: at 1000, a forged document buys ten monster
+/// turns, and no real fight comes close — standing energy between actions
+/// stays under [actThreshold] + speed, and the fastest creature in the tables
+/// runs at speed 20. The bound is defense-in-depth against unbounded schedule
+/// work, never the hang fix itself: the value that loops the clock forever is
+/// a speed below 1, and that is refused where it is decoded, not bounded here.
+const int maxSaveEnergy = 1000;
+
 /// The monster turns owed before the hero may act again, and the energy every
 /// actor holds once those turns are spent.
 class TurnSchedule extends Equatable {

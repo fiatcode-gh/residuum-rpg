@@ -66,10 +66,17 @@ String _spellIdNamed(Object? written, String key) {
 }
 
 /// The hero between runs, from the object at [key].
+///
+/// **The hp ceiling is the loadout's, not the body's.** The hero's hit points
+/// can legally stand above the bare body when worn affixes lift the ceiling
+/// ([heroMaxHp]) — an inn night heals to exactly that number — so the check
+/// runs against the decoded profile's own ceiling, and a forged document is
+/// refused rather than repaired.
 Profile decodeProfile(Map<String, Object?> from, String key) {
   final written = objectAt(from, key);
   final worldSeed = wideAt(written, 'worldSeed');
-  return Profile(
+  final hp = intAt(written, 'hp');
+  final profile = Profile(
     hero: newProfile(
       worldSeed: worldSeed,
     ).hero.copyWith(hp: intAt(written, 'hp')),
@@ -88,4 +95,17 @@ Profile decodeProfile(Map<String, Object?> from, String key) {
         ? intAt(written, 'itemNumber')
         : 1,
   );
+  if (hp < 0) {
+    throw SaveMalformed(
+      'the save file has a hero standing at $hp hit points, and nobody holds '
+      'fewer than none',
+    );
+  }
+  if (hp > profile.maxHp) {
+    throw SaveMalformed(
+      'the save file has a hero standing at $hp hit points, and their gear '
+      'holds at most ${profile.maxHp}',
+    );
+  }
+  return profile;
 }

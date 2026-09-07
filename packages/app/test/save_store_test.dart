@@ -4,6 +4,8 @@ import 'package:residuum_app/save/save_store.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import 'package:residuum_app/notice/notice.dart';
+
 import 'support/memory_save_files.dart';
 
 Profile _hero({int gold = 0}) => newProfile(worldSeed: 5).copyWith(gold: gold);
@@ -138,6 +140,29 @@ void main() {
       // assert
       expect(files.contents, isEmpty);
     });
+
+    test(
+      'a rename the disk refuses answers false, and the slots stand',
+      () async {
+        // arrange
+        final files = MemorySaveFiles();
+        final store = SaveStore(files);
+        await store.save(_one(_hero(gold: 7)));
+        final current = files.contents[currentSlot];
+        final previous = files.contents[previousSlot];
+        files.failRenamesFrom.add(currentSlot);
+
+        // act
+        final wrote = await store.save(_one(_hero(gold: 9)));
+
+        // assert — the rotate is inside the failure handling: the save did not
+        // land, nothing rotated, and nothing threw.
+        expect(wrote, isFalse);
+        expect(files.contents[currentSlot], current);
+        expect(files.contents[previousSlot], previous);
+        expect(files.contents.containsKey(pendingSlot), isFalse);
+      },
+    );
   });
 
   group('loading', () {
@@ -186,7 +211,9 @@ void main() {
         expect(loaded.document!.profile.gold, 7);
         expect(
           loaded.report,
-          'your last save could not be read; an older one was restored',
+          const LoadNotice(
+            'your last save could not be read; an older one was restored',
+          ),
         );
       },
     );
@@ -207,7 +234,7 @@ void main() {
       expect(loaded.document, isNull);
       expect(
         loaded.report,
-        'your last save could not be read; a new hero begins',
+        const LoadNotice('your last save could not be read; a new hero begins'),
       );
     });
 
@@ -281,8 +308,46 @@ void main() {
       expect(loaded.document, isNull);
       expect(
         loaded.report,
-        'your last save could not be read; a new hero begins',
+        const LoadNotice('your last save could not be read; a new hero begins'),
       );
+    });
+
+    test(
+      'a thrown read runs the fallback chain, exactly as a null does',
+      () async {
+        // arrange
+        final files = MemorySaveFiles();
+        final store = SaveStore(files);
+        await store.save(_one(_hero(gold: 7)));
+        await store.save(_one(_hero(gold: 8)));
+        files.throwReadsTo.add(currentSlot);
+
+        // act
+        final loaded = await store.load();
+
+        // assert — a throw from the current slot is an unreadable slot, the
+        // same thing a returned null is: the previous slot is consulted and
+        // the step down is said out loud.
+        expect(loaded.document!.profile.gold, 7);
+        expect(loaded.report, isNotNull);
+      },
+    );
+
+    test('a thrown read of both slots begins fresh, and says so', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+      await store.save(_one(_hero(gold: 7)));
+      await store.save(_one(_hero(gold: 8)));
+      files.throwReadsTo.add(currentSlot);
+      files.throwReadsTo.add(previousSlot);
+
+      // act
+      final loaded = await store.load();
+
+      // assert
+      expect(loaded.document, isNull);
+      expect(loaded.report, isNotNull);
     });
   });
 }

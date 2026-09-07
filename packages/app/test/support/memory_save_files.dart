@@ -17,9 +17,21 @@ class MemorySaveFiles implements SaveFiles {
   /// there but cannot be read.
   final Set<String> failReadsTo = {};
 
+  /// Names whose reads throw, standing in for an implementation that does not
+  /// honour the "read never throws" contract the interface documents.
+  final Set<String> throwReadsTo = {};
+
+  /// Names whose renames throw, standing in for a target the disk will not
+  /// take the move onto.
+  final Set<String> failRenamesFrom = {};
+
   @override
-  Future<String?> read(String name) async =>
-      failReadsTo.contains(name) ? null : contents[name];
+  Future<String?> read(String name) async {
+    if (throwReadsTo.contains(name)) {
+      throw StateError('the file $name could not be read');
+    }
+    return failReadsTo.contains(name) ? null : contents[name];
+  }
 
   @override
   Future<void> write(String name, String contents) async {
@@ -29,6 +41,9 @@ class MemorySaveFiles implements SaveFiles {
 
   @override
   Future<void> rename(String from, String to) async {
+    if (failRenamesFrom.contains(from)) {
+      throw StateError('the disk refused the move onto $to');
+    }
     final moved = contents.remove(from);
     if (moved == null) return;
     contents[to] = moved;

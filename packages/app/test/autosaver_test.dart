@@ -6,6 +6,7 @@ import 'package:residuum_app/save/save_files.dart';
 import 'package:residuum_app/save/save_store.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
+import 'package:residuum_app/town/town_crawl.dart';
 import 'package:residuum_core/core.dart';
 
 import 'support/memory_save_files.dart';
@@ -573,7 +574,7 @@ void main() {
       final entered = await town.stream.first;
 
       // act
-      town.add(RunSuspended(entered.run!, day: 0));
+      town.add(RunSuspended(entered.run!, day: 0, dungeon: cryptNode));
       await town.stream.first;
       await saver.settled();
 
@@ -592,9 +593,7 @@ void main() {
       final camp = startDungeonRunAt(cryptNode, profile);
       final town = TownBloc(
         profile: profile,
-        suspended: camp,
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(camp, cryptNode, 0),
       );
       final saver = Autosaver(SaveStore(files), from: _boot(profile, run: camp))
         ..watchTown(town);
@@ -640,9 +639,7 @@ void main() {
       final camp = startDungeonRunAt(cryptNode, profile);
       final town = TownBloc(
         profile: profile,
-        suspended: camp,
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(camp, cryptNode, 0),
       );
       final saver = Autosaver(SaveStore(files), from: _boot(profile, run: camp))
         ..watchTown(town);
@@ -671,9 +668,7 @@ void main() {
       final camp = startDungeonRunAt(cryptNode, profile);
       final town = TownBloc(
         profile: profile,
-        suspended: camp,
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(camp, cryptNode, 0),
       );
       final saver = Autosaver(SaveStore(files), from: _boot(profile, run: camp))
         ..watchTown(town);
@@ -699,9 +694,7 @@ void main() {
       final camp = _withSomethingToFight(startDungeonRunAt(cryptNode, profile));
       final town = TownBloc(
         profile: profile,
-        suspended: camp,
-        dungeon: cryptNode,
-        campDay: 0,
+        crawl: CampStanding(camp, cryptNode, 0),
       );
       final saver = Autosaver(store, from: _boot(profile, run: camp))
         ..watchTown(town);
@@ -720,7 +713,7 @@ void main() {
         await game.stream.first;
         game.add(StageCardTapped(game.state.game.monsters.single));
         await game.stream.first;
-        town.add(RunSuspended(game.state.game, day: 0));
+        town.add(RunSuspended(game.state.game, day: 0, dungeon: cryptNode));
         await town.stream.first;
         await game.close();
       }

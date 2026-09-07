@@ -3,6 +3,8 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../game/event_messages.dart';
+import '../notice/notice.dart';
+import 'town_crawl.dart';
 
 sealed class TownBlocEvent {
   const TownBlocEvent();
@@ -40,11 +42,20 @@ final class RunEnded extends TownBlocEvent {
 /// have one. A camp has a shelf life measured in days walked, and the only
 /// thing that counts days is the road — so the number comes from the world at
 /// the moment the hero climbs out, which is the one moment it means "now".
+///
+/// [dungeon] rides the press too, because the camp being born here needs a
+/// place and the town's own state cannot honestly hold one: a town whose crawl
+/// is nowhere — a hero standing inside it, not camped away from it — is a town
+/// with no [TownCrawl] at all, and the sealed value refuses the
+/// dungeon-without-a-crawl shape the old four-field model kept alive just to
+/// serve this moment. The crawl's own bloc knows where it is; the press carries
+/// the answer across.
 final class RunSuspended extends TownBlocEvent {
-  const RunSuspended(this.state, {required this.day});
+  const RunSuspended(this.state, {required this.day, required this.dungeon});
 
   final GameState state;
   final int day;
+  final NodeId dungeon;
 }
 
 /// The hero is going back down into the crawl that is waiting for them.
@@ -177,6 +188,18 @@ final class TemperPressed extends TownBlocEvent {
   final String itemId;
 }
 
+/// A save write did not land, and the autosaver is telling the town once.
+///
+/// The autosaver is not a bloc and cannot emit; the session wires its error
+/// sink to this event, and the town carries the sentence on its notice field
+/// like any other. One event per streak — the sink decides when, this bloc
+/// only carries.
+final class SaveWriteFailed extends TownBlocEvent {
+  const SaveWriteFailed(this.notice);
+
+  final SaveWriteFailedNotice notice;
+}
+
 final class DepositGoldPressed extends TownBlocEvent {
   const DepositGoldPressed(this.amount);
 
@@ -195,10 +218,7 @@ class TownViewState {
     required this.stock,
     required this.town,
     this.merchant = MerchantVisit.none,
-    this.run,
-    this.suspended,
-    this.dungeon,
-    this.campDay,
+    this.crawl,
     this.notice,
   });
 
@@ -223,54 +243,55 @@ class TownViewState {
   /// item back on the shelf the next time anything at all happened in town.
   final MerchantVisit merchant;
 
+  /// The crawl this town stands beside, in the one shape it is in: an opening
+  /// instruction, a standing camp, or nothing.
+  ///
+  /// **The run-XOR-suspended rule is the type now.** Four nullable fields used
+  /// to carry this one fact, and every handler carried all four by hand; the
+  /// sealed [TownCrawl] makes every illegal combination unrepresentable and
+  /// the carry list one field. The named readers below keep the reader sites
+  /// readable.
+  final TownCrawl? crawl;
+
   /// The crawl to open right now, or null when there is none to open.
   ///
   /// An instruction rather than a fact: the session reads it once, pushes the
   /// crawl, and nothing in town looks at it again.
-  final GameState? run;
+  GameState? get run => switch (crawl) {
+    final CrawlOpening opening => opening.run,
+    _ => null,
+  };
 
   /// The crawl waiting to be walked back into, or null when there is no camp.
   ///
-  /// **Not [run], and the two must never become one field.** [run] says "open
-  /// this now"; this says "there is a dungeon standing three floors down with
-  /// your name on it", and it has to survive every transaction in town.
-  /// Collapsing them would make walking into a dungeon indistinguishable from
-  /// having one to go back to, and the town screen could not tell which door to
-  /// draw.
-  ///
-  /// Carried forward by every handler, for the reason [merchant] is — and the
-  /// stakes are higher. A handler that dropped this would have the autosaver
-  /// write `run: null` on the next purchase and erase a crawl the player is
-  /// standing inside, with nothing on screen to say it had gone.
-  ///
-  /// Never set at the same time as [run]. Suspending sets this and leaves that
-  /// null; both doors out of a camp set that and leave this null.
-  final GameState? suspended;
+  /// **Not [run], and the two are different shapes of [crawl], never both.**
+  /// [run] says "open this now"; this says "there is a dungeon standing three
+  /// floors down with your name on it", and it has to survive every
+  /// transaction in town. A handler that dropped the camp would have the
+  /// autosaver write `run: null` on the next purchase and erase a crawl the
+  /// player is standing inside, with nothing on screen to say it had gone.
+  GameState? get suspended => switch (crawl) {
+    final CampStanding camp => camp.crawl,
+    _ => null,
+  };
 
   /// Which dungeon [run] or [suspended] is a crawl of, or null when there is
   /// neither.
-  ///
-  /// **Carried by every handler that carries either of them, and the two must
-  /// never drift apart.** The save document requires a crawl and a place
-  /// together, so a handler that kept the camp and dropped this would write a
-  /// document the decoder refuses — and the player would find out on the next
-  /// launch, with a fallback notice and no crawl. It is the same carry list
-  /// [suspended] is on, for higher stakes.
-  ///
-  /// Never a town, and never set while both crawl fields are null.
-  final NodeId? dungeon;
+  NodeId? get dungeon => switch (crawl) {
+    final CrawlOpening opening => opening.dungeon,
+    final CampStanding camp => camp.dungeon,
+    null => null,
+  };
 
   /// The day [suspended] was pitched, or null exactly when there is no camp.
-  ///
-  /// On the carry list beside [suspended] and [dungeon], and for the same
-  /// reason: the save document requires all three to agree, so a handler that
-  /// kept the camp and dropped this would write a document the decoder refuses.
-  /// It is also what the world screen reads to say how long the camp has left.
-  final int? campDay;
+  int? get campDay => switch (crawl) {
+    final CampStanding camp => camp.campDay,
+    _ => null,
+  };
 
-  /// The last refusal, for the screen to read out. Cleared by the next thing
+  /// The last notice, for the screen to read out. Cleared by the next thing
   /// that works.
-  final String? notice;
+  final SaveNotice? notice;
 
   int get gold => profile.gold;
 
@@ -352,18 +373,14 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     required Profile profile,
     NodeId? town,
     MerchantVisit merchant = MerchantVisit.none,
-    String? notice,
-    GameState? suspended,
-    NodeId? dungeon,
-    int? campDay,
+    SaveNotice? notice,
+    TownCrawl? crawl,
   }) : super(
          _opening(
            profile: profile,
            town: town ?? newWhereabouts().at,
            merchant: merchant,
-           suspended: suspended,
-           dungeon: dungeon,
-           campDay: campDay,
+           crawl: crawl,
            notice: notice,
          ),
        ) {
@@ -389,6 +406,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     on<ArrivedInTown>(_onArrivedInTown);
     on<RumorBought>(_onRumorBought);
     on<EncounterEnded>(_onEncounterEnded);
+    on<SaveWriteFailed>(_onSaveWriteFailed);
   }
 
   /// The state a town opens on: this town's shelf, less what is already bought.
@@ -403,10 +421,8 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     required Profile profile,
     required NodeId town,
     required MerchantVisit merchant,
-    required GameState? suspended,
-    required NodeId? dungeon,
-    required int? campDay,
-    required String? notice,
+    required TownCrawl? crawl,
+    required SaveNotice? notice,
   }) => TownViewState(
     profile: profile,
     town: town,
@@ -414,9 +430,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
       merchantStock(profile.worldSeed, profile.visit, town),
     ),
     merchant: merchant,
-    suspended: suspended,
-    dungeon: dungeon,
-    campDay: campDay,
+    crawl: crawl,
     notice: notice,
   );
 
@@ -429,8 +443,10 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
       town: state.town,
       stock: state.stock,
       merchant: state.merchant,
-      run: startDungeonRunAt(event.node, state.profile),
-      dungeon: event.node,
+      crawl: CrawlOpening(
+        startDungeonRunAt(event.node, state.profile),
+        event.node,
+      ),
     ),
   );
 
@@ -501,9 +517,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
           merchantStock(home.worldSeed, home.visit, state.town),
         ),
         merchant: merchant,
-        suspended: event.state,
-        dungeon: state.dungeon,
-        campDay: event.day,
+        crawl: CampStanding(event.state, event.dungeon, event.day),
       ),
     );
   }
@@ -515,19 +529,37 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
   /// answering it with a fresh crawl would be entering a dungeon nobody asked
   /// to enter.
   void _onResumeCrawl(ResumeCrawlPressed event, Emitter<TownViewState> emit) {
-    if (state.isCampOverrunOn(event.day)) return;
-    if (state.suspended case final GameState camp) {
+    if (state.isCampOverrunOn(event.day)) {
+      emit(_noticed(state, ResumeRefusedNotice(_overrunRefusal(state))));
+      return;
+    }
+    if (state.crawl case final CampStanding camp) {
       emit(
         TownViewState(
           profile: state.profile,
           town: state.town,
           stock: state.stock,
           merchant: state.merchant,
-          run: resumeRun(state.profile, camp),
-          dungeon: state.dungeon,
+          crawl: CrawlOpening(
+            resumeRun(state.profile, camp.crawl),
+            camp.dungeon,
+          ),
         ),
       );
+      return;
     }
+    emit(
+      _noticed(
+        state,
+        const ResumeRefusedNotice('there is no camp to walk back into'),
+      ),
+    );
+  }
+
+  /// Why the walk back into the camp cannot happen, in the camp's own words.
+  static String _overrunRefusal(TownViewState state) {
+    final where = state.dungeon?.value ?? 'the dungeon';
+    return 'the camp at the $where has been taken back by the residue';
   }
 
   /// Gives the camp up and walks into a dungeon laid out afresh.
@@ -554,8 +586,10 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
           town: state.town,
           stock: state.stock,
           merchant: state.merchant,
-          run: startDungeonRunAt(event.node, state.profile),
-          dungeon: event.node,
+          crawl: CrawlOpening(
+            startDungeonRunAt(event.node, state.profile),
+            event.node,
+          ),
         ),
       );
 
@@ -625,9 +659,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
           ),
         ),
         merchant: merchant,
-        suspended: state.suspended,
-        dungeon: state.dungeon,
-        campDay: state.campDay,
+        crawl: state.crawl,
       ),
     );
   }
@@ -760,23 +792,22 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     final before = state.profile.skills[trained]?.level ?? 0;
     final after = result.$1.skills[trained]?.level ?? 0;
     if (after <= before) return settled;
-    return _noticed(settled, '${skillName(trained)} rises to $after');
+    return _noticed(
+      settled,
+      SentenceNotice('${skillName(trained)} rises to $after'),
+    );
   }
 
   /// [settled] with [notice] on it, and nothing else moved.
-  ///
-  /// Built by hand rather than through [_settled] because that one takes its
-  /// notice from a refusal, and this notice is the opposite of one.
-  TownViewState _noticed(TownViewState settled, String notice) => TownViewState(
-    profile: settled.profile,
-    town: settled.town,
-    stock: settled.stock,
-    merchant: settled.merchant,
-    suspended: settled.suspended,
-    dungeon: settled.dungeon,
-    campDay: settled.campDay,
-    notice: notice,
-  );
+  TownViewState _noticed(TownViewState settled, SaveNotice notice) =>
+      TownViewState(
+        profile: settled.profile,
+        town: settled.town,
+        stock: settled.stock,
+        merchant: settled.merchant,
+        crawl: settled.crawl,
+        notice: notice,
+      );
 
   void _onDepositGold(DepositGoldPressed event, Emitter<TownViewState> emit) =>
       emit(_transacted(depositGold(state.profile, event.amount)));
@@ -807,11 +838,13 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     town: state.town,
     stock: stock ?? state.stock,
     merchant: merchant ?? state.merchant,
-    suspended: state.suspended,
-    dungeon: state.dungeon,
-    campDay: state.campDay,
-    notice: refusal?.reason,
+    crawl: state.crawl,
+    notice: refusal == null ? null : SentenceNotice(refusal.reason),
   );
+
+  /// One failed save, carried onto the screen exactly once per streak.
+  void _onSaveWriteFailed(SaveWriteFailed event, Emitter<TownViewState> emit) =>
+      emit(_noticed(state, event.notice));
 
   static Item? _find(List<Item> items, String itemId) {
     for (final item in items) {

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../notice/notice.dart';
+
 import 'package:residuum_core/core.dart';
 
 const Color ink = Color(0xFFE6EAF0);
@@ -228,18 +231,22 @@ class MaterialsPanel extends StatelessWidget {
   );
 }
 
-/// The last refusal, printed where the eye already is.
+/// The last notice, printed where the eye already is.
+///
+/// Every variant of the sealed type renders the same way today — the town's
+/// frame, one sentence — and exists as types so the day one must render
+/// differently it can, without anyone working out which string meant what.
 class Notice extends StatelessWidget {
   const Notice(this.notice, {super.key});
 
-  final String? notice;
+  final SaveNotice? notice;
 
   @override
   Widget build(BuildContext context) {
     if (notice == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 10),
-      child: Text('— ${notice!}.', style: monoDim),
+      child: Text('— ${notice!.sentence}.', style: monoDim),
     );
   }
 }

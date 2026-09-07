@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
@@ -264,7 +266,7 @@ class _Unheard extends StatelessWidget {
 }
 
 /// What standing here lets the hero do.
-class _Here extends StatelessWidget {
+class _Here extends StatefulWidget {
   const _Here({
     required this.state,
     required this.onEnterTown,
@@ -282,9 +284,47 @@ class _Here extends StatelessWidget {
   final Future<void> Function() onOpenRoster;
 
   @override
+  State<_Here> createState() => _HereState();
+}
+
+/// Whether an opening is pending, marked by the doors standing down.
+///
+/// **The doors are the pending state's only face, and the word is the mark.**
+/// While a door press is still unanswered the door buttons are disabled —
+/// dimmed by the button's own disabled state, a value change that reads in
+/// greyscale — so a second press cannot happen where the eye already is. The
+/// state clears when the town's answer arrives: a crawl to open, or a notice
+/// naming why the walk back in was refused. It is the screen's own fact, held
+/// here rather than in the bloc, because nothing else reads it.
+class _HereState extends State<_Here> {
+  bool _doorsPending = false;
+  StreamSubscription<TownViewState>? _watching;
+
+  @override
+  void initState() {
+    super.initState();
+    _watching = context.read<TownBloc>().stream.listen((state) {
+      // The press's own answer is always the first town emission after it —
+      // a crawl to open, or the notice naming a refusal — so any emission
+      // while standing down ends the stand-down. This runs on the stream,
+      // not in the build, because a screen an opaque route covers does not
+      // rebuild: waiting for a build would leave the doors dead forever.
+      if (_doorsPending && mounted) {
+        setState(() => _doorsPending = false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_watching?.cancel());
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (state.isTravelling) {
-      if (state.walking) {
+    if (widget.state.isTravelling) {
+      if (widget.state.walking) {
         return const Padding(
           padding: EdgeInsets.symmetric(vertical: 10),
           child: Text(
@@ -312,14 +352,14 @@ class _Here extends StatelessWidget {
       );
     }
     final map = context.read<WorldBloc>().map;
-    final node = map.nodeAt(state.at);
+    final node = map.nodeAt(widget.state.at);
     if (node.kind == NodeKind.town) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          WorldDoor(label: 'Enter ${node.name}', onPressed: onEnterTown),
+          WorldDoor(label: 'Enter ${node.name}', onPressed: widget.onEnterTown),
           const SizedBox(height: 8),
-          WorldDoor(label: 'Heroes', onPressed: onOpenRoster),
+          WorldDoor(label: 'Heroes', onPressed: widget.onOpenRoster),
         ],
       );
     }
@@ -327,9 +367,14 @@ class _Here extends StatelessWidget {
       builder: (context, town) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // The town's notice rides here because the doors are here: a resume
+          // the rules refused is answered at the door that was pressed, and a
+          // screen that renders only the world's notice would leave the
+          // sentence in a state nobody can see.
+          Notice(town.notice),
           ..._dungeonDoors(context, node, town),
           const SizedBox(height: 8),
-          WorldDoor(label: 'Heroes', onPressed: onOpenRoster),
+          WorldDoor(label: 'Heroes', onPressed: widget.onOpenRoster),
         ],
       ),
     );
@@ -356,6 +401,22 @@ class _Here extends StatelessWidget {
   /// changes while this screen is on top — walking out at the stairs pops back to
   /// here and hands the town a camp in the same breath — so a screen that read it
   /// at build time would come back from a crawl still offering to enter one.
+  /// One door press, gated on the pending state: while an opening is between
+  /// the press and the town's answer, the doors stand down.
+  void _press(Future<void> Function(NodeId) door, NodeId node) {
+    setState(() => _doorsPending = true);
+    door(node);
+  }
+
+  Future<void> _confirmAndOpen(
+    Future<void> Function() door,
+    BuildContext context,
+  ) async {
+    if (!context.mounted) return;
+    setState(() => _doorsPending = true);
+    await door();
+  }
+
   List<Widget> _dungeonDoors(
     BuildContext context,
     WorldNode node,
@@ -364,11 +425,13 @@ class _Here extends StatelessWidget {
     final camp = town.suspended;
     final enter = WorldDoor(
       label: 'Enter ${node.name}',
-      onPressed: () => onEnterDungeon(node.id),
+      onPressed: _doorsPending
+          ? null
+          : () => _press(widget.onEnterDungeon, node.id),
     );
     if (camp == null) return [enter];
     final map = context.read<WorldBloc>().map;
-    final day = state.world.day;
+    final day = widget.state.world.day;
     if (town.isCampOverrunOn(day)) {
       return [_CampLost(where: map.nodeAt(town.dungeon!).name), enter];
     }
@@ -378,11 +441,15 @@ class _Here extends StatelessWidget {
         if (nearly) const _CampWarning(),
         WorldDoor(
           label: 'Resume the crawl (depth ${camp.depth} of ${camp.deepest})',
-          onPressed: () => onResumeCrawl(node.id),
+          onPressed: _doorsPending
+              ? null
+              : () => _press(widget.onResumeCrawl, node.id),
         ),
         WorldDoor(
           label: 'Delve anew',
-          onPressed: () => _confirmDelveAnew(context, node, camp),
+          onPressed: _doorsPending
+              ? null
+              : () => _confirmDelveAnew(context, node, camp),
         ),
       ];
     }
@@ -390,7 +457,9 @@ class _Here extends StatelessWidget {
       if (nearly) const _CampWarning(),
       WorldDoor(
         label: 'Enter ${node.name}',
-        onPressed: () => _confirmAbandon(context, node, town, camp),
+        onPressed: _doorsPending
+            ? null
+            : () => _confirmAbandon(context, node, town, camp),
       ),
     ];
   }
@@ -417,7 +486,7 @@ class _Here extends StatelessWidget {
       give: 'Give it up',
     );
     if (!given || !context.mounted) return;
-    await onDelveAnew(node.id);
+    await _confirmAndOpen(() => widget.onDelveAnew(node.id), context);
   }
 
   /// Asks before a camp in *another* dungeon is thrown away to enter this one.
@@ -446,7 +515,7 @@ class _Here extends StatelessWidget {
       give: 'Give it up',
     );
     if (!given || !context.mounted) return;
-    await onEnterDungeon(node.id);
+    await _confirmAndOpen(() => widget.onEnterDungeon(node.id), context);
   }
 
   /// One yes-or-no question, drawn the way this screen draws them.

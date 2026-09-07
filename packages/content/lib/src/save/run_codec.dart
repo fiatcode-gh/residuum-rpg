@@ -114,6 +114,18 @@ GameState loadRun(
   final written = objectAt(from, key);
   final worldSeed = wideAt(written, 'worldSeed');
   final visit = intAt(written, 'visit');
+  final hero = decodeActor(written['hero']);
+  final equipment = decodeEquipment(written, 'equipment');
+  final loadout = Loadout(
+    equipment: equipment,
+    skills: decodeSkills(written, 'skills'),
+  );
+  if (hero.hp > heroMaxHp(hero, loadout)) {
+    throw SaveMalformed(
+      'the save file has the hero holding ${hero.hp} hit points, and their '
+      'gear holds at most ${heroMaxHp(hero, loadout)}',
+    );
+  }
   return GameState(
     map: _parseMap(stringAt(written, 'map')),
     hero: decodeActor(written['hero']),
@@ -135,8 +147,8 @@ GameState loadRun(
     groundItems: decodeGroundItems(written, 'groundItems'),
     nodes: decodeNodes(written, 'nodes'),
     inventory: decodeItems(written, 'inventory'),
-    equipment: decodeEquipment(written, 'equipment'),
-    skills: decodeSkills(written, 'skills'),
+    equipment: equipment,
+    skills: loadout.skills,
     dropTables: dropTablesFor(dungeon),
     spells: spellsById,
     knownSpells: decodeSpellIds(written, 'knownSpells'),

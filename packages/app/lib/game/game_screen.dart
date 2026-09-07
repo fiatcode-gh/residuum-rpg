@@ -440,7 +440,11 @@ void leaveDungeon(
 /// calls it is the one place that cannot break it.
 void suspendDungeon(BuildContext context, GameViewState state) {
   context.read<TownBloc>().add(
-    RunSuspended(state.game, day: context.read<WorldBloc>().state.world.day),
+    RunSuspended(
+      state.game,
+      day: context.read<WorldBloc>().state.world.day,
+      dungeon: context.read<GameBloc>().dungeon!,
+    ),
   );
   Navigator.of(context).pop();
 }

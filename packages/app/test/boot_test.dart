@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/notice/notice.dart';
 import 'package:residuum_app/save/boot.dart';
 import 'package:residuum_app/save/save_files.dart';
 import 'package:residuum_app/save/save_store.dart';
@@ -26,6 +27,97 @@ SaveDocument _one(
 );
 
 void main() {
+  group('a save that does not land', () {
+    test('creating a hero answers null and the roster stands', () async {
+      // arrange
+      final files = MemorySaveFiles();
+      final store = SaveStore(files);
+      final was = _one(newProfile(worldSeed: 111));
+      await store.save(was);
+      files.failRenamesFrom.add(currentSlot);
+
+      // act
+      final after = await createHero(
+        store,
+        was,
+        label: 'Ilse',
+        rollWorldSeed: () => 555,
+      );
+
+      // assert
+      expect(after, isNull);
+      expect(
+        (decodeSave(files.contents[currentSlot]!) as SaveDocument).active,
+        'hero-1',
+      );
+    });
+
+    test('switching hero answers null', () async {
+      // arrange
+      final files = MemorySaveFiles()..failRenamesFrom.add(currentSlot);
+      final store = SaveStore(files);
+      final was = SaveDocument(
+        active: 'hero-2',
+        heroes: {
+          'hero-1': SavedHero(label: 'Ilse', profile: newProfile(worldSeed: 1)),
+          'hero-2': SavedHero(label: 'Bram', profile: newProfile(worldSeed: 2)),
+        },
+      );
+      await store.save(was);
+
+      // act
+      final after = await switchHero(store, was, 'hero-1');
+
+      // assert
+      expect(after, isNull);
+    });
+
+    test(
+      'a fresh install whose first save fails boots anyway, and says so',
+      () async {
+        // arrange
+        final files = MemorySaveFiles()..failRenamesFrom.add(currentSlot);
+        final store = SaveStore(files);
+
+        // act
+        final booted = await bootFrom(store, rollWorldSeed: () => 5);
+
+        // assert — the document is in memory and booting kept going; the notice
+        // is where the failed write is said out loud.
+        expect(booted.profile.worldSeed, 5);
+        expect(
+          booted.notice,
+          isA<SaveWriteFailedNotice>().having(
+            (notice) => notice.sentence,
+            'sentence',
+            'the new hero could not be saved; nothing was lost',
+          ),
+        );
+      },
+    );
+
+    test(
+      'a fresh save that fails over an unreadable roster says both',
+      () async {
+        // arrange
+        final files = MemorySaveFiles()
+          ..failRenamesFrom.add(currentSlot)
+          ..contents[currentSlot] = 'truncated';
+        final store = SaveStore(files);
+
+        // act
+        final booted = await bootFrom(store, rollWorldSeed: () => 5);
+
+        // assert
+        expect(
+          booted.notice?.sentence,
+          'your last save could not be read; a new hero begins, and the new '
+          'hero could not be saved; nothing was lost',
+        );
+      },
+    );
+  });
+
   group('booting', () {
     test('a fresh install rolls its own world and is not seed one', () async {
       // arrange
@@ -104,7 +196,7 @@ void main() {
 
       // assert
       expect(booted.profile.gold, 3);
-      expect(booted.notice, contains('an older one was restored'));
+      expect(booted.notice?.sentence, contains('an older one was restored'));
     });
 
     test(
@@ -124,7 +216,7 @@ void main() {
         // assert
         expect(booted.profile.worldSeed, 777);
         expect(booted.profile.gold, 0);
-        expect(booted.notice, contains('a new hero begins'));
+        expect(booted.notice?.sentence, contains('a new hero begins'));
       },
     );
 
@@ -226,12 +318,12 @@ void main() {
       await store.save(was);
 
       // act
-      final after = await createHero(
+      final after = (await createHero(
         store,
         was,
         label: 'Ilse',
         rollWorldSeed: () => 555,
-      );
+      ))!;
       final reread = await bootFrom(store, rollWorldSeed: () => 9);
 
       // assert
@@ -257,12 +349,12 @@ void main() {
       );
 
       // act
-      final after = await createHero(
+      final after = (await createHero(
         store,
         was,
         label: 'Ilse',
         rollWorldSeed: () => 555,
-      );
+      ))!;
 
       // assert
       expect(after.document.active, 'hero-555-2');
@@ -305,7 +397,7 @@ void main() {
         await store.save(was);
 
         // act
-        final after = await switchHero(store, was, 'hero-1');
+        final after = (await switchHero(store, was, 'hero-1'))!;
         final reread = await bootFrom(store, rollWorldSeed: () => 9);
 
         // assert
@@ -381,12 +473,12 @@ void main() {
         await store.save(was);
 
         // act
-        final after = await replaceOnlyHero(
+        final after = (await replaceOnlyHero(
           store,
           was,
           label: 'Cato',
           rollWorldSeed: () => 555,
-        );
+        ))!;
         final reread = await bootFrom(store, rollWorldSeed: () => 9);
 
         // assert
@@ -449,12 +541,12 @@ void main() {
       final was = _one(newProfile(worldSeed: 111));
 
       // act
-      final booted = await createHero(
+      final booted = (await createHero(
         store,
         was,
         label: 'Ilse',
         rollWorldSeed: () => 222,
-      );
+      ))!;
 
       // assert
       expect(booted.inside, isFalse);
@@ -483,7 +575,7 @@ void main() {
       );
 
       // act
-      final booted = await switchHero(store, was, 'hero-1');
+      final booted = (await switchHero(store, was, 'hero-1'))!;
 
       // assert
       expect(booted.run, isNotNull);

@@ -1,4 +1,5 @@
 import 'package:residuum_content/content.dart';
+import 'package:residuum_core/core.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -52,6 +53,105 @@ void main() {
 
       // assert
       expect(described, ['document', 'failure']);
+    });
+  });
+
+  group('the SavedHero pairings', () {
+    Profile base() => newProfile(worldSeed: 7);
+
+    SavedHero hero() => SavedHero(label: 'Hero 1', profile: base());
+
+    test('a crawl without its dungeon is refused at construction', () {
+      // arrange
+      final run = startDungeonRunAt(cryptNode, newProfile(worldSeed: 7));
+
+      // act + assert
+      expect(
+        () => SavedHero(label: 'Hero 1', profile: base(), run: run),
+        throwsArgumentError,
+      );
+    });
+
+    test('a dungeon without a crawl is refused at construction', () {
+      // act + assert
+      expect(
+        () => SavedHero(label: 'Hero 1', profile: base(), dungeon: cryptNode),
+        throwsArgumentError,
+      );
+    });
+
+    test('a camp day without a camp is refused at construction', () {
+      // act + assert
+      expect(
+        () => SavedHero(label: 'Hero 1', profile: base(), campDay: 4),
+        throwsArgumentError,
+      );
+    });
+
+    test(
+      'a camp without the day it was pitched is refused at construction',
+      () {
+        // arrange
+        final run = startDungeonRunAt(cryptNode, newProfile(worldSeed: 7));
+
+        // act + assert
+        expect(
+          () => SavedHero(
+            label: 'Hero 1',
+            profile: base(),
+            run: run,
+            dungeon: cryptNode,
+          ),
+          throwsArgumentError,
+        );
+      },
+    );
+
+    test('a hero standing inside their crawl carries no camp day', () {
+      // arrange
+      final run = startDungeonRunAt(cryptNode, newProfile(worldSeed: 7));
+
+      // act + assert
+      expect(
+        () => SavedHero(
+          label: 'Hero 1',
+          profile: base(),
+          run: run,
+          dungeon: cryptNode,
+          inside: true,
+          campDay: 4,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('the legal shapes stand', () {
+      // arrange
+      final run = startDungeonRunAt(cryptNode, newProfile(worldSeed: 7));
+
+      // act + assert — in town with nothing waiting; standing inside a crawl;
+      // camped away from one, day written down.
+      final inTown = hero();
+      expect(inTown.run, isNull);
+      expect(inTown.campDay, isNull);
+      final inside = SavedHero(
+        label: 'Hero 1',
+        profile: base(),
+        run: run,
+        dungeon: cryptNode,
+        inside: true,
+      );
+      expect(inside.run, same(run));
+      expect(inside.campDay, isNull);
+      final camped = SavedHero(
+        label: 'Hero 1',
+        profile: base(),
+        run: run,
+        dungeon: cryptNode,
+        campDay: 4,
+      );
+      expect(camped.run, same(run));
+      expect(camped.campDay, 4);
     });
   });
 }

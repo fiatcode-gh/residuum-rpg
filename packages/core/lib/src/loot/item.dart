@@ -273,11 +273,15 @@ class Item extends Equatable {
 ///
 /// **One tap, one item.** After the mint at the pack's door, ids are unique by
 /// construction, so removing the first match and removing every match coincide
-/// on every pack the game can mint. On a pack inherited from an older save the
-/// two differ — legacy saves can hold duplicate ids — and removing exactly one
-/// is the honest semantics: the tap named one thing, and one thing is what it
-/// takes. The first match in the list's existing order is the oldest, which
-/// makes the removal deterministic through every sell-and-rebuy cycle.
+/// on every pack the game can mint. That uniqueness is now guaranteed twice
+/// over: the mint makes ids unique going forward, and the decoder refuses any
+/// document that holds a repeat (the amended D108 ruling — a pack naming one
+/// id twice is one the town's by-id operations cannot act on honestly, so the
+/// save is refused and the slot chain moves on rather than tolerated).
+/// [withoutFirst] therefore keeps remove-one as its semantics for the only
+/// packs that exist: ids unique by construction, where first-match and
+/// every-match removal coincide. The first match in the list's existing order
+/// is the oldest, which keeps the removal deterministic.
 List<Item> withoutFirst(List<Item> items, String id) {
   final at = items.indexWhere((item) => item.id == id);
   if (at < 0) return items;

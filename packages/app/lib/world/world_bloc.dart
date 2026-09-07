@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import '../notice/notice.dart';
 import 'travel_messages.dart';
 
 sealed class WorldBlocEvent {
@@ -77,8 +78,8 @@ class WorldViewState {
   /// exactly as the crawl's log does.
   final List<String> log;
 
-  /// The last refusal, for the screen to read out.
-  final String? notice;
+  /// The last notice, for the screen to read out.
+  final SaveNotice? notice;
 
   /// A road fight to open right now, or null when there is none.
   ///
@@ -183,7 +184,7 @@ class WorldBloc extends Bloc<WorldBlocEvent, WorldViewState> {
         WorldViewState(
           world: state.world,
           log: state.log,
-          notice: refusal.reason,
+          notice: SentenceNotice(refusal.reason),
           walkId: state.walkId,
         ),
       );
@@ -322,7 +323,9 @@ class WorldBloc extends Bloc<WorldBlocEvent, WorldViewState> {
           describeRevealed(map, heard.reveals),
         ],
       ],
-      notice: event.told.refusal?.reason,
+      notice: event.told.refusal == null
+          ? null
+          : SentenceNotice(event.told.refusal!.reason),
       walkId: state.walkId,
       walking: state.walking,
     ),
