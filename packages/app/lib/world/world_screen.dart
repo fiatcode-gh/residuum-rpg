@@ -367,6 +367,11 @@ class _HereState extends State<_Here> {
       builder: (context, town) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // The town's notice rides here because the doors are here: a resume
+          // the rules refused is answered at the door that was pressed, and a
+          // screen that renders only the world's notice would leave the
+          // sentence in a state nobody can see.
+          Notice(town.notice),
           ..._dungeonDoors(context, node, town),
           const SizedBox(height: 8),
           WorldDoor(label: 'Heroes', onPressed: widget.onOpenRoster),
