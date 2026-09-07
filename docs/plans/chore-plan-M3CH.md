@@ -12,11 +12,15 @@ changes anywhere.
 
 ## Global constraints
 
-- No changes to any package's `lib/` directory (D115 reaffirmed the freeze).
-  Branch: the `step.dart:467` lib finding awaits a dispatcher ruling (Task 3
-  note). If the ruling authorizes it, it lands inside Commit 2 and this
-  constraint gets an explicit recorded exception; if declined, the gate
-  cannot reach zero findings in core and the report says so.
+- No changes to any package's `lib/` directory EXCEPT the one D116-authorized
+  fix: brace-wrap the DrinkAction early return at
+  `lib/src/engine/step.dart:466-467` to match its braced sibling two lines
+  below. Nothing else in lib/ moves. The fix gets its OWN commit, separate
+  from the test-file lint fixes (D116); after that commit core suites re-run
+  (835 strict-green) and all five band lines re-verify (D56).
+- Every commit's exit state is green: the step.dart commit lands with the
+  analyzer configs stashed (analyze clean under the absent old config), then
+  the config+test-fix commit brings the new config up with its findings fixed.
 - Every commit's exit state is green: format clean x3, analyze clean x3,
   suites green.
 - Suites run per package directory (D101: no root pubspec).
@@ -89,15 +93,21 @@ is the real set. Total is still six, split 3 test + 1 lib + 2 test.
         problems.add('$spawn is on the stairs');
       }
       ```
-- [ ] (PENDING RULING) If step.dart fix authorized: wrap the unbraced if at
-      `lib/src/engine/step.dart:467`:
+- [ ] STEP COMMIT (D116, own commit): stash the analyzer-config files
+      (`git stash push --include-untracked -- packages/core/pubspec.yaml
+      packages/core/analysis_options.yaml packages/content/pubspec.yaml
+      packages/content/analysis_options.yaml`), then wrap the unbraced if at
+      `lib/src/engine/step.dart:466-467`:
       ```dart
       if (item == null) {
         return const ActionRefused(reason: 'you are not carrying that');
       }
       ```
-      then `cd packages/core && flutter test test/engine/step_read_test.dart
-      test/engine/step_flee_test.dart` (plus full suite before commit).
+      Gates: format exit 0; `dart analyze` no issues; full core suite
+      835 strict-green. Commit ONLY step.dart:
+      `git add packages/core/lib/src/engine/step.dart && git commit -m "fix: brace the DrinkAction early return (lints/recommended curly_braces)"`
+      then pop the stash. Band lines re-verified after the content commit
+      (chronologically after the step.dart commit, satisfying D116.3).
 - [ ] Drop `.gitignore` lines 6–7 (`packages/core/pubspec.lock`,
       `packages/content/pubspec.lock` — both lines in this task's commit).
 - [ ] `cd packages/core && dart pub get` fresh; verify
