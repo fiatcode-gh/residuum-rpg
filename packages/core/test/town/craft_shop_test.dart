@@ -397,9 +397,7 @@ void main() {
       final profile = _hero(
         inventory: [_item('drop-1', _sword)],
         materials: const {MaterialId.ingot: 9},
-      ).copyWith(
-        craftRngState: stateRollingAtLeastFor(35, maxTemper),
-      );
+      ).copyWith(craftRngState: stateRollingAtLeastFor(35, maxTemper));
 
       // act
       var worked = profile;
@@ -477,7 +475,10 @@ void main() {
 
       // assert
       expect(after.inventory.single.temper, 1);
-      expect(after.inventory.single.attackMin, profile.inventory.single.attackMin);
+      expect(
+        after.inventory.single.attackMin,
+        profile.inventory.single.attackMin,
+      );
     });
 
     test('trains Blacksmith anyway — practice is practice', () {

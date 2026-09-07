@@ -56,10 +56,7 @@ void main() {
   group('craftDraw', () {
     test('lazy-seeds off the world seed on the first draw', () {
       // arrange
-      final profile = Profile(
-        hero: hero(const Position(0, 0)),
-        worldSeed: 5,
-      );
+      final profile = Profile(hero: hero(const Position(0, 0)), worldSeed: 5);
 
       // act
       final (after, _) = craftDraw(profile, 20);

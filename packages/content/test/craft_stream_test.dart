@@ -5,8 +5,9 @@ import 'package:test/test.dart';
 /// The house sweep list — every fixture hero the pins stand on.
 const List<int> _sweptSeeds = [1, 5, 77, 909, 4242, 123456, 1755800000000];
 
-List<int> _earlyRolls(Rng rng) =>
-    [for (var roll = 0; roll < 64; roll++) rng.rollRange(0, 99)];
+List<int> _earlyRolls(Rng rng) => [
+  for (var roll = 0; roll < 64; roll++) rng.rollRange(0, 99),
+];
 
 bool _same(List<int> left, List<int> right) {
   for (var index = 0; index < left.length; index++) {

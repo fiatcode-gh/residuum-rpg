@@ -36,10 +36,7 @@ Profile _crafter({required int craftRngState}) => Profile(
     Item(id: 'drop-1', base: _sword, rarity: Rarity.common).tempered(1),
   ],
   materials: const {MaterialId.ingot: 3},
-  skills: {
-    ...untrainedSkills,
-    SkillId.blacksmith: const SkillState(level: 5),
-  },
+  skills: {...untrainedSkills, SkillId.blacksmith: const SkillState(level: 5)},
   craftRngState: craftRngState,
 );
 
