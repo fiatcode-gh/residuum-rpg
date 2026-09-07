@@ -515,12 +515,13 @@ void main() {
     });
 
     test('a tier-1 temper cannot fail and spends its full ingot', () {
-      // arrange - the teaching tier stays free of the mechanic
+      // arrange - the teaching tier stays free of the mechanic: the roll is
+      // made, and a roll that would fail any other tier fails nothing here
       final profile = _hero(
         inventory: [_item('drop-1', _sword)],
         materials: const {MaterialId.ingot: 1},
         blacksmith: 0,
-      ).copyWith(craftRngState: stateRollingAtLeast(1));
+      ).copyWith(craftRngState: stateRollingBelow(20));
 
       // act
       final (after, answer) = temperItem(profile, 'drop-1');
