@@ -3,6 +3,38 @@ import 'package:test/test.dart';
 
 import '../support/fixtures.dart';
 
+/// A craft-stream state whose next percent roll lands at or above [floor].
+int stateRollingAtLeast(int floor) {
+  for (var state = 1; state < 100000; state++) {
+    final rng = Rng.fromState(state);
+    if (rng.rollRange(0, 99) >= floor) return state;
+  }
+  throw StateError('no state rolls at or above $floor');
+}
+
+/// A craft-stream state whose next percent roll lands below [ceiling].
+int stateRollingBelow(int ceiling) {
+  for (var state = 1; state < 100000; state++) {
+    final rng = Rng.fromState(state);
+    if (rng.rollRange(0, 99) < ceiling) return state;
+  }
+  throw StateError('no state rolls below $ceiling');
+}
+
+/// A craft-stream state whose next [draws] percent rolls all land at or above
+/// [floor].
+int stateRollingAtLeastFor(int floor, int draws) {
+  for (var state = 1; state < 100000; state++) {
+    final rng = Rng.fromState(state);
+    var clean = true;
+    for (var roll = 0; roll < draws; roll++) {
+      if (rng.rollRange(0, 99) < floor) clean = false;
+    }
+    if (clean) return state;
+  }
+  throw StateError('no state rolls at or above $floor for $draws draws');
+}
+
 const _sword = BaseItem(
   id: 'iron-sword',
   name: 'Iron Sword',
@@ -392,10 +424,13 @@ void main() {
     });
 
     test('three tempers in a row reach the ceiling and no further', () {
-      // arrange
+      // arrange - the draws are forced clean, so the loop measures the price
+      // table and not the odds
       final profile = _hero(
         inventory: [_item('drop-1', _sword)],
         materials: const {MaterialId.ingot: 9},
+      ).copyWith(
+        craftRngState: stateRollingAtLeastFor(35, maxTemper),
       );
 
       // act
@@ -441,6 +476,153 @@ void main() {
       // assert
       expect(refusal, const TownRefusal('only steel takes a temper'));
       expect(after, profile);
+    });
+  });
+
+  group('a temper that fails', () {
+    test('loses exactly one ingot, not the tier\'s price', () {
+      // arrange - tier 3 prices at 3 ingots; a failure still costs 1
+      final profile = _hero(
+        inventory: [_item('drop-1', _sword, temper: 2)],
+        materials: const {MaterialId.ingot: 3},
+        blacksmith: 10,
+      ).copyWith(craftRngState: stateRollingBelow(35));
+
+      // act
+      final (after, answer) = temperItem(profile, 'drop-1');
+
+      // assert
+      expect(answer, const CraftLoss('the temper fails and takes 1 ingot'));
+      expect(after.materials, const {MaterialId.ingot: 2});
+    });
+
+    test('leaves the item where it was', () {
+      // arrange
+      final profile = _hero(
+        inventory: [_item('drop-1', _sword, temper: 1)],
+        materials: const {MaterialId.ingot: 2},
+        blacksmith: 5,
+      ).copyWith(craftRngState: stateRollingBelow(20));
+
+      // act
+      final (after, _) = temperItem(profile, 'drop-1');
+
+      // assert
+      expect(after.inventory.single.temper, 1);
+      expect(after.inventory.single.attackMin, profile.inventory.single.attackMin);
+    });
+
+    test('trains Blacksmith anyway — practice is practice', () {
+      // arrange
+      final profile = _hero(
+        inventory: [_item('drop-1', _sword, temper: 1)],
+        materials: const {MaterialId.ingot: 2},
+        blacksmith: 5,
+      ).copyWith(craftRngState: stateRollingBelow(20));
+
+      // act
+      final (after, _) = temperItem(profile, 'drop-1');
+
+      // assert
+      expect(
+        after.skills[SkillId.blacksmith],
+        const SkillState(level: 5, xp: 1),
+      );
+    });
+
+    test('advances the craft stream exactly once', () {
+      // arrange
+      final before = _hero(
+        inventory: [_item('drop-1', _sword, temper: 1)],
+        materials: const {MaterialId.ingot: 2},
+        blacksmith: 5,
+      ).copyWith(craftRngState: stateRollingBelow(20));
+
+      // act
+      final (after, _) = temperItem(before, 'drop-1');
+
+      // assert
+      final rng = Rng.fromState(before.craftRngState)..rollRange(0, 99);
+      expect(after.craftRngState, rng.state);
+    });
+
+    test('a tier-1 temper cannot fail and spends its full ingot', () {
+      // arrange - the teaching tier stays free of the mechanic
+      final profile = _hero(
+        inventory: [_item('drop-1', _sword)],
+        materials: const {MaterialId.ingot: 1},
+        blacksmith: 0,
+      ).copyWith(craftRngState: stateRollingAtLeast(1));
+
+      // act
+      final (after, answer) = temperItem(profile, 'drop-1');
+
+      // assert
+      expect(answer, isNull);
+      expect(after.inventory.single.temper, 1);
+      expect(after.materials, isEmpty);
+    });
+
+    test('a failed temper takes no gold, because there is no gold to take', () {
+      // arrange
+      final profile = _hero(
+        inventory: [_item('drop-1', _sword, temper: 1)],
+        materials: const {MaterialId.ingot: 2},
+        blacksmith: 5,
+        gold: 40,
+      ).copyWith(craftRngState: stateRollingBelow(20));
+
+      // act
+      final (after, _) = temperItem(profile, 'drop-1');
+
+      // assert
+      expect(after.gold, 40);
+    });
+  });
+
+  group('a brew that fails', () {
+    test('takes the brew\'s herbs and makes no potion', () {
+      // arrange
+      final profile = _hero(
+        materials: const {MaterialId.herb: 3},
+        herbcraft: 0,
+      ).copyWith(craftRngState: stateRollingBelow(20));
+
+      // act
+      final (after, answer) = brewPotion(profile, _potion);
+
+      // assert
+      expect(answer, const CraftLoss('the brew fails and takes 3 herbs'));
+      expect(after.materials, isEmpty);
+      expect(after.inventory, isEmpty);
+      expect(after.brewNumber, profile.brewNumber);
+    });
+
+    test('trains Herbcraft anyway', () {
+      // arrange
+      final profile = _hero(
+        materials: const {MaterialId.herb: 3},
+        herbcraft: 0,
+      ).copyWith(craftRngState: stateRollingBelow(20));
+
+      // act
+      final (after, _) = brewPotion(profile, _potion);
+
+      // assert
+      expect(after.skills[SkillId.herbcraft], const SkillState(xp: 1));
+    });
+
+    test('a refusal draws nothing — a refusal is not an attempt', () {
+      // arrange
+      final profile = _hero(materials: const {MaterialId.herb: 2});
+
+      // act
+      final (after, refusal) = brewPotion(profile, _potion);
+
+      // assert
+      expect(refusal, const TownRefusal('that takes 3 herbs'));
+      expect(after, profile);
+      expect(after.craftRngState, 0);
     });
   });
 

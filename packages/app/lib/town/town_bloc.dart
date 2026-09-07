@@ -785,8 +785,10 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
   /// The sentence is `describeEvent`'s own wording for the same event, so the
   /// forge says exactly what the message log would have said in the dungeon.
   ///
-  /// A refusal wins over a level-up, because a refusal trained nothing.
-  TownViewState _crafted(Transacted result, SkillId trained) {
+  /// A refusal or a loss answers in its own sentence and yields the level-up:
+  /// a refusal trained nothing, and a loss's sentence is the news the bench
+  /// owes, level-up or not.
+  TownViewState _crafted(Crafted result, SkillId trained) {
     final settled = _settled(result.$1, result.$2);
     if (result.$2 != null) return settled;
     final before = state.profile.skills[trained]?.level ?? 0;
@@ -830,7 +832,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
   /// goes.
   TownViewState _settled(
     Profile profile,
-    TownRefusal? refusal, {
+    TownAnswer? answer, {
     List<Item>? stock,
     MerchantVisit? merchant,
   }) => TownViewState(
@@ -839,7 +841,7 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
     stock: stock ?? state.stock,
     merchant: merchant ?? state.merchant,
     crawl: state.crawl,
-    notice: refusal == null ? null : SentenceNotice(refusal.reason),
+    notice: answer == null ? null : SentenceNotice(answer.reason),
   );
 
   /// One failed save, carried onto the screen exactly once per streak.

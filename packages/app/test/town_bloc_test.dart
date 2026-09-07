@@ -6,10 +6,19 @@ import 'package:residuum_app/notice/notice.dart';
 import 'package:residuum_app/town/town_crawl.dart';
 import 'package:residuum_core/core.dart';
 
+/// A craft-stream state whose next percent roll lands below [ceiling].
+int stateRollingBelow(int ceiling) {
+  for (var state = 1; state < 100000; state++) {
+    final rng = Rng.fromState(state);
+    if (rng.rollRange(0, 99) < ceiling) return state;
+  }
+  throw StateError('no state rolls below $ceiling');
+}
+
 Item _cap(String id) => Item(id: id, base: leatherCap, rarity: Rarity.common);
 
-Item _gear(String id, BaseItem base) =>
-    Item(id: id, base: base, rarity: Rarity.common);
+Item _gear(String id, BaseItem base, {int temper = 0}) =>
+    Item(id: id, base: base, rarity: Rarity.common).tempered(temper);
 
 Profile _fresh() => newProfile(worldSeed: 4);
 
@@ -1613,6 +1622,31 @@ void main() {
         expect(bloc.state.profile.inventory.single.temper, 1);
         expect(bloc.state.profile.gold, 100);
         expect(bloc.state.profile.materials, const {MaterialId.ingot: 1});
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'says the loss in the town slot when the temper fails',
+      build: () => TownBloc(
+        profile: _fresh()
+            .copyWith(
+              inventory: [_gear('drop-1', ironSword, temper: 1)],
+              materials: const {MaterialId.ingot: 2},
+              skills: {
+                ...untrainedSkills,
+                SkillId.blacksmith: const SkillState(level: 5),
+              },
+            )
+            .copyWith(craftRngState: stateRollingBelow(20)),
+      ),
+      act: (bloc) => bloc.add(const TemperPressed('drop-1')),
+      verify: (bloc) {
+        expect(
+          bloc.state.notice?.sentence,
+          'the temper fails and takes 1 ingot',
+        );
+        expect(bloc.state.profile.materials, const {MaterialId.ingot: 1});
+        expect(bloc.state.profile.inventory.single.temper, 1);
       },
     );
 
