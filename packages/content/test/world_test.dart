@@ -865,7 +865,7 @@ void main() {
     /// The monster is moved next to the hero and left on one hit point, because
     /// what is under test is the drop table a road fight carries rather than how
     /// long a wolf takes to kill. The drop roll itself is untouched.
-    List<Item> _spoilsOverManyDays() {
+    List<Item> spoilsOverManyDays() {
       final fell = <Item>[];
       for (var day = 1; day <= 120; day++) {
         final fight = startRoadEncounter(_fresh(), day: day);
@@ -886,7 +886,7 @@ void main() {
 
     test('is sometimes something', () {
       // act
-      final fell = _spoilsOverManyDays();
+      final fell = spoilsOverManyDays();
 
       // assert
       expect(fell, isNotEmpty);
@@ -899,7 +899,7 @@ void main() {
       };
 
       // act
-      final fell = _spoilsOverManyDays();
+      final fell = spoilsOverManyDays();
 
       // assert
       for (final item in fell) {
@@ -909,7 +909,7 @@ void main() {
 
     test('is never better than the road table allows', () {
       // act
-      final fell = _spoilsOverManyDays();
+      final fell = spoilsOverManyDays();
 
       // assert
       expect(
@@ -920,7 +920,7 @@ void main() {
 
     test('is named for the road rather than for a floor', () {
       // act
-      final fell = _spoilsOverManyDays();
+      final fell = spoilsOverManyDays();
 
       // assert
       for (final item in fell) {
