@@ -54,7 +54,7 @@ stream.
 
 **Files:** none (run-only).
 
-- [ ] From the unmodified worktree (`git status --porcelain` clean), run all
+- [x] From the unmodified worktree (`git status --porcelain` clean), run all
       three suites and record strict counts:
       `cd packages/core && flutter test --reporter json | tee /tmp/m3cr-core.json`
       then
@@ -64,11 +64,11 @@ stream.
       Repeat for `packages/content` and `packages/app`. Baseline of record
       from the D118 merge: 2045 green (core 835 + content 573 + app 637);
       measure fresh and state which.
-- [ ] Run the band trail fresh: `cd packages/content && flutter test
+- [x] Run the band trail fresh: `cd packages/content && flutter test
       test/survivability_test.dart` and quote the five lines verbatim.
-- [ ] Confirm the golden save test and `dungeon_door_characterization_test.dart`
+- [x] Confirm the golden save test and `dungeon_door_characterization_test.dart`
       are green in that run.
-- [ ] No commit — nothing changed. If any of this reddens on unmodified code,
+- [x] No commit — nothing changed. If any of this reddens on unmodified code,
       STOP and report to the mailbox.
 
 ## Task 2: `Profile.craftRngState`
@@ -76,7 +76,7 @@ stream.
 **Files:** `packages/core/test/town/profile_test.dart`,
 `packages/core/lib/src/town/profile.dart`.
 
-- [ ] Write the failing tests (append a group inside `main` of
+- [x] Write the failing tests (append a group inside `main` of
       `profile_test.dart`; `_townie()` already exists there):
 
 ```dart
@@ -119,9 +119,9 @@ stream.
     });
 ```
 
-- [ ] Run `cd packages/core && flutter test test/town/profile_test.dart` —
+- [x] Run `cd packages/core && flutter test test/town/profile_test.dart` —
       confirm red (compile errors count as red for a missing field).
-- [ ] Minimal implementation in `profile.dart`:
+- [x] Minimal implementation in `profile.dart`:
       constructor parameter `this.craftRngState = 0,` after `itemNumber`;
       field with dartdoc:
 
@@ -145,8 +145,8 @@ stream.
 
       plus the `copyWith` parameter and passthrough, and `craftRngState`
       appended to `props`.
-- [ ] Run the file's tests, then the whole core suite — green.
-- [ ] `cd . && git add packages/core/... ` — commit:
+- [x] Run the file's tests, then the whole core suite — green.
+- [x] `cd . && git add packages/core/... ` — commit:
       `cd /var/home/dhemas/Development/Projects/fiatcode-gh/residuum-rpg/.worktrees/m3-craft-risk && git add packages/core && git commit -m "feat(core): craftRngState rides the profile"`
 
 ## Task 3: The odds table and the craft draw
@@ -154,7 +154,7 @@ stream.
 **Files:** `packages/core/test/craft/risk_test.dart` (new),
 `packages/core/lib/src/craft/risk.dart` (new), `packages/core/lib/core.dart`.
 
-- [ ] Write the failing tests:
+- [x] Write the failing tests:
 
 ```dart
 import 'package:residuum_core/core.dart';
@@ -299,8 +299,8 @@ void main() {
 }
 ```
 
-- [ ] Red: `cd packages/core && flutter test test/craft/risk_test.dart`.
-- [ ] Minimal implementation, `packages/core/lib/src/craft/risk.dart`:
+- [x] Red: `cd packages/core && flutter test test/craft/risk_test.dart`.
+- [x] Minimal implementation, `packages/core/lib/src/craft/risk.dart`:
 
 ```dart
 import 'dart:math';
@@ -359,15 +359,15 @@ int _tabled(int start, int levelsPast) => max(5, start - 2 * levelsPast);
 ```
 
       and add `export 'src/craft/risk.dart';` to `core.dart`.
-- [ ] Green: file test, then the whole core suite.
-- [ ] Commit: `feat(core): the craft odds table and the craft stream`
+- [x] Green: file test, then the whole core suite.
+- [x] Commit: `feat(core): the craft odds table and the craft stream`
 
 ## Task 4: Tempering loses its gold
 
 **Files:** `packages/core/test/craft/temper_test.dart`,
 `packages/core/lib/src/craft/temper.dart`.
 
-- [ ] Write the failing tests. In `temper_test.dart`:
+- [x] Write the failing tests. In `temper_test.dart`:
       replace the `gold` column assertion in 'every tier costs more than the
       one below it' (drop the `gold` list and its `expect`), delete
       'refuses when the purse is short', and add:
@@ -392,8 +392,8 @@ int _tabled(int start, int levelsPast) => max(5, start - 2 * levelsPast);
       (keep 'answers the iron before the purse' but drop its `gold: 0`
       significance — rename to 'answers the iron, which is the whole price';
       the sentence stays 'that takes 1 ingot'.)
-- [ ] Red: `cd packages/core && flutter test test/craft/temper_test.dart`.
-- [ ] Minimal implementation in `temper.dart`:
+- [x] Red: `cd packages/core && flutter test test/craft/temper_test.dart`.
+- [x] Minimal implementation in `temper.dart`:
       `TemperPrice` loses `gold` (field, constructor parameter, dartdoc);
       `temperPrices` becomes:
 
@@ -410,13 +410,13 @@ const List<TemperPrice> temperPrices = [
       the table's group dartdoc is rewritten to the new economics (twelve ore
       takes a piece all the way — several delves' worth of looking down — with
       no purse in the sentence).
-- [ ] Green: `temper_test.dart` green; core suite may still redden in
+- [x] Green: `temper_test.dart` green; core suite may still redden in
       `craft_shop_test.dart` (pinned gold spending) — that is Task 5's
       territory; do not leave the suite red across a commit, so Task 4 and
       Task 5 commit together if needed. Preferred: make this task's edit
       include the `craft_shop_test.dart` and `town_bloc_test.dart` gold
       updates listed in Task 5 so every commit is green.
-- [ ] Commit: `feat(core): tempering is paid in iron, not gold`
+- [x] Commit: `feat(core): tempering is paid in iron, not gold`
 
 ## Task 5: `temperItem` fails, `brewPotion` fails
 
@@ -426,7 +426,7 @@ const List<TemperPrice> temperPrices = [
 `packages/core/lib/src/town/town.dart`,
 `packages/app/test/town_bloc_test.dart`.
 
-- [ ] Write the failing tests. New group in `craft_shop_test.dart` (the
+- [x] Write the failing tests. New group in `craft_shop_test.dart` (the
       `_hero` helper there already takes `blacksmith`, `materials`,
       `inventory`; add the two state helpers at the top of the file):
 
@@ -607,8 +607,8 @@ int stateRollingBelow(int ceiling) {
       carried weapon, spending the iron and the gold' drops the
       `expect(bloc.state.profile.gold, 90)` line and is renamed 'tempers a
       carried weapon, spending the iron'.
-- [ ] Red: `cd packages/core && flutter test test/town/craft_shop_test.dart`.
-- [ ] Minimal implementation in `town.dart`:
+- [x] Red: `cd packages/core && flutter test test/town/craft_shop_test.dart`.
+- [x] Minimal implementation in `town.dart`:
 
 ```dart
 /// The sentence a transaction answers in, refusal or loss alike.
@@ -750,14 +750,14 @@ Crafted brewPotion(Profile profile, BaseItem potion) {
       `const CraftLoss('the brew fails and takes $brewCost herbs')` — a
       const constructor cannot take an interpolated literal, so this one is
       `CraftLoss('the brew fails and takes $brewCost herbs')` (non-const).
-- [ ] Green: whole core suite green.
-- [ ] Commit: `feat(core): a temper or a brew can fail, and it costs one material`
+- [x] Green: whole core suite green.
+- [x] Commit: `feat(core): a temper or a brew can fail, and it costs one material`
 
 ## Task 6: The crawl is never touched (stream discipline)
 
 **Files:** `packages/core/test/town/craft_stream_test.dart` (new).
 
-- [ ] Write the failing test (M6's roll-for-roll core):
+- [x] Write the failing test (M6's roll-for-roll core):
 
 ```dart
 import 'package:residuum_core/core.dart';
@@ -850,14 +850,14 @@ void main() {
 }
 ```
 
-- [ ] Red first — `cd packages/core && flutter test
+- [x] Red first — `cd packages/core && flutter test
       test/town/craft_stream_test.dart` — then confirm these pass with the
       Task 5 implementation (they are the contract the mutation table
       M6 guards; if they pass immediately, they are still the named red set
       for M6). If either reddens against the Task 5 code, that is a bug in
       the implementation — fix before proceeding.
-- [ ] Green: whole core suite.
-- [ ] Commit: `test(core): the crawl never feels a craft roll`
+- [x] Green: whole core suite.
+- [x] Commit: `test(core): the crawl never feels a craft roll`
 
 ## Task 7: The codec — omit-on-default, and the salt sweep
 
@@ -865,7 +865,7 @@ void main() {
 `packages/content/test/craft_stream_test.dart` (new),
 `packages/content/lib/src/save/profile_codec.dart`.
 
-- [ ] Write the failing codec tests (mirroring `item_number_codec_test.dart`, whose imports and `_reread` helper are copied as they stand):
+- [x] Write the failing codec tests (mirroring `item_number_codec_test.dart`, whose imports and `_reread` helper are copied as they stand):
 
 ```dart
 import 'package:residuum_content/content.dart';
@@ -933,7 +933,7 @@ void main() {
 }
 ```
 
-- [ ] Write the failing salt sweep (`packages/content/test/craft_stream_test.dart`):
+- [x] Write the failing salt sweep (`packages/content/test/craft_stream_test.dart`):
 
 ```dart
 import 'package:residuum_content/content.dart';
@@ -983,8 +983,8 @@ void main() {
       the salt's evidence, not a red-green target; if it reddens, the salt
       collides and a new literal is chosen and the sweep re-run. Record the
       result either way.
-- [ ] Red: the codec tests redden before the codec change.
-- [ ] Minimal implementation in `profile_codec.dart`:
+- [x] Red: the codec tests redden before the codec change.
+- [x] Minimal implementation in `profile_codec.dart`:
       encode gains, after `'brewNumber': profile.brewNumber,`:
 
 ```dart
@@ -999,9 +999,9 @@ void main() {
         : 0,
 ```
 
-- [ ] Green: content save suite green — including `golden_save_test.dart`
+- [x] Green: content save suite green — including `golden_save_test.dart`
       byte-identical and `suspend_theorem_test.dart` untouched.
-- [ ] Commit: `feat(content): craftRngState rides the codec omit-on-default`
+- [x] Commit: `feat(content): craftRngState rides the codec omit-on-default`
 
 ## Task 8: The bench says so — town_bloc and the forge price line
 
@@ -1010,7 +1010,7 @@ void main() {
 `packages/app/test/town_bloc_test.dart`,
 `packages/app/test/widget/craft_rooms_test.dart`.
 
-- [ ] Write the failing bloc test (in `town_bloc_test.dart`, forge group;
+- [x] Write the failing bloc test (in `town_bloc_test.dart`, forge group;
       `_fresh()` and `_gear` already exist; add the state helper at the top):
 
 ```dart
@@ -1048,8 +1048,8 @@ int stateRollingBelow(int ceiling) {
     );
 ```
 
-- [ ] Red: `cd packages/app && flutter test test/town_bloc_test.dart`.
-- [ ] Minimal implementation. In `town_bloc.dart`, `_crafted` widens:
+- [x] Red: `cd packages/app && flutter test test/town_bloc_test.dart`.
+- [x] Minimal implementation. In `town_bloc.dart`, `_crafted` widens:
 
 ```dart
   TownViewState _crafted(Crafted result, SkillId trained) {
@@ -1082,16 +1082,16 @@ int stateRollingBelow(int ceiling) {
             ),
 ```
 
-- [ ] Update the widget pin: 'names the price of the next tier when it is
+- [x] Update the widget pin: 'names the price of the next tier when it is
       open' expects `find.text('Next tier: 1 ingot.')`.
-- [ ] Green: app suite green.
-- [ ] Commit: `feat(app): the bench says the loss, and the price line is ingots-only`
+- [x] Green: app suite green.
+- [x] Commit: `feat(app): the bench says the loss, and the price line is ingots-only`
 
 ## Task 9: Verification — mutation table, band trail, goldens, hygiene
 
 **Files:** none (evidence-only; REPORT.md in the handoff directory).
 
-- [ ] **Mutation table** — one temporary edit at a time, named red set each
+- [x] **Mutation table** — one temporary edit at a time, named red set each
       time, `git checkout -- <file>` after each, and re-check
       `git status --porcelain` a beat later (auto-format re-dirty trap).
       Wrap suite commands in `bash -c` (the background runner may be fish).
@@ -1128,7 +1128,7 @@ int stateRollingBelow(int ceiling) {
         `craft_rooms_test.dart`. Expect red: broke-hero test, gold-untouched
         pins, and 'names the price of the next tier when it is open'.
       Report the whole table with greens named.
-- [ ] **Band trail**: `cd packages/content && flutter test
+- [x] **Band trail**: `cd packages/content && flutter test
       test/survivability_test.dart` — quote all five lines verbatim; they
       must be byte-identical to the Task 1 run (the bot never crafts).
 - [ ] **Goldens**: `golden_save_test.dart` green; the three pinned documents
