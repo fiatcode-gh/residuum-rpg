@@ -57,7 +57,7 @@ only. Measured in the resolved worktree 2026-09-07:
   (`curly_braces_in_flow_control_structures`) + `lib/src/engine/step.dart:467:9`
   (`curly_braces_in_flow_control_structures` — LIB/, blocked on ruling).
 - content (2): `test/content_validation_test.dart:1387:11` (`curly_braces`)
-  + `test/world_test.dart:868:16` (`no_leading_underscores_for_local_identifiers`,
+  - `test/world_test.dart:868:16` (`no_leading_underscores_for_local_identifiers`,
   rename `_spoilsOverManyDays` → `spoilsOverManyDays`, local scope only).
 
 The recon's "4 all in generator_items_test.dart" was wrong on both axes; this
@@ -233,7 +233,7 @@ is the real set. Total is still six, split 3 test + 1 lib + 2 test.
 
 ### Task 7: Verification + REPORT.md
 
-- [x] Close with flow-verification: quote every gate output into
+- [ ] Close with flow-verification: quote every gate output into
       `REPORT.md` in the channel directory; mirror the full verification
       block from the build prompt section 10, including the named M3/M4 skip
       and the step.dart ruling outcome; append done notice to `worker.md`.
