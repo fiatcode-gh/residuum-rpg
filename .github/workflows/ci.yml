@@ -30,7 +30,9 @@ jobs:
         run: flutter pub get
       - name: lockfile drift gate (the committed pin must survive pub get)
         working-directory: packages/${{ matrix.package }}
-        run: git diff --exit-code -- pubspec.lock
+        run: |
+          git ls-files --error-unmatch pubspec.lock
+          git diff --exit-code -- pubspec.lock
       - name: format
         working-directory: packages/${{ matrix.package }}
         run: dart format --set-exit-if-changed --output=none .
