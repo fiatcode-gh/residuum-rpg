@@ -34,6 +34,7 @@ class Profile extends Equatable {
     this.visit = 0,
     this.brewNumber = 1,
     this.itemNumber = 1,
+    this.craftRngState = 0,
   }) : equipment = Map.unmodifiable(equipment),
        skills = Map.unmodifiable(skills),
        inventory = List.unmodifiable(inventory),
@@ -114,6 +115,22 @@ class Profile extends Equatable {
   /// Starts at one, so the first item a hero ever picks up is `item-1`.
   final int itemNumber;
 
+  /// The exported state of the craft stream, the hero's own source of craft
+  /// rolls.
+  ///
+  /// **The town's first random decision needed a stream of its own.** A crawl
+  /// has two streams and the town none — paying a stated price is not a draw —
+  /// so the failure roll tempering and brewing now make draws from this one,
+  /// seeded off the world salt and never touched by the dungeon: a craft roll
+  /// made while camped cannot shift a resumed crawl off its roll-for-roll
+  /// guarantee.
+  ///
+  /// Starts at zero, which reads as never-drawn: the first draw constructs the
+  /// stream from `worldSeed ^ craftSeedSalt` and writes the advanced state
+  /// back. An old save without this key decodes to the default and lazy-seeds
+  /// — no migration, and every golden document stays byte-identical.
+  final int craftRngState;
+
   /// The gear and the training every derived hero stat reads from.
   Loadout get loadout => Loadout(equipment: equipment, skills: skills);
 
@@ -133,6 +150,7 @@ class Profile extends Equatable {
     Map<MaterialId, int>? materials,
     int? brewNumber,
     int? itemNumber,
+    int? craftRngState,
   }) => Profile(
     hero: hero ?? this.hero,
     worldSeed: worldSeed,
@@ -147,6 +165,7 @@ class Profile extends Equatable {
     materials: materials ?? this.materials,
     brewNumber: brewNumber ?? this.brewNumber,
     itemNumber: itemNumber ?? this.itemNumber,
+    craftRngState: craftRngState ?? this.craftRngState,
   );
 
   /// [Actor] is not a value object, so a profile's identity names the fields of
@@ -168,6 +187,7 @@ class Profile extends Equatable {
     materials,
     brewNumber,
     itemNumber,
+    craftRngState,
   ];
 
   @override
