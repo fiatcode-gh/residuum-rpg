@@ -68,7 +68,7 @@ is the real set. Total is still six, split 3 test + 1 lib + 2 test.
 **Files:** `docs/plans/chore-plan-M3CH.md`
 
 - [x] Write this plan.
-- [ ] Commit: `cd /var/home/dhemas/Development/Projects/fiatcode-gh/residuum-rpg/.worktrees/m3-chore && git add docs/plans/chore-plan-M3CH.md && git commit -m "docs: M3CH chore plan (CI, lints, lockfiles, README)"`
+- [x] Commit: `cd /var/home/dhemas/Development/Projects/fiatcode-gh/residuum-rpg/.worktrees/m3-chore && git add docs/plans/chore-plan-M3CH.md && git commit -m "docs: M3CH chore plan (CI, lints, lockfiles, README)"`
 
 ### Task 2: Core — analyzer config, lints, test fixes, lockfile
 
@@ -80,7 +80,7 @@ is the real set. Total is still six, split 3 test + 1 lib + 2 test.
       pubspec line 11).
 - [x] Write `packages/core/analysis_options.yaml` containing exactly:
       `include: package:lints/recommended.yaml` (done).
-- [ ] Brace the three ifs at lines 58/60/62 of
+- [x] Brace the three ifs at lines 58/60/62 of
       `packages/core/test/dungeon/generator_items_test.dart`:
       ```dart
       if (!floor.map.isWalkable(spawn)) {
@@ -93,7 +93,7 @@ is the real set. Total is still six, split 3 test + 1 lib + 2 test.
         problems.add('$spawn is on the stairs');
       }
       ```
-- [ ] STEP COMMIT (D116, own commit): stash the analyzer-config files
+- [x] STEP COMMIT (D116, own commit): stash the analyzer-config files
       (`git stash push --include-untracked -- packages/core/pubspec.yaml
       packages/core/analysis_options.yaml packages/content/pubspec.yaml
       packages/content/analysis_options.yaml`), then wrap the unbraced if at
@@ -108,14 +108,14 @@ is the real set. Total is still six, split 3 test + 1 lib + 2 test.
       `git add packages/core/lib/src/engine/step.dart && git commit -m "fix: brace the DrinkAction early return (lints/recommended curly_braces)"`
       then pop the stash. Band lines re-verified after the content commit
       (chronologically after the step.dart commit, satisfying D116.3).
-- [ ] Drop `.gitignore` lines 6–7 (`packages/core/pubspec.lock`,
+- [x] Drop `.gitignore` lines 6–7 (`packages/core/pubspec.lock`,
       `packages/content/pubspec.lock` — both lines in this task's commit).
-- [ ] `cd packages/core && dart pub get` fresh; verify
+- [x] `cd packages/core && dart pub get` fresh; verify
       `git check-ignore -v packages/core/pubspec.lock` prints nothing;
       `git add packages/core/pubspec.lock`.
-- [ ] Gates: `dart format --set-exit-if-changed --output=none .` exit 0;
+- [x] Gates: `dart format --set-exit-if-changed --output=none .` exit 0;
       `dart analyze` "No issues found!"; `flutter test` 835 strict-green.
-- [ ] Commit: `git add .gitignore packages/core && git commit -m "chore: core analyzer config (lints/recommended), lockfile, test-file lint fixes"`
+- [x] Commit: `git add .gitignore packages/core && git commit -m "chore: core analyzer config (lints/recommended), lockfile, test-file lint fixes"`
 
 ### Task 3: Content — analyzer config, lints, test fixes, lockfile
 
@@ -128,30 +128,30 @@ is the real set. Total is still six, split 3 test + 1 lib + 2 test.
       at pubspec line 16).
 - [x] Write `packages/content/analysis_options.yaml` containing exactly:
       `include: package:lints/recommended.yaml` (done).
-- [ ] Brace the if at `test/content_validation_test.dart:1387`:
+- [x] Brace the if at `test/content_validation_test.dart:1387`:
       ```dart
       if (weights.any((weight) => weight < 0)) {
         problems.add('negative weight');
       }
       ```
-- [ ] Rename `_spoilsOverManyDays` → `spoilsOverManyDays` in
+- [x] Rename `_spoilsOverManyDays` → `spoilsOverManyDays` in
       `test/world_test.dart` (declaration + every call site in the file).
-- [ ] `cd packages/content && dart pub get` fresh; verify
+- [x] `cd packages/content && dart pub get` fresh; verify
       `git check-ignore -v packages/content/pubspec.lock` prints nothing;
       `git add packages/content/pubspec.lock`.
-- [ ] Gates: `dart format --set-exit-if-changed --output=none .` exit 0;
+- [x] Gates: `dart format --set-exit-if-changed --output=none .` exit 0;
       `dart analyze` "No issues found!"; `flutter test` 573 strict-green;
       band line capture —
       `flutter test test/survivability_test.dart --reporter expanded` prints
       all five D79 lines verbatim: crypt 16/40, casting 40/40,
       greedy 16 / fleetfoot 13, sea-cave 26/40, keep 24/40.
-- [ ] Commit: `git add packages/content && git commit -m "chore: content analyzer config (lints/recommended), lockfile, test-file lint fixes"`
+- [x] Commit: `git add packages/content && git commit -m "chore: content analyzer config (lints/recommended), lockfile, test-file lint fixes"`
 
 ### Task 4: CI workflow
 
 **Files:** `.github/workflows/ci.yml`
 
-- [ ] Write `.github/workflows/ci.yml` exactly:
+- [x] Write `.github/workflows/ci.yml` exactly:
       ```yaml
       name: ci
 
@@ -191,16 +191,16 @@ is the real set. Total is still six, split 3 test + 1 lib + 2 test.
               working-directory: packages/${{ matrix.package }}
               run: ${{ matrix.package == 'app' && 'flutter test' || 'dart test' }}
       ```
-- [ ] Verify: `git grep -n "working-directory: \." .github/workflows/ci.yml`
+- [x] Verify: `git grep -n "working-directory: \." .github/workflows/ci.yml`
       prints nothing (no root-level invocation, D101); the exact pin
       `flutter-version: 3.47.2` present; no artifacts upload.
-- [ ] Commit: `git add .github && git commit -m "ci: per-package format/analyze/test gates on PRs to main"`
+- [x] Commit: `git add .github && git commit -m "ci: per-package format/analyze/test gates on PRs to main"`
 
 ### Task 5: README refresh
 
 **Files:** `README.md`, `packages/app/README.md`
 
-- [ ] Root README: replace "M2 complete", "Four skills" (nine:
+- [x] Root README: replace "M2 complete", "Four skills" (nine:
       arms, might, bulwark, fleetfoot, wrath, mending, binding, herbcraft,
       blacksmith), any hardcoded test count; current state describes M3
       shipped reality (magic/craft/world travel/multiple dungeons/saves/
@@ -209,31 +209,31 @@ is the real set. Total is still six, split 3 test + 1 lib + 2 test.
       enforced by CI on every PR to main; balance-band sentence stays,
       updated to the D79-pinned band; no CLAUDE.md touch, no comment-policy
       restatement.
-- [ ] App README: replace boilerplate with real prose — the Flutter shell
+- [x] App README: replace boilerplate with real prose — the Flutter shell
       (screens, BLoC, glyph renderer — no game rules), run via
       `cd packages/app && flutter run`, where tests live, CLAUDE.md pointer.
       No "Getting Started".
-- [ ] Verify: `grep -n "514\|Four skills\|M2 complete" README.md` prints
+- [x] Verify: `grep -n "514\|Four skills\|M2 complete" README.md` prints
       nothing; app README has no "Getting Started".
-- [ ] Commit: `git add README.md packages/app/README.md && git commit -m "docs: READMEs describe the M3 game that ships"`
+- [x] Commit: `git add README.md packages/app/README.md && git commit -m "docs: READMEs describe the M3 game that ships"`
 
 ### Task 6: Mutations M1/M2 (local, reverted after)
 
-- [ ] M1: un-brace one fixed if in `generator_items_test.dart`; expect core
+- [x] M1: un-brace one fixed if in `generator_items_test.dart`; expect core
       `dart analyze` exactly 1 finding (`curly_braces_in_flow_control_structures`,
       named line); controls: content + app analyze stay green. Record, then
       `git restore` the file.
-- [ ] M2: re-underscore the renamed local in `world_test.dart`; expect
+- [x] M2: re-underscore the renamed local in `world_test.dart`; expect
       content `dart analyze` exactly 1 finding
       (`no_leading_underscores_for_local_identifiers`); control: core analyze
       green. Record, then `git restore` the file.
-- [ ] M3/M4: NOT executable without a push — named skip "pending push
+- [x] M3/M4: NOT executable without a push — named skip "pending push
       authorization" per build prompt section 7; architect picks them up
       during verification.
 
 ### Task 7: Verification + REPORT.md
 
-- [ ] Close with flow-verification: quote every gate output into
+- [x] Close with flow-verification: quote every gate output into
       `REPORT.md` in the channel directory; mirror the full verification
       block from the build prompt section 10, including the named M3/M4 skip
       and the step.dart ruling outcome; append done notice to `worker.md`.
