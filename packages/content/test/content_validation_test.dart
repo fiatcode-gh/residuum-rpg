@@ -1383,8 +1383,9 @@ void _armouryAndLoot() {
           ...table.items.map((entry) => entry.weight),
           ...table.rarities.map((entry) => entry.weight),
         ];
-        if (weights.any((weight) => weight < 0))
+        if (weights.any((weight) => weight < 0)) {
           problems.add('negative weight');
+        }
         if (table.items.fold(0, (sum, entry) => sum + entry.weight) <= 0) {
           problems.add('no item can drop');
         }

@@ -463,8 +463,9 @@ GameEvent? _refuse(GameState state, GameAction action) {
       return _refusedBy(takeOffRefusal(state.equipment, state.inventory, slot));
     case DrinkAction(:final itemId):
       final item = _carried(state, itemId);
-      if (item == null)
+      if (item == null) {
         return const ActionRefused(reason: 'you are not carrying that');
+      }
       if (!item.base.isPotion) {
         return ActionRefused(reason: '${item.base.name} is not a drink');
       }

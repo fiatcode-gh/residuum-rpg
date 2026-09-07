@@ -54,12 +54,15 @@ void main() {
           problems.add('two items share a tile');
         }
         for (final spawn in floor.itemSpawns) {
-          if (!floor.map.isWalkable(spawn))
+          if (!floor.map.isWalkable(spawn)) {
             problems.add('$spawn is not walkable');
-          if (spawn == floor.heroSpawn)
+          }
+          if (spawn == floor.heroSpawn) {
             problems.add('$spawn is under the hero');
-          if (spawn == floor.stairsDown)
+          }
+          if (spawn == floor.stairsDown) {
             problems.add('$spawn is on the stairs');
+          }
         }
       }
 

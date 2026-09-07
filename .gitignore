@@ -3,8 +3,6 @@ docs/epic/
 .dart_tool/
 build/
 .superpowers/
-packages/core/pubspec.lock
-packages/content/pubspec.lock
 
 # Handover reports are working artifacts, never committed (global convention)
 docs/reports/
