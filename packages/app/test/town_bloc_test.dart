@@ -38,6 +38,9 @@ List<String> _shelfBefore = const [];
 /// The id bought in `act`, for `verify` to look for. Same reason.
 String _boughtId = '';
 
+/// The craft-stream state a batch test started from, for `verify` to replay.
+int _streamStart = 0;
+
 /// A crawl to hand a suspend event when the bloc has not opened one yet.
 GameState _anyRun() => startDungeonRunAt(cryptNode, _fresh());
 
@@ -1571,7 +1574,7 @@ void main() {
       build: () => TownBloc(
         profile: _fresh().copyWith(materials: const {MaterialId.ore: 2}),
       ),
-      act: (bloc) => bloc.add(const SmeltPressed()),
+      act: (bloc) => bloc.add(const SmeltPressed(1)),
       verify: (bloc) {
         expect(bloc.state.profile.materials, const {MaterialId.ingot: 1});
         expect(bloc.state.profile.skills[SkillId.blacksmith]!.xp, 1);
@@ -1583,7 +1586,7 @@ void main() {
       build: () => TownBloc(
         profile: _fresh().copyWith(materials: const {MaterialId.ore: 1}),
       ),
-      act: (bloc) => bloc.add(const SmeltPressed()),
+      act: (bloc) => bloc.add(const SmeltPressed(1)),
       verify: (bloc) {
         expect(bloc.state.notice?.sentence, 'that takes 2 ore');
         expect(bloc.state.profile.materials, const {MaterialId.ore: 1});
@@ -1601,7 +1604,7 @@ void main() {
           },
         ),
       ),
-      act: (bloc) => bloc.add(const SmeltPressed()),
+      act: (bloc) => bloc.add(const SmeltPressed(1)),
       verify: (bloc) {
         expect(bloc.state.notice?.sentence, 'Blacksmith rises to 1');
         expect(bloc.state.profile.skills[SkillId.blacksmith]!.level, 1);
@@ -1725,7 +1728,7 @@ void main() {
       build: () => TownBloc(
         profile: _fresh().copyWith(materials: const {MaterialId.herb: 3}),
       ),
-      act: (bloc) => bloc.add(const BrewPressed()),
+      act: (bloc) => bloc.add(const BrewPressed(1)),
       verify: (bloc) {
         expect(bloc.state.profile.inventory.last.base, healingPotion);
         expect(bloc.state.profile.inventory.last.id, 'brew-1');
@@ -1737,7 +1740,7 @@ void main() {
     blocTest<TownBloc, TownViewState>(
       'refuses in a sentence when there are not enough herbs',
       build: () => TownBloc(profile: _fresh()),
-      act: (bloc) => bloc.add(const BrewPressed()),
+      act: (bloc) => bloc.add(const BrewPressed(1)),
       verify: (bloc) {
         expect(bloc.state.notice?.sentence, 'that takes 3 herbs');
       },
@@ -1754,11 +1757,200 @@ void main() {
           ],
         ),
       ),
-      act: (bloc) => bloc.add(const BrewPressed()),
+      act: (bloc) => bloc.add(const BrewPressed(1)),
       verify: (bloc) {
         expect(bloc.state.notice?.sentence, 'you cannot carry any more');
       },
     );
+  });
+
+  group('counted work at the benches', () {
+    /// A craft-stream state whose next rolls land as [failed] wants, reading
+    /// `true` as a failed attempt. Level 9 Herbcraft brews at the 5% floor, so
+    /// the pattern holds no matter how many level-ups the batch itself earns.
+    int stateRolling(List<bool> failed) {
+      for (var state = 1; state < 2000000; state++) {
+        final rng = Rng.fromState(state);
+        var matches = true;
+        for (final want in failed) {
+          if ((rng.rollRange(0, 99) < 5) != want) {
+            matches = false;
+            break;
+          }
+        }
+        if (matches) return state;
+      }
+      throw StateError('no state rolls that pattern');
+    }
+
+    /// The stream state after replaying [rolls] advances from [state].
+    int replayed(int state, int rolls) {
+      final rng = Rng.fromState(state);
+      for (var i = 0; i < rolls; i++) {
+        rng.rollRange(0, 99);
+      }
+      return rng.state;
+    }
+
+    Profile brewer({
+      int herbs = 15,
+      Map<SkillId, SkillState>? skills,
+      int craftRngState = 0,
+    }) => _fresh().copyWith(
+      materials: {MaterialId.herb: herbs},
+      skills:
+          skills ??
+          {...untrainedSkills, SkillId.herbcraft: const SkillState(level: 9)},
+      craftRngState: craftRngState,
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'smelts the whole pending count in one press',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(materials: const {MaterialId.ore: 6}),
+      ),
+      act: (bloc) => bloc.add(const SmeltPressed(3)),
+      verify: (bloc) {
+        expect(bloc.state.profile.materials, const {MaterialId.ingot: 3});
+        expect(bloc.state.notice, isNull);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a smelt batch speaks one level-up for the whole batch',
+      build: () => TownBloc(
+        profile: _fresh().copyWith(
+          materials: const {MaterialId.ore: 4},
+          skills: {
+            ...untrainedSkills,
+            SkillId.blacksmith: SkillState(xp: xpToNext(0) - 1),
+          },
+        ),
+      ),
+      act: (bloc) => bloc.add(const SmeltPressed(2)),
+      verify: (bloc) {
+        expect(bloc.state.notice?.sentence, 'Blacksmith rises to 1');
+        expect(bloc.state.profile.skills[SkillId.blacksmith]!.level, 1);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a brew batch draws once per unit of work',
+      build: () {
+        _streamStart = stateRolling(const [false, false, false, false, false]);
+        return TownBloc(profile: brewer(craftRngState: _streamStart));
+      },
+      act: (bloc) => bloc.add(const BrewPressed(5)),
+      verify: (bloc) {
+        expect(bloc.state.notice, isNull);
+        expect(
+          bloc.state.profile.inventory
+              .where((item) => item.id.startsWith('brew-'))
+              .length,
+          5,
+        );
+        expect(bloc.state.profile.materials, isEmpty);
+        expect(bloc.state.profile.craftRngState, replayed(_streamStart, 5));
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'one failure of five says the loss in its own words',
+      build: () => TownBloc(
+        profile: brewer(
+          craftRngState: stateRolling([true, false, false, false, false]),
+        ),
+      ),
+      act: (bloc) => bloc.add(const BrewPressed(5)),
+      verify: (bloc) {
+        expect(bloc.state.notice?.sentence, 'the brew fails and takes 3 herbs');
+        expect(
+          bloc.state.profile.inventory
+              .where((item) => item.id.startsWith('brew-'))
+              .length,
+          4,
+        );
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'two failures of five say so in true counts',
+      build: () => TownBloc(
+        profile: brewer(
+          craftRngState: stateRolling([true, false, false, true, false]),
+        ),
+      ),
+      act: (bloc) => bloc.add(const BrewPressed(5)),
+      verify: (bloc) {
+        expect(
+          bloc.state.notice?.sentence,
+          '2 of 5 brews fail and take 6 herbs',
+        );
+        expect(
+          bloc.state.profile.inventory
+              .where((item) => item.id.startsWith('brew-'))
+              .length,
+          3,
+        );
+        expect(bloc.state.profile.materials, isEmpty);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a clean batch clears the notice',
+      build: () => TownBloc(
+        profile: brewer(herbs: 6, craftRngState: stateRolling([false, false])),
+      ),
+      act: (bloc) => bloc.add(const BrewPressed(2)),
+      verify: (bloc) {
+        expect(bloc.state.notice, isNull);
+      },
+    );
+
+    blocTest<TownBloc, TownViewState>(
+      'a level-up beside a loss does not override the loss',
+      build: () => TownBloc(
+        profile: brewer(
+          herbs: 6,
+          skills: {
+            ...untrainedSkills,
+            SkillId.herbcraft: SkillState(level: 9, xp: xpToNext(9) - 2),
+          },
+          craftRngState: stateRolling([true, false]),
+        ),
+      ),
+      act: (bloc) => bloc.add(const BrewPressed(2)),
+      verify: (bloc) {
+        expect(bloc.state.notice?.sentence, 'the brew fails and takes 3 herbs');
+        expect(bloc.state.profile.skills[SkillId.herbcraft]!.level, 10);
+      },
+    );
+
+    test('same seed and same pending count brew identically', () {
+      // arrange - two heroes, one seed, one stream state, one pending count
+      final start = stateRolling([true, false, false]);
+      final profile = brewer(craftRngState: start);
+      final one = TownBloc(profile: profile);
+      final other = TownBloc(profile: profile);
+
+      // act
+      one.add(const BrewPressed(3));
+      other.add(const BrewPressed(3));
+
+      // assert - a batch is n state-carried draws, the same every time
+      expect(
+        one.state.profile.craftRngState,
+        other.state.profile.craftRngState,
+      );
+      expect(
+        one.state.profile.inventory.map((item) => item.id),
+        other.state.profile.inventory.map((item) => item.id),
+      );
+      expect(one.state.profile.materials, other.state.profile.materials);
+      expect(one.state.notice?.sentence, other.state.notice?.sentence);
+      addTearDown(one.close);
+      addTearDown(other.close);
+    });
   });
 
   group('what the craft handlers must not drop', () {
@@ -1772,7 +1964,7 @@ void main() {
         bloc.add(
           RunSuspended(bloc.state.run ?? _anyRun(), day: 4, dungeon: cryptNode),
         );
-        bloc.add(const SmeltPressed());
+        bloc.add(const SmeltPressed(1));
       },
       verify: (bloc) {
         expect(bloc.state.suspended, isNotNull);
@@ -1792,7 +1984,7 @@ void main() {
       act: (bloc) {
         _boughtId = bloc.state.stock.first.id;
         bloc.add(BuyPressed(_boughtId));
-        bloc.add(const BrewPressed());
+        bloc.add(const BrewPressed(1));
       },
       verify: (bloc) {
         expect(bloc.state.merchant.bought, [_boughtId]);

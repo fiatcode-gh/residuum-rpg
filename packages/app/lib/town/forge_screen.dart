@@ -15,9 +15,24 @@ import 'town_style.dart';
 /// **Nothing on it is told apart by colour.** The materials are a mark, a word
 /// and a number; a row that cannot be worked carries the sentence saying why
 /// rather than going quietly grey; a temper is a word and a signed number in the
-/// item's own stat line.
-class ForgeScreen extends StatelessWidget {
+/// item's own stat line. And every row's price is on the row: a refusal never
+/// takes the next tier's cost down with it.
+///
+/// **The pending smelt count is view state, not game state.** It is a dial — a
+/// thing the player is about to do, not something that happened — so it lives
+/// in this screen's own [State] and dies with the screen; a screen that dies
+/// with its dial can corrupt no save and no resume. Committing calls the one
+/// existing core transaction once per unit of work, and the dial re-clamps
+/// whenever the state changes: anything that shrinks the ore pulls it down.
+class ForgeScreen extends StatefulWidget {
   const ForgeScreen({super.key});
+
+  @override
+  State<ForgeScreen> createState() => _ForgeScreenState();
+}
+
+class _ForgeScreenState extends State<ForgeScreen> {
+  int _pending = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +40,9 @@ class ForgeScreen extends StatelessWidget {
     return BlocBuilder<TownBloc, TownViewState>(
       builder: (context, state) {
         final workable = state.temperable;
+        final cap =
+            countOf(state.profile.materials, MaterialId.ore) ~/ smeltCost;
+        final pending = _pending.clamp(0, cap);
         return TownRoom(
           title: 'Forge',
           children: [
@@ -35,10 +53,19 @@ class ForgeScreen extends StatelessWidget {
             const Heading('Smelting'),
             Text('$smeltCost ore makes 1 ingot.', style: mono),
             const SizedBox(height: 10),
+            CountStepper(
+              value: pending,
+              cap: cap,
+              onChanged: (next) => setState(() => _pending = next),
+            ),
+            const SizedBox(height: 10),
             FilledButton(
-              onPressed: state.smeltReason == null
-                  ? () => bloc.add(const SmeltPressed())
-                  : null,
+              onPressed: pending <= 0
+                  ? null
+                  : () {
+                      bloc.add(SmeltPressed(pending));
+                      setState(() => _pending = 0);
+                    },
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
@@ -56,22 +83,32 @@ class ForgeScreen extends StatelessWidget {
             ),
             const Heading('The bench'),
             if (workable.isEmpty)
-              const NothingHere('You have no steel for the bench.'),
-            for (final item in workable)
-              _TemperRow(
-                item: item,
-                worn: _isWorn(state, item),
-                reason: state.temperReason(item.id),
-                onTemper: () => bloc.add(TemperPressed(item.id)),
-              ),
+              const NothingHere('You have no steel for the bench.')
+            else ...[
+              const Heading('Worn steel'),
+              if (state.wornSteel.isEmpty)
+                const NothingHere('You are wearing no steel.'),
+              for (final item in state.wornSteel)
+                _TemperRow(
+                  item: item,
+                  reason: state.temperReason(item.id),
+                  onTemper: () => bloc.add(TemperPressed(item.id)),
+                ),
+              const Heading('Carried steel'),
+              if (state.carriedSteel.isEmpty)
+                const NothingHere('You are carrying no steel.'),
+              for (final item in state.carriedSteel)
+                _TemperRow(
+                  item: item,
+                  reason: state.temperReason(item.id),
+                  onTemper: () => bloc.add(TemperPressed(item.id)),
+                ),
+            ],
           ],
         );
       },
     );
   }
-
-  static bool _isWorn(TownViewState state, Item item) =>
-      state.profile.equipment.values.any((worn) => worn.id == item.id);
 
   static String _capitalised(String text) =>
       '${text[0].toUpperCase()}${text.substring(1)}.';
@@ -79,9 +116,11 @@ class ForgeScreen extends StatelessWidget {
 
 /// One piece of steel the bench could work, and what the next tier costs.
 ///
-/// **Worn pieces say so in a word.** A hero looking at two Iron Swords needs to
-/// know which one is on their hip, and the marking column is already spoken for
-/// by the tier.
+/// **The row wears its price whether or not it can be worked.** The refusal
+/// sentence and the price line are two lines, not one slot: a row gated on
+/// Blacksmith still says what its next tier costs, because a hero saving up
+/// for the day they reach it reads the price from exactly this row. A row at
+/// the ceiling names no price, because there is no next tier to price.
 ///
 /// The button goes dead with the sentence beside it rather than disappearing,
 /// which is the inn's rule: a control that vanishes teaches nothing, and a hero
@@ -90,13 +129,11 @@ class ForgeScreen extends StatelessWidget {
 class _TemperRow extends StatelessWidget {
   const _TemperRow({
     required this.item,
-    required this.worn,
     required this.reason,
     required this.onTemper,
   });
 
   final Item item;
-  final bool worn;
   final String? reason;
   final VoidCallback onTemper;
 
@@ -114,12 +151,7 @@ class _TemperRow extends StatelessWidget {
                 width: 26,
                 child: Text(item.rarity.marking, style: mono),
               ),
-              Expanded(
-                child: Text(
-                  worn ? '${item.displayName} (worn)' : item.displayName,
-                  style: mono,
-                ),
-              ),
+              Expanded(child: Text(item.displayName, style: mono)),
               TextButton(
                 onPressed: reason == null ? onTemper : null,
                 child: const Text(
@@ -133,15 +165,20 @@ class _TemperRow extends StatelessWidget {
             padding: const EdgeInsets.only(left: 26),
             child: Text(statLine(item), style: monoDim),
           ),
-          Padding(
-            padding: const EdgeInsets.only(left: 26),
-            child: Text(
-              reason ??
-                  'Next tier: ${price!.ingots} '
-                      '${price.ingots == 1 ? 'ingot' : 'ingots'}.',
-              style: monoDim,
+          if (reason != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 26),
+              child: Text(reason!, style: monoDim),
             ),
-          ),
+          if (price != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 26),
+              child: Text(
+                'Next tier: ${price.ingots} '
+                '${price.ingots == 1 ? 'ingot' : 'ingots'}.',
+                style: monoDim,
+              ),
+            ),
         ],
       ),
     );

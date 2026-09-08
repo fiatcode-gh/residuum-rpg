@@ -49,7 +49,6 @@ class CharacterScreen extends StatelessWidget {
         return TownRoom(
           title: 'Character',
           children: [
-            Notice(state.notice),
             _Stats(
               attackMin: attackMin,
               attackMax: attackMax,

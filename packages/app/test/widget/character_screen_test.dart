@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/event_messages.dart' show skillName;
+import 'package:residuum_app/notice/notice.dart';
 import 'package:residuum_app/town/character_screen.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_app/world/world_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-/// A phone-sized viewport, which is where the screen has to read.
-const Size _phone = Size(360, 640);
+import '../support/phone.dart';
 
 Profile _hero({
   List<Item> inventory = const [],
@@ -52,8 +52,12 @@ Profile _stocked() => _hero(
 );
 
 /// The character room, under a real town bloc and a real world bloc.
-Future<TownBloc> _openRoom(WidgetTester tester, Profile profile) async {
-  final town = TownBloc(profile: profile);
+Future<TownBloc> _openRoom(
+  WidgetTester tester,
+  Profile profile, {
+  SaveNotice? notice,
+}) async {
+  final town = TownBloc(profile: profile, notice: notice);
   final world = WorldBloc(
     world: newWhereabouts(),
     worldSeed: profile.worldSeed,
@@ -80,12 +84,25 @@ Future<void> _scrollTo(WidgetTester tester, Finder finder) async {
 
 void main() {
   group('the town character room', () {
+    testWidgets("drops the town's notice", (tester) async {
+      // arrange
+      await onAPhone(tester);
+
+      // act
+      await _openRoom(
+        tester,
+        _stocked(),
+        notice: const SentenceNotice('the forge speaks'),
+      );
+
+      // assert - the notice is the town's, not the hero's: it stays where the
+      // work that spoke it happened, and does not follow the hero in here
+      expect(find.text('— the forge speaks.'), findsNothing);
+    });
+
     testWidgets('shows the derived stats the town knows', (tester) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
 
       // act
       await _openRoom(tester, _stocked());
@@ -101,10 +118,7 @@ void main() {
       tester,
     ) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
 
       // act
       await _openRoom(tester, _stocked());
@@ -119,10 +133,7 @@ void main() {
 
     testWidgets('shows the six worn slots in the pack order', (tester) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
 
       // act
       await _openRoom(tester, _stocked());
@@ -149,10 +160,7 @@ void main() {
       tester,
     ) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
 
       // act
       await _openRoom(tester, _stocked());
@@ -189,10 +197,7 @@ void main() {
 
     testWidgets('gives every material a row even at zero', (tester) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
 
       // act
       await _openRoom(tester, _stocked());
@@ -209,10 +214,7 @@ void main() {
 
     testWidgets('shows every skill with its level', (tester) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
 
       // act
       await _openRoom(tester, _stocked());
@@ -228,10 +230,7 @@ void main() {
 
     testWidgets('wears a carried piece through WearPressed', (tester) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
       final town = await _openRoom(
         tester,
         _hero(
@@ -257,10 +256,7 @@ void main() {
       tester,
     ) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
       final town = await _openRoom(tester, _stocked());
       expect(town.state.profile.equipment[EquipSlot.chest], isNotNull);
 
@@ -279,10 +275,7 @@ void main() {
 
     testWidgets('reads a carried book through ReadBookPressed', (tester) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
       final town = await _openRoom(tester, _stocked());
       expect(town.state.profile.knownSpells, isNot(contains('mend')));
 

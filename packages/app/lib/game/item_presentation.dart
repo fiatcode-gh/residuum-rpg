@@ -86,11 +86,28 @@ Map<PackSection, List<ItemStack>> packSections(List<Item> items) {
   final sorted = [...items]..sort(_byShelfOrder);
   return {
     for (final section in PackSection.values)
-      section: _stacked([
+      section: stacked([
         for (final item in sorted)
           if (_sectionOf(item) == section) item,
       ]),
   };
+}
+
+/// One row per stack: [items] grouped by [stackKey], first-seen order kept.
+///
+/// Public because the merchant's shelves read the same way the pack does — the
+/// hero cannot tell two identical items apart, so a list that shows them apart
+/// is showing noise. The row acts through its first item; a tap on a stack
+/// reaches exactly one of it.
+List<ItemStack> stacked(List<Item> items) {
+  final counts = <String, int>{};
+  final firsts = <String, Item>{};
+  for (final item in items) {
+    final key = stackKey(item);
+    counts[key] = (counts[key] ?? 0) + 1;
+    firsts[key] ??= item;
+  }
+  return [for (final key in firsts.keys) ItemStack(firsts[key]!, counts[key]!)];
 }
 
 /// One stat's change from wearing a piece instead of what is worn now.
@@ -175,14 +192,3 @@ int _byShelfOrder(Item one, Item other) {
 }
 
 int _slotRank(Item item) => item.base.slot?.index ?? EquipSlot.values.length;
-
-List<ItemStack> _stacked(List<Item> items) {
-  final counts = <String, int>{};
-  final firsts = <String, Item>{};
-  for (final item in items) {
-    final key = stackKey(item);
-    counts[key] = (counts[key] ?? 0) + 1;
-    firsts[key] ??= item;
-  }
-  return [for (final key in firsts.keys) ItemStack(firsts[key]!, counts[key]!)];
-}

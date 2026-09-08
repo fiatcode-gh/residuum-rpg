@@ -8,6 +8,7 @@ import 'package:residuum_app/world/world_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import '../support/phone.dart';
 import '../support/pumped_app.dart';
 import '../support/standing.dart';
 import '../support/world_nav.dart';
@@ -1148,7 +1149,7 @@ void main() {
       // arrange — a Pixel-sized surface rather than the test default, because
       // the default is wider than a phone and the row that overflowed on a
       // device fitted comfortably on it
-      await _onAPhone(tester);
+      await onAPhone(tester);
       final profile = newProfile(worldSeed: 909);
       final app = PumpedApp(
         _oneHero(
@@ -1174,7 +1175,7 @@ void main() {
       // arrange — a camp two floors into a sea-cave that rolled six, taken
       // through the store so the total comes back off `loadRun` rather than off
       // the state the test built
-      await _onAPhone(tester);
+      await onAPhone(tester);
       const worldSeed = 4242;
       final profile = newProfile(worldSeed: worldSeed);
       final delve = startDungeonRunAt(seaCave, profile);
@@ -1209,7 +1210,7 @@ void main() {
       tester,
     ) async {
       // arrange
-      await _onAPhone(tester);
+      await onAPhone(tester);
       final profile = newProfile(worldSeed: 909);
       final app = PumpedApp(
         _oneHero(
@@ -1235,17 +1236,6 @@ void main() {
       expect(delveDepth(seaCave, 909, 1), 4);
     });
   });
-}
-
-/// Sizes the test surface like the phone the device pass runs on.
-///
-/// The default surface is 800 by 600 logical pixels, which is wider than any
-/// phone in portrait — so a row that overflows on a Pixel fits on it, and the
-/// defect ships. Restored after the test so nothing else inherits the size.
-Future<void> _onAPhone(WidgetTester tester) async {
-  tester.view.physicalSize = const Size(1080, 2424);
-  tester.view.devicePixelRatio = 2.625;
-  addTearDown(tester.view.reset);
 }
 
 /// A world whose first day out of Stonebridge is a fight.

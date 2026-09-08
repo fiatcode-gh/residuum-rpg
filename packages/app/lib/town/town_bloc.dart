@@ -171,14 +171,24 @@ final class TakeOffPressed extends TownBlocEvent {
   final EquipSlot slot;
 }
 
-/// The player asked the forge to smelt.
+/// The forge asked to smelt [count] units of ore into ingots.
+///
+/// **The pending count travels on the press and is not game state.** It is a
+/// dial — a thing the player is about to do, held by the screen that drew it —
+/// so it dies with the screen and can corrupt no save and no resume. The commit
+/// performs [count] calls of the one existing transaction, one unit of work
+/// each, with its own draw where the rules draw.
 final class SmeltPressed extends TownBlocEvent {
-  const SmeltPressed();
+  const SmeltPressed(this.count);
+
+  final int count;
 }
 
-/// The player asked the alchemist to brew.
+/// The alchemist was asked to brew [count] potions, one attempt per unit.
 final class BrewPressed extends TownBlocEvent {
-  const BrewPressed();
+  const BrewPressed(this.count);
+
+  final int count;
 }
 
 /// The player asked the forge to work the item with this id up one tier.
@@ -326,18 +336,26 @@ class TownViewState {
   /// one the transaction would have refused with.
   String? temperReason(String itemId) => temperRefusal(profile, itemId);
 
-  /// Everything the forge could work, carried or worn, in a stated order.
+  /// The steel the hero is wearing that the bench could work, in slot order.
   ///
-  /// Worn pieces first and then carried ones, because the piece most worth
-  /// working is usually the one the hero has on — and within each half the
-  /// slot's own order, so a row keeps its place from one visit to the next.
-  List<Item> get temperable => [
+  /// **The bench says worn by position, not by a word.** Wearing a piece
+  /// removes it from the pack (`wear`'s `withoutFirst`), so a piece appears in
+  /// exactly one half, and the row's position is the whole sentence — the
+  /// `'(worn)'` suffix and the id-matching it needed retire.
+  List<Item> get wornSteel => [
     for (final slot in EquipSlot.values)
       if (profile.equipment[slot] case final Item worn)
         if (worn.base.takesTemper) worn,
+  ];
+
+  /// The steel the hero is carrying that the bench could work, in pack order.
+  List<Item> get carriedSteel => [
     for (final item in profile.inventory)
       if (item.base.takesTemper) item,
   ];
+
+  /// Everything the forge could work, worn first and then carried.
+  List<Item> get temperable => [...wornSteel, ...carriedSteel];
 
   /// Whether the camp has stood long enough on [day] for the residue to have
   /// taken it back.
@@ -761,12 +779,100 @@ class TownBloc extends Bloc<TownBlocEvent, TownViewState> {
   void _onReadBook(ReadBookPressed event, Emitter<TownViewState> emit) =>
       emit(_transacted(readBook(state.profile, event.itemId, spellsById)));
 
-  void _onSmelt(SmeltPressed event, Emitter<TownViewState> emit) =>
-      emit(_crafted(smeltOre(state.profile), SkillId.blacksmith));
+  void _onSmelt(SmeltPressed event, Emitter<TownViewState> emit) {
+    final before = state.profile;
+    var profile = before;
+    TownAnswer? refusal;
+    for (var i = 0; i < event.count; i++) {
+      final (after, answer) = smeltOre(profile);
+      if (answer != null) {
+        refusal = answer;
+        break;
+      }
+      profile = after;
+    }
+    if (profile == before && refusal != null) {
+      emit(_settled(profile, refusal));
+      return;
+    }
+    emit(
+      _levelled(before, profile, SkillId.blacksmith, _settled(profile, null)),
+    );
+  }
 
-  void _onBrew(BrewPressed event, Emitter<TownViewState> emit) => emit(
-    _crafted(brewPotion(state.profile, healingPotion), SkillId.herbcraft),
-  );
+  void _onBrew(BrewPressed event, Emitter<TownViewState> emit) {
+    final before = state.profile;
+    var profile = before;
+    var failures = 0;
+    TownAnswer? lastLoss;
+    TownAnswer? refusal;
+    for (var i = 0; i < event.count; i++) {
+      final (after, answer) = brewPotion(profile, healingPotion);
+      if (answer == null) {
+        profile = after;
+      } else if (answer is CraftLoss) {
+        failures++;
+        lastLoss = answer;
+        profile = after;
+      } else {
+        refusal = answer;
+        break;
+      }
+    }
+    if (failures > 0) {
+      emit(
+        _noticed(
+          _settled(profile, null),
+          SentenceNotice(_batchLoss(failures, event.count, lastLoss!)),
+        ),
+      );
+      return;
+    }
+    if (profile == before && refusal != null) {
+      emit(_settled(profile, refusal));
+      return;
+    }
+    emit(
+      _levelled(before, profile, SkillId.herbcraft, _settled(profile, null)),
+    );
+  }
+
+  /// The one sentence a brew batch says, built from the answers it received.
+  ///
+  /// **The town slot holds one sentence and a batch is n attempts** — a batch
+  /// of five can fail twice, and the slot still owes the truth in one line.
+  /// One failure renders the loss's own reason verbatim; more render `f of n
+  /// brews fail and take 3·f herbs`, the loss grammar's own voice with true
+  /// counts. The wording is a sanctioned UI-local one, like the bank's two
+  /// shared sentences — the words come from the loss grammar, never invented
+  /// per screen — and a level-up in the same batch does not override it: the
+  /// loss sentence wins the slot (D123 ruling 3).
+  String _batchLoss(int failures, int attempts, TownAnswer loss) =>
+      failures == 1
+      ? loss.reason
+      : '$failures of $attempts brews fail and take ${brewCost * failures} herbs';
+
+  /// [settled], with a skill level gained across the whole batch said out loud.
+  ///
+  /// The same sentence a single craft would have spoken — one comparison for
+  /// the whole batch, so five units of work do not speak five times.
+  TownViewState _levelled(
+    Profile before,
+    Profile after,
+    SkillId trained,
+    TownViewState settled,
+  ) {
+    final gained =
+        (after.skills[trained]?.level ?? 0) -
+        (before.skills[trained]?.level ?? 0);
+    if (gained <= 0) return settled;
+    return _noticed(
+      settled,
+      SentenceNotice(
+        '${skillName(trained)} rises to ${after.skills[trained]!.level}',
+      ),
+    );
+  }
 
   void _onTemper(TemperPressed event, Emitter<TownViewState> emit) => emit(
     _crafted(temperItem(state.profile, event.itemId), SkillId.blacksmith),
