@@ -21,6 +21,44 @@ const _vigour = Affix(
 Profile _townie() => Profile(hero: hero(const Position(0, 0)), worldSeed: 1);
 
 void main() {
+  group('the craft stream state', () {
+    test('defaults to never-drawn', () {
+      // arrange
+      final profile = _townie();
+
+      // act
+      final state = profile.craftRngState;
+
+      // assert - an old save without the key reads the same as a hero who
+      // has never crafted, so lazy seeding needs no migration
+      expect(state, 0);
+    });
+
+    test('copyWith carries it', () {
+      // arrange
+      final profile = _townie();
+
+      // act
+      final moved = profile.copyWith(craftRngState: 42);
+
+      // assert - copyWith is hand-rolled field by field, and a field it
+      // drops is a field every boundary silently loses (the D56 trap)
+      expect(moved.craftRngState, 42);
+      expect(moved, isNot(profile));
+    });
+
+    test('is part of the profile identity', () {
+      // arrange
+      final profile = _townie();
+
+      // act
+      final advanced = profile.copyWith(craftRngState: 7);
+
+      // assert
+      expect(advanced == profile, isFalse);
+    });
+  });
+
   group('Profile', () {
     test('derives its ceiling from the gear it wears', () {
       // arrange

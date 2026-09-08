@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 import '../craft/craft.dart';
 import '../craft/material.dart';
+import '../craft/risk.dart';
 import '../craft/temper.dart';
 import '../engine/game_state.dart';
 import '../loot/equip_slot.dart';
@@ -15,11 +16,14 @@ import 'profile.dart';
 
 /// Why the town would not do what was asked.
 ///
-/// The town's answer to [ActionRefused], and it exists for the same reason: a
-/// refused transaction changes nothing at all, so the caller gets a sentence
-/// rather than a value it cannot tell apart from success.
-class TownRefusal extends Equatable {
-  const TownRefusal(this.reason);
+/// The sentence a transaction answers in, refusal or loss alike.
+///
+/// **Two kinds, because they point opposite ways.** A [TownRefusal] changes
+/// nothing at all; a [CraftLoss] marks a craft the bench worked and lost —
+/// the profile it answers with is not the profile it arrived on. The screen
+/// reads only the sentence, which is why the pair shares one shape.
+sealed class TownAnswer extends Equatable {
+  const TownAnswer(this.reason);
 
   /// Written to be read aloud on the screen, not parsed.
   final String reason;
@@ -28,8 +32,32 @@ class TownRefusal extends Equatable {
   List<Object?> get props => [reason];
 
   @override
-  String toString() => 'TownRefusal($reason)';
+  String toString() => '$runtimeType($reason)';
 }
+
+/// The town's answer to [ActionRefused], and it exists for the same reason: a
+/// refused transaction changes nothing at all, so the caller gets a sentence
+/// rather than a value it cannot tell apart from success.
+class TownRefusal extends TownAnswer {
+  const TownRefusal(super.reason);
+}
+
+/// A craft the bench worked and lost: the material is gone, the result is not.
+///
+/// **Not a refusal, and the difference is the whole point.** A refusal changes
+/// nothing at all; a loss took exactly one material and trained the skill
+/// anyway, so a caller that treated it as a refusal would believe the pack
+/// unchanged. The bench says the sentence in the town slot, worded with the
+/// loss, never a colour.
+class CraftLoss extends TownAnswer {
+  const CraftLoss(super.reason);
+}
+
+/// A profile after a craft, and the sentence that answers for it, or null.
+///
+/// The craft transactions' shape, identical to [Transacted] but for the
+/// answer's kind: a craft can be refused before any work, or worked and lost.
+typedef Crafted = (Profile, TownAnswer?);
 
 /// A profile after a transaction, and the refusal that stopped it, or null.
 ///
@@ -214,20 +242,31 @@ Transacted smeltOre(Profile profile) {
 /// Refused in [brewRefusal]'s sentences — short of herbs, or a full pack in
 /// [buyItem]'s exact words, because a brewed potion runs into the same twenty
 /// slots a bought one does.
-Transacted brewPotion(Profile profile, BaseItem potion) {
+Crafted brewPotion(Profile profile, BaseItem potion) {
   final refusal = brewRefusal(profile);
   if (refusal != null) return (profile, TownRefusal(refusal));
+  final level = profile.skills[SkillId.herbcraft]?.level ?? 0;
+  final (drawn, failed) = craftDraw(profile, brewFailChance(level));
+  if (failed) {
+    return (
+      drawn.copyWith(
+        materials: withMaterial(drawn.materials, MaterialId.herb, -brewCost),
+        skills: trainedIn(drawn.skills, SkillId.herbcraft),
+      ),
+      CraftLoss('the brew fails and takes $brewCost herbs'),
+    );
+  }
   final brewed = Item(
-    id: 'brew-${profile.brewNumber}',
+    id: 'brew-${drawn.brewNumber}',
     base: potion,
     rarity: Rarity.common,
   );
   return (
-    profile.copyWith(
-      inventory: [...profile.inventory, brewed],
-      materials: withMaterial(profile.materials, MaterialId.herb, -brewCost),
-      brewNumber: profile.brewNumber + 1,
-      skills: trainedIn(profile.skills, SkillId.herbcraft),
+    drawn.copyWith(
+      inventory: [...drawn.inventory, brewed],
+      materials: withMaterial(drawn.materials, MaterialId.herb, -brewCost),
+      brewNumber: drawn.brewNumber + 1,
+      skills: trainedIn(drawn.skills, SkillId.herbcraft),
     ),
     null,
   );
@@ -235,9 +274,10 @@ Transacted brewPotion(Profile profile, BaseItem potion) {
 
 /// Works the carried or worn item [itemId] up one tier of temper.
 ///
-/// Spends the tier's ingots and gold, trains Blacksmith, and refuses in
+/// Spends the tier's ingots, trains Blacksmith, and refuses in
 /// [temperRefusal]'s sentences — which the screen reads too, so a dead row says
-/// exactly what the transaction would have said.
+/// exactly what the transaction would have said. Gold changes hands nowhere:
+/// the bench is a workshop, and the balancer is training, not the purse.
 ///
 /// **Applies to a worn piece as well as a carried one**, so the hero does not
 /// have to undress to visit the forge; the piece most worth working is usually
@@ -257,36 +297,49 @@ Transacted brewPotion(Profile profile, BaseItem potion) {
 /// match in the pack, else the first match among the worn, in that order. A
 /// legacy pack can hold duplicate ids, and one hammer blow does not temper
 /// every twin.
-Transacted temperItem(Profile profile, String itemId) {
+Crafted temperItem(Profile profile, String itemId) {
   final refusal = temperRefusal(profile, itemId);
   if (refusal != null) return (profile, TownRefusal(refusal));
   final item = heldItem(profile, itemId)!;
-  final worked = item.tempered(item.temper + 1);
   final price = temperPriceFrom(item.temper);
-  final at = profile.inventory.indexWhere((carried) => carried.id == itemId);
+  final level = profile.skills[SkillId.blacksmith]?.level ?? 0;
+  final (drawn, failed) = craftDraw(
+    profile,
+    temperFailChance(item.temper + 1, level),
+  );
+  if (failed) {
+    return (
+      drawn.copyWith(
+        materials: withMaterial(drawn.materials, MaterialId.ingot, -1),
+        skills: trainedIn(drawn.skills, SkillId.blacksmith),
+      ),
+      const CraftLoss('the temper fails and takes 1 ingot'),
+    );
+  }
+  final worked = item.tempered(item.temper + 1);
+  final at = drawn.inventory.indexWhere((carried) => carried.id == itemId);
   final inventory = at < 0
-      ? profile.inventory
-      : ([...profile.inventory]..[at] = worked);
+      ? drawn.inventory
+      : ([...drawn.inventory]..[at] = worked);
   final equipment = at >= 0
-      ? profile.equipment
+      ? drawn.equipment
       : {
-          for (final slot in profile.equipment.keys)
-            slot: profile.equipment[slot]!.id == itemId
+          for (final slot in drawn.equipment.keys)
+            slot: drawn.equipment[slot]!.id == itemId
                 ? worked
-                : profile.equipment[slot]!,
+                : drawn.equipment[slot]!,
         };
   return (
     _clamped(
-      profile.copyWith(
+      drawn.copyWith(
         inventory: inventory,
         equipment: equipment,
-        gold: profile.gold - price.gold,
         materials: withMaterial(
-          profile.materials,
+          drawn.materials,
           MaterialId.ingot,
           -price.ingots,
         ),
-        skills: trainedIn(profile.skills, SkillId.blacksmith),
+        skills: trainedIn(drawn.skills, SkillId.blacksmith),
       ),
     ),
     null,

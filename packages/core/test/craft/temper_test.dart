@@ -83,13 +83,11 @@ void main() {
       // act
       final gates = [for (final price in temperPrices) price.blacksmith];
       final ingots = [for (final price in temperPrices) price.ingots];
-      final gold = [for (final price in temperPrices) price.gold];
 
       // assert - a later tier is a real investment and the first is nearly
-      // free, which is xpToNext's shape applied to a purse
+      // free, which is xpToNext's shape applied to a workshop
       expect(gates, [0, 5, 10]);
       expect(ingots, [1, 2, 3]);
-      expect(gold, [10, 25, 50]);
     });
 
     test('the first tier asks for no training at all', () {
@@ -212,31 +210,30 @@ void main() {
       expect(refusal, 'that takes 2 ingots');
     });
 
-    test('refuses when the purse is short', () {
+    test('a broke hero with the iron in hand is not refused on the purse', () {
       // arrange
-      final profile = _hero(inventory: [_item('kit-1', _sword)], gold: 9);
+      final profile = _hero(inventory: [_item('kit-1', _sword)], gold: 0);
 
       // act
       final refusal = temperRefusal(profile, 'kit-1');
 
-      // assert
-      expect(refusal, 'you cannot afford that');
+      // assert - the balancer is training, not the purse: the bench is a
+      // workshop and gold changes hands nowhere
+      expect(refusal, isNull);
     });
 
-    test('answers the iron before the purse', () {
+    test('answers the iron, which is the whole price', () {
       // arrange
       final profile = _hero(
         inventory: [_item('kit-1', _sword)],
-        gold: 0,
         materials: const {},
       );
 
       // act
       final refusal = temperRefusal(profile, 'kit-1');
 
-      // assert - the order is the contract: iron is what the forge is for, and
-      // a hero told to go and find gold when they also have no ore would go and
-      // do the wrong thing
+      // assert - the order is the contract: iron is what the forge is *for*,
+      // and the only thing it asks for
       expect(refusal, 'that takes 1 ingot');
     });
 
