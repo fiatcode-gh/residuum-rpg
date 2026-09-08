@@ -37,12 +37,14 @@ void main() {
       await enterTown(tester, 'Stonebridge');
       await tester.tap(find.text('Bank'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Bank 10'));
+      await tester.tap(find.text('MAX').first);
+      await tester.pump();
+      await tester.tap(find.text('Bank gold'));
       await tester.pumpAndSettle();
 
       // assert
-      expect(app.saved!.profile.bankedGold, 10);
-      expect(app.saved!.profile.gold, 30);
+      expect(app.saved!.profile.bankedGold, 40);
+      expect(app.saved!.profile.gold, 0);
     });
 
     testWidgets('a document the hero is inside opens in the crawl', (

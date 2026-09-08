@@ -106,7 +106,9 @@ void main() {
       await enterTown(tester, 'Stonebridge');
       await tester.tap(find.text('Bank'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Bank all'));
+      await tester.tap(find.text('MAX').first);
+      await tester.pump();
+      await tester.tap(find.text('Bank gold'));
       await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();
