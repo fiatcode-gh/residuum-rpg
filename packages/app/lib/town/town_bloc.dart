@@ -326,18 +326,26 @@ class TownViewState {
   /// one the transaction would have refused with.
   String? temperReason(String itemId) => temperRefusal(profile, itemId);
 
-  /// Everything the forge could work, carried or worn, in a stated order.
+  /// The steel the hero is wearing that the bench could work, in slot order.
   ///
-  /// Worn pieces first and then carried ones, because the piece most worth
-  /// working is usually the one the hero has on — and within each half the
-  /// slot's own order, so a row keeps its place from one visit to the next.
-  List<Item> get temperable => [
+  /// **The bench says worn by position, not by a word.** Wearing a piece
+  /// removes it from the pack (`wear`'s `withoutFirst`), so a piece appears in
+  /// exactly one half, and the row's position is the whole sentence — the
+  /// `'(worn)'` suffix and the id-matching it needed retire.
+  List<Item> get wornSteel => [
     for (final slot in EquipSlot.values)
       if (profile.equipment[slot] case final Item worn)
         if (worn.base.takesTemper) worn,
+  ];
+
+  /// The steel the hero is carrying that the bench could work, in pack order.
+  List<Item> get carriedSteel => [
     for (final item in profile.inventory)
       if (item.base.takesTemper) item,
   ];
+
+  /// Everything the forge could work, worn first and then carried.
+  List<Item> get temperable => [...wornSteel, ...carriedSteel];
 
   /// Whether the camp has stood long enough on [day] for the residue to have
   /// taken it back.

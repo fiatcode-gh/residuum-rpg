@@ -175,25 +175,26 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
-    testWidgets('a gate-refused row hides the price of its next tier', (
-      tester,
-    ) async {
-      // arrange - a hero four Blacksmith levels short of the gate the next
-      // tier needs
-      final gated = _hero(
-        inventory: [_gear('drop-1', ironSword, temper: 1)],
-        materials: const {MaterialId.ingot: 9},
-        gold: 500,
-        blacksmith: 4,
-      );
-      // act
-      await _openRoom(tester, const ForgeScreen(), gated);
+    testWidgets(
+      'a refused forge row keeps the price of its next tier visible',
+      (tester) async {
+        // arrange - a hero four Blacksmith levels short of the gate the next
+        // tier needs
+        final gated = _hero(
+          inventory: [_gear('drop-1', ironSword, temper: 1)],
+          materials: const {MaterialId.ingot: 9},
+          gold: 500,
+          blacksmith: 4,
+        );
+        // act
+        await _openRoom(tester, const ForgeScreen(), gated);
 
-      // assert - today the reason wins the one sentence slot, and the price
-      // of the next tier is nowhere on the row
-      expect(find.text('that needs Blacksmith 5'), findsOneWidget);
-      expect(find.text('Next tier: 2 ingots.'), findsNothing);
-    });
+        // assert - the reason and the price are two lines, both visible: a hero
+        // four levels short can read exactly what the tier will cost
+        expect(find.text('that needs Blacksmith 5'), findsOneWidget);
+        expect(find.text('Next tier: 2 ingots.'), findsOneWidget);
+      },
+    );
 
     testWidgets('a ceiling row says so and names no price', (tester) async {
       // arrange - a sword already at the last tier
@@ -228,10 +229,13 @@ void main() {
       expect(find.text('Next tier: 1 ingot.'), findsOneWidget);
     });
 
-    testWidgets('a worn piece says it is worn', (tester) async {
-      // arrange
+    testWidgets('the bench splits into worn steel and carried steel', (
+      tester,
+    ) async {
+      // arrange - the same steel both ways: one on the hip, one in the pack
       final dressed = _hero(
         equipment: {EquipSlot.chest: _gear('drop-2', mailHauberk)},
+        inventory: [_gear('drop-1', ironSword)],
         materials: const {MaterialId.ingot: 2},
         gold: 500,
       );
@@ -239,8 +243,39 @@ void main() {
       // act
       await _openRoom(tester, const ForgeScreen(), dressed);
 
-      // assert - the marking column is spoken for by the tier, so worn is a word
-      expect(find.textContaining('(worn)'), findsOneWidget);
+      // assert - position says what a word used to: sections are the sentence
+      expect(find.text('WORN STEEL'), findsOneWidget);
+      expect(find.text('CARRIED STEEL'), findsOneWidget);
+      expect(find.textContaining('(worn)'), findsNothing);
+      final worn = find.textContaining('Mail Hauberk');
+      final carried = find.textContaining('Iron Sword');
+      expect(
+        tester.getTopLeft(worn).dy,
+        lessThan(tester.getTopLeft(find.text('CARRIED STEEL')).dy),
+      );
+      expect(
+        tester.getTopLeft(carried).dy,
+        greaterThan(tester.getTopLeft(find.text('CARRIED STEEL')).dy),
+      );
+    });
+
+    testWidgets('each half of the bench says so when it is empty', (
+      tester,
+    ) async {
+      // arrange - one carried sword, nothing worn
+      final armed = _hero(
+        inventory: [_gear('drop-1', ironSword)],
+        materials: const {MaterialId.ingot: 2},
+        gold: 500,
+      );
+
+      // act
+      await _openRoom(tester, const ForgeScreen(), armed);
+
+      // assert
+      expect(find.text('WORN STEEL'), findsOneWidget);
+      expect(find.text('You are wearing no steel.'), findsOneWidget);
+      expect(find.text('CARRIED STEEL'), findsOneWidget);
     });
 
     testWidgets('tempering from the screen shows the temper in the row', (
