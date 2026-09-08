@@ -33,52 +33,111 @@ Future<TownBloc> _openMerchant(
 Item _potion(String id) =>
     Item(id: id, base: healingPotion, rarity: Rarity.common);
 
+Item _cap(String id) => Item(id: id, base: leatherCap, rarity: Rarity.common);
+
 void main() {
   group('the merchant', () {
-    testWidgets('lists each shelf potion as its own row', (tester) async {
+    testWidgets('the shelf stacks identical potions into one row', (
+      tester,
+    ) async {
       // arrange - every shelf carries three identical potions
       await onAPhone(tester);
 
       // act
       await _openMerchant(tester, _hero());
 
-      // assert - three of the same thing are three rows today, each naming
-      // the same per-item price
+      // assert - one row, counted, at the per-item price
       final price = buyPriceOf(_potion('shelf-1'));
-      expect(find.text('Buy $price'), findsNWidgets(3));
-      expect(find.textContaining('×'), findsNothing);
+      expect(find.text('Buy $price'), findsOneWidget);
+      expect(find.textContaining('×3'), findsOneWidget);
     });
 
-    testWidgets('lists each sold item as its own row', (tester) async {
-      // arrange - three potions sold across the counter this visit
-      await onAPhone(tester);
-      final sold = [_potion('sold-1'), _potion('sold-2'), _potion('sold-3')];
-
-      // act
-      await _openMerchant(
-        tester,
-        _hero(),
-        merchant: MerchantVisit(sold: sold, town: newWhereabouts().at),
-      );
-
-      // assert
-      final price = sellPriceOf(_potion('sold-1'));
-      expect(find.text('Buy back $price'), findsNWidgets(3));
-      expect(find.textContaining('×'), findsNothing);
-    });
-
-    testWidgets('lists each carried item as its own row', (tester) async {
+    testWidgets('a stacked buy tap buys exactly one', (tester) async {
       // arrange
       await onAPhone(tester);
-      final pack = [_potion('kit-1'), _potion('kit-2'), _potion('kit-3')];
+      final bloc = await _openMerchant(tester, _hero());
+      final price = buyPriceOf(_potion('shelf-1'));
+
+      // act
+      await tester.tap(find.text('Buy $price'));
+      await tester.pumpAndSettle();
+
+      // assert - the stack thins by one, not by all of it
+      expect(bloc.state.gold, 500 - price);
+      expect(bloc.state.merchant.bought, hasLength(1));
+      expect(
+        bloc.state.stock.where((item) => item.base == healingPotion).length,
+        2,
+      );
+      expect(find.textContaining('×2'), findsOneWidget);
+    });
+
+    testWidgets(
+      'the sold list stacks and a buy-back tap buys back exactly one',
+      (tester) async {
+        // arrange - three caps sold across the counter this visit
+        await onAPhone(tester);
+        final sold = [_cap('sold-1'), _cap('sold-2'), _cap('sold-3')];
+        final bloc = await _openMerchant(
+          tester,
+          _hero(),
+          merchant: MerchantVisit(sold: sold, town: newWhereabouts().at),
+        );
+        final price = sellPriceOf(_cap('sold-1'));
+
+        // act
+        expect(find.textContaining('Leather Cap ×3'), findsOneWidget);
+        await tester.tap(find.text('Buy back $price'));
+        await tester.pumpAndSettle();
+
+        // assert - the stack thins by one
+        expect(bloc.state.gold, 500 - price);
+        expect(bloc.state.merchant.sold.length, 2);
+        expect(find.textContaining('Leather Cap ×2'), findsOneWidget);
+      },
+    );
+
+    testWidgets('the pack stacks and a sell tap sells exactly one', (
+      tester,
+    ) async {
+      // arrange
+      await onAPhone(tester);
+      final pack = [_cap('kit-1'), _cap('kit-2'), _cap('kit-3')];
+      final bloc = await _openMerchant(tester, _hero(inventory: pack));
+      final price = sellPriceOf(_cap('kit-1'));
+
+      // act
+      expect(find.textContaining('Leather Cap ×3'), findsOneWidget);
+      await tester.tap(find.text('Sell $price'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(bloc.state.profile.inventory.length, 2);
+      expect(bloc.state.merchant.sold.length, 1);
+      expect(find.textContaining('Leather Cap ×2'), findsOneWidget);
+    });
+
+    testWidgets('different steel keeps its own row at the per-item price', (
+      tester,
+    ) async {
+      // arrange - the temper is in the stack key, so a tempered sword is a
+      // different row at a different price
+      await onAPhone(tester);
+      final pack = [
+        Item(id: 'kit-1', base: ironSword, rarity: Rarity.common),
+        Item(id: 'kit-2', base: ironSword, rarity: Rarity.common).tempered(1),
+      ];
 
       // act
       await _openMerchant(tester, _hero(inventory: pack));
 
-      // assert
-      final price = sellPriceOf(_potion('kit-1'));
-      expect(find.text('Sell $price'), findsNWidgets(3));
-      expect(find.textContaining('×'), findsNothing);
+      // assert - two rows, two price words, no counting anywhere
+      expect(find.textContaining('×2'), findsNothing);
+      final plain = sellPriceOf(pack[0]);
+      final tempered = sellPriceOf(pack[1]);
+      expect(plain, isNot(tempered));
+      expect(find.text('Sell $plain'), findsOneWidget);
+      expect(find.text('Sell $tempered'), findsOneWidget);
     });
   });
 }
