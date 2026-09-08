@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/town/bank_screen.dart';
 import 'package:residuum_app/town/town_bloc.dart';
+import 'package:residuum_app/town/town_style.dart' show CountStepper;
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -28,22 +29,23 @@ Future<TownBloc> _openBank(WidgetTester tester, Profile profile) async {
 
 void main() {
   group('the bank', () {
-    testWidgets('moves gold through four fixed buttons', (tester) async {
+    testWidgets("the fixed gold buttons are gone", (tester) async {
       // arrange
       await onAPhone(tester);
-      final bloc = await _openBank(
+      await _openBank(
         tester,
         newProfile(worldSeed: 4).copyWith(gold: 25, bankedGold: 40),
       );
 
-      // assert - four buttons, a handful and the whole purse each way
+      // assert - the four fixed buttons retire; the dials carry the work
       for (final label in ['Bank 10', 'Bank all', 'Take 10', 'Take all']) {
-        expect(find.text(label), findsOneWidget, reason: label);
+        expect(find.text(label), findsNothing, reason: label);
       }
+      expect(find.byType(CountStepper), findsNWidgets(2));
     });
 
-    testWidgets('one press of Bank 10 banks exactly ten', (tester) async {
-      // arrange
+    testWidgets('one dial step banks exactly one step', (tester) async {
+      // arrange - the n = 1 shape
       await onAPhone(tester);
       final bloc = await _openBank(
         tester,
@@ -51,15 +53,19 @@ void main() {
       );
 
       // act
-      await tester.tap(find.text('Bank 10'));
+      await tester.tap(find.text('+').first);
+      await tester.pump();
+      await tester.tap(find.text('Bank gold'));
       await tester.pumpAndSettle();
 
       // assert
-      expect(bloc.state.gold, 15);
-      expect(bloc.state.bankedGold, 50);
+      expect(bloc.state.gold, 24);
+      expect(bloc.state.bankedGold, 41);
     });
 
-    testWidgets('one press of Take 10 takes exactly ten', (tester) async {
+    testWidgets('the gold dial banks exactly the dialed amount', (
+      tester,
+    ) async {
       // arrange
       await onAPhone(tester);
       final bloc = await _openBank(
@@ -67,16 +73,43 @@ void main() {
         newProfile(worldSeed: 4).copyWith(gold: 25, bankedGold: 40),
       );
 
-      // act
-      await tester.tap(find.text('Take 10'));
+      // act - dial three, commit once, and the core moves gold once
+      await tester.tap(find.text('+').first);
+      await tester.pump();
+      await tester.tap(find.text('+').first);
+      await tester.pump();
+      await tester.tap(find.text('+').first);
+      await tester.pump();
+      await tester.tap(find.text('Bank gold'));
       await tester.pumpAndSettle();
 
       // assert
-      expect(bloc.state.gold, 35);
-      expect(bloc.state.bankedGold, 30);
+      expect(bloc.state.gold, 22);
+      expect(bloc.state.bankedGold, 43);
     });
 
-    testWidgets('Bank all banks the whole purse in one press', (tester) async {
+    testWidgets('one take-dial step takes exactly one step', (tester) async {
+      // arrange
+      await onAPhone(tester);
+      final bloc = await _openBank(
+        tester,
+        newProfile(worldSeed: 4).copyWith(gold: 25, bankedGold: 40),
+      );
+
+      // act - the second stepper is the take side
+      await tester.tap(find.text('+').last);
+      await tester.pump();
+      await tester.tap(find.text('Take gold'));
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(bloc.state.gold, 26);
+      expect(bloc.state.bankedGold, 39);
+    });
+
+    testWidgets('MAX dials the whole side and the commit moves it in one', (
+      tester,
+    ) async {
       // arrange
       await onAPhone(tester);
       final bloc = await _openBank(
@@ -85,12 +118,42 @@ void main() {
       );
 
       // act
-      await tester.tap(find.text('Bank all'));
+      await tester.tap(find.text('MAX').first);
+      await tester.pump();
+      await tester.tap(find.text('Bank gold'));
       await tester.pumpAndSettle();
 
       // assert
       expect(bloc.state.gold, 0);
       expect(bloc.state.bankedGold, 65);
+    });
+
+    testWidgets('an empty side keeps its sentence beside its dead commit', (
+      tester,
+    ) async {
+      // arrange
+      await onAPhone(tester);
+      await _openBank(tester, _hero());
+
+      // assert
+      expect(find.text(purseIsShort), findsOneWidget);
+      expect(find.text(vaultIsShort), findsOneWidget);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Bank gold'),
+            )
+            .onPressed,
+        isNull,
+      );
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Take gold'),
+            )
+            .onPressed,
+        isNull,
+      );
     });
   });
 }
