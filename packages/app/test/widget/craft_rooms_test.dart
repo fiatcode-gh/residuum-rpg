@@ -5,6 +5,7 @@ import 'package:residuum_app/town/alchemist_screen.dart';
 import 'package:residuum_app/town/forge_screen.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_app/town/town_screen.dart';
+import 'package:residuum_app/notice/notice.dart';
 import 'package:residuum_app/world/world_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
@@ -240,6 +241,32 @@ void main() {
 
       // assert
       expect(find.text('You have no steel for the bench.'), findsOneWidget);
+    });
+
+    testWidgets("the forge still carries the town's notice", (tester) async {
+      // arrange - the notice mechanism stays on the town screens; only the
+      // character screen stops reading it
+      final bloc = TownBloc(
+        profile: _hero(),
+        notice: const SentenceNotice('the fire is banked'),
+      );
+      final world = WorldBloc(world: newWhereabouts(), worldSeed: 4);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider.value(value: bloc),
+              BlocProvider.value(value: world),
+            ],
+            child: const ForgeScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(find.text('— the fire is banked.'), findsOneWidget);
+      addTearDown(bloc.close);
     });
 
     testWidgets('a dead row carries the reason rather than going grey', (
