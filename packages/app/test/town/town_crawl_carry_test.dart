@@ -48,8 +48,8 @@ void main() {
         (bloc) => const TakeOffPressed(EquipSlot.mainHand),
       ),
       ('reading a book', (bloc) => ReadBookPressed(_firstCarried(bloc).id)),
-      ('a smelt', (bloc) => const SmeltPressed()),
-      ('a brew', (bloc) => const BrewPressed()),
+      ('a smelt', (bloc) => const SmeltPressed(1)),
+      ('a brew', (bloc) => const BrewPressed(1)),
       ('a temper', (bloc) => TemperPressed(_firstCarried(bloc).id)),
       (
         'a rumor bought',

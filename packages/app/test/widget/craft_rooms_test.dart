@@ -14,6 +14,25 @@ import '../support/phone.dart';
 Item _gear(String id, BaseItem base, {int temper = 0}) =>
     Item(id: id, base: base, rarity: Rarity.common).tempered(temper);
 
+/// A craft-stream state whose next [brews] rolls all succeed at the 5% floor.
+///
+/// The 5% floor arrives at Herbcraft 8, so the pattern holds however many
+/// level-ups the batch itself earns.
+int _stateBrewing(int brews) {
+  for (var state = 1; state < 2000000; state++) {
+    final rng = Rng.fromState(state);
+    var clean = true;
+    for (var i = 0; i < brews; i++) {
+      if (rng.rollRange(0, 99) < 5) {
+        clean = false;
+        break;
+      }
+    }
+    if (clean) return state;
+  }
+  throw StateError('no state brews clean');
+}
+
 Profile _hero({
   List<Item> inventory = const [],
   Equipment equipment = const {},
@@ -120,21 +139,93 @@ void main() {
       expect(find.textContaining('takes 2 ore'), findsOneWidget);
     });
 
-    testWidgets('one press of Smelt spends exactly one unit', (tester) async {
+    testWidgets('one press commits exactly the pending count', (tester) async {
       // arrange
       final ready = _hero(materials: const {MaterialId.ore: 4});
       final bloc = await _openRoom(tester, const ForgeScreen(), ready);
 
-      // act
+      // act - dial one and commit: the n = 1 shape
+      await tester.tap(find.text('+'));
+      await tester.pump();
       await tester.tap(find.widgetWithText(FilledButton, 'Smelt'));
       await tester.pumpAndSettle();
 
-      // assert - one press is one unit of work: four ore make two ingots only
-      // through two presses
+      // assert
       expect(bloc.state.profile.materials, const {
         MaterialId.ore: 2,
         MaterialId.ingot: 1,
       });
+    });
+
+    testWidgets('one press commits the whole pending count', (tester) async {
+      // arrange
+      final ready = _hero(materials: const {MaterialId.ore: 4});
+      final bloc = await _openRoom(tester, const ForgeScreen(), ready);
+
+      // act - dial two, commit once
+      await tester.tap(find.text('+'));
+      await tester.pump();
+      await tester.tap(find.text('+'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Smelt'));
+      await tester.pumpAndSettle();
+
+      // assert - the commit spends the whole pending count as one-attempt-per-
+      // unit work, not one unit
+      expect(bloc.state.profile.materials, const {MaterialId.ingot: 2});
+    });
+
+    testWidgets('the smelt stepper cannot dial past the ore', (tester) async {
+      // arrange - five ore make two ingots, and no more
+      final ready = _hero(materials: const {MaterialId.ore: 5});
+      await _openRoom(tester, const ForgeScreen(), ready);
+
+      // act
+      await tester.tap(find.text('+'));
+      await tester.pump();
+      await tester.tap(find.text('+'));
+      await tester.pump();
+      await tester.tap(find.text('+'));
+      await tester.pump();
+
+      // assert - the cap clamps at the actual resources: 5 ore ÷ 2 = 2
+      expect(find.text('2'), findsOneWidget);
+    });
+
+    testWidgets('MAX takes the count to the cap', (tester) async {
+      // arrange - seven ore make three ingots
+      final ready = _hero(materials: const {MaterialId.ore: 7});
+      await _openRoom(tester, const ForgeScreen(), ready);
+
+      // act
+      await tester.tap(find.text('MAX'));
+      await tester.pump();
+
+      // assert
+      expect(find.text('3'), findsOneWidget);
+    });
+
+    testWidgets('a held + button advances the count', (tester) async {
+      // arrange - a hold has room to repeat
+      final ready = _hero(materials: const {MaterialId.ore: 40});
+      await _openRoom(tester, const ForgeScreen(), ready);
+
+      // act - press down, then pump the cadence. Inside the room's scroll
+      // view the tap recogniser first rides out its own press timeout, then
+      // the dial's hold window runs: 100ms to the step, 400ms to the first
+      // repeat, 120ms to the next.
+      final plus = tester.getCenter(find.text('+'));
+      final gesture = await tester.startGesture(plus);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('1'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('2'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 120));
+      await gesture.up();
+      await tester.pump();
+
+      // assert
+      expect(find.text('3'), findsOneWidget);
     });
 
     testWidgets('says there is no steel for the bench when there is none', (
@@ -332,18 +423,55 @@ void main() {
       expect(find.textContaining('takes 3 herbs'), findsOneWidget);
     });
 
-    testWidgets('one press of Brew makes exactly one potion', (tester) async {
+    testWidgets('one press commits exactly the pending count', (tester) async {
       // arrange
       final ready = _hero(materials: const {MaterialId.herb: 9});
       final bloc = await _openRoom(tester, const AlchemistScreen(), ready);
+
+      // act - dial one and commit
+      await tester.tap(find.text('+'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Brew'));
+      await tester.pumpAndSettle();
+
+      // assert - one attempt: three herbs, one draw, one potion
+      expect(bloc.state.profile.inventory.single.base, healingPotion);
+      expect(bloc.state.profile.materials, const {MaterialId.herb: 6});
+    });
+
+    testWidgets("the brew cap clamps at the pack's room", (tester) async {
+      // arrange - herbs for six, room for three
+      final cramped =
+          _hero(
+            materials: const {MaterialId.herb: 18},
+            inventory: [
+              for (var made = 0; made < 17; made++)
+                _gear('kit-$made', healingPotion),
+            ],
+          )
+          // a craft stream whose next three rolls all brew clean
+          .copyWith(craftRngState: _stateBrewing(3));
+      final bloc = await _openRoom(tester, const AlchemistScreen(), cramped);
+
+      // act
+      await tester.tap(find.text('MAX'));
+      await tester.pump();
+
+      // assert - MAX dials three, and the dial says so before the commit
+      expect(find.text('3'), findsOneWidget);
 
       // act
       await tester.tap(find.widgetWithText(FilledButton, 'Brew'));
       await tester.pumpAndSettle();
 
-      // assert - one press is one attempt: three herbs, one draw, one potion
-      expect(bloc.state.profile.inventory.single.base, healingPotion);
-      expect(bloc.state.profile.materials, const {MaterialId.herb: 6});
+      // assert - the commit succeeds three, and the pack refusal never speaks
+      expect(
+        bloc.state.profile.inventory
+            .where((item) => item.id.startsWith('brew-'))
+            .length,
+        3,
+      );
+      expect(bloc.state.notice, isNull);
     });
 
     testWidgets('says what the shelf would charge for the same potion', (

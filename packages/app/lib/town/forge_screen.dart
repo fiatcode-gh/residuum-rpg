@@ -17,8 +17,22 @@ import 'town_style.dart';
 /// rather than going quietly grey; a temper is a word and a signed number in the
 /// item's own stat line. And every row's price is on the row: a refusal never
 /// takes the next tier's cost down with it.
-class ForgeScreen extends StatelessWidget {
+///
+/// **The pending smelt count is view state, not game state.** It is a dial — a
+/// thing the player is about to do, not something that happened — so it lives
+/// in this screen's own [State] and dies with the screen; a screen that dies
+/// with its dial can corrupt no save and no resume. Committing calls the one
+/// existing core transaction once per unit of work, and the dial re-clamps
+/// whenever the state changes: anything that shrinks the ore pulls it down.
+class ForgeScreen extends StatefulWidget {
   const ForgeScreen({super.key});
+
+  @override
+  State<ForgeScreen> createState() => _ForgeScreenState();
+}
+
+class _ForgeScreenState extends State<ForgeScreen> {
+  int _pending = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +40,9 @@ class ForgeScreen extends StatelessWidget {
     return BlocBuilder<TownBloc, TownViewState>(
       builder: (context, state) {
         final workable = state.temperable;
+        final cap =
+            countOf(state.profile.materials, MaterialId.ore) ~/ smeltCost;
+        final pending = _pending.clamp(0, cap);
         return TownRoom(
           title: 'Forge',
           children: [
@@ -36,10 +53,19 @@ class ForgeScreen extends StatelessWidget {
             const Heading('Smelting'),
             Text('$smeltCost ore makes 1 ingot.', style: mono),
             const SizedBox(height: 10),
+            CountStepper(
+              value: pending,
+              cap: cap,
+              onChanged: (next) => setState(() => _pending = next),
+            ),
+            const SizedBox(height: 10),
             FilledButton(
-              onPressed: state.smeltReason == null
-                  ? () => bloc.add(const SmeltPressed())
-                  : null,
+              onPressed: pending <= 0
+                  ? null
+                  : () {
+                      bloc.add(SmeltPressed(pending));
+                      setState(() => _pending = 0);
+                    },
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
