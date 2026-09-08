@@ -84,7 +84,7 @@ Future<void> _scrollTo(WidgetTester tester, Finder finder) async {
 
 void main() {
   group('the town character room', () {
-    testWidgets("carries the town's notice", (tester) async {
+    testWidgets("drops the town's notice", (tester) async {
       // arrange
       await onAPhone(tester);
 
@@ -95,8 +95,9 @@ void main() {
         notice: const SentenceNotice('the forge speaks'),
       );
 
-      // assert - today the town's last notice follows the hero in here
-      expect(find.text('— the forge speaks.'), findsOneWidget);
+      // assert - the notice is the town's, not the hero's: it stays where the
+      // work that spoke it happened, and does not follow the hero in here
+      expect(find.text('— the forge speaks.'), findsNothing);
     });
 
     testWidgets('shows the derived stats the town knows', (tester) async {
