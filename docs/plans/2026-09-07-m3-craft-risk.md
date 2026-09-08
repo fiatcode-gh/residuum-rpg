@@ -1134,10 +1134,10 @@ int stateRollingBelow(int ceiling) {
 - [ ] **Goldens**: `golden_save_test.dart` green; the three pinned documents
       byte-identical (they are string constants — the green test is the
       proof).
-- [ ] **Counts**: all three packages green with strict counts from result
+- [x] **Counts**: all three packages green with strict counts from result
       files (hidden-filter arithmetic), compared against the Task 1 baseline.
 - [ ] **Format/analyze** ×3: per package, `dart pub get` then
       `dart format --output=none --set-exit-if-changed lib test` then
       `dart analyze` — clean.
-- [ ] Write `REPORT.md` in the handoff directory mirroring the verification
+- [x] Write `REPORT.md` in the handoff directory mirroring the verification
       block, append the done notice to `worker.md`, and stop.
