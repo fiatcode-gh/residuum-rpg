@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../notice/notice.dart';
@@ -247,6 +249,113 @@ class Notice extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 10),
       child: Text('— ${notice!.sentence}.', style: monoDim),
+    );
+  }
+}
+
+/// A counted control: − / value / + / MAX, with tap-and-hold auto-repeat.
+///
+/// Counted work is dialled here and committed elsewhere — the stepper holds no
+/// power of its own, and every change it makes is a callback the owning screen
+/// turns into its pending count. The edges are dead, not gone: − at zero and
+/// + and MAX at the cap stay on the row, dimmed, so the control never vanishes
+/// and never needs a sentence of its own — the value word says where the dial
+/// stands. Glyphs, a number and a word, so the control reads in greyscale and
+/// reads aloud.
+class CountStepper extends StatefulWidget {
+  const CountStepper({
+    required this.value,
+    required this.cap,
+    required this.onChanged,
+    super.key,
+  });
+
+  /// The count as it stands. The owner owns it; this renders and moves it.
+  final int value;
+
+  /// What the actual resources allow. The dial never offers past it.
+  final int cap;
+
+  final ValueChanged<int> onChanged;
+
+  @override
+  State<CountStepper> createState() => _CountStepperState();
+}
+
+class _CountStepperState extends State<CountStepper> {
+  /// How long a held edge waits before repeating, and the cadence after.
+  ///
+  /// **Constants, not feel.** A widget test pumps the same clock a thumb
+  /// rides (`tester.pump`), so the cadence is part of the widget's contract
+  /// and CI never waits on wall-clock time.
+  static const Duration holdFirstRepeat = Duration(milliseconds: 400);
+  static const Duration holdCadence = Duration(milliseconds: 120);
+
+  Timer? _repeat;
+
+  @override
+  void dispose() {
+    _repeat?.cancel();
+    super.dispose();
+  }
+
+  void _step(int by) {
+    final next = (widget.value + by).clamp(0, widget.cap);
+    if (next != widget.value) widget.onChanged(next);
+  }
+
+  void _pressDown(int by) {
+    _step(by);
+    _repeat?.cancel();
+    _repeat = Timer(holdFirstRepeat, () {
+      _step(by);
+      _repeat = Timer.periodic(holdCadence, (_) => _step(by));
+    });
+  }
+
+  void _release() {
+    _repeat?.cancel();
+    _repeat = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget edge(String glyph, int by) {
+      final dead = widget.value + by < 0 || widget.value + by > widget.cap;
+      final glyph_ = Text(glyph, style: dead ? monoDim : mono);
+      return GestureDetector(
+        onTapDown: dead ? null : (_) => _pressDown(by),
+        onTapUp: dead ? null : (_) => _release(),
+        onTapCancel: dead ? null : _release,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: glyph_,
+        ),
+      );
+    }
+
+    final capped = widget.value >= widget.cap;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        edge('−', -1),
+        SizedBox(
+          width: 56,
+          child: Text(
+            '${widget.value}',
+            textAlign: TextAlign.center,
+            style: mono,
+          ),
+        ),
+        edge('+', 1),
+        GestureDetector(
+          onTapDown: capped ? null : (_) => widget.onChanged(widget.cap),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            child: Text('MAX', style: capped ? monoDim : mono),
+          ),
+        ),
+      ],
     );
   }
 }
