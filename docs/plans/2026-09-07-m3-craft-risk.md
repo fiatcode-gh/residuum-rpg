@@ -145,8 +145,9 @@ stream.
 
       plus the `copyWith` parameter and passthrough, and `craftRngState`
       appended to `props`.
+
 - [x] Run the file's tests, then the whole core suite — green.
-- [x] `cd . && git add packages/core/... ` — commit:
+- [x] `cd . && git add packages/core/...` — commit:
       `cd /var/home/dhemas/Development/Projects/fiatcode-gh/residuum-rpg/.worktrees/m3-craft-risk && git add packages/core && git commit -m "feat(core): craftRngState rides the profile"`
 
 ## Task 3: The odds table and the craft draw
@@ -359,6 +360,7 @@ int _tabled(int start, int levelsPast) => max(5, start - 2 * levelsPast);
 ```
 
       and add `export 'src/craft/risk.dart';` to `core.dart`.
+
 - [x] Green: file test, then the whole core suite.
 - [x] Commit: `feat(core): the craft odds table and the craft stream`
 
@@ -392,6 +394,7 @@ int _tabled(int start, int levelsPast) => max(5, start - 2 * levelsPast);
       (keep 'answers the iron before the purse' but drop its `gold: 0`
       significance — rename to 'answers the iron, which is the whole price';
       the sentence stays 'that takes 1 ingot'.)
+
 - [x] Red: `cd packages/core && flutter test test/craft/temper_test.dart`.
 - [x] Minimal implementation in `temper.dart`:
       `TemperPrice` loses `gold` (field, constructor parameter, dartdoc);
@@ -410,6 +413,7 @@ const List<TemperPrice> temperPrices = [
       the table's group dartdoc is rewritten to the new economics (twelve ore
       takes a piece all the way — several delves' worth of looking down — with
       no purse in the sentence).
+
 - [x] Green: `temper_test.dart` green; core suite may still redden in
       `craft_shop_test.dart` (pinned gold spending) — that is Task 5's
       territory; do not leave the suite red across a commit, so Task 4 and
@@ -607,6 +611,7 @@ int stateRollingBelow(int ceiling) {
       carried weapon, spending the iron and the gold' drops the
       `expect(bloc.state.profile.gold, 90)` line and is renamed 'tempers a
       carried weapon, spending the iron'.
+
 - [x] Red: `cd packages/core && flutter test test/town/craft_shop_test.dart`.
 - [x] Minimal implementation in `town.dart`:
 
@@ -750,6 +755,7 @@ Crafted brewPotion(Profile profile, BaseItem potion) {
       `const CraftLoss('the brew fails and takes $brewCost herbs')` — a
       const constructor cannot take an interpolated literal, so this one is
       `CraftLoss('the brew fails and takes $brewCost herbs')` (non-const).
+
 - [x] Green: whole core suite green.
 - [x] Commit: `feat(core): a temper or a brew can fail, and it costs one material`
 
@@ -983,6 +989,7 @@ void main() {
       the salt's evidence, not a red-green target; if it reddens, the salt
       collides and a new literal is chosen and the sweep re-run. Record the
       result either way.
+
 - [x] Red: the codec tests redden before the codec change.
 - [x] Minimal implementation in `profile_codec.dart`:
       encode gains, after `'brewNumber': profile.brewNumber,`:
