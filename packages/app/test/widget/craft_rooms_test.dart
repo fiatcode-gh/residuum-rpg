@@ -37,6 +37,7 @@ Future<TownBloc> _openRoom(
   Widget room,
   Profile profile,
 ) async {
+  await onAPhone(tester);
   final town = TownBloc(profile: profile);
   final world = WorldBloc(
     world: newWhereabouts(),
@@ -60,9 +61,6 @@ Future<TownBloc> _openRoom(
 void main() {
   group('the town door column', () {
     testWidgets('offers all seven doors on a phone', (tester) async {
-      // arrange
-      await onAPhone(tester);
-
       // act
       await _openRoom(tester, const TownScreen(), _hero());
 
@@ -188,8 +186,6 @@ void main() {
         gold: 500,
         blacksmith: 4,
       );
-      await onAPhone(tester);
-
       // act
       await _openRoom(tester, const ForgeScreen(), gated);
 
@@ -207,8 +203,6 @@ void main() {
         gold: 500,
         blacksmith: 10,
       );
-      await onAPhone(tester);
-
       // act
       await _openRoom(tester, const ForgeScreen(), done);
 

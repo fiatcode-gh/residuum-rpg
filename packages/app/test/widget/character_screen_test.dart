@@ -11,9 +11,6 @@ import 'package:residuum_core/core.dart';
 
 import '../support/phone.dart';
 
-/// A phone-sized viewport, which is where the screen has to read.
-const Size _phone = Size(360, 640);
-
 Profile _hero({
   List<Item> inventory = const [],
   Equipment equipment = const {},
@@ -104,10 +101,7 @@ void main() {
 
     testWidgets('shows the derived stats the town knows', (tester) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
 
       // act
       await _openRoom(tester, _stocked());
@@ -123,10 +117,7 @@ void main() {
       tester,
     ) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
 
       // act
       await _openRoom(tester, _stocked());
@@ -141,10 +132,7 @@ void main() {
 
     testWidgets('shows the six worn slots in the pack order', (tester) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
 
       // act
       await _openRoom(tester, _stocked());
@@ -171,10 +159,7 @@ void main() {
       tester,
     ) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
 
       // act
       await _openRoom(tester, _stocked());
@@ -211,10 +196,7 @@ void main() {
 
     testWidgets('gives every material a row even at zero', (tester) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
 
       // act
       await _openRoom(tester, _stocked());
@@ -231,10 +213,7 @@ void main() {
 
     testWidgets('shows every skill with its level', (tester) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
 
       // act
       await _openRoom(tester, _stocked());
@@ -250,10 +229,7 @@ void main() {
 
     testWidgets('wears a carried piece through WearPressed', (tester) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
       final town = await _openRoom(
         tester,
         _hero(
@@ -279,10 +255,7 @@ void main() {
       tester,
     ) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
       final town = await _openRoom(tester, _stocked());
       expect(town.state.profile.equipment[EquipSlot.chest], isNotNull);
 
@@ -301,10 +274,7 @@ void main() {
 
     testWidgets('reads a carried book through ReadBookPressed', (tester) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
       final town = await _openRoom(tester, _stocked());
       expect(town.state.profile.knownSpells, isNot(contains('mend')));
 

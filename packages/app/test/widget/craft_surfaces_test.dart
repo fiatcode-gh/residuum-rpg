@@ -7,6 +7,8 @@ import 'package:residuum_app/game/inventory_screen.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import '../support/phone.dart';
+
 const _arena = '''
 #######
 #.....#
@@ -51,6 +53,7 @@ GameState _crawl({
 }
 
 Future<GameBloc> _openCrawl(WidgetTester tester, GameState game) async {
+  await onAPhone(tester);
   final bloc = GameBloc(game: game, stepDelay: Duration.zero);
   await tester.pumpWidget(
     MaterialApp(
@@ -62,6 +65,7 @@ Future<GameBloc> _openCrawl(WidgetTester tester, GameState game) async {
 }
 
 Future<GameBloc> _openPack(WidgetTester tester, GameState game) async {
+  await onAPhone(tester);
   final bloc = GameBloc(game: game, stepDelay: Duration.zero);
   await tester.pumpWidget(
     MaterialApp(

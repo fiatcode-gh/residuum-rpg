@@ -3,6 +3,7 @@ import 'package:residuum_app/town/bank_screen.dart';
 import 'package:residuum_app/town/merchant_screen.dart';
 import 'package:residuum_content/content.dart';
 
+import '../support/phone.dart';
 import '../support/pumped_app.dart';
 
 /// A one-hero document standing at home with [gold] in the purse.
@@ -30,6 +31,7 @@ Future<void> _openRoom(WidgetTester tester, String door) async {
 void main() {
   group('a dead control on the shelf', () {
     testWidgets('says the purse cannot reach it', (tester) async {
+      await onAPhone(tester);
       // arrange
       final app = PumpedApp(_inTown());
 
@@ -42,6 +44,7 @@ void main() {
     });
 
     testWidgets('says nothing at all once the purse can', (tester) async {
+      await onAPhone(tester);
       // arrange
       final app = PumpedApp(_inTown(gold: 9999));
 
@@ -58,6 +61,7 @@ void main() {
     testWidgets('names the price and what the hero is carrying', (
       tester,
     ) async {
+      await onAPhone(tester);
       // arrange
       final app = PumpedApp(_inTown(hp: 4, gold: 5));
 
@@ -72,6 +76,7 @@ void main() {
     testWidgets('still says so when nothing is wrong with the hero', (
       tester,
     ) async {
+      await onAPhone(tester);
       // arrange
       final app = PumpedApp(_inTown(gold: 5));
 
@@ -86,6 +91,7 @@ void main() {
     testWidgets('says what a bed does once the hero can pay for one', (
       tester,
     ) async {
+      await onAPhone(tester);
       // arrange
       final app = PumpedApp(_inTown(hp: 4, gold: 50));
 
@@ -103,6 +109,7 @@ void main() {
 
   group('a dead gold button at the bank', () {
     testWidgets('says which side of the counter is short', (tester) async {
+      await onAPhone(tester);
       // arrange
       final app = PumpedApp(_inTown());
 
@@ -116,6 +123,7 @@ void main() {
     });
 
     testWidgets('says nothing about a purse that is not short', (tester) async {
+      await onAPhone(tester);
       // arrange
       final app = PumpedApp(_inTown(gold: 50));
 
@@ -131,6 +139,7 @@ void main() {
 
   group('a dead Walk on the world screen', () {
     testWidgets('says there is no road when there is none', (tester) async {
+      await onAPhone(tester);
       // arrange
       final profile = newProfile(worldSeed: 909);
       final app = PumpedApp(
@@ -155,6 +164,7 @@ void main() {
     testWidgets('says nothing about the place the hero is standing on', (
       tester,
     ) async {
+      await onAPhone(tester);
       // arrange
       final app = PumpedApp(_inTown());
 
