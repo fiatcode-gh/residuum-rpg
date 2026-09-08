@@ -9,8 +9,7 @@ import 'package:residuum_app/world/world_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-/// A phone-sized viewport, which is where seven doors have to fit.
-const Size _phone = Size(360, 640);
+import '../support/phone.dart';
 
 Item _gear(String id, BaseItem base, {int temper = 0}) =>
     Item(id: id, base: base, rarity: Rarity.common).tempered(temper);
@@ -62,10 +61,7 @@ void main() {
   group('the town door column', () {
     testWidgets('offers all seven doors on a phone', (tester) async {
       // arrange
-      tester.view.physicalSize = _phone;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
+      await onAPhone(tester);
 
       // act
       await _openRoom(tester, const TownScreen(), _hero());
@@ -126,19 +122,21 @@ void main() {
       expect(find.textContaining('takes 2 ore'), findsOneWidget);
     });
 
-    testWidgets('smelting from the screen moves the counters', (tester) async {
+    testWidgets('one press of Smelt spends exactly one unit', (tester) async {
       // arrange
-      final ready = _hero(materials: const {MaterialId.ore: 2});
+      final ready = _hero(materials: const {MaterialId.ore: 4});
       final bloc = await _openRoom(tester, const ForgeScreen(), ready);
 
       // act
       await tester.tap(find.widgetWithText(FilledButton, 'Smelt'));
       await tester.pumpAndSettle();
 
-      // assert
-      expect(bloc.state.profile.materials, const {MaterialId.ingot: 1});
-      expect(find.text(MaterialId.ingot.marking), findsOneWidget);
-      expect(find.text('Ingot'), findsOneWidget);
+      // assert - one press is one unit of work: four ore make two ingots only
+      // through two presses
+      expect(bloc.state.profile.materials, const {
+        MaterialId.ore: 2,
+        MaterialId.ingot: 1,
+      });
     });
 
     testWidgets('says there is no steel for the bench when there is none', (
@@ -177,6 +175,46 @@ void main() {
         find.widgetWithText(TextButton, 'Temper'),
       );
       expect(button.onPressed, isNull);
+    });
+
+    testWidgets('a gate-refused row hides the price of its next tier', (
+      tester,
+    ) async {
+      // arrange - a hero four Blacksmith levels short of the gate the next
+      // tier needs
+      final gated = _hero(
+        inventory: [_gear('drop-1', ironSword, temper: 1)],
+        materials: const {MaterialId.ingot: 9},
+        gold: 500,
+        blacksmith: 4,
+      );
+      await onAPhone(tester);
+
+      // act
+      await _openRoom(tester, const ForgeScreen(), gated);
+
+      // assert - today the reason wins the one sentence slot, and the price
+      // of the next tier is nowhere on the row
+      expect(find.text('that needs Blacksmith 5'), findsOneWidget);
+      expect(find.text('Next tier: 2 ingots.'), findsNothing);
+    });
+
+    testWidgets('a ceiling row says so and names no price', (tester) async {
+      // arrange - a sword already at the last tier
+      final done = _hero(
+        inventory: [_gear('drop-1', ironSword, temper: 3)],
+        materials: const {MaterialId.ingot: 9},
+        gold: 500,
+        blacksmith: 10,
+      );
+      await onAPhone(tester);
+
+      // act
+      await _openRoom(tester, const ForgeScreen(), done);
+
+      // assert - there is no next tier to price, so no price line
+      expect(find.text('that is worked as far as it goes'), findsOneWidget);
+      expect(find.textContaining('Next tier'), findsNothing);
     });
 
     testWidgets('names the price of the next tier when it is open', (
@@ -265,20 +303,18 @@ void main() {
       expect(find.textContaining('takes 3 herbs'), findsOneWidget);
     });
 
-    testWidgets('brewing from the screen puts a potion in the pack', (
-      tester,
-    ) async {
+    testWidgets('one press of Brew makes exactly one potion', (tester) async {
       // arrange
-      final ready = _hero(materials: const {MaterialId.herb: 3});
+      final ready = _hero(materials: const {MaterialId.herb: 9});
       final bloc = await _openRoom(tester, const AlchemistScreen(), ready);
 
       // act
       await tester.tap(find.widgetWithText(FilledButton, 'Brew'));
       await tester.pumpAndSettle();
 
-      // assert
-      expect(bloc.state.profile.inventory.last.base, healingPotion);
-      expect(bloc.state.profile.materials, isEmpty);
+      // assert - one press is one attempt: three herbs, one draw, one potion
+      expect(bloc.state.profile.inventory.single.base, healingPotion);
+      expect(bloc.state.profile.materials, const {MaterialId.herb: 6});
     });
 
     testWidgets('says what the shelf would charge for the same potion', (

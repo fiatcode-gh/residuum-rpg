@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/event_messages.dart' show skillName;
+import 'package:residuum_app/notice/notice.dart';
 import 'package:residuum_app/town/character_screen.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_app/world/world_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
+
+import '../support/phone.dart';
 
 /// A phone-sized viewport, which is where the screen has to read.
 const Size _phone = Size(360, 640);
@@ -52,8 +55,12 @@ Profile _stocked() => _hero(
 );
 
 /// The character room, under a real town bloc and a real world bloc.
-Future<TownBloc> _openRoom(WidgetTester tester, Profile profile) async {
-  final town = TownBloc(profile: profile);
+Future<TownBloc> _openRoom(
+  WidgetTester tester,
+  Profile profile, {
+  SaveNotice? notice,
+}) async {
+  final town = TownBloc(profile: profile, notice: notice);
   final world = WorldBloc(
     world: newWhereabouts(),
     worldSeed: profile.worldSeed,
@@ -80,6 +87,21 @@ Future<void> _scrollTo(WidgetTester tester, Finder finder) async {
 
 void main() {
   group('the town character room', () {
+    testWidgets("carries the town's notice", (tester) async {
+      // arrange
+      await onAPhone(tester);
+
+      // act
+      await _openRoom(
+        tester,
+        _stocked(),
+        notice: const SentenceNotice('the forge speaks'),
+      );
+
+      // assert - today the town's last notice follows the hero in here
+      expect(find.text('— the forge speaks.'), findsOneWidget);
+    });
+
     testWidgets('shows the derived stats the town knows', (tester) async {
       // arrange
       tester.view.physicalSize = _phone;
