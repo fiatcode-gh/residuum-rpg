@@ -1,10 +1,11 @@
+import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/battle_view.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
-import 'package:residuum_app/game/glyph_grid.dart';
+import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
@@ -130,19 +131,19 @@ Future<GameBloc> _pushGame(WidgetTester tester, GameState game) async {
   return bloc;
 }
 
-/// Taps one tile of the map, through the grid's own geometry.
+/// Taps one tile of the map, through the scene's own geometry.
 ///
 /// Both axes of the test arena fit any surface this suite pumps, so the camera
 /// centres them and ignores its focus and pan; the hero position passed here is
 /// only the state the suite ever taps from.
 Future<void> _tapTile(WidgetTester tester, Position tile) async {
-  final grid = find.byType(GlyphGrid);
-  final size = tester.getSize(grid);
+  final scene = find.byKey(dungeonSceneKey);
+  final size = tester.getSize(scene);
   final geometry = GridGeometry.camera(size, 7, 5, const Position(1, 1));
   final local =
       geometry.topLeftOf(tile.x, tile.y) +
       Offset(geometry.cellSize / 2, geometry.cellSize / 2);
-  await tester.tapAt(tester.getTopLeft(grid) + local);
+  await tester.tapAt(tester.getTopLeft(scene) + local);
 }
 
 void main() {
@@ -155,7 +156,7 @@ void main() {
       await _pushGame(tester, game);
 
       // assert - map and stage card visible in one pump
-      expect(find.byType(GlyphGrid), findsOneWidget);
+      expect(find.byType(DungeonSceneHost), findsOneWidget);
       expect(find.text('the spitter'), findsOneWidget);
     });
 
@@ -173,7 +174,7 @@ void main() {
 
         // assert - the hero walked, the fight still holds, the map stayed
         expect(bloc.state.game.hero.position, const Position(2, 1));
-        expect(find.byType(GlyphGrid), findsOneWidget);
+        expect(find.byType(DungeonSceneHost), findsOneWidget);
         expect(find.text('the spitter'), findsOneWidget);
       },
     );
@@ -242,7 +243,32 @@ void main() {
       // assert
       expect(bloc.state.game.monsters, isEmpty);
       expect(find.byType(BattleDock), findsNothing);
-      expect(find.byType(GlyphGrid), findsOneWidget);
+      expect(find.byType(DungeonSceneHost), findsOneWidget);
+    });
+
+    testWidgets('the Flame scene survives the battle dock closing', (
+      tester,
+    ) async {
+      final bloc = await _pushGame(
+        tester,
+        battleGame(monsters: [ghoulAt(const Position(1, 2))]),
+      );
+      final before = tester
+          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+          .game;
+
+      for (var swing = 0; swing < 3; swing++) {
+        bloc.add(const AttackArmed());
+        await tester.pumpAndSettle();
+        bloc.add(StageCardTapped(bloc.state.game.monsters.single));
+        await tester.pumpAndSettle();
+      }
+
+      expect(find.byType(BattleDock), findsNothing);
+      expect(
+        tester.widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey)).game,
+        same(before),
+      );
     });
 
     testWidgets('the screen fits a phone with the dock up and with it down', (
@@ -262,7 +288,7 @@ void main() {
 
       // assert - dock up: map, stage, bar, HP and log all on one screen
       expect(tester.takeException(), isNull);
-      expect(find.byType(GlyphGrid), findsOneWidget);
+      expect(find.byType(DungeonSceneHost), findsOneWidget);
       expect(find.text('the ghoul'), findsOneWidget);
       expect(find.text('✳ Firebolt 2'), findsOneWidget);
       expect(find.textContaining('Engaged'), findsOneWidget);
@@ -284,7 +310,7 @@ void main() {
       expect(bloc.state.log.last, 'The ghoul dies.');
       expect(find.byType(BattleDock), findsNothing);
       expect(find.byType(BattleSkillBar), findsNothing);
-      expect(find.byType(GlyphGrid), findsOneWidget);
+      expect(find.byType(DungeonSceneHost), findsOneWidget);
       expect(find.byType(ListView), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

@@ -60,9 +60,9 @@ Three packages, dependency rule `app → content → core`:
 |---|---|
 | `packages/core` | Pure Dart game rules. Immutable state; the only way the game changes is `step(state, action) → (state, events)`. Zero Flutter imports. |
 | `packages/content` | Declarative data: creatures, items, affixes, drop tables, economy, dungeons, spells. Adding a monster touches no logic. |
-| `packages/app` | Flutter shell: glyph renderer on a canvas, BLoC state, town screens. No game rules. |
+| `packages/app` | Flutter shell: HUD, dock, controls, log, routing, and BLoC state; Flame owns only the dungeon scene. No game rules. |
 
-Design spec: `.flow/ldd/product/2026-08-20-dungeon-game-design.md`.
+Design spec: `docs/specs/2026-08-20-dungeon-game-design.md`.
 Code conventions: `AGENTS.md`.
 
 ## Tests

@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
-import 'package:residuum_app/game/glyph_grid.dart';
+import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
@@ -104,15 +104,15 @@ Future<GameBloc> _pushGame(WidgetTester tester, GameState game) async {
   return bloc;
 }
 
-/// Taps one tile of the map, through the grid's own geometry.
+/// Taps one tile of the map, through the scene's own geometry.
 Future<void> _tapTile(WidgetTester tester, Position tile) async {
-  final grid = find.byType(GlyphGrid);
-  final size = tester.getSize(grid);
+  final scene = find.byKey(dungeonSceneKey);
+  final size = tester.getSize(scene);
   final geometry = GridGeometry.camera(size, 7, 5, const Position(1, 1));
   final local =
       geometry.topLeftOf(tile.x, tile.y) +
       Offset(geometry.cellSize / 2, geometry.cellSize / 2);
-  await tester.tapAt(tester.getTopLeft(grid) + local);
+  await tester.tapAt(tester.getTopLeft(scene) + local);
 }
 
 void main() {
