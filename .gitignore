@@ -1,11 +1,10 @@
-docs/epic/
+# LDD evidence — shots, device saves, audit/build reports (never committed,
+global convention); the .flow/ldd/ ledgers themselves ARE tracked
+.flow/evidence/
 .worktrees/
 .dart_tool/
 build/
 .superpowers/
-
-# Handover reports are working artifacts, never committed (global convention)
-docs/reports/
 
 # pi harness workdir
 .pi/

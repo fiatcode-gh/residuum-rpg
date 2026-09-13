@@ -62,7 +62,7 @@ Three packages, dependency rule `app → content → core`:
 | `packages/content` | Declarative data: creatures, items, affixes, drop tables, economy, dungeons, spells. Adding a monster touches no logic. |
 | `packages/app` | Flutter shell: glyph renderer on a canvas, BLoC state, town screens. No game rules. |
 
-Design spec: `docs/superpowers/specs/2026-08-20-dungeon-game-design.md`.
+Design spec: `.flow/ldd/product/2026-08-20-dungeon-game-design.md`.
 Code conventions: `CLAUDE.md`.
 
 ## Tests

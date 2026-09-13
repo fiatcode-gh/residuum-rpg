@@ -1,7 +1,12 @@
 # Residuum — code conventions
 
-Design spec: `docs/superpowers/specs/2026-08-20-dungeon-game-design.md`. Read it before
+Design spec: `.flow/ldd/product/2026-08-20-dungeon-game-design.md`. Read it before
 substantive work.
+
+Development process: ledger-driven development (LDD) — `.flow/ldd/` is the
+architect authority (`LEDGER.md` + `RESUME.md` per epic; `units/<unit>/` holds
+each unit's spec, recon, plan, and handoff record). Device shots, save
+backups, and audit/build reports are untracked evidence in `.flow/evidence/`.
 
 ## Architecture
 
