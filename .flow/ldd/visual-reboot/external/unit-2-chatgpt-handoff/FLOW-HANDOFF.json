@@ -1,0 +1,18 @@
+{
+  "flow_handoff": 1,
+  "kind": "ldd",
+  "source": "chatgpt",
+  "repository": "fiatcode-gh/residuum-rpg",
+  "observed_ref": "216cd469788486db6ba907490462cce0c87e8079",
+  "epic": "visual-reboot",
+  "design_status": "settled",
+  "implementation_strategy": "settled",
+  "authorization": "not-carried",
+  "artifacts": [
+    "HANDOFF.md",
+    "ART-BIBLE.md",
+    "IMPLEMENTATION-PLAN.md",
+    "proposed-ledger-delta.md",
+    "proposed-units/unit-2-CONTRACT.md"
+  ]
+}
