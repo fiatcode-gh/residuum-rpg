@@ -3,6 +3,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
+import 'package:residuum_app/game/dungeon_scene_material.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/glyph_plan.dart';
@@ -281,11 +282,9 @@ void main() {
           .children
           .toList(growable: false);
       final heroBeforeFocus = glyphsBeforeFocus.last as PositionComponent;
-      final terrainBeforeFocus = glyphsBeforeFocus.firstWhere(
-        (component) =>
-            component is PositionComponent &&
-            component.position == Vector2(12 * cameraCellSize, cameraCellSize),
-      );
+      final materialBeforeFocus = glyphsBeforeFocus
+          .whereType<MaterialComponent>()
+          .single;
 
       state = _overflowingViewState(const Position(18, 1));
       await pumpScene(state);
@@ -295,7 +294,7 @@ void main() {
           .world
           .children;
       expect(glyphsAfterFocus, contains(same(heroBeforeFocus)));
-      expect(glyphsAfterFocus, contains(same(terrainBeforeFocus)));
+      expect(glyphsAfterFocus, contains(same(materialBeforeFocus)));
       expect(
         heroBeforeFocus.position,
         Vector2(18 * cameraCellSize, cameraCellSize),
@@ -305,6 +304,13 @@ void main() {
         closeTo(-432, 0.001),
       );
 
+      final materialBeforePan = tester
+          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+          .game!
+          .world
+          .children
+          .whereType<MaterialComponent>()
+          .single;
       final glyphsBeforePan = tester
           .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
           .game!
@@ -317,6 +323,14 @@ void main() {
         pan: const Offset(1000, 0),
       );
       await pumpScene(state);
+      final materialAfterPan = tester
+          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+          .game!
+          .world
+          .children
+          .whereType<MaterialComponent>()
+          .single;
+      expect(materialAfterPan, same(materialBeforePan));
       expect(
         tester
             .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
