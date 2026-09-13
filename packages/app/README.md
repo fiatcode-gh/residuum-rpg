@@ -28,4 +28,4 @@ What lives where:
 - `lib/save/` — the autosaver and save-slot store.
 - `lib/notice/` — the message log the game events drive.
 
-Code conventions live in `CLAUDE.md` at the repository root.
+Code conventions live in `AGENTS.md` at the repository root.

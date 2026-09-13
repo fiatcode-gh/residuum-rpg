@@ -82,7 +82,7 @@ proposal, not yet a locked order — lock it at Unit 0 close.
   `↓ N new` return affordance.
 - No pinch zoom in the first pass; no decorative interactable-looking props
   unsupported by rules; non-dungeon UI quiet and subordinate to the map.
-- Accessibility non-negotiable (CLAUDE.md + handoff 3.5): no important state
+- Accessibility non-negotiable (AGENTS.md + handoff 3.5): no important state
   carried by hue alone; targeting marks readable in greyscale/value.
 - Input boundary: Flame hit-tests and emits intents; app state decides
   meaning and dispatches core actions. Presentation actor labels are not

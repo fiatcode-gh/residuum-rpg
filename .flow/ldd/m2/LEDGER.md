@@ -4,7 +4,7 @@ Complete the playable loop beyond the M1 crawl: the engine beneath it
 (speed clock, flow-field chase, seeded floors), loot (items, affixes,
 equipment, skills, potions), the town that closes the loop, and quality-of-life
 (camera viewport, pack presentation, town gear). Governed by the canonical
-design spec (`../product/2026-08-20-dungeon-game-design.md`) and `CLAUDE.md`.
+design spec (`../product/2026-08-20-dungeon-game-design.md`) and `AGENTS.md`.
 
 ## Mode
 

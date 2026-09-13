@@ -5,7 +5,7 @@ canonical design spec (`../product/2026-08-20-dungeon-game-design.md`):
 saves and the hero roster, the overworld with travel and rumors, themed
 dungeons with rolled depth and bosses, rebalance, magic, crafting, the
 battle overhaul, and the defect/UX units fed by playtests. Governed also by
-`CLAUDE.md` conventions.
+`AGENTS.md` conventions.
 
 ## Mode
 
@@ -78,7 +78,7 @@ Forgejo-era and stale since the history rewrite (D96).
   seeded determinism) still binds.
 - **Tiered lever rule:** content tables are free with a measured trail;
   bestiary/hero stats need a user ruling.
-- Accessibility (CLAUDE.md, non-negotiable): encode state/rarity by shape,
+- Accessibility (AGENTS.md, non-negotiable): encode state/rarity by shape,
   marking, position, or word — never hue alone; every screen reads in
   greyscale. The author is deuteranomalous and is the final visual
   authority; greyscale shots accompany every UI unit.

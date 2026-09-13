@@ -63,7 +63,7 @@ Three packages, dependency rule `app → content → core`:
 | `packages/app` | Flutter shell: glyph renderer on a canvas, BLoC state, town screens. No game rules. |
 
 Design spec: `.flow/ldd/product/2026-08-20-dungeon-game-design.md`.
-Code conventions: `CLAUDE.md`.
+Code conventions: `AGENTS.md`.
 
 ## Tests
 

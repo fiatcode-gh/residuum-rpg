@@ -2,7 +2,7 @@
 
 Build a playable glyph dungeon crawl in the empty repository, per the
 canonical design spec (`../product/2026-08-20-dungeon-game-design.md`) and
-`CLAUDE.md` conventions. Single-unit milestone: the crawl loop end to end.
+`AGENTS.md` conventions. Single-unit milestone: the crawl loop end to end.
 
 ## Mode
 
@@ -23,7 +23,7 @@ canonical design spec (`../product/2026-08-20-dungeon-game-design.md`) and
 ## Locked cross-unit contracts
 
 - Monorepo layout `packages/{core,content,app}` with the dependency rule
-  `app → content → core`; `core`/`content` never import Flutter (CLAUDE.md).
+  `app → content → core`; `core`/`content` never import Flutter (AGENTS.md).
 - Immutable game state; the only mutation path is
   `step(state, action) → (state, events)`; events drive log/UI/quests.
 - No global randomness: every random decision draws from an `Rng` in state.
