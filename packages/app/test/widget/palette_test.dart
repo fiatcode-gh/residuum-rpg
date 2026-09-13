@@ -1,7 +1,7 @@
 import 'dart:ui' show Color;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/glyph_grid.dart';
+import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_content/content.dart';
 
 /// How bright a colour reads with the hue thrown away.

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/glyph_grid.dart';
+import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/glyph_plan.dart';
 import 'package:residuum_core/core.dart';
 

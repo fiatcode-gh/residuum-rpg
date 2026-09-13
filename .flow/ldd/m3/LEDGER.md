@@ -1,7 +1,7 @@
 # M3 — Decision Ledger
 
 Grow the game from a crawl-plus-town loop into the M3 milestone of the
-canonical design spec (`../product/2026-08-20-dungeon-game-design.md`):
+canonical design spec (`../../../docs/specs/2026-08-20-dungeon-game-design.md`):
 saves and the hero roster, the overworld with travel and rumors, themed
 dungeons with rolled depth and bosses, rebalance, magic, crafting, the
 battle overhaul, and the defect/UX units fed by playtests. Governed also by

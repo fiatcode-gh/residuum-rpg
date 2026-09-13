@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 
-import 'glyph_grid.dart';
+import 'dungeon_palette.dart';
 
 /// What every glyph paints at when the cell is remembered rather than seen.
 ///
@@ -17,9 +17,13 @@ const double fullOpacity = 1.0;
 /// strength.
 ///
 /// The paint plan is the whole crawl as data, in draw order — terrain first,
-/// then nodes, then litter, then monsters, then the hero — so the tests can
-/// hold the painter to what it draws without a screenshot. The painter is the
-/// brush; this is the picture.
+/// then nodes, then litter, then monsters, then the hero — so tests hold the
+/// projection to its semantics without a screenshot. Renderers consume the
+/// same picture.
+enum GlyphLayer { terrain, node, litter, monster, hero }
+
+typedef GlyphRenderId = ({GlyphLayer layer, Object entity});
+
 class GlyphCell {
   const GlyphCell(
     this.position,
@@ -27,6 +31,8 @@ class GlyphCell {
     this.ink,
     this.opacity, {
     this.marked = false,
+    this.layer = GlyphLayer.terrain,
+    this.entity,
   });
 
   final Position position;
@@ -37,10 +43,15 @@ class GlyphCell {
   /// anything only the map remembers.
   final double opacity;
 
-  /// Whether this cell is a legal target of the armed action: the painter
-  /// strokes an outline around the glyph, shape and position carrying the
-  /// state — never hue.
+  /// Whether this cell is a legal target of the armed action. An outline carries
+  /// the state by shape and position, never hue.
   final bool marked;
+
+  /// The render layer and entity this cell represents.
+  final GlyphLayer layer;
+  final Object? entity;
+
+  GlyphRenderId get renderId => (layer: layer, entity: entity ?? position);
 }
 
 /// What the hero's own glyph is drawn in.
@@ -49,7 +60,7 @@ const Color _heroInk = Color(0xFFFFFFFF);
 /// What a monster is drawn in.
 const Color _monsterInk = Color(0xFFD9A227);
 
-/// Everything one crawl draws, in the order the painter lays it down.
+/// Everything one crawl projects, in draw order.
 ///
 /// Terrain first — every explored cell, full where the hero is looking and
 /// faded where the map only remembers — then the veins and patches, then the
@@ -79,6 +90,7 @@ List<GlyphCell> glyphPlan(
           terrainGlyph(game.map.tileAt(position)),
           terrainInk(game.map.tileAt(position), palette),
           visible ? fullOpacity : rememberedOpacity,
+          layer: GlyphLayer.terrain,
         ),
       );
     }
@@ -93,13 +105,20 @@ List<GlyphCell> glyphPlan(
         node.value.glyph,
         nodeInk,
         seen ? fullOpacity : rememberedOpacity,
+        layer: GlyphLayer.node,
       ),
     );
   }
   for (final tile in game.groundItems.entries) {
     if (!game.visible.contains(tile.key) || tile.value.isEmpty) continue;
     cells.add(
-      GlyphCell(tile.key, tile.value.last.base.glyph, litterInk, fullOpacity),
+      GlyphCell(
+        tile.key,
+        tile.value.last.base.glyph,
+        litterInk,
+        fullOpacity,
+        layer: GlyphLayer.litter,
+      ),
     );
   }
   for (final monster in game.monsters) {
@@ -111,11 +130,20 @@ List<GlyphCell> glyphPlan(
         _monsterInk,
         fullOpacity,
         marked: markedIds.contains(monster.id),
+        layer: GlyphLayer.monster,
+        entity: monster.id,
       ),
     );
   }
   cells.add(
-    GlyphCell(game.hero.position, game.hero.glyph, _heroInk, fullOpacity),
+    GlyphCell(
+      game.hero.position,
+      game.hero.glyph,
+      _heroInk,
+      fullOpacity,
+      layer: GlyphLayer.hero,
+      entity: game.hero.id,
+    ),
   );
   return cells;
 }

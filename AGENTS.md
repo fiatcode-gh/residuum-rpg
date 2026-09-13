@@ -1,6 +1,6 @@
 # Residuum — code conventions
 
-Design spec: `.flow/ldd/product/2026-08-20-dungeon-game-design.md`. Read it before
+Design spec: `docs/specs/2026-08-20-dungeon-game-design.md`. Read it before
 substantive work.
 
 Development process: ledger-driven development (LDD) — `.flow/ldd/` is the

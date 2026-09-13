@@ -7,7 +7,8 @@ import '../town/town_bloc.dart';
 import '../world/world_bloc.dart';
 import 'game_bloc.dart';
 import 'battle_view.dart';
-import 'glyph_grid.dart';
+import 'dungeon_palette.dart';
+import 'dungeon_scene.dart';
 import 'inventory_screen.dart';
 
 class GameScreen extends StatelessWidget {
@@ -51,9 +52,11 @@ class GameScreen extends StatelessWidget {
                     children: [
                       if (state.isBattleOpen) BattleDock(state: state),
                       Expanded(
+                        key: dungeonSceneSlotKey,
                         child: Padding(
                           padding: const EdgeInsets.all(8),
-                          child: GlyphGrid(
+                          child: DungeonSceneHost(
+                            key: dungeonSceneHostKey,
                             state: state,
                             palette: paletteFor(bloc.dungeon),
                             onTap: (position) => bloc.add(TileTapped(position)),

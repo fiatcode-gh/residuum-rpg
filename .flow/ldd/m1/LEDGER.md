@@ -1,7 +1,7 @@
 # M1 The Crawl — Decision Ledger
 
 Build a playable glyph dungeon crawl in the empty repository, per the
-canonical design spec (`../product/2026-08-20-dungeon-game-design.md`) and
+canonical design spec (`../../../docs/specs/2026-08-20-dungeon-game-design.md`) and
 `AGENTS.md` conventions. Single-unit milestone: the crawl loop end to end.
 
 ## Mode

@@ -16,4 +16,4 @@ Frozen 2026-09-13 during the restructure to the omp-stack flow-ldd layout.
   fold-history stays complete.
 
 Current authority: the per-epic `LEDGER.md`/`RESUME.md` files and the
-canonical spec at `../product/2026-08-20-dungeon-game-design.md`.
+canonical spec at `../../../docs/specs/2026-08-20-dungeon-game-design.md`.
