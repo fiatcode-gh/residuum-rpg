@@ -292,6 +292,18 @@ Append-only. Supersede old decisions; do not rewrite history.
   criteria. This discharges the Unit 3 device-evidence debt; no Unit 3 code is
   reopened.
 
+- 2026-09-14 — **Unit 4 is accepted.** TTC-1A is closed by a targeted PASS
+  review, the final tree passes scoped formatting, `flutter analyze`, and 765
+  `packages/app` tests, and the combined Unit 3 + Unit 4 colour/greyscale device
+  gate passed on `emulator-5554` against a real generated crypt and a real road
+  ambush. Unit 3's deferred device-evidence debt is discharged with it. The unit
+  is ready for `flow-integrating`; publication and merge remain user-owned.
+- 2026-09-14 — Device-scene sourcing rule, learned here and worth keeping: the
+  first delve bumps `visit` to 1, so a floor probed at `visit: 0` is not the
+  floor the player meets. Probe `buildFloor(depth, worldSeed:, visit: 1)` and
+  `startRoadEncounter`/`roadSeed` to pick a world and day that already contain
+  the required cast, then play it — never add a fixture or bend generation.
+
 ## Verification receipts
 
 - 2026-09-13 — Unit 0 inspected the approved mock and source-verified the
@@ -406,6 +418,55 @@ Append-only. Supersede old decisions; do not rewrite history.
   pushed recovery checkpoint `0d27a186` (`feat(wip): visual reboot unit 4`) to
   `origin/residuum-visual-reboot-4`. This is a resumable WIP checkpoint, not a
   Unit 4 acceptance or integration decision.
+
+### Unit 4 acceptance receipt
+
+- 2026-09-14 — Resumed at `cfd472f` on `residuum-visual-reboot-4`, clean tree,
+  identical to the remote branch (`0d27a18` code plus the docs checkpoint).
+- 2026-09-14 — Targeted closure review (`Unit4ClosureReview`,
+  `flow-acceptance-reviewer`): **PASS, TTC-1A closed.** The second duplicate's
+  semantics are asserted by exact equality (`the ghoul²`, `button: true`) on the
+  token's own `Semantics` node resolved through `Key('timeline-actor-ghoul-2-3')`,
+  and the ordering is pinned by the exact `dock-backing` text list. The
+  correction was test-only; no other assertion was weakened. Focused run:
+  `battle_view_test.dart` 34 tests passed.
+- 2026-09-14 — Final-tree Main gates from `packages/app`: scoped
+  `dart format --set-exit-if-changed` reported 19 files, 0 changed;
+  `flutter analyze` found no issues; full `flutter test` passed 765 tests.
+- 2026-09-14 — **Combined Unit 3 + Unit 4 device gate PASSED** on the
+  `Medium_Phone` AVD (`emulator-5554`, 1080×2400). Evidence is under
+  `.flow/evidence/visual-reboot/unit-4-device/` as `ev-*.png` with a greyscale
+  copy of every frame. The scene was reached by deterministic content probing
+  (world seed `1789378289602`, visit 1) rather than by any production fixture:
+  crypt depth 1 held two giant rats plus a dire wolf, depth 2 held two dire
+  wolves and the Book of Firebolt, and the day-5 lowland road ambush held two
+  rats plus a dire wolf. No content, generator, or production code was touched.
+- 2026-09-14 — Criteria observed on device: (1) the row read
+  `@ YOU › r¹ › r² › w › w › @ YOU`, the speed-20 wolf occupying two separate
+  tokens, and later `@ YOU › r¹ › w › r² › w › @ YOU`; (2) map badge, timeline
+  token, inspect header (`r² the giant rat²`) and log (`The giant rat² claws
+  you for 1.`) agreed, while singletons stayed unbadged (`w the dire wolf`);
+  (3) badges appeared only once the second member was seen, and the survivor
+  kept `r¹` after `The giant rat² dies.`; (4) a hidden owed dire wolf truncated
+  the row to `@ YOU` while an engaged rat stood adjacent — no placeholder,
+  count, or name leaked; (5) tapping a timeline token centred the camera on the
+  actor, drew the circular selection, and opened inspect with a byte-identical
+  hero/monster/energy/RNG save snapshot before and after the tap; (6) armed
+  firebolt drew square target outlines while the selected wolf carried both a
+  square and a circle, legible in the greyscale copy; (7) no stage card, `NOW`,
+  `IN n`, or arrival estimate appeared anywhere in the dock.
+- 2026-09-14 — Unit 3's deferred device criteria were discharged in the same
+  session: map-tap melee (`You hit the giant rat² for 3.`), arm → target → cast
+  (`Firebolt burns the giant rat¹ for 2.`) with the contextual combat shelf
+  (`✳ Firebolt 2 — armed`, `Wait`), map inspect on a non-adjacent monster, and
+  the pan → recenter path (affordance appears when the hero leaves the viewport
+  and returns focus to the hero when tapped).
+- 2026-09-14 — Device save hygiene: `save.json` and `save-previous.json` were
+  copied off the device before the session and restored afterwards; both files
+  verify SHA-256 identical to the pre-session backup
+  (`18995c4a…`, `8909f70c…`). Session-local checkpoints used during evidence
+  capture stay in the untracked evidence directory. Throwaway content probes
+  were deleted; `git status` is clean and no `packages/` file changed.
 
 ## Corrections to inherited assumptions
 

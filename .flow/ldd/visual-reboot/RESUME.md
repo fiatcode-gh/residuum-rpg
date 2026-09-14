@@ -10,34 +10,29 @@
   visible-only continuous light, material-derived stair glyphs, and
   known-wall face continuity are verified by the app suite/analyzer and
   Pixel_10 colour/greyscale evidence.
-- Unit 3 is merged to `main` at `4164741`: implementation `a8eacf1` plus
-  correction `0156a0b`, 736 app tests, clean analyzer, and an acceptance-review
-  pass. Its deferred AVD/greyscale pass is folded into Unit 4's final combined
-  device acceptance on the recreated AVD; no Unit 3 code is reopened.
-- Unit 4 is an interrupted WIP checkpoint on `residuum-visual-reboot-4`,
-  pushed at `0d27a186` (`feat(wip): visual reboot unit 4`). Tasks 01–03 are
-  implemented. The first acceptance review found two Important TTC coverage
-  gaps plus stale LDD status; the coverage gaps were corrected. A targeted
-  re-review found one remaining second-duplicate semantics assertion gap; that
-  exact test-only correction also landed with 34 `battle_view_test.dart` tests,
-  scoped format, and focused analysis green. No post-correction closure review
-  was completed.
-- Main-owned broad proof after the first correction wave was clean:
-  `flutter analyze` passed and full `flutter test` passed 765 tests. The final
-  semantics assertion changed the test tree afterward, so rerun final-tree
-  formatting/analyze/full-test gates before claiming acceptance.
-- The recreated `Medium_Phone` AVD eventually registered in `adb`, the Flutter
-  app launched, and exploratory screenshots were captured through crawl
-  navigation. The 5-hour session limit terminated the session during encounter
-  search before the combined Unit 3 + Unit 4 colour/greyscale criteria were
-  exercised. Treat those screenshots as exploratory only. The interrupted
-  session recorded no completed device acceptance or save-slot
-  backup/restoration receipt.
-- Current action: in a fresh session, verify local HEAD/tree against remote
-  `0d27a186`, close TTC-1A with a targeted acceptance re-review, rerun final
-  formatting + `packages/app` analyzer/full-test gates, then perform the
-  combined current-phone Unit 3 + Unit 4 colour/greyscale device gate. Only
-  after those proofs may Unit 4 be marked accepted and enter `flow-integrating`.
+- Unit 3 is merged to `main` at `4164741`. Its deferred AVD/greyscale pass was
+  folded into Unit 4 and is now discharged; no Unit 3 code was reopened.
+- **Unit 4 is accepted on `residuum-visual-reboot-4` at `cfd472f`** (code
+  `0d27a18`). TTC-1A closed by a targeted `flow-acceptance-reviewer` PASS; the
+  final tree passes scoped `dart format` (19 files, 0 changed), `flutter
+  analyze` (no issues), and full `flutter test` (765 tests) from
+  `packages/app`; the combined Unit 3 + Unit 4 colour/greyscale device gate
+  passed on `emulator-5554`. Full detail is in `LEDGER.md` under
+  "Unit 4 acceptance receipt".
+- Device evidence lives in `.flow/evidence/visual-reboot/unit-4-device/` as
+  `ev-*.png` plus a `-greyscale.png` twin of each frame: hidden-actor
+  truncation, duplicate badges across map/timeline/inspect/log, survivor badge
+  after a death, no-turn-cost timeline selection with a byte-identical save
+  snapshot, armed square targets beside the circular selection, the firebolt
+  cast, and the pan → recenter path.
+- The device's `save.json` and `save-previous.json` were backed up before the
+  session and restored afterwards; both verify SHA-256 identical to the
+  pre-session backup. The working tree is clean and no `packages/` file changed
+  in this session.
+- Current action: Unit 4 is ready for `flow-integrating`. Decide with the user
+  how to integrate `residuum-visual-reboot-4` (PR against `main`, direct merge,
+  or hold), then unit 5 planning. Nothing remote has been pushed or opened
+  this session.
 - Locked inherited contracts: section 18 baseline summary in `LEDGER.md`
   (Flame never authoritative game state; graphical glyphs; map-first melee;
   four-region rule; accessibility by shape/word never hue alone) plus
@@ -46,7 +41,8 @@
 - Traps that can burn the next session: the approved mock is untracked visual
   evidence at `.flow/evidence/visual-reboot/residuum_visual_reboot_approved_mock.png`;
   standalone durable specs are under `docs/specs/`; suites run per package
-  directory (no root pubspec).
+  directory (no root pubspec); a first delve bumps `visit` to 1, so device
+  scenes must be probed at `visit: 1`, never `visit: 0`.
 - Open user decisions: portrait framing / static-art composition / icon
   language before Unit 7 (dungeon-material subset is locked); whether
   m3-quests (M3Q) still runs and where.
