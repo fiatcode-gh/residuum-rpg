@@ -31,29 +31,41 @@
   session and restored afterwards; both verify SHA-256 identical to the
   pre-session backup. The working tree is clean and no `packages/` file changed
   in this session.
-- **Unit 5 is the active unit and its contract is locked** at
-  `units/unit-5/CONTRACT.md`, committed on `main` at `864aa6e`. Recon
-  (`units/unit-5/recon.md`) is source-verified. Three forks were settled with
-  the user and are recorded in `LEDGER.md`: a structured presentation entry
-  replaces `GameViewState.log`'s `List<String>` now rather than deferring
-  per-line icons; Unit 5 moves the peek above the controls; and game-over
-  collapses the drawer, leaving `_DeathOverlay` as the one interactive surface.
-  The category set is deliberately not enumerated in the contract — the design
-  spec has no log-category vocabulary, so naming must come from existing `core`
-  event words, and membership is planning work.
-- `flow-planner` was dispatched for the Unit 5 execution-grade plan
-  (`units/unit-5/PLAN.md` + `plan-tasks/`). Its most consequential open call is
-  follow-state ownership: the bloc knows when lines are appended, the widget
-  knows scroll position, and the contract needs an exact unread count that is
-  bloc-provable. On a READY receipt, verify the plan, then take a Unit 5 feature
-  branch and dispatch one fresh `flow-plan-executor` per task, sequentially and
-  non-isolated. Implementation is **not** yet authorized by the user.
-- Hard invariant for every Unit 5 worker: a category comes from the `GameEvent`
-  variant where `describeEvent` already switches on it, or from the app's own
-  injection call site (`roadOpeningLog`, `_openingLog`, `_asSentence`, and the
-  three bloc refusals). Never from matching sentence text. The migration touches
-  87 `log` references across 8 test files and must not change any asserted
-  sentence.
+- **Unit 5 is accepted** on `residuum-visual-reboot-5` at `0bf6da1` (code
+  `3a78971` → `36aa0d5` → `7f93bc9`, correction `0bf6da1`). Its contract is on
+  `main` at `864aa6e`; the plan and evidence are on the branch. **Nothing is
+  published — no push, no PR.** The next action is a user decision on
+  integration: open a PR from `residuum-visual-reboot-5`, merge it locally, or
+  hold. `flow-integrating` owns that step and it needs explicit approval.
+- Final tree at `0bf6da1`: `dart format` 94 files/0 changed, `flutter analyze`
+  no issues, full `packages/app` suite **797 tests** passing, all run by the
+  architect. The integrated acceptance review returned ACCEPT WITH FINDINGS;
+  its one must-fix plus five optional items were corrected in a single round.
+  Full detail is in `LEDGER.md` under "Unit 5 acceptance receipt".
+- What shipped: `GameViewState.log` is now `List<LogLine>` (sentence + one of a
+  ten-member `LogCategory`), the peek sits above the controls, the drawer is a
+  peek → half → full overlay that never reflows the map, and follow/unread live
+  in the bloc while the widget owns only scroll position. `describeEvent` keeps
+  one switch over sealed `GameEvent` and returns `LogLine?`; no category is ever
+  inferred from sentence text.
+- **Trap proven the hard way, worth carrying into every later unit: a mark
+  codepoint can render as a colour emoji on device and no widget test will ever
+  catch it.** `moved` shipped as `↕` (U+2195), which Android resolved through
+  the colour emoji font — a blue-cyan box that ignored the row's text colour, so
+  hue carried category and the mark lost its value contrast. It is now `⇅`
+  (U+21C5). The test font resolves every codepoint and `find.text` matches
+  regardless of fallback, so only the device gate sees this. U+2B65 is tofu on
+  this target. When Units 6–8 add marks, measure them on device.
+- Criterion 12 evidence is complete in colour and greyscale under
+  `.flow/evidence/visual-reboot/unit-5-device/`, with a `-greyscale.png` twin of
+  every frame. `ev-combat-glyph-rows` carries eight categories at once and is
+  the single most useful frame. `ev-death-drawer-collapsed` and
+  `ev-death-handle-inert` are pixel-identical below the status bar, which is how
+  the inert handle is proven rather than asserted.
+- Device saves were backed up before the session and restored after; both verify
+  SHA-256 identical (`18995c4a…`, `8909f70c…`). The AVD here is now
+  `Medium_Phone` (Android 17), not `Pixel_10`, and it segfaults when launched
+  from a tool shell — ask the user to start it.
 - Sequencing decided with the user: keep the original 1 → 8 order, no chrome or
   asset unit interleaved, and plan the art pass only after Unit 8. Remaining
   unowned HUD chrome is the depth header, labelled HP/Mana bars, and icon

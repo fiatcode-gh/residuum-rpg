@@ -105,7 +105,7 @@ find**, on disk" (`lib/notice/notice.dart:25`) and `SentenceNotice` carries the
 forge's level-up announcements (`:63-69`) — so `✕ refused` would mark a neutral
 find or an outright gain with the set's most negative glyph, and the call site
 cannot tell which variant it holds. "The crawl resumes." is not a step, a stand,
-a depth, or a road left behind, so `↕ moved` would assert a spatial event that
+a depth, or a road left behind, so `⇅ moved` would assert a spatial event that
 did not happen on the first line every resumed crawl shows; `_openingLog`'s own
 dartdoc says it (`main.dart:613`): "The notice is a fact about the launch, not
 about this crawl."

@@ -67,7 +67,7 @@ enum LogCategory {
   hit('→', 'hit'),
   died('†', 'died'),
   noticed('◎', 'noticed'),
-  moved('↕', 'moved'),
+  moved('⇅', 'moved'),
   refused('✕', 'refused'),
   item('■', 'item'),
   raised('▲', 'raised'),
@@ -256,7 +256,7 @@ world, and source rules out both alternatives:
   (`:52`) and `SaveWriteFailedNotice` (`:36`) are refusals, and the call site
   cannot tell which variant it holds.
 - `_resumed` cannot be `moved`. "The crawl resumes." is not a step, a stand, a
-  depth, or a road left behind, so `↕` would assert a spatial event that did not
+  depth, or a road left behind, so `⇅` would assert a spatial event that did not
   happen — on the first line every resumed crawl shows, which makes it the
   most-read line in the set. `_openingLog`'s own dartdoc says it plainly
   (`main.dart:613`): "The notice is a fact about the launch, not about this
@@ -680,7 +680,7 @@ pipeline.
 | `hit` | `→` | right arrow — a blow going out |
 | `died` | `†` | dagger |
 | `noticed` | `◎` | ringed circle — an opened eye |
-| `moved` | `↕` | vertical double arrow — a depth, a step |
+| `moved` | `⇅` | vertical double arrow — a depth, a step |
 | `refused` | `✕` | saltire |
 | `item` | `■` | filled square |
 | `raised` | `▲` | filled triangle |
@@ -689,7 +689,7 @@ pipeline.
 
 Hue carries nothing at all here: every mark is drawn in the row's own text
 colour, so the column reads identically in greyscale. The distinctions are
-orientation (`←` `→` `↕`), stroke (`†` `✕` `§`), and silhouette
+orientation (`←` `→` `⇅`), stroke (`†` `✕` `§`), and silhouette
 (`◎` `■` `▲` `◆`),
 which is shape and position exactly as AGENTS.md requires. The category is also
 a word in every row's accessibility label, so a screen reader hears
@@ -930,11 +930,20 @@ public interfaces, category mapping and proofs are preserved.
 
 Residual risks, deliberately left to evidence:
 
-1. **Mark font coverage.** Whether `↕ ◎ ■ ▲ ◆ ✕ † § ← →` all render in the
-   platform monospace family on the phone target cannot be proven by a widget
-   test. Criterion 12's device session owns it. If one renders as a missing
-   glyph, swap that one mark — the shape vocabulary is the decision, not the
-   codepoint.
+1. **Mark font coverage — discharged, with one correction.** The criterion 12
+   device session on `emulator-5554` measured all ten marks at 13px monospace.
+   Nine rendered monochrome. `↕` (U+2195) did not: Android resolved it through
+   the colour emoji font, painting a blue-cyan box at saturation 0.51
+   (`rgb(65,117,134)`) that ignored the row's `style.color`, so hue carried part
+   of the category and the mark lost the newest/older value contrast. Per this
+   plan's own escalation rule the codepoint was swapped, not the shape
+   vocabulary: `moved` is now `⇅` (U+21C5, ARROWS UP AND DOWN), which renders as
+   a real monochrome two-headed vertical arrow. Re-measured after the fix, the
+   mark column contains no coloured pixel and the mark takes its row's colour
+   exactly — older `rgb(138,145,158)`, newest `rgb(230,234,240)`. U+2B65 was
+   also probed and is tofu on this target; avoid it. A widget test cannot catch
+   this class of defect, because the test font resolves every codepoint and
+   `find.text` matches regardless of emoji fallback — the device gate owns it.
 2. **`0.45` at half on a tall phone.** The band is 40–50% and the fraction is
    inside it, but whether half reads as "enough log, still my map" is a device
    judgement.
