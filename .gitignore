@@ -6,5 +6,5 @@ global convention); the .flow/ldd/ ledgers themselves ARE tracked
 build/
 .superpowers/
 
-# pi harness workdir
-.pi/
+# omp harness workdir
+.omp/

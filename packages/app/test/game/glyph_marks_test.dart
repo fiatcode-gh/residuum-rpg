@@ -147,5 +147,69 @@ void main() {
       expect(upTreatment.scale, greaterThan(1.0));
       expect(glyphMarkTreatment(floor).scale, 1.0);
     });
+
+    test('uses a square outline for a marked target', () {
+      const cell = GlyphCell(
+        Position(1, 1),
+        'g',
+        Color(0xFFD9A227),
+        1.0,
+        layer: GlyphLayer.monster,
+        marked: true,
+      );
+
+      final treatment = glyphMarkTreatment(cell);
+
+      expect(treatment.targetOutline, GlyphOutlineShape.square);
+      expect(treatment.selectedOutline, isNull);
+    });
+
+    test('uses a circle outline for a selected actor', () {
+      const cell = GlyphCell(
+        Position(1, 1),
+        'g',
+        Color(0xFFD9A227),
+        1.0,
+        layer: GlyphLayer.monster,
+        selected: true,
+      );
+
+      final treatment = glyphMarkTreatment(cell);
+
+      expect(treatment.targetOutline, isNull);
+      expect(treatment.selectedOutline, GlyphOutlineShape.circle);
+    });
+
+    test('keeps target and selection outlines together', () {
+      const cell = GlyphCell(
+        Position(1, 1),
+        'g',
+        Color(0xFFD9A227),
+        1.0,
+        layer: GlyphLayer.monster,
+        marked: true,
+        selected: true,
+      );
+
+      final treatment = glyphMarkTreatment(cell);
+
+      expect(treatment.targetOutline, GlyphOutlineShape.square);
+      expect(treatment.selectedOutline, GlyphOutlineShape.circle);
+    });
+
+    test('uses no outline for an ordinary actor', () {
+      const cell = GlyphCell(
+        Position(1, 1),
+        'g',
+        Color(0xFFD9A227),
+        1.0,
+        layer: GlyphLayer.monster,
+      );
+
+      final treatment = glyphMarkTreatment(cell);
+
+      expect(treatment.targetOutline, isNull);
+      expect(treatment.selectedOutline, isNull);
+    });
   });
 }

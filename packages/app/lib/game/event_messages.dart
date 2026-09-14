@@ -125,12 +125,6 @@ String _skillName(SkillId skill) => switch (skill) {
 /// The id the hero always answers to.
 const String heroId = 'hero';
 
-/// What the log calls every actor in [game], the hero included.
-Map<String, String> namesIn(GameState game) => {
-  game.hero.id: game.hero.name,
-  for (final monster in game.monsters) monster.id: monster.name,
-};
-
 String _named(Map<String, String> names, String id) =>
     names[id] ?? 'something in the dark';
 

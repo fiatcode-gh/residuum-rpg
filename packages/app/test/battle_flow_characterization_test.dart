@@ -9,16 +9,12 @@ import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-/// Characterization for m3-battle-flow: the gestures this unit retires or
-/// rebuilds, pinned against unmodified `6a1500a` before the first change and
-/// flipped in the commit that moves them.
+/// Characterization for m3-battle-flow: the gestures this unit preserves while
+/// replacing the old battle scheduling prose with the activation timeline.
 ///
-/// The far-card sentence, the bump on a bare stage-card tap, the turn strip's
-/// words, the `Engaged` suffix, the non-caster bar and the watched refusal are
-/// already pinned in their home suites; this file holds the one behavior no
-/// suite pinned — the map's tap-to-attack on an adjacent monster tile — now
-/// flipped: the tap is refused like watched ground, and the fight happens
-/// through the dock.
+/// The timeline interaction is view-only. This file holds the map's tap-to-
+/// attack behavior — the adjacent tap remains a core bump, while distant map
+/// inspection remains presentation-only.
 
 const _arena = '''
 #######

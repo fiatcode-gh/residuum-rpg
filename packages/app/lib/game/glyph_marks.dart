@@ -1,5 +1,8 @@
 import 'glyph_plan.dart';
 
+/// Which shape carries a target or selection fact around an actor glyph.
+enum GlyphOutlineShape { square, circle }
+
 /// How one glyph cell renders as a deliberate graphical mark.
 ///
 /// The treatment decorates the cell's own glyph — it never replaces the
@@ -7,7 +10,12 @@ import 'glyph_plan.dart';
 /// Value, outline, and halo come from these decisions; actor identity stays
 /// with the glyph and its shape.
 class GlyphMarkTreatment {
-  const GlyphMarkTreatment({required this.scale, required this.halo});
+  const GlyphMarkTreatment({
+    required this.scale,
+    required this.halo,
+    this.targetOutline,
+    this.selectedOutline,
+  });
 
   /// Relative draw scale for the subtle hierarchy between layers.
   final double scale;
@@ -15,12 +23,19 @@ class GlyphMarkTreatment {
   /// Whether a very small halo backs the glyph (hero and significant marks).
   final bool halo;
 
-  @override
-  bool operator ==(Object other) =>
-      other is GlyphMarkTreatment && other.scale == scale && other.halo == halo;
+  final GlyphOutlineShape? targetOutline;
+  final GlyphOutlineShape? selectedOutline;
 
   @override
-  int get hashCode => Object.hash(scale, halo);
+  bool operator ==(Object other) =>
+      other is GlyphMarkTreatment &&
+      other.scale == scale &&
+      other.halo == halo &&
+      other.targetOutline == targetOutline &&
+      other.selectedOutline == selectedOutline;
+
+  @override
+  int get hashCode => Object.hash(scale, halo, targetOutline, selectedOutline);
 }
 
 /// Decides the graphical treatment for one glyph cell.
@@ -49,5 +64,7 @@ GlyphMarkTreatment glyphMarkTreatment(
       GlyphLayer.litter => 0.92,
     },
     halo: cell.layer == GlyphLayer.hero,
+    targetOutline: cell.marked ? GlyphOutlineShape.square : null,
+    selectedOutline: cell.selected ? GlyphOutlineShape.circle : null,
   );
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
+import 'package:residuum_app/game/actor_presentation.dart';
 import 'package:residuum_app/game/glyph_plan.dart';
 import 'package:residuum_core/core.dart';
 
@@ -18,6 +19,7 @@ GameState _game({
   required Set<Position> visible,
   required Set<Position> explored,
   Map<Position, GatherKind> nodes = const {},
+  List<Actor> monsters = const [],
 }) => GameState(
   map: FloorMap.parse(_arena),
   hero: Actor(
@@ -32,7 +34,7 @@ GameState _game({
     speed: 10,
     energy: actThreshold,
   ),
-  monsters: const [],
+  monsters: monsters,
   rng: Rng(1),
   lootRng: Rng(2),
   visible: visible,
@@ -174,6 +176,141 @@ void main() {
       // assert
       expect(_terrainCellAt(plan, _unseen), isNull);
       expect(plan.where((cell) => cell.position == _unseen), isEmpty);
+    });
+  });
+
+  group('monster presentation facts', () {
+    final first = Actor(
+      id: 'ghoul-1',
+      name: 'the ghoul',
+      glyph: 'g',
+      position: const Position(2, 1),
+      hp: 10,
+      maxHp: 10,
+      attackMin: 3,
+      attackMax: 3,
+      speed: 10,
+      energy: actThreshold,
+    );
+    final second = Actor(
+      id: 'ghoul-2',
+      name: first.name,
+      glyph: first.glyph,
+      position: const Position(3, 1),
+      hp: first.hp,
+      maxHp: first.maxHp,
+      attackMin: first.attackMin,
+      attackMax: first.attackMax,
+      speed: first.speed,
+      energy: first.energy,
+    );
+
+    test('keeps raw glyphs and projects separate badges by actor id', () {
+      final game = _game(
+        visible: {const Position(1, 1), first.position, second.position},
+        explored: {const Position(1, 1), first.position, second.position},
+        monsters: [first, second],
+      );
+
+      final plan = glyphPlan(
+        game,
+        DungeonPalette.crypt,
+        actorPresentations: {
+          first.id: const ActorPresentation(
+            actorId: 'ghoul-1',
+            displayName: 'the ghoul¹',
+            glyph: 'g',
+            badge: '¹',
+          ),
+          second.id: const ActorPresentation(
+            actorId: 'ghoul-2',
+            displayName: 'the ghoul²',
+            glyph: 'g',
+            badge: '²',
+          ),
+        },
+      );
+
+      final cells = plan.where((cell) => cell.layer == GlyphLayer.monster);
+      expect(cells.map((cell) => cell.glyph), ['g', 'g']);
+      expect(cells.map((cell) => cell.entity), ['ghoul-1', 'ghoul-2']);
+      expect(cells.map((cell) => cell.badge), ['¹', '²']);
+    });
+
+    test('omits a known but hidden duplicate from projection', () {
+      final hidden = second.copyWith(position: const Position(5, 3));
+      final game = _game(
+        visible: {const Position(1, 1), first.position},
+        explored: {const Position(1, 1), first.position, hidden.position},
+        monsters: [first, hidden],
+      );
+
+      final plan = glyphPlan(
+        game,
+        DungeonPalette.crypt,
+        markedIds: {hidden.id},
+        selectedActorId: hidden.id,
+        actorPresentations: {
+          first.id: const ActorPresentation(
+            actorId: 'ghoul-1',
+            displayName: 'the ghoul¹',
+            glyph: 'g',
+            badge: '¹',
+          ),
+          hidden.id: const ActorPresentation(
+            actorId: 'ghoul-2',
+            displayName: 'the ghoul²',
+            glyph: 'g',
+            badge: '²',
+          ),
+        },
+      );
+
+      expect(
+        plan.where(
+          (cell) =>
+              cell.layer == GlyphLayer.monster && cell.entity == hidden.id,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('marks only the selected visible actor', () {
+      final game = _game(
+        visible: {const Position(1, 1), first.position, second.position},
+        explored: {const Position(1, 1), first.position, second.position},
+        monsters: [first, second],
+      );
+
+      final plan = glyphPlan(
+        game,
+        DungeonPalette.crypt,
+        selectedActorId: second.id,
+        actorPresentations: {
+          first.id: const ActorPresentation(
+            actorId: 'ghoul-1',
+            displayName: 'the ghoul¹',
+            glyph: 'g',
+            badge: '¹',
+          ),
+          second.id: const ActorPresentation(
+            actorId: 'ghoul-2',
+            displayName: 'the ghoul²',
+            glyph: 'g',
+            badge: '²',
+          ),
+        },
+      );
+
+      final cells = plan.where((cell) => cell.layer == GlyphLayer.monster);
+      expect(
+        cells.where((cell) => cell.entity == first.id).single.selected,
+        isFalse,
+      );
+      expect(
+        cells.where((cell) => cell.entity == second.id).single.selected,
+        isTrue,
+      );
     });
   });
 }

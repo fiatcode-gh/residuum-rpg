@@ -58,7 +58,16 @@ class GameScreen extends StatelessWidget {
                 children: [
                   Column(
                     children: [
-                      if (state.isBattleOpen) BattleDock(state: state),
+                      if (state.isBattleOpen)
+                        BattleDock(
+                          state: state,
+                          onActorSelected: (actor) {
+                            final presentation = state.presentationOf(actor.id);
+                            if (presentation == null) return;
+                            bloc.add(TimelineActorSelected(actor.id));
+                            showEnemyInfo(context, actor, presentation);
+                          },
+                        ),
                       Expanded(
                         key: dungeonSceneSlotKey,
                         child: Padding(
@@ -142,7 +151,10 @@ void _onMapTap(
   final monster = state.inspectTargetAt(position);
   final adjacent = state.game.hero.position.isOrthogonallyAdjacentTo(position);
   if (monster != null && !adjacent) {
-    showEnemyInfo(context, monster);
+    final presentation = state.presentationOf(monster.id);
+    if (presentation != null) {
+      showEnemyInfo(context, monster, presentation);
+    }
     return;
   }
   bloc.add(TileTapped(position));
@@ -155,7 +167,10 @@ void _onMapLongPress(
   Position position,
 ) {
   if (state.inspectTargetAt(position) case final Actor monster) {
-    showEnemyInfo(context, monster);
+    final presentation = state.presentationOf(monster.id);
+    if (presentation != null) {
+      showEnemyInfo(context, monster, presentation);
+    }
   }
 }
 
@@ -166,7 +181,7 @@ bool _heroOffScreen(GameViewState state, Size size) {
     size,
     state.game.map.width,
     state.game.map.height,
-    state.game.hero.position,
+    state.cameraFocus,
     state.pan,
   );
   return heroOffScreen(size, geometry, state.game.hero.position);

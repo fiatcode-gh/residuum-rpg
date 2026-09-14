@@ -41,11 +41,16 @@ The epic was opened from an approved external planning handoff:
 - **Unit 2 accepted.** The graphical Crypt material language is complete on
   `visual-reboot-unit-2`; Sea-Cave and Ruined Keep material parity remains
   Unit 8.
-- **Unit 3 contract proposed** at `units/unit-3/CONTRACT.md` (2026-09-14):
-  map-first melee, map-targeted casts, inspect via long-press or non-adjacent
-  tap, one contextual shelf with readied + overflow, recenter affordance.
-  User review required before code; two open decisions (camera ease-back
-  scope, readied-slot model) are unresolved.
+- **Unit 3 merged to `main` at `4164741`.** The suite, analyzer, and acceptance
+  review passed. Its deferred AVD/greyscale evidence is scheduled for the
+  combined final Unit 3 + Unit 4 device gate on the recreated AVD.
+- **Unit 4 is an interrupted acceptance checkpoint** on
+  `residuum-visual-reboot-4`, remotely checkpointed at WIP head `0d27a186`.
+  Tasks 01–03 and all known review corrections are implemented. Acceptance
+  remains open for the final TTC-1A closure review, final-tree formatting/app
+  gates, and the combined Unit 3 + Unit 4 recreated-AVD colour/greyscale gate.
+  The prior session limit stopped the device pass during encounter search; no
+  device acceptance is claimed.
 
 ## Epic status
 
@@ -54,8 +59,8 @@ The epic was opened from an approved external planning handoff:
 | Unit 0 — design baseline + recon | none | complete | source recon and approved mock inspection; no code | matrix, seam inventory, corrections: `units/unit-0/recon.md` |
 | Unit 1 — dungeon scene foundation | Unit 0 | accepted | 682 app tests, analyzer, final COR/TTC/CRF, Pixel_10 AVD and greyscale pass | contract: `units/unit-1/CONTRACT.md`; Flame only in `packages/app` |
 | Unit 2 — graphical dungeon language | Unit 1 | accepted | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
-| Unit 3 — crawl interaction reboot | Unit 2 | planned | one-handed movement/melee/targeting/wait/pack without the old dock | map-first melee; favorites + overflow |
-| Unit 4 — turn timeline + duplicate identity | Unit 3 | pending | next activation sequence readable with duplicates + fast actors | encounter-local labels, timeline→map highlight |
+| Unit 3 — crawl interaction reboot | Unit 2 | merged; device evidence pending | 736 app tests, analyzer, review pass; AVD blocked on this host | map-first melee; favorites + overflow |
+| Unit 4 — turn timeline + duplicate identity | Unit 3 | interrupted acceptance; WIP checkpoint | initial full app 764 + analyzer clean; first correction full app 765 + analyzer clean; final semantics fix focused 34 + focused analyze clean; closure/final-tree broad/device gates pending | head `0d27a186`; session limit stopped the combined AVD gate during encounter search |
 | Unit 5 — log drawer | Unit 3 | pending | history reviewable during combat without shrinking the map | 3-line peek, half/full overlay, auto-follow |
 | Unit 6 — character / spells / pack | Unit 3 | pending | no duplicated information architecture | consolidation |
 | Unit 7 — town + rooms + heroes | Unit 6 | pending | transactional/refusal semantics preserved | art bible locked before static art |
@@ -261,6 +266,44 @@ Append-only. Supersede old decisions; do not rewrite history.
   committed `0156a0b`; full suite 736 passed and analyzer clean. Security
   skip (no trust boundary).
 
+- 2026-09-14 — Unit 4 start: source recon at `4164741` confirmed that
+  `GameViewState.upNext` already exposes core's literal repeated scheduled
+  actors, while `BattleDock` still renders stage cards plus raw-name
+  `NOW`/`IN n` prose. `glyphPlan`/the Flame scene have a stable entity-id
+  projection seam and `_describe` already supplies pre-step event names. The
+  reconciled contract at `units/unit-4/CONTRACT.md` locks the direct
+  `[YOU] → upNext → [YOU]` queue, no-knowledge-leak truncation, view-scoped
+  deterministic duplicate labels, map badge/selected-outline ownership, and
+  token inspect/focus without a core action. No production code written.
+
+- 2026-09-14 — Unit 4 execution plan accepted by the architect at
+  `units/unit-4/PLAN.md`, with three sequential fresh-executor briefs:
+  identity/queue/bloc lifetime; map badges/selection/focus; then timeline and
+  legacy cutover. COR/TTC/CRF passed and SEC is skipped (no external trust
+  boundary). User implementation authorization is granted; Task 01 has focused
+  proof and Task 02 is active on the non-main `residuum-visual-reboot-4` branch.
+  Main owns final app suite/analyzer, acceptance review, and the combined Unit 3
+  + Unit 4 colour/greyscale evidence on the current recreated AVD.
+
+- 2026-09-14 — User directed that Unit 3's missing opportunity for device
+  acceptance be folded into Unit 4. The final Unit 4 current-AVD colour/greyscale
+  session must now demonstrate Unit 3's one-handed melee, arm → target → cast,
+  inspect, and shelf flow alongside Unit 4's timeline/identity acceptance
+  criteria. This discharges the Unit 3 device-evidence debt; no Unit 3 code is
+  reopened.
+
+- 2026-09-14 — **Unit 4 is accepted.** TTC-1A is closed by a targeted PASS
+  review, the final tree passes scoped formatting, `flutter analyze`, and 765
+  `packages/app` tests, and the combined Unit 3 + Unit 4 colour/greyscale device
+  gate passed on `emulator-5554` against a real generated crypt and a real road
+  ambush. Unit 3's deferred device-evidence debt is discharged with it. The unit
+  is ready for `flow-integrating`; publication and merge remain user-owned.
+- 2026-09-14 — Device-scene sourcing rule, learned here and worth keeping: the
+  first delve bumps `visit` to 1, so a floor probed at `visit: 0` is not the
+  floor the player meets. Probe `buildFloor(depth, worldSeed:, visit: 1)` and
+  `startRoadEncounter`/`roadSeed` to pick a world and day that already contain
+  the required cast, then play it — never add a fixture or bend generation.
+
 ## Verification receipts
 
 - 2026-09-13 — Unit 0 inspected the approved mock and source-verified the
@@ -340,6 +383,90 @@ Append-only. Supersede old decisions; do not rewrite history.
   as PR #12 (`https://github.com/fiatcode-gh/residuum-rpg/pull/12`). Merge is
   user-owned and gated on the still-open AVD acceptance.
 
+
+### Unit 4 interrupted-session receipt
+
+- 2026-09-14 — Tasks 01–03 completed on `residuum-visual-reboot-4`. Main's
+  first broad gate passed `flutter analyze` and full `flutter test` with 764
+  tests before acceptance review. The single `flow-acceptance-reviewer`
+  returned CHANGES with two Important TTC coverage gaps plus stale LDD status;
+  it found no Critical production defect and statically traced the production
+  behavior/ownership path cleanly.
+- 2026-09-14 — `CorrectUnit4Coverage` fixed the duplicate-identity/survivor
+  contract and genuinely overflowing phone-timeline coverage without changing
+  production code. Focused proof passed 40 tests; Main then passed full
+  `flutter test` with 765 tests and `flutter analyze` clean. Targeted
+  `ReReviewUnit4Coverage` resolved TTC-2 and narrowed TTC-1 to one remaining
+  Important gap: the second duplicate timeline token's exact assistive
+  semantics were not asserted.
+- 2026-09-14 — `CloseTimelineSemantics` added the exact second-duplicate
+  semantics assertion (`the ghoul²`, button=true) as a test-only correction.
+  `battle_view_test.dart` passed 34 tests; scoped format changed nothing and
+  focused analysis was clean. The session ended before a targeted closure
+  re-review. Because this assertion changed the final test tree after the
+  765-test broad gate, final-tree formatting/analyzer/full-test proof remains
+  open.
+- 2026-09-14 — The recreated `Medium_Phone` AVD timed out its initial
+  180-second readiness wait but later registered as `emulator-5554`; Flutter
+  reached its ready state. Exploratory local screenshots were captured from
+  town/crypt/dungeon/crawl progression, but the session limit terminated the
+  run during encounter search before Unit 3's one-handed melee/cast/inspect
+  flow, Unit 4's duplicate/repeated-activation/timeline focus flow, or the
+  greyscale selected/target-state criterion were accepted. No completed device
+  acceptance or save-slot backup/restoration receipt was recorded.
+- 2026-09-14 — After the involuntary session-limit stop, the user created and
+  pushed recovery checkpoint `0d27a186` (`feat(wip): visual reboot unit 4`) to
+  `origin/residuum-visual-reboot-4`. This is a resumable WIP checkpoint, not a
+  Unit 4 acceptance or integration decision.
+
+### Unit 4 acceptance receipt
+
+- 2026-09-14 — Resumed at `cfd472f` on `residuum-visual-reboot-4`, clean tree,
+  identical to the remote branch (`0d27a18` code plus the docs checkpoint).
+- 2026-09-14 — Targeted closure review (`Unit4ClosureReview`,
+  `flow-acceptance-reviewer`): **PASS, TTC-1A closed.** The second duplicate's
+  semantics are asserted by exact equality (`the ghoul²`, `button: true`) on the
+  token's own `Semantics` node resolved through `Key('timeline-actor-ghoul-2-3')`,
+  and the ordering is pinned by the exact `dock-backing` text list. The
+  correction was test-only; no other assertion was weakened. Focused run:
+  `battle_view_test.dart` 34 tests passed.
+- 2026-09-14 — Final-tree Main gates from `packages/app`: scoped
+  `dart format --set-exit-if-changed` reported 19 files, 0 changed;
+  `flutter analyze` found no issues; full `flutter test` passed 765 tests.
+- 2026-09-14 — **Combined Unit 3 + Unit 4 device gate PASSED** on the
+  `Medium_Phone` AVD (`emulator-5554`, 1080×2400). Evidence is under
+  `.flow/evidence/visual-reboot/unit-4-device/` as `ev-*.png` with a greyscale
+  copy of every frame. The scene was reached by deterministic content probing
+  (world seed `1789378289602`, visit 1) rather than by any production fixture:
+  crypt depth 1 held two giant rats plus a dire wolf, depth 2 held two dire
+  wolves and the Book of Firebolt, and the day-5 lowland road ambush held two
+  rats plus a dire wolf. No content, generator, or production code was touched.
+- 2026-09-14 — Criteria observed on device: (1) the row read
+  `@ YOU › r¹ › r² › w › w › @ YOU`, the speed-20 wolf occupying two separate
+  tokens, and later `@ YOU › r¹ › w › r² › w › @ YOU`; (2) map badge, timeline
+  token, inspect header (`r² the giant rat²`) and log (`The giant rat² claws
+  you for 1.`) agreed, while singletons stayed unbadged (`w the dire wolf`);
+  (3) badges appeared only once the second member was seen, and the survivor
+  kept `r¹` after `The giant rat² dies.`; (4) a hidden owed dire wolf truncated
+  the row to `@ YOU` while an engaged rat stood adjacent — no placeholder,
+  count, or name leaked; (5) tapping a timeline token centred the camera on the
+  actor, drew the circular selection, and opened inspect with a byte-identical
+  hero/monster/energy/RNG save snapshot before and after the tap; (6) armed
+  firebolt drew square target outlines while the selected wolf carried both a
+  square and a circle, legible in the greyscale copy; (7) no stage card, `NOW`,
+  `IN n`, or arrival estimate appeared anywhere in the dock.
+- 2026-09-14 — Unit 3's deferred device criteria were discharged in the same
+  session: map-tap melee (`You hit the giant rat² for 3.`), arm → target → cast
+  (`Firebolt burns the giant rat¹ for 2.`) with the contextual combat shelf
+  (`✳ Firebolt 2 — armed`, `Wait`), map inspect on a non-adjacent monster, and
+  the pan → recenter path (affordance appears when the hero leaves the viewport
+  and returns focus to the hero when tapped).
+- 2026-09-14 — Device save hygiene: `save.json` and `save-previous.json` were
+  copied off the device before the session and restored afterwards; both files
+  verify SHA-256 identical to the pre-session backup
+  (`18995c4a…`, `8909f70c…`). Session-local checkpoints used during evidence
+  capture stay in the untracked evidence directory. Throwaway content probes
+  were deleted; `git status` is clean and no `packages/` file changed.
 
 ## Corrections to inherited assumptions
 

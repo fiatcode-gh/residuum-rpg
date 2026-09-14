@@ -11,14 +11,13 @@ import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-/// The battle dock: stage cards, turn strip, skill bar, and the gestures that
+/// The battle dock: activation timeline, skill bar, and the gestures that
 /// carry an armed cast through core's `targetId`.
 ///
 /// Every test pumps the real [GameScreen] over a real [GameBloc] — the dock's
 /// presence over an always-visible map is the unit's subject, and a fake screen
 /// would test the test. Neither bloc is closed, per the suite's standing rule:
 /// the widget test's clock is fake and the bloc closes itself on the event loop.
-
 const _arena = '''
 #######
 #.....#
@@ -155,9 +154,9 @@ void main() {
       // act
       await _pushGame(tester, game);
 
-      // assert - map and stage card visible in one pump
+      // assert - map and timeline token visible in one pump
       expect(find.byType(DungeonSceneHost), findsOneWidget);
-      expect(find.text('the spitter'), findsOneWidget);
+      expect(find.byType(BattleDock), findsOneWidget);
     });
 
     testWidgets(
@@ -175,12 +174,12 @@ void main() {
         // assert - the hero walked, the fight still holds, the map stayed
         expect(bloc.state.game.hero.position, const Position(2, 1));
         expect(find.byType(DungeonSceneHost), findsOneWidget);
-        expect(find.text('the spitter'), findsOneWidget);
+        expect(find.byType(BattleDock), findsOneWidget);
       },
     );
 
     testWidgets(
-      'a far stage-card tap with nothing armed opens the enemy info',
+      'a timeline actor token with nothing armed opens the enemy info',
       (tester) async {
         // arrange - the D90 standoff: the spitter three tiles out
         final game = battleGame(
@@ -194,7 +193,7 @@ void main() {
               maxHp: 4,
               attackMin: 2,
               attackMax: 3,
-              speed: 5,
+              speed: 20,
               energy: actThreshold,
               reach: 3,
               resists: const {DamageType.fire},
@@ -206,16 +205,14 @@ void main() {
         final logBefore = bloc.state.log.length;
 
         // act
-        await tester.tap(find.text('the spitter'));
+        await tester.tap(find.byKey(const Key('timeline-actor-spitter-1-1')));
         await tester.pumpAndSettle();
 
         // assert - the numbers on a sheet; nothing else happened
         expect(find.text('the spitter'), findsWidgets);
-        expect(find.text('p'), findsWidgets);
-        expect(find.text('4 / 4'), findsWidgets);
+        expect(find.text('Wounds 4 / 4'), findsOneWidget);
         expect(find.text('2–3'), findsOneWidget);
-        expect(find.text('strikes at range 3'), findsOneWidget);
-        expect(find.text('Speed 5'), findsOneWidget);
+        expect(find.text('Speed 20'), findsOneWidget);
         expect(find.text('Resists fire'), findsOneWidget);
         expect(find.text('Burns at frost'), findsOneWidget);
         expect(bloc.state.log.length, logBefore);
@@ -282,10 +279,10 @@ void main() {
       );
       final bloc = await _pushGame(tester, game);
 
-      // assert - dock up: map, stage, bar, HP and log all on one screen
+      // assert - dock up: map, timeline, bar, HP and log all on one screen
       expect(tester.takeException(), isNull);
       expect(find.byType(DungeonSceneHost), findsOneWidget);
-      expect(find.text('the ghoul'), findsOneWidget);
+      expect(find.byType(BattleDock), findsOneWidget);
       expect(find.text('✳ Firebolt 2'), findsOneWidget);
       expect(find.textContaining('Engaged'), findsOneWidget);
       await _tapTile(tester, const Position(1, 2));
@@ -309,15 +306,15 @@ void main() {
     });
   });
 
-  group('the stage', () {
-    testWidgets('the stage names, numbers and marks what holds reach', (
+  group('the activation timeline', () {
+    testWidgets('shows literal repeated occurrences and the closing hero', (
       tester,
     ) async {
-      // arrange - adjacent wounded ghoul, spitter two tiles out along the sight line
+      // arrange - a speed-20 duplicate is owed twice before the next hero.
       final game = battleGame(
         monsters: [
-          ghoulAt(const Position(1, 2), hp: 6),
-          spitterAt(const Position(3, 1)),
+          ghoulAt(const Position(1, 2), id: 'ghoul-1', speed: 20),
+          ghoulAt(const Position(3, 1), id: 'ghoul-2', energy: 50),
         ],
         visible: {
           const Position(1, 1),
@@ -329,138 +326,269 @@ void main() {
       // act
       await _pushGame(tester, game);
 
-      // assert - name and hit points by bar and number, range by word
-      expect(find.text('the ghoul'), findsOneWidget);
-      expect(find.text('6 / 10'), findsOneWidget);
-      expect(find.text('the spitter'), findsOneWidget);
-      expect(find.text('4 / 4'), findsOneWidget);
-      expect(find.text('at range'), findsOneWidget);
-      final bars = tester.widgetList<LinearProgressIndicator>(
-        find.byType(LinearProgressIndicator),
+      // assert - current hero, each owed occurrence, then next hero.
+      expect(find.byKey(const Key('timeline-current-hero')), findsOneWidget);
+      expect(find.byKey(const Key('timeline-actor-ghoul-1-1')), findsOneWidget);
+      expect(find.byKey(const Key('timeline-actor-ghoul-1-2')), findsOneWidget);
+      expect(find.byKey(const Key('timeline-actor-ghoul-2-3')), findsOneWidget);
+      expect(find.byKey(const Key('timeline-next-hero')), findsOneWidget);
+      final timelineLabels = find
+          .descendant(
+            of: find.byKey(const Key('dock-backing')),
+            matching: find.byType(Text),
+          )
+          .evaluate()
+          .map((element) => (element.widget as Text).data)
+          .whereType<String>()
+          .toList();
+      expect(timelineLabels, [
+        '@ YOU',
+        '›',
+        'g¹',
+        '›',
+        'g¹',
+        '›',
+        'g²',
+        '›',
+        '@ YOU',
+      ]);
+      final currentSemantics = tester.widget<Semantics>(
+        find
+            .ancestor(
+              of: find.byKey(const Key('timeline-current-hero')),
+              matching: find.byType(Semantics),
+            )
+            .first,
       );
-      expect(bars.map((bar) => bar.value), contains(closeTo(6 / 10, 0.001)));
+      expect(currentSemantics.properties.label, 'You, current activation');
+      final firstActorSemantics = tester.widget<Semantics>(
+        find
+            .ancestor(
+              of: find.byKey(const Key('timeline-actor-ghoul-1-1')),
+              matching: find.byType(Semantics),
+            )
+            .first,
+      );
+      expect(firstActorSemantics.properties.label, 'the ghoul¹');
+      expect(firstActorSemantics.properties.button, isTrue);
+      final secondActorSemantics = tester.widget<Semantics>(
+        find
+            .ancestor(
+              of: find.byKey(const Key('timeline-actor-ghoul-2-3')),
+              matching: find.byType(Semantics),
+            )
+            .first,
+      );
+      expect(secondActorSemantics.properties.label, 'the ghoul²');
+      expect(secondActorSemantics.properties.button, isTrue);
+      expect(
+        tester
+            .widget<Semantics>(
+              find
+                  .ancestor(
+                    of: find.byKey(const Key('timeline-next-hero')),
+                    matching: find.byType(Semantics),
+                  )
+                  .first,
+            )
+            .properties
+            .label,
+        'You, next activation',
+      );
+      expect(find.textContaining('IN '), findsNothing);
     });
+    testWidgets(
+      'a duplicate survivor keeps its suffix in the timeline and inspect after '
+      'a sibling dies',
+      (tester) async {
+        // arrange - both identities are visible before a lethal map action.
+        final bloc = await _pushGame(
+          tester,
+          battleGame(
+            monsters: [
+              ghoulAt(const Position(1, 2), hp: 4),
+              ghoulAt(const Position(2, 1), id: 'ghoul-2'),
+            ],
+            visible: {
+              const Position(1, 1),
+              const Position(1, 2),
+              const Position(2, 1),
+            },
+          ),
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('dock-backing')),
+            matching: find.text('g²'),
+          ),
+          findsOneWidget,
+        );
 
-    testWidgets('the chip row names NOW first, then arrivals as IN n', (
+        // act - the first sibling dies through the normal battle state path.
+        bloc.add(const TileTapped(Position(1, 2)));
+        await tester.pumpAndSettle();
+
+        // assert - the fixed suffix survives in state, timeline, and inspect.
+        expect(bloc.state.game.monsters.map((actor) => actor.id), ['ghoul-2']);
+        expect(bloc.state.presentationOf('ghoul-2')?.glyphLabel, 'g²');
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('dock-backing')),
+            matching: find.text('g²'),
+          ),
+          findsOneWidget,
+        );
+        await tester.tap(
+          find.ancestor(
+            of: find.descendant(
+              of: find.byKey(const Key('dock-backing')),
+              matching: find.text('g²'),
+            ),
+            matching: find.byType(InkWell),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('the ghoul²'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(BottomSheet),
+            matching: find.text('g²'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('truncates at a hidden due actor without a placeholder', (
       tester,
     ) async {
-      // arrange - the adjacent ghoul owes the next turn; a second ghoul walks
-      // in from four tiles down the corridor
-      final game = battleGame(
-        monsters: [
-          ghoulAt(const Position(1, 2)),
-          ghoulAt(const Position(5, 1), id: 'ghoul-2'),
-        ],
-        visible: {
-          const Position(1, 1),
-          const Position(1, 2),
-          const Position(5, 1),
-        },
+      // arrange - the hidden due actor comes before the visible actor.
+      final hidden = ghoulAt(
+        const Position(5, 1),
+        id: 'ghoul-hidden',
+        speed: 20,
       );
-
-      // act
-      await _pushGame(tester, game);
-
-      // assert - NOW first, then the arrivals by count; the words carry the
-      // state, never dim-on-map
-      expect(find.text('NOW — the ghoul'), findsOneWidget);
-      expect(find.text('IN 4 — the ghoul'), findsOneWidget);
-    });
-
-    testWidgets('the dock header backs the cards and the chips in one panel', (
-      tester,
-    ) async {
-      // arrange
+      final visible = ghoulAt(const Position(1, 2), id: 'ghoul-visible');
       final game = battleGame(
-        monsters: [ghoulAt(const Position(1, 2))],
+        monsters: [hidden, visible],
         visible: {const Position(1, 1), const Position(1, 2)},
       );
-      await _pushGame(tester, game);
 
       // act
-      final backing = find.byKey(const Key('dock-backing'));
+      await _pushGame(tester, game);
 
-      // assert - one translucent dark panel holds the stage and the chips
-      expect(backing, findsOneWidget);
-      final container = tester.widget<Container>(backing);
-      final color =
-          container.color ?? (container.decoration! as BoxDecoration).color!;
-      expect(color.a, lessThan(1.0));
+      // assert - only the truthful current hero prefix is rendered.
+      expect(find.byKey(const Key('timeline-current-hero')), findsOneWidget);
+      expect(find.byKey(const Key('timeline-next-hero')), findsNothing);
       expect(
-        find.descendant(of: backing, matching: find.text('the ghoul')),
-        findsOneWidget,
+        find.byKey(const Key('timeline-actor-ghoul-hidden-1')),
+        findsNothing,
       );
       expect(
-        find.descendant(of: backing, matching: find.text('NOW — the ghoul')),
-        findsOneWidget,
+        find.byKey(const Key('timeline-actor-ghoul-visible-1')),
+        findsNothing,
       );
+      expect(find.text('…'), findsNothing);
+      expect(find.text('...'), findsNothing);
+      expect(find.textContaining('IN '), findsNothing);
+      expect(find.textContaining('NOW —'), findsNothing);
     });
 
-    testWidgets('the stage reads on a phone-sized surface', (tester) async {
-      // arrange
+    testWidgets('the dock scrolls a truly overflowing legal queue on a phone', (
+      tester,
+    ) async {
+      // arrange - six speed-20 actors each owe two turns before the hero.
       tester.view.physicalSize = _phone;
       tester.view.devicePixelRatio = 2.625;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       final game = battleGame(
         monsters: [
-          ghoulAt(const Position(1, 2)),
-          spitterAt(const Position(3, 1)),
+          ghoulAt(const Position(1, 2), speed: 20),
+          ghoulAt(const Position(2, 1), id: 'ghoul-2', speed: 20),
+          ghoulAt(const Position(3, 1), id: 'ghoul-3', speed: 20),
+          ghoulAt(const Position(4, 1), id: 'ghoul-4', speed: 20),
+          ghoulAt(const Position(5, 1), id: 'ghoul-5', speed: 20),
+          ghoulAt(const Position(2, 2), id: 'ghoul-6', speed: 20),
         ],
         visible: {
           const Position(1, 1),
           const Position(1, 2),
+          const Position(2, 1),
           const Position(3, 1),
+          const Position(4, 1),
+          const Position(5, 1),
+          const Position(2, 2),
         },
       );
 
       // act
-      await _pushGame(tester, game);
+      final bloc = await _pushGame(tester, game);
+      final dock = find.byKey(const Key('dock-backing'));
+      final scrollable = find.descendant(
+        of: dock,
+        matching: find.byType(Scrollable),
+      );
+      final laterToken = find.byKey(const Key('timeline-actor-ghoul-6-12'));
 
-      // assert - nothing overflows: the dock, the chips, the bar and the word all render
-      expect(find.byType(BattleDock), findsOneWidget);
-      expect(find.text('the ghoul'), findsOneWidget);
-      expect(find.text('the spitter'), findsOneWidget);
-      expect(find.text('at range'), findsOneWidget);
-      expect(find.text('NOW — the ghoul'), findsOneWidget);
+      // assert - a real queue exceeds the phone, then drag reaches its end.
+      final position = tester.state<ScrollableState>(scrollable).position;
+      expect(position.maxScrollExtent, greaterThan(0));
+      expect(
+        tester.getRect(laterToken).left,
+        greaterThan(tester.getRect(dock).right),
+      );
+      await tester.drag(scrollable, const Offset(-800, 0));
+      await tester.pumpAndSettle();
+      expect(position.pixels, greaterThan(0));
+      expect(
+        tester.getRect(laterToken).right,
+        lessThanOrEqualTo(tester.getRect(dock).right),
+      );
+      await tester.tap(laterToken);
+      await tester.pumpAndSettle();
+      expect(bloc.state.selectedActorId, 'ghoul-6');
+      expect(find.text('the ghoul⁶'), findsOneWidget);
+      expect(find.byType(DungeonSceneHost), findsOneWidget);
+      expect(find.byType(BattleShelf), findsOneWidget);
+      expect(find.textContaining('Engaged'), findsOneWidget);
+      expect(find.byType(ListView), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
 
   group('the target mark on the map', () {
-    testWidgets('an armed spell marks every visible monster, not the card', (
-      tester,
-    ) async {
-      // arrange - the ghoul adjacent and a far spitter on the stage
-      final game = battleGame(
-        monsters: [
-          ghoulAt(const Position(1, 2)),
-          spitterAt(const Position(4, 1)),
-        ],
-        knownSpells: const {'firebolt'},
-        mana: 10,
-        visible: {
-          const Position(1, 1),
-          const Position(1, 2),
-          const Position(4, 1),
-        },
-      );
-      final bloc = await _pushGame(tester, game);
+    testWidgets(
+      'an armed spell marks every visible monster, not the timeline',
+      (tester) async {
+        // arrange - the ghoul adjacent and a far spitter in the sight line
+        final game = battleGame(
+          monsters: [
+            ghoulAt(const Position(1, 2)),
+            spitterAt(const Position(4, 1)),
+          ],
+          knownSpells: const {'firebolt'},
+          mana: 10,
+          visible: {
+            const Position(1, 1),
+            const Position(1, 2),
+            const Position(4, 1),
+          },
+        );
+        final bloc = await _pushGame(tester, game);
 
-      // act - arm the spell from the shelf
-      await tester.tap(find.text('✳ Firebolt 2'));
-      await tester.pumpAndSettle();
+        // act - arm the spell from the shelf
+        await tester.tap(find.text('✳ Firebolt 2'));
+        await tester.pumpAndSettle();
 
-      // assert - the sight rule marks both; the stage cards stay unmarked
-      expect(bloc.state.armedTargets, {'ghoul-1', 'spitter-1'});
-      expect(
-        tester.widget<Container>(find.byKey(const Key('stage-card-ghoul-1'))),
-        predicate<Container>(
-          (container) =>
-              (container.decoration! as BoxDecoration).border == null,
-        ),
-      );
-    });
+        // assert - the sight rule marks both; the timeline remains view-only.
+        expect(bloc.state.armedTargets, {'ghoul-1', 'spitter-1'});
+        expect(
+          find.byKey(const Key('timeline-actor-ghoul-1-1')),
+          findsOneWidget,
+        );
+      },
+    );
   });
 
   group('the skill bar', () {
@@ -515,7 +643,7 @@ void main() {
       expect(find.text('✳ Firebolt 2 — armed'), findsOneWidget);
     });
 
-    testWidgets('an armed cast at a stage card names the target', (
+    testWidgets('an armed cast at a visible monster names the target', (
       tester,
     ) async {
       // arrange - the ghoul adjacent; the spitter holds reach further out
@@ -592,7 +720,7 @@ void main() {
       expect(texts, ['✳ Firebolt 2', 'Wait']);
     });
 
-    testWidgets('a bare card tap opens the enemy info, never the bump', (
+    testWidgets('a timeline actor token opens enemy info, never the bump', (
       tester,
     ) async {
       // arrange - the ghoul adjacent; nothing armed
@@ -600,6 +728,7 @@ void main() {
         monsters: [
           ghoulAt(
             const Position(1, 2),
+            speed: 20,
             resists: const {DamageType.fire},
             vulnerableTo: const {DamageType.frost},
           ),
@@ -608,12 +737,18 @@ void main() {
         mana: 10,
       );
       final bloc = await _pushGame(tester, game);
+      final gameBefore = bloc.state.game;
+      final logBefore = bloc.state.log;
 
       // act
-      await tester.tap(find.text('the ghoul'));
+      await tester.tap(find.byKey(const Key('timeline-actor-ghoul-1-1')));
       await tester.pumpAndSettle();
 
-      // assert - the sheet, and the turn unbought: no swing, no claws
+      // assert - the sheet and selection are view-only: no swing, no claws
+      expect(bloc.state.selectedActorId, 'ghoul-1');
+      expect(bloc.state.cameraFocus, const Position(1, 2));
+      expect(bloc.state.game, same(gameBefore));
+      expect(bloc.state.log, same(logBefore));
       expect(find.text('strikes adjacent'), findsOneWidget);
       expect(find.text('3–3'), findsOneWidget);
       expect(find.text('Resists fire'), findsOneWidget);
@@ -624,7 +759,7 @@ void main() {
       expect(bloc.state.armedSpellId, isNull);
     });
 
-    testWidgets('armed Attack and a marked card tap is the bump', (
+    testWidgets('armed Attack and a marked map tap is the bump', (
       tester,
     ) async {
       // arrange
@@ -822,7 +957,6 @@ void main() {
       await _tapTile(tester, const Position(4, 1));
       await tester.pumpAndSettle();
 
-      // assert - the sheet, and nothing dispatched
       expect(find.text('strikes at range 3'), findsOneWidget);
       expect(bloc.state.log.length, logBefore);
       expect(bloc.state.game.hero.position, const Position(1, 1));
@@ -846,7 +980,6 @@ void main() {
       await tester.longPressAt(tester.getTopLeft(scene) + local);
       await tester.pumpAndSettle();
 
-      // assert - the sheet, and nothing dispatched
       expect(find.text('strikes at range 3'), findsOneWidget);
       expect(bloc.state.log.length, logBefore);
     });
@@ -892,6 +1025,60 @@ void main() {
       expect(bloc.state.pan, Offset.zero);
       expect(find.byKey(recenterKey), findsNothing);
     });
+    testWidgets(
+      'a distant selected actor makes recenter return focus to the hero',
+      (tester) async {
+        const wideArena = '''
+########################################
+#......................................#
+########################################''';
+        final map = FloorMap.parse(wideArena);
+        const heroPosition = Position(1, 1);
+        const actorPosition = Position(18, 1);
+        final monster = ghoulAt(actorPosition);
+        final seen = {heroPosition, actorPosition};
+        final game = GameState(
+          map: map,
+          hero: Actor(
+            id: 'hero',
+            name: 'you',
+            glyph: '@',
+            position: heroPosition,
+            hp: 20,
+            maxHp: 20,
+            attackMin: 4,
+            attackMax: 4,
+            speed: 10,
+            energy: actThreshold,
+          ),
+          monsters: [monster],
+          rng: Rng(1),
+          lootRng: Rng(2),
+          visible: seen,
+          explored: seen,
+          buildFloor: (depth) => throw StateError('no floor below'),
+          spells: spellsById,
+        );
+        final bloc = await _pushGame(tester, game);
+        final gameBefore = bloc.state.game;
+        final logBefore = bloc.state.log;
+        bloc.add(const TimelineActorSelected('ghoul-1'));
+        await tester.pumpAndSettle();
+
+        expect(bloc.state.selectedActorId, 'ghoul-1');
+        expect(bloc.state.cameraFocus, actorPosition);
+        expect(find.byKey(recenterKey), findsOneWidget);
+
+        await tester.tap(find.byKey(recenterKey));
+        await tester.pumpAndSettle();
+
+        expect(bloc.state.selectedActorId, isNull);
+        expect(bloc.state.cameraFocus, heroPosition);
+        expect(bloc.state.game, same(gameBefore));
+        expect(bloc.state.log, same(logBefore));
+        expect(find.byKey(recenterKey), findsNothing);
+      },
+    );
   });
 
   group('the wait surfaces', () {

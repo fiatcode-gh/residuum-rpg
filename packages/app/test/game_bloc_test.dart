@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
+import 'package:residuum_app/game/activation_timeline.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -19,6 +20,13 @@ const twoRooms = '''
 #.....#......#
 ##############''';
 
+const wideArena = '''
+#########################
+#.......................#
+#.......................#
+#.......................#
+#########################''';
+
 Floor _noFloorBelow(int depth) =>
     throw StateError('this crawl was not meant to descend');
 
@@ -28,6 +36,17 @@ Floor deeperFloor(int depth) => Floor(
   monsters: const [],
   stairsDown: depth >= deepestDepth ? null : const Position(5, 3),
   stairsUp: depth <= 1 ? null : const Position(1, 1),
+);
+
+Floor reusedIdFloor(int depth) => Floor(
+  map: FloorMap.parse(arena),
+  heroSpawn: const Position(1, 1),
+  monsters: [
+    ghoul(const Position(3, 1), id: 'ghoul-2'),
+    ghoul(const Position(4, 1), id: 'ghoul-1'),
+  ],
+  stairsDown: null,
+  stairsUp: const Position(1, 1),
 );
 
 Set<Position> everywhereIn(String ascii) {
@@ -863,6 +882,301 @@ void main() {
       expect(canDescend, isFalse);
       addTearDown(bloc.close);
     });
+  });
+  group('encounter identity and activation presentation', () {
+    test('projects repeated due actors with literal ids and labels', () {
+      final state = GameViewState(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [
+            ghoul(const Position(3, 1), id: 'ghoul-fast', speed: 20),
+            ghoul(const Position(5, 2), id: 'ghoul-other').copyWith(energy: 50),
+          ],
+        ),
+        log: const [],
+      );
+
+      final actors = state.activationQueue.whereType<ActorActivationToken>();
+
+      expect(actors.map((token) => token.actor.id), [
+        'ghoul-fast',
+        'ghoul-fast',
+        'ghoul-other',
+      ]);
+      expect(state.presentationOf('ghoul-fast')?.displayName, 'the ghoul¹');
+      expect(state.presentationOf('ghoul-other')?.displayName, 'the ghoul²');
+    });
+
+    test(
+      'a hidden due actor truncates the queue before later actors and hero',
+      () {
+        final game = arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [
+            ghoul(const Position(1, 1), id: 'ghoul-hidden', speed: 20),
+            ghoul(const Position(5, 2), id: 'ghoul-visible'),
+          ],
+        ).copyWith(visible: {const Position(3, 2), const Position(5, 2)});
+        final queue = GameViewState(game: game, log: const []).activationQueue;
+
+        expect(queue, hasLength(1));
+        expect(queue.single, isA<HeroActivationToken>());
+        expect((queue.single as HeroActivationToken).isCurrent, isTrue);
+      },
+    );
+
+    test(
+      'a step that reveals a duplicate formats the notice with final identity',
+      () async {
+        final bloc = walker(
+          arenaGame(
+            ascii: wideArena,
+            heroAt: const Position(1, 2),
+            monsters: [
+              ghoul(const Position(1, 1), id: 'ghoul-first'),
+              ghoul(const Position(20, 2), id: 'ghoul-second'),
+            ],
+            explored: everywhereIn(wideArena),
+          ),
+        );
+        addTearDown(bloc.close);
+
+        for (var x = 2; x <= 15; x++) {
+          final next = bloc.stream.first;
+          bloc.add(TileTapped(Position(x, 2)));
+          await next;
+        }
+
+        expect(bloc.state.log, contains('The ghoul² comes into view.'));
+        expect(
+          bloc.state.presentationOf('ghoul-first')?.displayName,
+          'the ghoul¹',
+        );
+        expect(
+          bloc.state.presentationOf('ghoul-second')?.displayName,
+          'the ghoul²',
+        );
+      },
+    );
+
+    test(
+      'attack and death sentences share duplicate presentation names',
+      () async {
+        final bloc = GameBloc(
+          game: arenaGame(
+            heroAt: const Position(3, 2),
+            monsters: [
+              ghoul(const Position(4, 2), id: 'ghoul-first', hp: 4),
+              ghoul(const Position(3, 1), id: 'ghoul-second'),
+            ],
+          ),
+          stepDelay: Duration.zero,
+        );
+        addTearDown(bloc.close);
+
+        bloc.add(const TileTapped(Position(4, 2)));
+        await bloc.stream.first;
+
+        expect(bloc.state.log, contains('You hit the ghoul¹ for 4.'));
+        expect(bloc.state.log, contains('The ghoul¹ dies.'));
+      },
+    );
+
+    test(
+      'monster attack sentences use the same duplicate presentation name',
+      () async {
+        final bloc = GameBloc(
+          game: arenaGame(
+            heroAt: const Position(3, 2),
+            monsters: [
+              ghoul(const Position(4, 2), id: 'ghoul-first'),
+              ghoul(const Position(3, 1), id: 'ghoul-second'),
+            ],
+          ),
+          stepDelay: Duration.zero,
+        );
+        addTearDown(bloc.close);
+
+        bloc.add(const WaitPressed());
+        await bloc.stream.first;
+
+        expect(bloc.state.log, contains('The ghoul¹ claws you for 3.'));
+      },
+    );
+
+    test('selecting a visible actor is view-only and resets pan', () async {
+      final bloc = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+        stepDelay: Duration.zero,
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const SkillArmed('firebolt'));
+      await next;
+      next = bloc.stream.first;
+      bloc.add(const MapPanned(Offset(10, 8)));
+      await next;
+      final before = bloc.state;
+
+      next = bloc.stream.first;
+      bloc.add(const TimelineActorSelected('ghoul-1'));
+      final selected = await next;
+
+      expect(selected.game, same(before.game));
+      expect(selected.log, same(before.log));
+      expect(selected.actorIdentity, same(before.actorIdentity));
+      expect(selected.autoPath, same(before.autoPath));
+      expect(selected.walkId, before.walkId);
+      expect(selected.armedSpellId, 'firebolt');
+      expect(selected.hasFled, before.hasFled);
+      expect(selected.selectedActorId, 'ghoul-1');
+      expect(selected.selectedActor, same(before.game.monsters.single));
+      expect(selected.pan, Offset.zero);
+      expect(selected.cameraFocus, const Position(4, 2));
+    });
+
+    blocTest<GameBloc, GameViewState>(
+      'hidden and stale timeline ids emit no state',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [ghoul(const Position(4, 2))],
+        ).copyWith(visible: {const Position(3, 2)}),
+      ),
+      act: (bloc) => bloc
+        ..add(const TimelineActorSelected('ghoul-1'))
+        ..add(const TimelineActorSelected('stale')),
+      expect: () => <GameViewState>[],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'dead timeline ids emit no state',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [ghoul(const Position(4, 2), hp: 0)],
+        ),
+      ),
+      act: (bloc) => bloc.add(const TimelineActorSelected('ghoul-1')),
+      expect: () => <GameViewState>[],
+    );
+
+    test('pan and arming preserve selection', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const TimelineActorSelected('ghoul-1'));
+      await next;
+      next = bloc.stream.first;
+      bloc.add(const MapPanned(Offset(10, 8)));
+      await next;
+      expect(bloc.state.selectedActorId, 'ghoul-1');
+      expect(bloc.state.pan, const Offset(10, 8));
+
+      next = bloc.stream.first;
+      bloc.add(const SkillArmed('firebolt'));
+      await next;
+      expect(bloc.state.selectedActorId, 'ghoul-1');
+      expect(bloc.state.pan, Offset.zero);
+    });
+
+    test('recenter clears selection without a turn or disarm', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      for (final event in <GameBlocEvent>[
+        const TimelineActorSelected('ghoul-1'),
+        const SkillArmed('firebolt'),
+        const MapPanned(Offset(10, 8)),
+      ]) {
+        final next = bloc.stream.first;
+        bloc.add(event);
+        await next;
+      }
+      final before = bloc.state;
+
+      final next = bloc.stream.first;
+      bloc.add(const RecenterPressed());
+      final recentered = await next;
+
+      expect(recentered.game, same(before.game));
+      expect(recentered.log, same(before.log));
+      expect(recentered.game.hero.energy, before.game.hero.energy);
+      expect(recentered.armedSpellId, 'firebolt');
+      expect(recentered.selectedActorId, isNull);
+      expect(recentered.pan, Offset.zero);
+    });
+
+    test('a real wait step clears selection and pan', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      for (final event in <GameBlocEvent>[
+        const TimelineActorSelected('ghoul-1'),
+        const MapPanned(Offset(10, 8)),
+      ]) {
+        final next = bloc.stream.first;
+        bloc.add(event);
+        await next;
+      }
+      final before = bloc.state;
+
+      final next = bloc.stream.first;
+      bloc.add(const WaitPressed());
+      final waited = await next;
+
+      expect(waited.selectedActorId, isNull);
+      expect(waited.pan, Offset.zero);
+      expect(waited.actorIdentity, same(before.actorIdentity));
+      expect(waited.game, isNot(same(before.game)));
+      expect(waited.log, contains('You hold your ground.'));
+    });
+
+    test(
+      'a floor transition rebuilds identity from the arrived order',
+      () async {
+        final game = arenaGame(
+          heroAt: const Position(5, 3),
+          monsters: [
+            ghoul(const Position(2, 1), id: 'ghoul-1'),
+            ghoul(const Position(3, 1), id: 'ghoul-2'),
+          ],
+          stairsDown: const Position(5, 3),
+          buildFloor: reusedIdFloor,
+        );
+        final bloc = walker(game);
+        addTearDown(bloc.close);
+        final beforeIdentity = bloc.state.actorIdentity;
+
+        final next = bloc.stream.first;
+        bloc.add(const DescendPressed());
+        final descended = await next;
+
+        expect(descended.actorIdentity, isNot(same(beforeIdentity)));
+        expect(descended.presentationOf('ghoul-2')?.displayName, 'the ghoul¹');
+        expect(descended.presentationOf('ghoul-1')?.displayName, 'the ghoul²');
+      },
+    );
   });
 }
 
@@ -2046,145 +2360,6 @@ void _lootTests() {
       // assert
       expect(open, isTrue);
       expect(closed, isFalse);
-    });
-  });
-
-  group('arrivals (turns to arrival, D86 formula)', () {
-    Actor spitterAt(Position at) => Actor(
-      id: 'spitter-1',
-      name: 'the spitter',
-      glyph: 'p',
-      position: at,
-      hp: 4,
-      maxHp: 4,
-      attackMin: 2,
-      attackMax: 3,
-      speed: 5,
-      energy: actThreshold,
-      reach: 3,
-    );
-
-    Actor walker(Position at, {int speed = 10, String id = 'walker-1'}) =>
-        Actor(
-          id: id,
-          name: 'the walker',
-          glyph: 'w',
-          position: at,
-          hp: 10,
-          maxHp: 10,
-          attackMin: 1,
-          attackMax: 1,
-          speed: speed,
-          energy: actThreshold,
-        );
-
-    test(
-      'a monster five tiles out at equal speed reads five turns, not one',
-      () {
-        // arrange - the D86 counterexample: the spec's ÷ would have read 1
-        const long = '''
-#########
-#.......#
-#.......#
-#.......#
-#.......#
-#.......#
-#.......#
-#########''';
-        final game = arenaGame(
-          ascii: long,
-          heroAt: const Position(1, 1),
-          monsters: [walker(const Position(1, 6))],
-        );
-        final state = GameViewState(game: game, log: const []);
-
-        // act
-        final arrivals = state.arrivals;
-
-        // assert
-        expect(arrivals.single.$1.id, 'walker-1');
-        expect(arrivals.single.$2, 5);
-      },
-    );
-
-    test('a slower monster takes more hero actions to arrive', () {
-      // arrange - two tiles of floor, monster half the hero's speed
-      final game = arenaGame(
-        heroAt: const Position(3, 2),
-        monsters: [walker(const Position(5, 2), speed: 5)],
-      );
-      final state = GameViewState(game: game, log: const []);
-
-      // act
-      final arrivals = state.arrivals;
-
-      // assert - ceil(2 × 10 / 5): more than the walked distance proves the
-      // ratio is doing work
-      expect(arrivals.single.$2, 4);
-    });
-
-    test('a fast monster arrives in fewer hero actions', () {
-      // arrange - two tiles of floor, monster twice the hero's speed
-      final game = arenaGame(
-        heroAt: const Position(3, 2),
-        monsters: [walker(const Position(5, 2), speed: 20)],
-      );
-      final state = GameViewState(game: game, log: const []);
-
-      // act
-      final arrivals = state.arrivals;
-
-      // assert - ceil(2 × 10 / 20)
-      expect(arrivals.single.$2, 1);
-    });
-
-    test('a monster holding reach is on the stage, not walking in', () {
-      // arrange
-      final game = arenaGame(
-        heroAt: const Position(3, 2),
-        monsters: [
-          ghoul(const Position(3, 1)),
-          spitterAt(const Position(5, 2)),
-        ],
-      );
-      final state = GameViewState(
-        game: game.copyWith(visible: {...game.visible, const Position(5, 2)}),
-        log: const [],
-      );
-
-      // act
-      final arrivals = state.arrivals;
-
-      // assert - both hold reach, neither is walking in
-      expect(state.monstersHoldingReach, isNotEmpty);
-      expect(arrivals, isEmpty);
-    });
-
-    test('a walled-off monster never arrives, however visible', () {
-      // arrange - the wall column keeps the flow field out of its room
-      const split = '''
-#########
-#...#...#
-#...#...#
-#...#...#
-#########''';
-      final game = arenaGame(
-        ascii: split,
-        heroAt: const Position(1, 1),
-        monsters: [walker(const Position(6, 1))],
-      );
-      final state = GameViewState(
-        game: game.copyWith(
-          visible: {const Position(1, 1), const Position(6, 1)},
-        ),
-        log: const [],
-      );
-
-      // act
-      final arrivals = state.arrivals;
-
-      // assert - visible and unreachable: it stands still in the engine too
-      expect(arrivals, isEmpty);
     });
   });
 

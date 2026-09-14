@@ -12,13 +12,12 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 /// Characterization for `m3-battle-ui`: what the spell rows and the crawl
-/// screen do TODAY, pinned green against unmodified `d576d1c` before the
-/// battle unit lifts the row grammar and adds the battle view.
+/// screen do TODAY, pinned green against the pre-timeline battle surface.
 ///
 /// These pins are the verbatim-lift's proof: the extraction may change where
 /// the grammar lives, never what it renders. The crawl pins are the
 /// battle-view's absence clause — the screen's current structure, so the
-/// section-swap that lands later has a documented "before".
+/// live map plus timeline has a documented "before".
 
 const _arena = '''
 #######

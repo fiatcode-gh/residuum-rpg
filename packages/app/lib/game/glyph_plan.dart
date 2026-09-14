@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import 'actor_presentation.dart';
+
 import 'package:residuum_core/core.dart';
 
 import 'dungeon_palette.dart';
@@ -33,6 +36,8 @@ class GlyphCell {
     this.marked = false,
     this.layer = GlyphLayer.terrain,
     this.entity,
+    this.badge,
+    this.selected = false,
   });
 
   final Position position;
@@ -46,6 +51,12 @@ class GlyphCell {
   /// Whether this cell is a legal target of the armed action. An outline carries
   /// the state by shape and position, never hue.
   final bool marked;
+
+  /// An optional encounter-local identity badge, separate from [glyph].
+  final String? badge;
+
+  /// Whether this visible actor is the current presentation selection.
+  final bool selected;
 
   /// The render layer and entity this cell represents.
   final GlyphLayer layer;
@@ -77,6 +88,8 @@ List<GlyphCell> glyphPlan(
   GameState game,
   DungeonPalette palette, {
   Set<String> markedIds = const {},
+  Map<String, ActorPresentation> actorPresentations = const {},
+  String? selectedActorId,
 }) {
   final cells = <GlyphCell>[];
   for (var y = 0; y < game.map.height; y++) {
@@ -132,6 +145,8 @@ List<GlyphCell> glyphPlan(
         marked: markedIds.contains(monster.id),
         layer: GlyphLayer.monster,
         entity: monster.id,
+        badge: actorPresentations[monster.id]?.badge,
+        selected: monster.id == selectedActorId,
       ),
     );
   }
