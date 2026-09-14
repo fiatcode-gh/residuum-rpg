@@ -241,6 +241,26 @@ Append-only. Supersede old decisions; do not rewrite history.
   COR and TTC completed clean; CRF findings were corrected and re-verified.
   SEC was skipped because no security boundary changed.
 
+- 2026-09-14 — Unit 3 implementation authorized and dispatched to one
+  non-isolated `flow-plan-executor` (`Unit3Executor`) on
+  `residuum-visual-reboot-3`. The executor completed all three tasks
+  (bloc semantics, scene long-press, shelf+screen) but was force-stopped
+  mid-edit once on a soft request budget; Main revived it with a precise
+  six-point resume directive and it finished. Full app suite 733 passed and
+  analyzer clean at implementation commit `a8eacf1`.
+
+- 2026-09-14 — Unit 3 acceptance review (single `flow-acceptance-reviewer`,
+  per the planned path). Verdict CHANGES. Contract satisfaction, plan
+  conformance, and correctness all PASS; the one Important finding was a
+  test-contract gap: every cast test fired at an orthogonally-adjacent
+  monster, so the retired adjacency-only dock path was not actually
+  protected by a test. One Minor: `inspectTargetAt` returned
+  `monsterAt(position)` with no visibility gate. Batched both to the live
+  executor; it added the distant-visible-monster cast test + unseen-monster
+  disarm negative, and gated inspect on `game.visible.contains`. Correction
+  committed `0156a0b`; full suite 736 passed and analyzer clean. Security
+  skip (no trust boundary).
+
 ## Verification receipts
 
 - 2026-09-13 — Unit 0 inspected the approved mock and source-verified the
@@ -291,6 +311,31 @@ Append-only. Supersede old decisions; do not rewrite history.
   session. COR and TTC found no remaining defects; CRF findings were
   corrected with focused proof. SEC was skipped because no security boundary
   changed.
+
+### Unit 3 acceptance receipt
+
+- 2026-09-14 — Unit 3 worker proof: task 01 Red→Green on bloc semantics
+  (map melee, armed cast/disarm, inspect getter, recenter, `heroOffScreen`);
+  task 02 scene long-press Red→Green; task 03 shelf/overflow/inspect/recenter
+  Red→Green. Focused proof 204 tests across 8 files, then 125 bloc tests after
+  the review correction; `dart format` on all touched files.
+- 2026-09-14 — Main ran `flutter test && flutter analyze` from `packages/app`
+  at implementation head `a8eacf1`: 733 tests, no analyzer issues. After the
+  acceptance-review correction `0156a0b` (visible-cast test + inspect
+  visibility gate): 736 tests, no analyzer issues.
+- 2026-09-14 — Acceptance review (single `flow-acceptance-reviewer`,
+  `Unit3AcceptReview`): CHANGES → one Important test-contract gap (cast tests
+  only covered adjacency, so the retired adjacency-only path was unprotected)
+  and one Minor (`inspectTargetAt` missing a visibility gate). Corrected by the
+  executor with fresh proof; Main re-verified 736 tests + clean analyzer.
+  SEC skipped (no trust boundary). Contract satisfaction, plan conformance,
+  correctness PASS.
+- 2026-09-14 — **AVD/greyscale acceptance BLOCKED (environment).** Two
+  Pixel_10 launches died at scene-init/memory stage on this 14 GiB host
+  (4.4 GiB available vs the AVD's 16 GiB recommendation); no `adb` device ever
+  registered. Not a code defect. Criterion 10 (device evidence) remains open
+  and must be captured on a host that can boot the AVD before Unit 3 is
+  accepted for merge.
 
 
 ## Corrections to inherited assumptions

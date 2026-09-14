@@ -14,6 +14,24 @@
   `units/unit-3/PLAN.md` + three task briefs. Next action: user implementation
   authorization, then dispatch one sequential `flow-plan-executor` on a fresh
   `residuum-visual-reboot-3` branch from `affc138`. No production code written.
+
+## Unit 3 execution state (paused 2026-09-14, session limit)
+
+- Branch `residuum-visual-reboot-3` from base `ebf9c62` (which is `affc138` +
+  the `docs:` ledger/plan commit). Executor `Unit3Executor` was dispatched
+  non-isolated as sole writer.
+- **All three tasks complete.** Implementation commit `a8eacf1` (733 tests,
+  analyzer clean); review correction `0156a0b` (visible-cast test + inspect
+  visibility gate; 736 tests, analyzer clean). Full `flutter test` and
+  `flutter analyze` from `packages/app` verified by Main at `0156a0b`.
+- Acceptance review (single `flow-acceptance-reviewer`, `Unit3AcceptReview`)
+  verdict CHANGES → corrected and re-verified; contract satisfaction, plan
+  conformance, correctness all PASS. SEC skip.
+- Remaining gate: Pixel_10 AVD + greyscale device acceptance (contract
+  criterion 10) — **BLOCKED on this host** (14 GiB RAM, AVD wants 16 GiB; two
+  launches died before `adb` registration). Must be captured on a capable host
+  before Unit 3 is accepted for merge. Then integration (user-owned;
+  `flow-integrating`).
 - Locked inherited contracts: section 18 baseline summary in `LEDGER.md`
   (Flame never authoritative game state; graphical glyphs; map-first melee;
   four-region rule; accessibility by shape/word never hue alone) plus
