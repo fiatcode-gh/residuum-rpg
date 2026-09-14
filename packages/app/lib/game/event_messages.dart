@@ -1,6 +1,9 @@
 import 'package:residuum_core/core.dart';
 
-/// One line of the message log, or null when the event needs no words.
+import 'log_line.dart';
+
+/// One line of the message log, and the kind it is, or null when the event
+/// needs no words.
 ///
 /// [names] maps actor ids to what the log calls them, taken from the state
 /// *before* the turn ran — a monster that died this turn is gone from the state
@@ -12,69 +15,135 @@ import 'package:residuum_core/core.dart';
 /// it reads the start state — which is why the set rides in rather than the
 /// reach, and why an adjacent monster claws even when its reach is longer than
 /// one: a blow from arm's length is a claw, however long the arms.
-String? describeEvent(
+LogLine? describeEvent(
   GameEvent event,
   Map<String, String> names, {
   Set<String> strikesFromAfar = const {},
 }) => switch (event) {
   ActorMoved(:final actorId, :final from, :final to) when actorId == heroId =>
-    'You step ${_bearing(from, to)}.',
+    LogLine('You step ${_bearing(from, to)}.', LogCategory.moved),
   ActorMoved() => null,
-  MoveBlocked(:final actorId) when actorId == heroId => 'The way is blocked.',
+  MoveBlocked(:final actorId) when actorId == heroId => LogLine(
+    'The way is blocked.',
+    LogCategory.refused,
+  ),
   MoveBlocked() => null,
   AttackHit(:final attackerId, :final targetId, :final damage)
       when attackerId == heroId =>
-    'You hit ${_named(names, targetId)} for $damage.',
-  AttackHit(:final attackerId, :final damage) =>
+    LogLine('You hit ${_named(names, targetId)} for $damage.', LogCategory.hit),
+  AttackHit(:final attackerId, :final damage) => LogLine(
     strikesFromAfar.contains(attackerId)
         ? '${_capitalised(_named(names, attackerId))} strikes you from afar '
               'for $damage.'
         : '${_capitalised(_named(names, attackerId))} claws you for $damage.',
-  ActorDied(:final actorId) when actorId == heroId => 'You die.',
-  ActorDied(:final actorId) => '${_capitalised(_named(names, actorId))} dies.',
-  ActorNoticed(:final actorId) =>
+    LogCategory.struck,
+  ),
+  ActorDied(:final actorId) when actorId == heroId => LogLine(
+    'You die.',
+    LogCategory.died,
+  ),
+  ActorDied(:final actorId) => LogLine(
+    '${_capitalised(_named(names, actorId))} dies.',
+    LogCategory.died,
+  ),
+  ActorNoticed(:final actorId) => LogLine(
     '${_capitalised(_named(names, actorId))} comes into view.',
-  Descended(:final newDepth) => 'You descend to depth $newDepth.',
-  Ascended(:final newDepth) => 'You climb to depth $newDepth.',
-  AttackDodged(:final attackerId) =>
+    LogCategory.noticed,
+  ),
+  Descended(:final newDepth) => LogLine(
+    'You descend to depth $newDepth.',
+    LogCategory.moved,
+  ),
+  Ascended(:final newDepth) => LogLine(
+    'You climb to depth $newDepth.',
+    LogCategory.moved,
+  ),
+  AttackDodged(:final attackerId) => LogLine(
     '${_capitalised(_named(names, attackerId))} swings and misses.',
-  ItemDropped(:final item) => '${item.displayName} falls to the floor.',
-  ItemPickedUp(:final item) => 'You pick up ${item.displayName}.',
-  InventoryFull() => 'You cannot carry any more.',
-  ItemEquipped(:final item, :final slot) =>
+    LogCategory.struck,
+  ),
+  ItemDropped(:final item) => LogLine(
+    '${item.displayName} falls to the floor.',
+    LogCategory.item,
+  ),
+  ItemPickedUp(:final item) => LogLine(
+    'You pick up ${item.displayName}.',
+    LogCategory.item,
+  ),
+  InventoryFull() => const LogLine(
+    'You cannot carry any more.',
+    LogCategory.refused,
+  ),
+  ItemEquipped(:final item, :final slot) => LogLine(
     'You put on ${item.displayName} (${_slotName(slot)}).',
-  ItemUnequipped(:final item, :final slot) =>
+    LogCategory.item,
+  ),
+  ItemUnequipped(:final item, :final slot) => LogLine(
     'You take off ${item.displayName} (${_slotName(slot)}).',
-  ActionRefused(:final reason) => '${_capitalised(reason)}.',
-  PotionDrunk(:final item, :final healed) when healed == 0 =>
+    LogCategory.item,
+  ),
+  ActionRefused(:final reason) => LogLine(
+    '${_capitalised(reason)}.',
+    LogCategory.refused,
+  ),
+  PotionDrunk(:final item, :final healed) when healed == 0 => LogLine(
     'You drink ${item.displayName}. Nothing was wrong with you.',
-  PotionDrunk(:final item, :final healed) =>
+    LogCategory.item,
+  ),
+  PotionDrunk(:final item, :final healed) => LogLine(
     'You drink ${item.displayName} and recover $healed.',
-  SpellLearned(:final book, :final spell) =>
+    LogCategory.item,
+  ),
+  SpellLearned(:final book, :final spell) => LogLine(
     'You read ${book.displayName} and learn ${spell.name}.',
+    LogCategory.raised,
+  ),
   SpellHit(:final spell, :final targetId, :final damage, :final bite) =>
-    '${_capitalised(spell.name)} ${_boltVerb(spell.type!)} '
-        '${_named(names, targetId)} for $damage${_biteAside(bite)}',
-  MendCast(:final healed) when healed == 0 =>
+    LogLine(
+      '${_capitalised(spell.name)} ${_boltVerb(spell.type!)} '
+      '${_named(names, targetId)} for $damage${_biteAside(bite)}',
+      LogCategory.hit,
+    ),
+  MendCast(:final healed) when healed == 0 => const LogLine(
     'You mend. Nothing was wrong with you.',
-  MendCast(:final healed) => 'You mend and recover $healed.',
-  WardRaised(:final absorbs) => 'A ward closes over you, holding $absorbs.',
-  WardStruck(:final absorbed, :final remaining) when remaining == 0 =>
+    LogCategory.raised,
+  ),
+  MendCast(:final healed) => LogLine(
+    'You mend and recover $healed.',
+    LogCategory.raised,
+  ),
+  WardRaised(:final absorbs) => LogLine(
+    'A ward closes over you, holding $absorbs.',
+    LogCategory.raised,
+  ),
+  WardStruck(:final absorbed, :final remaining) when remaining == 0 => LogLine(
     'Your ward takes $absorbed and breaks.',
-  WardStruck(:final absorbed, :final remaining) =>
+    LogCategory.struck,
+  ),
+  WardStruck(:final absorbed, :final remaining) => LogLine(
     'Your ward takes $absorbed, $remaining left.',
-  MonsterBound(:final targetId, :final turns) =>
+    LogCategory.struck,
+  ),
+  MonsterBound(:final targetId, :final turns) => LogLine(
     '${_capitalised(_named(names, targetId))} is bound for $turns turns.',
-  MonsterBanished(:final targetId) =>
+    LogCategory.hit,
+  ),
+  MonsterBanished(:final targetId) => LogLine(
     '${_capitalised(_named(names, targetId))} vanishes and reappears '
-        'elsewhere.',
-  NodeGathered(:final kind, :final material) =>
+    'elsewhere.',
+    LogCategory.hit,
+  ),
+  NodeGathered(:final kind, :final material) => LogLine(
     'You ${kind.verb.toLowerCase()} the ${kind.word} and take one '
-        '${material.word}.',
-  SkillLevelledUp(:final skill, :final level) =>
+    '${material.word}.',
+    LogCategory.gathered,
+  ),
+  SkillLevelledUp(:final skill, :final level) => LogLine(
     '${_skillName(skill)} rises to $level.',
-  Fled() => 'You break off and get away.',
-  HeroWaited() => 'You hold your ground.',
+    LogCategory.raised,
+  ),
+  Fled() => const LogLine('You break off and get away.', LogCategory.moved),
+  HeroWaited() => const LogLine('You hold your ground.', LogCategory.moved),
   GameOver() => null,
 };
 

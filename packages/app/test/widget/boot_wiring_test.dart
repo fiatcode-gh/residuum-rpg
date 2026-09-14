@@ -1,4 +1,8 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/game_bloc.dart';
+import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -67,6 +71,13 @@ void main() {
       // assert
       expect(find.textContaining('The Crypt — depth 1/'), findsOneWidget);
       expect(find.text('The crawl resumes.'), findsOneWidget);
+      final crawl = BlocProvider.of<GameBloc>(
+        tester.element(find.byType(GameScreen)),
+      );
+      expect(
+        crawl.state.log,
+        contains(const LogLine('The crawl resumes.', LogCategory.reported)),
+      );
     });
 
     testWidgets('a document with a crawl the hero left opens on the world', (

@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
+import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -90,7 +91,10 @@ void main() {
         expect(bloc.state.game, same(bloc.state.game));
         expect(
           bloc.state.log.single,
-          'The dungeon refused that; nothing happened.',
+          const LogLine(
+            'The dungeon refused that; nothing happened.',
+            LogCategory.refused,
+          ),
         );
         expect(bloc.state.walkId, 0);
       },

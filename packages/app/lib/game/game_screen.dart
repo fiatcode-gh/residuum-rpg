@@ -9,6 +9,7 @@ import 'battle_view.dart';
 import 'dungeon_palette.dart';
 import 'dungeon_scene.dart';
 import 'game_bloc.dart';
+import 'log_line.dart';
 import 'grid_geometry.dart';
 import 'inventory_screen.dart';
 import 'spell_row.dart';
@@ -682,8 +683,7 @@ class _Control extends StatelessWidget {
 class _MessageLog extends StatelessWidget {
   const _MessageLog({required this.log});
 
-  final List<String> log;
-
+  final List<LogLine> log;
   @override
   Widget build(BuildContext context) => Container(
     height: 104,
@@ -694,7 +694,7 @@ class _MessageLog extends StatelessWidget {
       reverse: true,
       itemCount: log.length,
       itemBuilder: (context, index) => Text(
-        log[log.length - 1 - index],
+        log[log.length - 1 - index].sentence,
         style: TextStyle(
           fontFamily: 'monospace',
           fontSize: 13,

@@ -1,9 +1,12 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
+import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_app/game/activation_timeline.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
+
+import 'support/log_sentences.dart';
 
 const arena = '''
 #######
@@ -264,6 +267,22 @@ void main() {
       expect(state.isWalking, isFalse);
       addTearDown(bloc.close);
     });
+    test('a bloc seeded with roadOpeningLog carries its category through '
+        'construction', () {
+      // arrange
+      final bloc = GameBloc(log: const [roadOpeningLog]);
+
+      // act
+      final line = bloc.state.log.single;
+
+      // assert
+      expect(line.category, LogCategory.noticed);
+      expect(
+        line.sentence,
+        'Something is on the road. Walk to any edge to get away, or stand '
+        'and fight.',
+      );
+    });
 
     blocTest<GameBloc, GameViewState>(
       'a tap on an adjacent tile moves the hero and writes to the log',
@@ -272,7 +291,7 @@ void main() {
       expect: () => [
         isA<GameViewState>()
             .having((s) => s.game.hero.position, 'hero', const Position(4, 2))
-            .having((s) => s.log, 'log', ['You step east.']),
+            .having(logSentences, 'log', ['You step east.']),
       ],
     );
 
@@ -306,7 +325,7 @@ void main() {
       act: (bloc) => bloc.add(const TileTapped(Position(0, 2))),
       expect: () => [
         isA<GameViewState>()
-            .having((s) => s.log, 'log', ['The way is blocked.'])
+            .having(logSentences, 'log', ['The way is blocked.'])
             .having(
               (s) => s.game.monsters.single.position,
               'ghoul',
@@ -328,8 +347,8 @@ void main() {
         isA<GameViewState>()
             .having((s) => s.game.monsters, 'monsters', isEmpty)
             .having((s) => s.log, 'log', [
-              'You hit the ghoul for 4.',
-              'The ghoul dies.',
+              const LogLine('You hit the ghoul for 4.', LogCategory.hit),
+              const LogLine('The ghoul dies.', LogCategory.died),
             ]),
       ],
     );
@@ -347,11 +366,13 @@ void main() {
       expect: () => [
         isA<GameViewState>()
             .having((s) => s.game.isGameOver, 'isGameOver', isTrue)
-            .having((s) => s.log, 'log', contains('You die.'))
+            .having(logSentences, 'log', contains('You die.'))
             .having(
               (s) => s.log,
               'log',
-              contains('The ghoul claws you for 3.'),
+              contains(
+                const LogLine('The ghoul claws you for 3.', LogCategory.struck),
+              ),
             ),
       ],
     );
@@ -393,7 +414,9 @@ void main() {
             .having((s) => s.armedSpellId, 'armed', isNull)
             .having((s) => s.mana, 'mana', 10 - firebolt.manaCost)
             .having(
-              (s) => s.log.where((line) => line.startsWith('Firebolt burns')),
+              (s) =>
+                  logSentences(s)
+                      .where((line) => line.startsWith('Firebolt burns')),
               'cast line',
               isNotEmpty,
             ),
@@ -420,9 +443,8 @@ void main() {
             .having((s) => s.armedSpellId, 'armed', isNull)
             .having((s) => s.mana, 'mana', 10 - firebolt.manaCost)
             .having(
-              (s) => s.log.where(
-                (line) => line.startsWith('Firebolt burns the ghoul'),
-              ),
+              (s) => logSentences(s)
+                  .where((line) => line.startsWith('Firebolt burns the ghoul')),
               'cast line',
               isNotEmpty,
             ),
@@ -562,7 +584,7 @@ void main() {
       verify: (bloc) {
         expect(bloc.state.isWalking, isFalse);
         expect(bloc.state.game.hero.position, isNot(const Position(12, 4)));
-        expect(bloc.state.log.last, 'The ghoul comes into view.');
+        expect(logSentences(bloc.state).last, 'The ghoul comes into view.');
       },
     );
 
@@ -688,7 +710,12 @@ void main() {
       ),
       act: (bloc) => bloc.add(const TileTapped(Position(5, 1))),
       verify: (bloc) {
-        expect(bloc.state.log, ['Something is watching. You stay put.']);
+        expect(bloc.state.log, [
+          const LogLine(
+            'Something is watching. You stay put.',
+            LogCategory.refused,
+          ),
+        ]);
         expect(bloc.state.isWalking, isFalse);
         expect(bloc.state.game.hero.position, const Position(1, 1));
       },
@@ -829,7 +856,7 @@ void main() {
         isA<GameViewState>()
             .having((s) => s.depth, 'depth', 2)
             .having((s) => s.game.hero.position, 'hero', const Position(1, 1))
-            .having((s) => s.log, 'log', ['You descend to depth 2.']),
+            .having(logSentences, 'log', ['You descend to depth 2.']),
       ],
     );
 
@@ -862,7 +889,7 @@ void main() {
       act: (bloc) => bloc.add(const DescendPressed()),
       expect: () => [
         isA<GameViewState>().having((s) => s.depth, 'depth', 1).having(
-          (s) => s.log,
+          logSentences,
           'log',
           ['The way is blocked.'],
         ),
@@ -947,7 +974,10 @@ void main() {
           await next;
         }
 
-        expect(bloc.state.log, contains('The ghoul² comes into view.'));
+        expect(
+          logSentences(bloc.state),
+          contains('The ghoul² comes into view.'),
+        );
         expect(
           bloc.state.presentationOf('ghoul-first')?.displayName,
           'the ghoul¹',
@@ -977,8 +1007,8 @@ void main() {
         bloc.add(const TileTapped(Position(4, 2)));
         await bloc.stream.first;
 
-        expect(bloc.state.log, contains('You hit the ghoul¹ for 4.'));
-        expect(bloc.state.log, contains('The ghoul¹ dies.'));
+        expect(logSentences(bloc.state), contains('You hit the ghoul¹ for 4.'));
+        expect(logSentences(bloc.state), contains('The ghoul¹ dies.'));
       },
     );
 
@@ -1000,7 +1030,10 @@ void main() {
         bloc.add(const WaitPressed());
         await bloc.stream.first;
 
-        expect(bloc.state.log, contains('The ghoul¹ claws you for 3.'));
+        expect(
+          logSentences(bloc.state),
+          contains('The ghoul¹ claws you for 3.'),
+        );
       },
     );
 
@@ -1149,7 +1182,7 @@ void main() {
       expect(waited.pan, Offset.zero);
       expect(waited.actorIdentity, same(before.actorIdentity));
       expect(waited.game, isNot(same(before.game)));
-      expect(waited.log, contains('You hold your ground.'));
+      expect(logSentences(waited), contains('You hold your ground.'));
     });
 
     test(
@@ -1237,7 +1270,8 @@ void _lootTests() {
         ),
       ),
       act: (bloc) => bloc.add(const DescendPressed()),
-      verify: (bloc) => expect(bloc.state.log, ['You descend to depth 2.']),
+      verify: (bloc) =>
+          expect(logSentences(bloc.state), ['You descend to depth 2.']),
     );
 
     blocTest<GameBloc, GameViewState>(
@@ -1250,7 +1284,7 @@ void _lootTests() {
       ),
       act: (bloc) => bloc.add(const TileTapped(Position(2, 1))),
       verify: (bloc) => expect(
-        bloc.state.log.last,
+        logSentences(bloc.state).last,
         'The ghoul is slain. The delve is yours.',
       ),
     );
@@ -1265,7 +1299,7 @@ void _lootTests() {
       ),
       act: (bloc) => bloc.add(const TileTapped(Position(2, 1))),
       verify: (bloc) => expect(
-        bloc.state.log,
+        logSentences(bloc.state),
         isNot(contains(contains('The delve is yours'))),
       ),
     );
@@ -1312,7 +1346,7 @@ void _lootTests() {
             .having((s) => s.game.inventory.map((item) => item.id), 'carried', [
               'item-1',
             ])
-            .having((s) => s.log, 'log', ['You pick up Common Iron Sword.']),
+            .having(logSentences, 'log', ['You pick up Common Iron Sword.']),
       ],
     );
 
@@ -1355,7 +1389,7 @@ void _lootTests() {
       expect: () => [
         isA<GameViewState>()
             .having((s) => s.game.inventory, 'carried', hasLength(inventoryCap))
-            .having((s) => s.log, 'log', ['You cannot carry any more.']),
+            .having(logSentences, 'log', ['You cannot carry any more.']),
       ],
     );
   });
@@ -1374,7 +1408,7 @@ void _lootTests() {
         isA<GameViewState>()
             .having((s) => s.attack, 'attack', (7, 9))
             .having((s) => s.game.inventory, 'carried', isEmpty)
-            .having((s) => s.log, 'log', [
+            .having(logSentences, 'log', [
               'You put on Common Iron Sword (main hand).',
             ]),
       ],
@@ -1443,7 +1477,7 @@ void _lootTests() {
         isA<GameViewState>()
             .having((s) => s.game.hero.hp, 'hp', 15)
             .having((s) => s.game.inventory, 'carried', isEmpty)
-            .having((s) => s.log, 'log', [
+            .having(logSentences, 'log', [
               'You drink Common Healing Potion and recover 10.',
             ]),
       ],
@@ -1474,7 +1508,7 @@ void _lootTests() {
       ),
       act: (bloc) => bloc.add(const QuickDrinkPressed()),
       expect: () => [
-        isA<GameViewState>().having((s) => s.log, 'log', [
+        isA<GameViewState>().having(logSentences, 'log', [
           'You drink Common Healing Potion. Nothing was wrong with you.',
         ]),
       ],
@@ -1499,7 +1533,7 @@ void _lootTests() {
               'underfoot',
               ['kit-1'],
             )
-            .having((s) => s.log, 'log', [
+            .having(logSentences, 'log', [
               'Common Iron Sword falls to the floor.',
             ]),
       ],
@@ -1520,7 +1554,7 @@ void _lootTests() {
       expect: () => [
         isA<GameViewState>()
             .having((s) => s.game.skills[SkillId.arms]?.level, 'Arms', 1)
-            .having((s) => s.log, 'log', contains('Arms rises to 1.')),
+            .having(logSentences, 'log', contains('Arms rises to 1.')),
       ],
     );
 
@@ -1541,7 +1575,10 @@ void _lootTests() {
         }
       },
       verify: (bloc) {
-        expect(bloc.state.log, contains('The ghoul swings and misses.'));
+        expect(
+          logSentences(bloc.state),
+          contains('The ghoul swings and misses.'),
+        );
       },
     );
   });
@@ -1682,7 +1719,7 @@ void _lootTests() {
       },
       verify: (bloc) {
         expect(bloc.state.depth, 1);
-        expect(bloc.state.log.last, 'You climb to depth 1.');
+        expect(logSentences(bloc.state).last, 'You climb to depth 1.');
       },
     );
 
@@ -1695,7 +1732,10 @@ void _lootTests() {
       act: (bloc) => bloc.add(const AscendPressed()),
       verify: (bloc) {
         expect(bloc.state.depth, 1);
-        expect(bloc.state.log.last, 'There are no stairs up from here.');
+        expect(
+          logSentences(bloc.state).last,
+          'There are no stairs up from here.',
+        );
       },
     );
   });
@@ -1709,7 +1749,12 @@ void _lootTests() {
       ),
       act: (bloc) => bloc.add(const SystemBackPressed()),
       verify: (bloc) {
-        expect(bloc.state.log, ['You can only leave at the stairs.']);
+        expect(bloc.state.log, [
+          const LogLine(
+            'You can only leave at the stairs.',
+            LogCategory.refused,
+          ),
+        ]);
       },
     );
 
@@ -1767,7 +1812,10 @@ void _lootTests() {
         bloc.add(const SystemBackPressed());
       },
       verify: (bloc) {
-        expect(bloc.state.log.last, 'You can only leave at the stairs.');
+        expect(
+          logSentences(bloc.state).last,
+          'You can only leave at the stairs.',
+        );
         expect(bloc.state.isWalking, isFalse);
       },
     );
@@ -1814,7 +1862,7 @@ void _lootTests() {
       verify: (bloc) {
         expect(bloc.state.game.knownSpells, {'firebolt'});
         expect(bloc.state.carriedBooks, isEmpty);
-        expect(bloc.state.log.last, contains('learn Firebolt'));
+        expect(logSentences(bloc.state).last, contains('learn Firebolt'));
       },
     );
 
@@ -1825,7 +1873,7 @@ void _lootTests() {
       act: (bloc) => bloc.add(const ReadPressed('kit-5')),
       verify: (bloc) {
         expect(bloc.state.game.knownSpells, isEmpty);
-        expect(bloc.state.log.last, contains('Needs Wrath 4'));
+        expect(logSentences(bloc.state).last, contains('Needs Wrath 4'));
       },
     );
 
@@ -1840,7 +1888,7 @@ void _lootTests() {
       act: (bloc) => bloc.add(const CastPressed('firebolt')),
       verify: (bloc) {
         expect(bloc.state.mana, 10 - firebolt.manaCost);
-        expect(bloc.state.log.join(' '), contains('burns the ghoul'));
+        expect(logSentences(bloc.state).join(' '), contains('burns the ghoul'));
       },
     );
 
@@ -1850,7 +1898,7 @@ void _lootTests() {
       act: (bloc) => bloc.add(const CastPressed('firebolt')),
       verify: (bloc) {
         expect(bloc.state.mana, 10);
-        expect(bloc.state.log.last, contains('No enemy in sight'));
+        expect(logSentences(bloc.state).last, contains('No enemy in sight'));
       },
     );
 
@@ -1869,7 +1917,7 @@ void _lootTests() {
       act: (bloc) => bloc.add(const CastPressed('ward')),
       verify: (bloc) {
         expect(bloc.state.warded, lessThan(ward.min));
-        expect(bloc.state.log.join(' '), contains('ward'));
+        expect(logSentences(bloc.state).join(' '), contains('ward'));
       },
     );
 
@@ -1980,7 +2028,7 @@ void _lootTests() {
         isA<GameViewState>()
             .having((s) => s.game.materials, 'carried', {MaterialId.ore: 1})
             .having((s) => s.game.nodes, 'left standing', isEmpty)
-            .having((s) => s.log, 'log', [
+            .having(logSentences, 'log', [
               'You mine the ore vein and take one Ore.',
             ]),
       ],
@@ -1998,7 +2046,7 @@ void _lootTests() {
       expect: () => [
         isA<GameViewState>()
             .having((s) => s.game.materials, 'carried', {MaterialId.herb: 1})
-            .having((s) => s.log, 'log', [
+            .having(logSentences, 'log', [
               'You gather the herb patch and take one Herb.',
             ]),
       ],
@@ -2016,7 +2064,7 @@ void _lootTests() {
       expect: () => [
         isA<GameViewState>()
             .having((s) => s.game.materials, 'carried', isEmpty)
-            .having((s) => s.log, 'log', ['There is nothing here to gather.']),
+            .having(logSentences, 'log', ['There is nothing here to gather.']),
       ],
     );
 
@@ -2472,7 +2520,10 @@ void _lootTests() {
       act: (bloc) => bloc.add(const TileTapped(Position(1, 0))),
       expect: () => [
         isA<GameViewState>().having(
-          (s) => s.log.where((line) => line.contains('spitter')).toList(),
+          (s) =>
+              logSentences(s)
+                  .where((line) => line.contains('spitter'))
+                  .toList(),
           'spitter lines',
           predicate<List<String>>(
             (lines) =>
@@ -2495,7 +2546,7 @@ void _lootTests() {
       act: (bloc) => bloc.add(const TileTapped(Position(1, 0))),
       expect: () => [
         isA<GameViewState>().having(
-          (s) => s.log.last,
+          (s) => logSentences(s).last,
           'last line',
           predicate<String>(
             (line) => line.startsWith('The spitter claws you for '),
@@ -2516,9 +2567,9 @@ void _lootTests() {
       act: (bloc) => bloc.add(const TileTapped(Position(2, 1))),
       expect: () => [
         isA<GameViewState>().having((s) => s.log, 'log', [
-          'You step east.',
-          'The ghoul gets the drop on you.',
-          'The ghoul claws you for 3.',
+          const LogLine('You step east.', LogCategory.moved),
+          const LogLine('The ghoul gets the drop on you.', LogCategory.struck),
+          const LogLine('The ghoul claws you for 3.', LogCategory.struck),
         ]),
       ],
     );
@@ -2534,7 +2585,7 @@ void _lootTests() {
       ),
       act: (bloc) => bloc.add(const TileTapped(Position(1, 0))),
       expect: () => [
-        isA<GameViewState>().having((s) => s.log, 'log', [
+        isA<GameViewState>().having(logSentences, 'log', [
           'The way is blocked.',
           'The ghoul claws you for 3.',
         ]),
@@ -2557,13 +2608,17 @@ void _lootTests() {
       expect: () => [
         isA<GameViewState>()
             .having(
-              (s) => s.log.where((line) => line.contains('drop on you')).length,
+              (s) =>
+                  logSentences(s)
+                      .where((line) => line.contains('drop on you'))
+                      .length,
               'beat count',
               1,
             )
             .having(
-              (s) => s.log.indexOf(
-                s.log.firstWhere((line) => line.contains('drop on you')),
+              (s) => logSentences(s).indexOf(
+                logSentences(s)
+                    .firstWhere((line) => line.contains('drop on you')),
               ),
               'beat position',
               1,
@@ -2583,7 +2638,7 @@ void _lootTests() {
       ),
       act: (bloc) => bloc.add(const WaitPressed()),
       verify: (bloc) {
-        expect(bloc.state.log.first, 'You hold your ground.');
+        expect(logSentences(bloc.state).first, 'You hold your ground.');
         expect(bloc.state.game.hero.position, const Position(1, 1));
         expect(bloc.state.game.hero.hp, lessThan(20));
       },
@@ -2614,7 +2669,7 @@ void _lootTests() {
       act: (bloc) => bloc.add(const WaitPressed()),
       verify: (bloc) {
         expect(
-          bloc.state.log.where((line) => line.contains('from afar')),
+          logSentences(bloc.state).where((line) => line.contains('from afar')),
           isNotEmpty,
         );
       },
@@ -2636,7 +2691,7 @@ void _lootTests() {
       wait: const Duration(milliseconds: 100),
       verify: (bloc) {
         expect(bloc.state.isWalking, isFalse);
-        expect(bloc.state.log.last, 'You hold your ground.');
+        expect(logSentences(bloc.state).last, 'You hold your ground.');
       },
     );
 

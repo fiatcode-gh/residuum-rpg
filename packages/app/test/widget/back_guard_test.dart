@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
 
@@ -70,7 +71,9 @@ void main() {
 
       // assert
       expect(find.byType(GameScreen), findsOneWidget);
-      expect(game.state.log, ['You can only leave at the stairs.']);
+      expect(game.state.log, [
+        const LogLine('You can only leave at the stairs.', LogCategory.refused),
+      ]);
     });
 
     testWidgets('says nothing over a death overlay that already says what to '

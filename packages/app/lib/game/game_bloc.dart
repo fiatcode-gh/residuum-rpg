@@ -5,6 +5,7 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import 'event_messages.dart';
+import 'log_line.dart';
 import 'actor_presentation.dart';
 import 'activation_timeline.dart';
 
@@ -168,7 +169,7 @@ class GameViewState {
   }) : actorIdentity = actorIdentity ?? ActorIdentityContext.fromGame(game);
 
   final GameState game;
-  final List<String> log;
+  final List<LogLine> log;
   final ActorIdentityContext actorIdentity;
   final String? selectedActorId;
 
@@ -533,7 +534,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   GameBloc({
     GameState? game,
     int worldSeed = 1,
-    List<String> log = const [],
+    List<LogLine> log = const [],
     this.dungeon,
     this.stepDelay = const Duration(milliseconds: 90),
   }) : super(
@@ -923,7 +924,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     selectedActorId: state.selectedActorId,
   );
 
-  ({List<String> lines, ActorIdentityContext identity}) _presentStep(
+  ({List<LogLine> lines, ActorIdentityContext identity}) _presentStep(
     GameState before,
     GameState after,
     List<GameEvent> events,
@@ -940,7 +941,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     );
   }
 
-  List<String> _describe(
+  List<LogLine> _describe(
     GameState before,
     List<GameEvent> events,
     Map<String, String> names,
@@ -952,7 +953,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
           monster.id,
     };
     final beat = _ambushBeat(before, events, names);
-    final lines = <String>[];
+    final lines = <LogLine>[];
     var beatPending = beat != null;
     for (final event in events) {
       final sentence = describeEvent(event, names, strikesFromAfar: afar);
@@ -979,7 +980,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   /// beat — which reads true, the monster did strike first — and a paused
   /// chase that re-catches fires the beat mid-fight, which is the cost of not
   /// carrying a flag the rules never asked for.
-  String? _ambushBeat(
+  LogLine? _ambushBeat(
     GameState before,
     List<GameEvent> events,
     Map<String, String> names,
@@ -996,7 +997,10 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
           _ => null,
         };
         if (attacker == null) continue;
-        return '${_capitalised(_nameOf(names, attacker))} gets the drop on you.';
+        return LogLine(
+          '${_capitalised(_nameOf(names, attacker))} gets the drop on you.',
+          LogCategory.struck,
+        );
       }
     }
     return null;
@@ -1033,15 +1037,18 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   /// The bottom line rides the descent rather than the floor, because a descent
   /// is the only way to reach a bottom floor for the first time. A hero walking
   /// back into a camp on that floor has already been told.
-  Iterable<String> _beats(
+  Iterable<LogLine> _beats(
     GameState before,
     List<GameEvent> events,
     Map<String, String> names,
   ) => [
     for (final event in events)
       if (event is ActorDied && event.actorId.startsWith(bossIdPrefix))
-        '${_capitalised(names[event.actorId] ?? 'it')} is slain. '
-            'The delve is yours.',
+        LogLine(
+          '${_capitalised(names[event.actorId] ?? 'it')} is slain. '
+          'The delve is yours.',
+          LogCategory.died,
+        ),
     for (final event in events)
       if (event is Descended && event.newDepth >= before.deepest)
         bottomOfTheDelve,
@@ -1069,13 +1076,19 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
 /// [ActorNoticed] is the single thing that stops it. The rule was always there
 /// — until now it refused in silence, which read to the player as a dead tap
 /// rather than a decision the game had made.
-const String _watchedRefusal = 'Something is watching. You stay put.';
+const LogLine _watchedRefusal = LogLine(
+  'Something is watching. You stay put.',
+  LogCategory.refused,
+);
 
 /// What the log says when the system back button is pressed in the dungeon.
 ///
 /// Phrased as where the exit *is* rather than as what the button is not, so a
 /// player who pressed it by habit learns the rule instead of being told off.
-const String _backRefusal = 'You can only leave at the stairs.';
+const LogLine _backRefusal = LogLine(
+  'You can only leave at the stairs.',
+  LogCategory.refused,
+);
 
 /// What the boundary guard says when the engine refuses an action.
 const String _theDungeonRefusedThat =
@@ -1095,20 +1108,27 @@ const String bossIdPrefix = 'boss-';
 ///
 /// Said out loud because the map does not show it: a bottom floor looks like
 /// every other floor until the player has walked it and found no stairs down.
-const String bottomOfTheDelve = 'This is the bottom of the delve.';
+const LogLine bottomOfTheDelve = LogLine(
+  'This is the bottom of the delve.',
+  LogCategory.moved,
+);
 
 /// What a road fight opens its log with.
 ///
 /// Said out loud because it has to be learnt once and cannot be guessed: the
 /// way out of a fight is the edge of the ground it is fought on, and nothing on
 /// the screen shows an edge until the hero walks near one.
-const String roadOpeningLog =
-    'Something is on the road. Walk to any edge to get away, or stand and '
-    'fight.';
+const LogLine roadOpeningLog = LogLine(
+  'Something is on the road. Walk to any edge to get away, or stand and '
+  'fight.',
+  LogCategory.noticed,
+);
 
 /// What the log says when the system back button is pressed in a road fight.
 ///
 /// A different sentence because a different door: there are no stairs on a road,
 /// and the way out is any edge of the ground the hero is standing on.
-const String _roadBackRefusal =
-    'You can only leave by walking off the edge of the road.';
+const LogLine _roadBackRefusal = LogLine(
+  'You can only leave by walking off the edge of the road.',
+  LogCategory.refused,
+);
