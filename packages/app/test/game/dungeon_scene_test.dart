@@ -48,8 +48,8 @@ Actor _heroAt(Position position) => Actor(
   energy: actThreshold,
 );
 
-Actor _ghoulAt(Position position) => Actor(
-  id: 'ghoul-1',
+Actor _ghoulAt(Position position, {String id = 'ghoul-1'}) => Actor(
+  id: id,
   name: 'the ghoul',
   glyph: 'g',
   position: position,
@@ -61,7 +61,12 @@ Actor _ghoulAt(Position position) => Actor(
   energy: actThreshold,
 );
 
-GameViewState _viewState({Offset pan = Offset.zero, String? armedSpellId}) {
+GameViewState _viewState({
+  Offset pan = Offset.zero,
+  String? armedSpellId,
+  String? selectedActorId,
+  List<Actor>? monsters,
+}) {
   const heroPosition = Position(1, 1);
   final map = FloorMap.parse(_arena);
   final visible = computeFov(map, heroPosition, fovRadius);
@@ -69,7 +74,7 @@ GameViewState _viewState({Offset pan = Offset.zero, String? armedSpellId}) {
     game: GameState(
       map: map,
       hero: _heroAt(heroPosition),
-      monsters: [_ghoulAt(const Position(1, 2))],
+      monsters: monsters ?? [_ghoulAt(const Position(1, 2))],
       rng: Rng(1),
       lootRng: Rng(2),
       visible: visible,
@@ -81,6 +86,7 @@ GameViewState _viewState({Offset pan = Offset.zero, String? armedSpellId}) {
     log: const [],
     pan: pan,
     armedSpellId: armedSpellId,
+    selectedActorId: selectedActorId,
   );
 }
 
@@ -269,6 +275,8 @@ void main() {
         log: state.log,
         pan: const Offset(1000, 0),
         armedSpellId: state.armedSpellId,
+        actorIdentity: state.actorIdentity,
+        selectedActorId: state.selectedActorId,
       );
       await pumpScene(state);
       final materialAfterPan = tester
@@ -650,6 +658,134 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
       expect(taps, [const Position(2, 1)]);
       expect(longPresses, const [Position(2, 1)]);
+    },
+  );
+  test('snapshot carries selected actor presentation facts and focus', () {
+    final first = _ghoulAt(const Position(1, 2));
+    final second = _ghoulAt(const Position(2, 2), id: 'ghoul-2');
+    final state = _viewState(
+      monsters: [first, second],
+      armedSpellId: 'firebolt',
+      selectedActorId: second.id,
+    );
+
+    final snapshot = DungeonSceneSnapshot.fromViewState(
+      state,
+      DungeonPalette.crypt,
+    );
+
+    expect(snapshot.focus, second.position);
+    final cells = snapshot.cells.where(
+      (cell) => cell.layer == GlyphLayer.monster,
+    );
+    expect(cells.map((cell) => cell.glyph), ['g', 'g']);
+    expect(cells.map((cell) => cell.badge), ['¹', '²']);
+    expect(cells.map((cell) => cell.marked), [true, true]);
+    expect(cells.map((cell) => cell.selected), [false, true]);
+  });
+
+  test('pan-only viewport reuse preserves selected projection and focus', () {
+    final state = _viewState(selectedActorId: 'ghoul-1');
+    final snapshot = DungeonSceneSnapshot.fromViewState(
+      state,
+      DungeonPalette.crypt,
+    );
+
+    final panned = snapshot.withViewport(
+      columns: snapshot.columns,
+      rows: snapshot.rows,
+      focus: state.cameraFocus,
+      pan: const Offset(12, -8),
+    );
+
+    expect(identical(panned.cells, snapshot.cells), isTrue);
+    expect(panned.focus, state.cameraFocus);
+    expect(panned.pan, const Offset(12, -8));
+  });
+
+  testWidgets(
+    'retained actor component synchronizes badge and both outline shapes',
+    (tester) async {
+      Future<void> pumpScene(GameViewState state) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: SizedBox(
+              width: 360,
+              height: 360,
+              child: DungeonSceneHost(
+                state: state,
+                palette: DungeonPalette.crypt,
+                onTap: (_) {},
+                onPan: (_) {},
+                onLongPress: (_) {},
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+      }
+
+      final first = _ghoulAt(const Position(1, 2));
+      final second = _ghoulAt(const Position(2, 2), id: 'ghoul-2');
+      final initial = _viewState(monsters: [first, second]);
+      await pumpScene(initial);
+
+      final world = tester
+          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+          .game!
+          .world;
+      PositionComponent actorComponent() =>
+          world.children.whereType<PositionComponent>().singleWhere(
+            (component) =>
+                component.priority == GlyphLayer.monster.index &&
+                component.position ==
+                    Vector2(
+                      first.position.x * cameraCellSize,
+                      first.position.y * cameraCellSize,
+                    ),
+          );
+
+      final retained = actorComponent();
+      expect(
+        retained.children.whereType<TextComponent>().map((child) => child.text),
+        ['g', '¹'],
+      );
+
+      final selected = GameViewState(
+        game: initial.game,
+        log: initial.log,
+        actorIdentity: initial.actorIdentity,
+        selectedActorId: first.id,
+      );
+      await pumpScene(selected);
+      expect(actorComponent(), same(retained));
+      expect(retained.children.whereType<CircleComponent>(), hasLength(1));
+
+      final targeted = GameViewState(
+        game: initial.game,
+        log: initial.log,
+        actorIdentity: initial.actorIdentity,
+        selectedActorId: first.id,
+        armedSpellId: 'firebolt',
+      );
+      await pumpScene(targeted);
+      expect(actorComponent(), same(retained));
+      expect(retained.children.whereType<CircleComponent>(), hasLength(1));
+      expect(retained.children.whereType<RectangleComponent>(), hasLength(1));
+
+      final cleared = GameViewState(
+        game: initial.game,
+        log: initial.log,
+        actorIdentity: initial.actorIdentity,
+      );
+      await pumpScene(cleared);
+      expect(actorComponent(), same(retained));
+      expect(retained.children.whereType<CircleComponent>(), isEmpty);
+      expect(retained.children.whereType<RectangleComponent>(), isEmpty);
+      expect(
+        retained.children.whereType<TextComponent>().map((child) => child.text),
+        ['g', '¹'],
+      );
     },
   );
 }

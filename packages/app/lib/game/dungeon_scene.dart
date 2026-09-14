@@ -8,6 +8,7 @@ import 'package:residuum_core/core.dart';
 import 'dungeon_material.dart';
 import 'dungeon_palette.dart';
 import 'dungeon_scene_material.dart';
+import 'actor_presentation.dart';
 import 'game_bloc.dart';
 import 'glyph_marks.dart';
 import 'glyph_plan.dart';
@@ -56,10 +57,16 @@ class DungeonSceneSnapshot {
     columns: state.game.map.width,
     rows: state.game.map.height,
     cells: List.unmodifiable(
-      glyphPlan(state.game, palette, markedIds: state.armedTargets),
+      glyphPlan(
+        state.game,
+        palette,
+        markedIds: state.armedTargets,
+        actorPresentations: state.actorIdentity.knownActors,
+        selectedActorId: state.selectedActor?.id,
+      ),
     ),
     material: materialPlan(state.game, palette),
-    focus: state.game.hero.position,
+    focus: state.cameraFocus,
     pan: state.pan,
   );
 
@@ -115,6 +122,8 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
   late DungeonSceneSnapshot _snapshot;
   late GameState _projectionGame;
   late DungeonPalette _projectionPalette;
+  late ActorIdentityContext _projectionActorIdentity;
+  late String? _projectionSelectedActorId;
   late String? _projectionArmedSpellId;
 
   @override
@@ -140,7 +149,7 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
         ? _snapshot.withViewport(
             columns: widget.state.game.map.width,
             rows: widget.state.game.map.height,
-            focus: widget.state.game.hero.position,
+            focus: widget.state.cameraFocus,
             pan: widget.state.pan,
           )
         : DungeonSceneSnapshot.fromViewState(widget.state, widget.palette);
@@ -156,11 +165,15 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
   bool get _reusesProjection =>
       identical(_projectionGame, widget.state.game) &&
       _projectionPalette == widget.palette &&
-      _projectionArmedSpellId == widget.state.armedSpellId;
+      _projectionArmedSpellId == widget.state.armedSpellId &&
+      identical(_projectionActorIdentity, widget.state.actorIdentity) &&
+      _projectionSelectedActorId == widget.state.selectedActorId;
 
   void _rememberProjectionInputs() {
     _projectionGame = widget.state.game;
     _projectionPalette = widget.palette;
+    _projectionActorIdentity = widget.state.actorIdentity;
+    _projectionSelectedActorId = widget.state.selectedActorId;
     _projectionArmedSpellId = widget.state.armedSpellId;
   }
 
@@ -325,14 +338,17 @@ class _GlyphComponent extends PositionComponent {
       position: Vector2.all(cameraCellSize / 2),
     );
     _applyTreatment(treatment);
-    _updateMark(cell);
+    _updateOutlines(cell, treatment);
     if (treatment.halo) add(_halo);
     add(_text);
+    _updateBadge(cell);
   }
 
   GlyphCell _cell;
   late final TextComponent _text;
-  RectangleComponent? _mark;
+  TextComponent? _badge;
+  RectangleComponent? _targetOutline;
+  CircleComponent? _selectedOutline;
 
   /// The hero's very small halo — a soft value contrast behind the mark so
   /// the hero reads against the stone at a glance. Shape, not hue: the halo
@@ -357,8 +373,16 @@ class _GlyphComponent extends PositionComponent {
         ..textRenderer = _textPaint(cell);
     }
     _applyTreatment(treatment);
-    if (before.marked != cell.marked || before.ink != cell.ink) {
-      _updateMark(cell);
+    if (before.badge != cell.badge ||
+        before.ink != cell.ink ||
+        before.opacity != cell.opacity) {
+      _updateBadge(cell);
+    }
+    if (before.marked != cell.marked ||
+        before.selected != cell.selected ||
+        before.ink != cell.ink ||
+        before.opacity != cell.opacity) {
+      _updateOutlines(cell, treatment);
     }
   }
 
@@ -380,20 +404,64 @@ class _GlyphComponent extends PositionComponent {
     ),
   );
 
-  void _updateMark(GlyphCell cell) {
-    if (cell.marked) {
-      _mark ??= RectangleComponent(
+  static TextPaint _badgePaint(GlyphCell cell) => TextPaint(
+    style: TextStyle(
+      color: cell.ink.withValues(alpha: cell.opacity),
+      fontSize: cameraCellSize * 0.42,
+      fontFamily: 'monospace',
+      height: 1,
+    ),
+  );
+
+  void _updateBadge(GlyphCell cell) {
+    final badge = cell.badge;
+    if (badge == null) {
+      _badge?.removeFromParent();
+      _badge = null;
+      return;
+    }
+    _badge ??= TextComponent(
+      text: badge,
+      textRenderer: _badgePaint(cell),
+      anchor: Anchor.topRight,
+      position: Vector2(cameraCellSize - 1, 1),
+    );
+    _badge!
+      ..text = badge
+      ..textRenderer = _badgePaint(cell);
+    if (_badge!.parent == null) add(_badge!);
+  }
+
+  void _updateOutlines(GlyphCell cell, GlyphMarkTreatment treatment) {
+    if (treatment.targetOutline == GlyphOutlineShape.square) {
+      _targetOutline ??= RectangleComponent(
         position: Vector2.all(1),
         size: Vector2.all(cameraCellSize - 2),
         paint: Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1,
       );
-      _mark!.paint.color = cell.ink;
-      if (_mark!.parent == null) add(_mark!);
+      _targetOutline!.paint.color = cell.ink.withValues(alpha: cell.opacity);
+      if (_targetOutline!.parent == null) add(_targetOutline!);
     } else {
-      _mark?.removeFromParent();
-      _mark = null;
+      _targetOutline?.removeFromParent();
+      _targetOutline = null;
+    }
+
+    if (treatment.selectedOutline == GlyphOutlineShape.circle) {
+      _selectedOutline ??= CircleComponent(
+        radius: cameraCellSize * 0.46,
+        position: Vector2.all(cameraCellSize / 2),
+        anchor: Anchor.center,
+        paint: Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1,
+      );
+      _selectedOutline!.paint.color = cell.ink.withValues(alpha: cell.opacity);
+      if (_selectedOutline!.parent == null) add(_selectedOutline!);
+    } else {
+      _selectedOutline?.removeFromParent();
+      _selectedOutline = null;
     }
   }
 }

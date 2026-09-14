@@ -114,9 +114,11 @@ the immediate activation sequence without reading clock explanation text.
 9. App formatting, `flutter analyze`, and full `flutter test` from
    `packages/app` pass with focused identity, queue, no-leak, and timeline
    interaction proof.
-10. Final Pixel_10/phone AVD evidence shows duplicate labels, a repeated fast
-    activation, timeline inspect/focus, and greyscale-safe selected/target
-    states.
+10. Final phone AVD evidence covers both units in one session:
+    Unit 3's one-handed melee, arm → target → cast, inspect, and contextual
+    shelf flow; and Unit 4's duplicate labels, repeated fast activation,
+    timeline inspect/focus, and greyscale-safe selected/target states. This
+    discharges Unit 3's deferred device-acceptance criterion.
 
 ## Verification strategy
 
@@ -130,8 +132,9 @@ the immediate activation sequence without reading clock explanation text.
 - Widget tests: activation tokens replace old stage/prose, token interaction
   opens inspect and focuses the visible actor at no turn cost, and a phone-sized
   layout remains exception-free.
-- Full `packages/app` suite + analyzer, then Pixel_10 colour and greyscale
-  evidence.
+- Full `packages/app` suite + analyzer, then one current phone AVD colour and
+  greyscale session covering the deferred Unit 3 flow and the Unit 4 timeline/identity
+  flow.
 
 ## Review disposition
 

@@ -166,5 +166,38 @@ void main() {
       // assert
       expect(plan.where((cell) => cell.marked), isEmpty);
     });
+    test(
+      'selected armed duplicate keeps badge, selection, and target facts',
+      () {
+        final state = GameViewState(
+          game: battleGame(
+            monsters: [
+              ghoulAt(const Position(1, 2)),
+              ghoulAt(const Position(2, 2), id: 'ghoul-2'),
+            ],
+          ),
+          log: const [],
+          armedSpellId: 'firebolt',
+          selectedActorId: 'ghoul-1',
+        );
+
+        final cell =
+            glyphPlan(
+              state.game,
+              DungeonPalette.crypt,
+              markedIds: state.armedTargets,
+              actorPresentations: state.actorIdentity.knownActors,
+              selectedActorId: state.selectedActor?.id,
+            ).singleWhere(
+              (cell) =>
+                  cell.layer == GlyphLayer.monster && cell.entity == 'ghoul-1',
+            );
+
+        expect(cell.glyph, 'g');
+        expect(cell.badge, '¹');
+        expect(cell.selected, isTrue);
+        expect(cell.marked, isTrue);
+      },
+    );
   });
 }

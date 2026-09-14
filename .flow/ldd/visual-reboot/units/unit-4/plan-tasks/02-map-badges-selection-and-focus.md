@@ -149,7 +149,8 @@ Camera/widget proof (existing or a focused addition in
 visible; pressing it clears selection, keeps armed spell/log/game unchanged,
 and makes the button disappear when the hero is on screen.
 
-Do not add golden tests. Pixel_10 owns visual placement/greyscale acceptance.
+Do not add golden tests. The final current-phone-AVD session owns visual
+placement/greyscale acceptance.
 
 ## Proof commands
 

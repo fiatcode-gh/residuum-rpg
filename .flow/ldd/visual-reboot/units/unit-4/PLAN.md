@@ -282,16 +282,18 @@ flutter test
 ```
 
 Then Main performs one final acceptance review against `CONTRACT.md`, verifies
-only `packages/app` changed, and runs the Pixel_10/phone AVD gate on an emulator
-id obtained from `adb devices` (`flutter run -d <emulator-id>`; never select an
-attached user phone). Use a real generated floor/road encounter containing two
-same-group speed-20 actors; do not add production fixture/scaffold. Capture
-normal-colour and greyscale evidence showing literal repeated activation,
-matching map/timeline/inspect/log suffixes, timeline tap focus, the recenter path,
-and simultaneous circular selection plus square target outlines. If this host
-cannot boot Pixel_10 or no reachable deterministic content seed can produce the
-required scene, report the exact evidence blocker; do not weaken the gate or
-change content/generation to manufacture it.
+only `packages/app` changed, and runs one combined Unit 3 + Unit 4 current
+phone AVD gate on an emulator id obtained from `adb devices`
+(`flutter run -d <emulator-id>`; never select an attached user phone). Capture
+normal-colour and greyscale evidence of Unit 3's one-handed melee, arm →
+target → cast, inspect, and shelf flow, plus Unit 4's literal repeated
+activation, matching map/timeline/inspect/log suffixes, timeline tap focus,
+recenter path, and simultaneous circular selection plus square target outlines.
+Use a real generated floor/road encounter containing two same-group speed-20
+actors; do not add production fixture/scaffold. If the current AVD cannot boot
+or no reachable deterministic content seed can produce the required
+scene, report the exact evidence blocker; do not weaken the gate or change
+content/generation to manufacture it.
 
 ## Escalation boundary
 
@@ -337,6 +339,6 @@ hit-target size, public interfaces, and proofs.
   known identity, and unknown naming fails closed instead of exposing raw data.
 
 Residual evidence risk: actual superscript font fallback, badge placement, and
-circle/square legibility cannot be proven by Dart tests; the mandatory
-Pixel_10 normal/greyscale gate owns them. Unit 3's outstanding AVD evidence is a
-separate ledger debt and does not change this plan's source or behavior contract.
+circle/square legibility cannot be proven by Dart tests; the mandatory combined
+Unit 3 + Unit 4 current-phone-AVD normal/greyscale gate owns them. This gate discharges
+Unit 3's separate AVD evidence debt without reopening its implementation.

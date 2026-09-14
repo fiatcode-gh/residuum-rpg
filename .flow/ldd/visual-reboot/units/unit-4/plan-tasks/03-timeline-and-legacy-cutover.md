@@ -171,7 +171,7 @@ dart analyze test/game_bloc_test.dart
 ```
 
 Re-run the focused test command after formatting/static corrections. Do not run
-full suite/full analyzer; Main owns the final commands and Pixel_10 gate in
+full suite/full analyzer; Main owns the final commands and current-phone-AVD gate in
 `PLAN.md`.
 
 ## Executor discretion
@@ -201,6 +201,6 @@ Task 03 is complete only when the focused command is Green, all touched files
 are formatted/static-clean, every inspect caller uses `ActorPresentation`, and
 no production/test contract for stage cards, `NOW`, `IN n`, or arrivals remains.
 Return the tree to Main for the full formatter check, `flutter analyze`, full
-`flutter test`, acceptance review, and Pixel_10 normal/greyscale gate. Do not
+`flutter test`, acceptance review, and current-phone-AVD normal/greyscale gate. Do not
 commit, push, publish, or edit LDD authority from this task unless Main separately
 authorizes that action.

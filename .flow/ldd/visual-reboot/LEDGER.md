@@ -42,11 +42,12 @@ The epic was opened from an approved external planning handoff:
   `visual-reboot-unit-2`; Sea-Cave and Ruined Keep material parity remains
   Unit 8.
 - **Unit 3 merged to `main` at `4164741`.** The suite, analyzer, and acceptance
-  review passed; Pixel_10 AVD/greyscale evidence remains unavailable on this
-  host and is an open evidence debt.
-- **Unit 4 recon and contract are complete** at `units/unit-4/recon.md` and
-  `units/unit-4/CONTRACT.md`. It is ready for execution planning; no production
-  code is authorized by this record.
+  review passed. Its deferred AVD/greyscale evidence is scheduled for the
+  combined final Unit 3 + Unit 4 device gate on the recreated AVD.
+- **Unit 4 implementation is complete** on `residuum-visual-reboot-4`: Tasks
+  01–03 landed. Acceptance-review corrections, whole-app verification, and the
+  combined Unit 3 + Unit 4 recreated-AVD device gate remain; no acceptance is
+  claimed yet.
 
 ## Epic status
 
@@ -56,7 +57,7 @@ The epic was opened from an approved external planning handoff:
 | Unit 1 — dungeon scene foundation | Unit 0 | accepted | 682 app tests, analyzer, final COR/TTC/CRF, Pixel_10 AVD and greyscale pass | contract: `units/unit-1/CONTRACT.md`; Flame only in `packages/app` |
 | Unit 2 — graphical dungeon language | Unit 1 | accepted | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
 | Unit 3 — crawl interaction reboot | Unit 2 | merged; device evidence pending | 736 app tests, analyzer, review pass; AVD blocked on this host | map-first melee; favorites + overflow |
-| Unit 4 — turn timeline + duplicate identity | Unit 3 | recon/contract complete | next activation sequence readable with duplicates + fast actors | `units/unit-4/CONTRACT.md`; execution planning next |
+| Unit 4 — turn timeline + duplicate identity | Unit 3 | implementation complete; acceptance pending | focused task proof complete; whole-app gates, acceptance corrections, and recreated-AVD evidence pending | `units/unit-4/CONTRACT.md`; Unit 3 device debt is folded into the final gate |
 | Unit 5 — log drawer | Unit 3 | pending | history reviewable during combat without shrinking the map | 3-line peek, half/full overlay, auto-follow |
 | Unit 6 — character / spells / pack | Unit 3 | pending | no duplicated information architecture | consolidation |
 | Unit 7 — town + rooms + heroes | Unit 6 | pending | transactional/refusal semantics preserved | art bible locked before static art |
@@ -276,10 +277,17 @@ Append-only. Supersede old decisions; do not rewrite history.
   `units/unit-4/PLAN.md`, with three sequential fresh-executor briefs:
   identity/queue/bloc lifetime; map badges/selection/focus; then timeline and
   legacy cutover. COR/TTC/CRF passed and SEC is skipped (no external trust
-  boundary). The plan requires a non-main `residuum-visual-reboot-4` checkout
-  from `4164741`, focused worker proof per task, Main's final app suite/analyzer
-  and acceptance review, and Pixel_10 colour/greyscale evidence. Normal local
-  implementation authorization remains the next gate.
+  boundary). User implementation authorization is granted; Task 01 has focused
+  proof and Task 02 is active on the non-main `residuum-visual-reboot-4` branch.
+  Main owns final app suite/analyzer, acceptance review, and the combined Unit 3
+  + Unit 4 colour/greyscale evidence on the current recreated AVD.
+
+- 2026-09-14 — User directed that Unit 3's missing opportunity for device
+  acceptance be folded into Unit 4. The final Unit 4 current-AVD colour/greyscale
+  session must now demonstrate Unit 3's one-handed melee, arm → target → cast,
+  inspect, and shelf flow alongside Unit 4's timeline/identity acceptance
+  criteria. This discharges the Unit 3 device-evidence debt; no Unit 3 code is
+  reopened.
 
 ## Verification receipts
 

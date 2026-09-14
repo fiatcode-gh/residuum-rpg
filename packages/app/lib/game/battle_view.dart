@@ -3,147 +3,64 @@ import 'package:residuum_core/core.dart';
 
 import '../town/town_style.dart';
 import 'game_bloc.dart';
+import 'activation_timeline.dart';
+import 'actor_presentation.dart';
 
-/// The battle dock: what holds reach on the hero, played per round, over a map
-/// that never leaves the screen.
+/// The battle dock: a compact, accessible view of the upcoming activations
+/// over the live map.
 ///
-/// **A view over the map, not a second board — and the map is why this is a
-/// dock.** Every fact here is a pure getter over the state the crawl already
-/// shows — the stage reads `monstersHoldingReach`, the strip reads the turn
-/// schedule, the bar reads the known spells — so the fight the rules see is
-/// exactly the fight this tree draws. The dock's rows sit above the map slot
-/// while the fight holds and leave when nothing does; the map itself is drawn
-/// and tappable the whole time, because a view over a live simulation shows the
-/// field the simulation runs on — hiding it, as the full-screen swap once did,
-/// stranded every player whose only reach-holder stood beyond arm's length.
-/// **The swap stays retired on purpose:** a fight is rows docked over the
-/// crawl, never a screen that replaces it, so nobody restores the full-screen
-/// battle as a cleanup.
-///
-/// **The watched auto-path refusal during a fight is deliberate.** Closing on a
-/// shooter means tile-by-tile taps while it shoots — the map below the dock
-/// makes that cost visible instead of papering over it with a free auto-walk.
-///
-/// Nothing is told apart by hue: a creature is its glyph and its name, its
-/// wound is a bar's length and two numbers, its reach is a word, and an armed
-/// spell is a word beside its own name.
-/// The translucent dark backing one dock header draws behind its cards and
-/// chips, so every dock string reads over any map tile.
+/// The dock remains a view over the map rather than a second board. Its only
+/// interactive surface is timeline inspection, which cannot dispatch a game
+/// action or alter the simulation.
 const Color dockBacking = Color(0xB30E1015);
 
 class BattleDock extends StatelessWidget {
-  const BattleDock({super.key, required this.state});
+  const BattleDock({
+    super.key,
+    required this.state,
+    required this.onActorSelected,
+  });
 
   final GameViewState state;
+  final ValueChanged<Actor> onActorSelected;
 
   @override
   Widget build(BuildContext context) {
+    final queue = state.activationQueue;
     return Container(
       key: const Key('dock-backing'),
       color: dockBacking,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final monster in state.monstersHoldingReach)
-            _StageCard(monster: monster),
-          _TurnChips(state: state),
-        ],
-      ),
-    );
-  }
-}
-
-/// One creature on the stage: glyph, name, wound, and how far it stands.
-///
-/// A tap is the enemy's numbers — the inspect-only card costs no turn and
-/// reaches no rule; aiming lives on the map now.
-class _StageCard extends StatelessWidget {
-  const _StageCard({required this.monster});
-
-  final Actor monster;
-
-  @override
-  Widget build(BuildContext context) {
-    final fraction = monster.maxHp == 0 ? 0.0 : monster.hp / monster.maxHp;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: InkWell(
-        onTap: () => showEnemyInfo(context, monster),
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          key: Key('stage-card-${monster.id}'),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: panel,
-            borderRadius: BorderRadius.circular(4),
-          ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
-                width: 28,
-                child: Text(
-                  monster.glyph,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 18,
-                    color: ink,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      monster.name,
-                      style: const TextStyle(
+              for (
+                var queueIndex = 0;
+                queueIndex < queue.length;
+                queueIndex++
+              ) ...[
+                if (queueIndex > 0)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      '›',
+                      style: TextStyle(
                         fontFamily: 'monospace',
-                        fontSize: 13,
-                        color: ink,
+                        fontSize: 18,
+                        color: dim,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
-                            child: LinearProgressIndicator(
-                              value: fraction.clamp(0, 1),
-                              minHeight: 8,
-                              backgroundColor: rule,
-                              valueColor: const AlwaysStoppedAnimation(ink),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          '${monster.hp} / ${monster.maxHp}',
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 12,
-                            color: dim,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              if (monster.reach > 1)
-                const Padding(
-                  padding: EdgeInsets.only(left: 10),
-                  child: Text(
-                    'at range',
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                      color: dim,
-                    ),
                   ),
+                _TimelineToken(
+                  token: queue[queueIndex],
+                  queueIndex: queueIndex,
+                  state: state,
+                  onActorSelected: onActorSelected,
                 ),
+              ],
             ],
           ),
         ),
@@ -152,55 +69,77 @@ class _StageCard extends StatelessWidget {
   }
 }
 
-/// One row of chips: who acts before the hero again, who walks in.
-///
-/// Greyscale-safe by position and word: `NOW —` names the schedule's first —
-/// the monster whose turn is next — and each walker-in carries `IN n —` with
-/// the hero actions it needs. The words carry the state; the row renders in
-/// ink on the dock's backing, never dim over the map.
-class _TurnChips extends StatelessWidget {
-  const _TurnChips({required this.state});
+class _TimelineToken extends StatelessWidget {
+  const _TimelineToken({
+    required this.token,
+    required this.queueIndex,
+    required this.state,
+    required this.onActorSelected,
+  });
 
+  final ActivationToken token;
+  final int queueIndex;
   final GameViewState state;
+  final ValueChanged<Actor> onActorSelected;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-    child: Wrap(
-      spacing: 12,
-      children: [
-        if (state.upNext.isNotEmpty)
-          Text(
-            'NOW — ${state.upNext.first.name}',
+  Widget build(BuildContext context) {
+    if (token case final HeroActivationToken hero) {
+      return Semantics(
+        label: hero.isCurrent
+            ? 'You, current activation'
+            : 'You, next activation',
+        child: Container(
+          key: Key(
+            hero.isCurrent ? 'timeline-current-hero' : 'timeline-next-hero',
+          ),
+          constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+          alignment: Alignment.center,
+          child: const Text(
+            '@ YOU',
+            style: TextStyle(fontFamily: 'monospace', fontSize: 13, color: ink),
+          ),
+        ),
+      );
+    }
+
+    final actor = (token as ActorActivationToken).actor;
+    final presentation = state.presentationOf(actor.id);
+    if (presentation == null) return const SizedBox.shrink();
+    return Semantics(
+      button: true,
+      label: presentation.displayName,
+      child: InkWell(
+        key: Key('timeline-actor-${actor.id}-$queueIndex'),
+        onTap: () => onActorSelected(actor),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            presentation.glyphLabel,
             style: const TextStyle(
               fontFamily: 'monospace',
-              fontSize: 12,
+              fontSize: 18,
               color: ink,
             ),
           ),
-        for (final (monster, turns) in state.arrivals)
-          Text(
-            'IN $turns — ${monster.name}',
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 12,
-              color: ink,
-            ),
-          ),
-      ],
-    ),
-  );
+        ),
+      ),
+    );
+  }
 }
 
 /// Opens the enemy's numbers over the crawl: name, glyph, wounds, attack,
 /// reach, speed, and what the creature's make of.
 ///
-/// Words carry everything — greyscale-safe by construction — and the numbers
-/// come off the [Actor] the card already holds: no bestiary lore, no new core
-/// read. Dismissal is a tap outside the sheet and costs no turn; nothing is
-/// mutated, nothing is dispatched.
-void showEnemyInfo(BuildContext context, Actor monster) {
-  final actor = monster;
+/// The presentation label is supplied by the encounter-local identity context;
+/// stats and resistances still come directly from [monster].
+void showEnemyInfo(
+  BuildContext context,
+  Actor monster,
+  ActorPresentation presentation,
+) {
   showModalBottomSheet<void>(
     context: context,
     builder: (sheetContext) => SafeArea(
@@ -214,7 +153,7 @@ void showEnemyInfo(BuildContext context, Actor monster) {
               Row(
                 children: [
                   Text(
-                    actor.glyph,
+                    presentation.glyphLabel,
                     style: const TextStyle(
                       fontFamily: 'monospace',
                       fontSize: 18,
@@ -224,7 +163,7 @@ void showEnemyInfo(BuildContext context, Actor monster) {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      actor.name,
+                      presentation.displayName,
                       style: const TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 13,
@@ -235,17 +174,17 @@ void showEnemyInfo(BuildContext context, Actor monster) {
                 ],
               ),
               const SizedBox(height: 8),
-              _EnemyInfoLine('Wounds ${actor.hp} / ${actor.maxHp}'),
-              _EnemyInfoLine('${actor.attackMin}–${actor.attackMax}'),
+              _EnemyInfoLine('Wounds ${monster.hp} / ${monster.maxHp}'),
+              _EnemyInfoLine('${monster.attackMin}–${monster.attackMax}'),
               _EnemyInfoLine(
-                actor.reach > 1
-                    ? 'strikes at range ${actor.reach}'
+                monster.reach > 1
+                    ? 'strikes at range ${monster.reach}'
                     : 'strikes adjacent',
               ),
-              _EnemyInfoLine('Speed ${actor.speed}'),
-              for (final type in actor.resists)
+              _EnemyInfoLine('Speed ${monster.speed}'),
+              for (final type in monster.resists)
                 _EnemyInfoLine('Resists ${type.word}'),
-              for (final type in actor.vulnerableTo)
+              for (final type in monster.vulnerableTo)
                 _EnemyInfoLine('Burns at ${type.word}'),
             ],
           ),

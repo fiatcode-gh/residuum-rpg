@@ -5,6 +5,8 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import 'event_messages.dart';
+import 'actor_presentation.dart';
+import 'activation_timeline.dart';
 
 sealed class GameBlocEvent {
   const GameBlocEvent();
@@ -146,8 +148,14 @@ final class AutoWalkAdvanced extends GameBlocEvent {
   final int walkId;
 }
 
+final class TimelineActorSelected extends GameBlocEvent {
+  const TimelineActorSelected(this.actorId);
+
+  final String actorId;
+}
+
 class GameViewState {
-  const GameViewState({
+  GameViewState({
     required this.game,
     required this.log,
     this.autoPath = const [],
@@ -155,10 +163,14 @@ class GameViewState {
     this.pan = Offset.zero,
     this.hasFled = false,
     this.armedSpellId,
-  });
+    ActorIdentityContext? actorIdentity,
+    this.selectedActorId,
+  }) : actorIdentity = actorIdentity ?? ActorIdentityContext.fromGame(game);
 
   final GameState game;
   final List<String> log;
+  final ActorIdentityContext actorIdentity;
+  final String? selectedActorId;
 
   /// The tiles still to walk. Empty when the hero is not walking.
   final List<Position> autoPath;
@@ -197,7 +209,7 @@ class GameViewState {
   /// cast included, and the battle view closing always rides a stepped state.
   final String? armedSpellId;
 
-  /// The monsters the armed spell may land on, by id, in stage order.
+  /// The monsters the armed spell may land on, in monster-list order.
   ///
   /// A target-needing spell keeps the sight rule it has always had: anything
   /// the hero can see. Nothing armed marks nothing.
@@ -215,8 +227,46 @@ class GameViewState {
   /// mutates nothing. Whether a tap is inspect versus melee versus cast is
   /// decided later — melee and cast precedence in the bloc's tap handler, the
   /// routing between them in the widget.
-  Actor? inspectTargetAt(Position position) =>
-      game.visible.contains(position) ? game.monsterAt(position) : null;
+  Actor? inspectTargetAt(Position position) {
+    final monster = game.monsterAt(position);
+    if (monster == null ||
+        !game.visible.contains(monster.position) ||
+        presentationOf(monster.id) == null) {
+      return null;
+    }
+    return monster;
+  }
+
+  ActorPresentation? presentationOf(String actorId) => actorIdentity[actorId];
+
+  Actor? get selectedActor {
+    final selectedId = selectedActorId;
+    if (selectedId == null) return null;
+    for (final monster in game.monsters) {
+      if (monster.id == selectedId &&
+          monster.isAlive &&
+          game.visible.contains(monster.position) &&
+          presentationOf(monster.id) != null) {
+        return monster;
+      }
+    }
+    return null;
+  }
+
+  Position get cameraFocus => selectedActor?.position ?? game.hero.position;
+
+  List<ActivationToken> get activationQueue {
+    final visibleKnownActorIds = {
+      for (final monster in game.monsters)
+        if (game.visible.contains(monster.position) &&
+            presentationOf(monster.id) != null)
+          monster.id,
+    };
+    return projectActivationQueue(
+      upNext: upNext,
+      visibleKnownActorIds: visibleKnownActorIds,
+    );
+  }
 
   int get depth => game.depth;
 
@@ -297,11 +347,7 @@ class GameViewState {
       if (GameBloc._holdsReachIn(game, monster)) monster,
   ];
 
-  /// Whether [monster] can strike a hero standing where it stands.
-  bool _holdsReach(Actor monster) => GameBloc._holdsReachIn(game, monster);
-
-  /// The monsters that act before the hero may act again, in the order they
-  /// act — who the turn strip names.
+  /// The monsters that act before the hero may act again, in activation order.
   ///
   /// The exact call the engine's monster phase makes, over the state as the
   /// hero left it: the hero's energy is what the phase schedules on **after
@@ -322,28 +368,6 @@ class GameViewState {
         if (!game.bound.containsKey(game.monsters[index].id))
           game.monsters[index],
     ];
-  }
-
-  /// The monsters still walking in, with the hero actions it takes each to
-  /// arrive — the turn strip's "n turns out" line.
-  ///
-  /// Every actor moves one tile per own turn, and a monster's turns arrive
-  /// every `heroSpeed / monsterSpeed` hero actions, so the clock-correct count
-  /// is the flow-field distance times the speed ratio, rounded up (D86). The
-  /// flow field is the same one the engine's chase runs down, so a monster
-  /// with no entry — walled off, however visible — has no way in and stands
-  /// still in the engine too; it is excluded rather than promised. Monsters
-  /// already holding reach are on the stage, not walking in.
-  List<(Actor, int)> get arrivals {
-    final field = computeFlowField(game.map, game.hero.position);
-    final walking = <(Actor, int)>[];
-    for (final monster in game.monsters) {
-      if (_holdsReach(monster)) continue;
-      final distance = field[monster.position];
-      if (distance == null) continue;
-      walking.add((monster, (distance * speed / monster.speed).ceil()));
-    }
-    return walking;
   }
 
   /// Whether the dungeon screen is showing a battle rather than the crawl.
@@ -524,6 +548,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     on<DescendPressed>(_onDescendPressed);
     on<AscendPressed>(_onAscendPressed);
     on<AutoWalkAdvanced>(_onAutoWalkAdvanced);
+    on<TimelineActorSelected>(_onTimelineActorSelected);
     on<PickUpPressed>(_onPickUpPressed);
     on<GatherPressed>(_onGatherPressed);
     on<EquipPressed>(_onEquipPressed);
@@ -572,7 +597,15 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       if (monster != null && game.visible.contains(monster.position)) {
         _act(CastSpellAction(state.armedSpellId!, targetId: monster.id), emit);
       } else {
-        emit(GameViewState(game: game, log: state.log, walkId: state.walkId));
+        emit(
+          GameViewState(
+            game: game,
+            log: state.log,
+            walkId: state.walkId,
+            actorIdentity: state.actorIdentity,
+            selectedActorId: state.selectedActorId,
+          ),
+        );
       }
       return;
     }
@@ -590,6 +623,8 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
           log: [...state.log, _watchedRefusal],
           walkId: state.walkId,
           armedSpellId: state.armedSpellId,
+          actorIdentity: state.actorIdentity,
+          selectedActorId: state.selectedActorId,
         ),
       );
       return;
@@ -604,9 +639,38 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         autoPath: path,
         walkId: walkId,
         armedSpellId: state.armedSpellId,
+        actorIdentity: state.actorIdentity,
+        selectedActorId: state.selectedActorId,
       ),
     );
     add(AutoWalkAdvanced(walkId));
+  }
+
+  void _onTimelineActorSelected(
+    TimelineActorSelected event,
+    Emitter<GameViewState> emit,
+  ) {
+    final actor = state.game.monsters
+        .where((monster) => monster.id == event.actorId)
+        .firstOrNull;
+    if (actor == null ||
+        !actor.isAlive ||
+        !state.game.visible.contains(actor.position) ||
+        state.presentationOf(actor.id) == null) {
+      return;
+    }
+    emit(
+      GameViewState(
+        game: state.game,
+        log: state.log,
+        autoPath: state.autoPath,
+        walkId: state.walkId,
+        armedSpellId: state.armedSpellId,
+        hasFled: state.hasFled,
+        actorIdentity: state.actorIdentity,
+        selectedActorId: actor.id,
+      ),
+    );
   }
 
   void _onDescendPressed(DescendPressed event, Emitter<GameViewState> emit) {
@@ -665,6 +729,9 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       autoPath: state.autoPath,
       walkId: state.walkId,
       armedSpellId: event.spellId,
+      hasFled: state.hasFled,
+      actorIdentity: state.actorIdentity,
+      selectedActorId: state.selectedActorId,
     ),
   );
 
@@ -681,6 +748,9 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       walkId: state.walkId,
       pan: state.pan + event.delta,
       armedSpellId: state.armedSpellId,
+      hasFled: state.hasFled,
+      actorIdentity: state.actorIdentity,
+      selectedActorId: state.selectedActorId,
     ),
   );
 
@@ -697,6 +767,8 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
           autoPath: state.autoPath,
           walkId: state.walkId,
           armedSpellId: state.armedSpellId,
+          hasFled: state.hasFled,
+          actorIdentity: state.actorIdentity,
         ),
       );
 
@@ -746,6 +818,9 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         ],
         walkId: state.walkId + 1,
         armedSpellId: state.armedSpellId,
+        hasFled: state.hasFled,
+        actorIdentity: state.actorIdentity,
+        selectedActorId: state.selectedActorId,
       ),
     );
   }
@@ -759,12 +834,14 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     if (state.game.isGameOver) return;
     final before = state.game;
     final (after, events) = _step(before, action);
+    final presentation = _presentStep(before, after, events);
     emit(
       GameViewState(
         game: after,
-        log: [...state.log, ..._describe(before, events)],
+        log: [...state.log, ...presentation.lines],
         walkId: state.walkId + 1,
         hasFled: events.contains(const Fled()),
+        actorIdentity: presentation.identity,
       ),
     );
   }
@@ -807,12 +884,14 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     final (after, events) = _step(game, MoveAction(direction));
     final interrupted = _interrupts(events, after, game.hero.id);
     final remaining = state.autoPath.sublist(1);
+    final presentation = _presentStep(game, after, events);
     emit(
       GameViewState(
         game: after,
-        log: [...state.log, ..._describe(game, events)],
+        log: [...state.log, ...presentation.lines],
         autoPath: interrupted ? const [] : remaining,
         walkId: interrupted ? state.walkId + 1 : state.walkId,
+        actorIdentity: presentation.identity,
       ),
     );
     if (interrupted || remaining.isEmpty) return;
@@ -824,11 +903,13 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   GameViewState _afterAction(GameAction action) {
     final before = state.game;
     final (after, events) = _step(before, action);
+    final presentation = _presentStep(before, after, events);
     return GameViewState(
       game: after,
-      log: [...state.log, ..._describe(before, events)],
+      log: [...state.log, ...presentation.lines],
       walkId: state.walkId,
       hasFled: events.contains(const Fled()),
+      actorIdentity: presentation.identity,
     );
   }
 
@@ -837,10 +918,33 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     log: state.log,
     walkId: state.walkId + 1,
     armedSpellId: state.armedSpellId,
+    hasFled: state.hasFled,
+    actorIdentity: state.actorIdentity,
+    selectedActorId: state.selectedActorId,
   );
 
-  Iterable<String> _describe(GameState before, List<GameEvent> events) {
-    final names = namesIn(before);
+  ({List<String> lines, ActorIdentityContext identity}) _presentStep(
+    GameState before,
+    GameState after,
+    List<GameEvent> events,
+  ) {
+    final eventContext = state.actorIdentity.noticeAll(
+      events.whereType<ActorNoticed>().map((event) => event.actorId),
+    );
+    final names = eventContext.eventNames(before.hero);
+    return (
+      lines: _describe(before, events, names),
+      identity: events.any((event) => event is Ascended || event is Descended)
+          ? ActorIdentityContext.fromGame(after)
+          : eventContext,
+    );
+  }
+
+  List<String> _describe(
+    GameState before,
+    List<GameEvent> events,
+    Map<String, String> names,
+  ) {
     final afar = {
       for (final monster in before.monsters)
         if (monster.reach > 1 &&
@@ -859,7 +963,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       }
       lines.add(sentence);
     }
-    return [...lines, ..._beats(before, events)];
+    return [...lines, ..._beats(before, events, names)];
   }
 
   /// The sentence that says the fight opened on the monster's terms, or null.
@@ -929,18 +1033,19 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   /// The bottom line rides the descent rather than the floor, because a descent
   /// is the only way to reach a bottom floor for the first time. A hero walking
   /// back into a camp on that floor has already been told.
-  Iterable<String> _beats(GameState before, List<GameEvent> events) {
-    final names = namesIn(before);
-    return [
-      for (final event in events)
-        if (event is ActorDied && event.actorId.startsWith(bossIdPrefix))
-          '${_capitalised(names[event.actorId] ?? 'it')} is slain. '
-              'The delve is yours.',
-      for (final event in events)
-        if (event is Descended && event.newDepth >= before.deepest)
-          bottomOfTheDelve,
-    ];
-  }
+  Iterable<String> _beats(
+    GameState before,
+    List<GameEvent> events,
+    Map<String, String> names,
+  ) => [
+    for (final event in events)
+      if (event is ActorDied && event.actorId.startsWith(bossIdPrefix))
+        '${_capitalised(names[event.actorId] ?? 'it')} is slain. '
+            'The delve is yours.',
+    for (final event in events)
+      if (event is Descended && event.newDepth >= before.deepest)
+        bottomOfTheDelve,
+  ];
 
   static String _capitalised(String text) =>
       text.isEmpty ? text : '${text[0].toUpperCase()}${text.substring(1)}';
