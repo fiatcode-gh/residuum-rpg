@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
 
 import '../town/town_style.dart';
@@ -39,7 +38,6 @@ class BattleDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = context.read<GameBloc>();
     return Container(
       key: const Key('dock-backing'),
       color: dockBacking,
@@ -47,13 +45,7 @@ class BattleDock extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           for (final monster in state.monstersHoldingReach)
-            _StageCard(
-              monster: monster,
-              marked: state.armedTargets.contains(monster.id),
-              onTap: () => state.armedAction == null
-                  ? showEnemyInfo(context, monster)
-                  : bloc.add(StageCardTapped(monster)),
-            ),
+            _StageCard(monster: monster),
           _TurnChips(state: state),
         ],
       ),
@@ -63,19 +55,12 @@ class BattleDock extends StatelessWidget {
 
 /// One creature on the stage: glyph, name, wound, and how far it stands.
 ///
-/// A legal target of the armed action carries the ink border — the same mark
-/// the bar's armed button wears — so a marked-card tap applies the action and
-/// an unmarked one does not.
+/// A tap is the enemy's numbers — the inspect-only card costs no turn and
+/// reaches no rule; aiming lives on the map now.
 class _StageCard extends StatelessWidget {
-  const _StageCard({
-    required this.monster,
-    required this.marked,
-    required this.onTap,
-  });
+  const _StageCard({required this.monster});
 
   final Actor monster;
-  final bool marked;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +68,7 @@ class _StageCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: InkWell(
-        onTap: onTap,
+        onTap: () => showEnemyInfo(context, monster),
         borderRadius: BorderRadius.circular(4),
         child: Container(
           key: Key('stage-card-${monster.id}'),
@@ -91,7 +76,6 @@ class _StageCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: panel,
             borderRadius: BorderRadius.circular(4),
-            border: marked ? Border.all(color: ink) : null,
           ),
           child: Row(
             children: [
@@ -204,102 +188,6 @@ class _TurnChips extends StatelessWidget {
             ),
           ),
       ],
-    ),
-  );
-}
-
-/// One button per known spell: marking, name, cost — wrap-flow, so a full
-/// grimoire wraps instead of scrolling.
-///
-/// **A tap arms; it never casts at a guess.** The named cast happens when a
-/// stage card is tapped, and Mend and Ward — which land on the hero — cast
-/// straight from the bar without asking for one. A refusal is the rules'
-/// sentence in the log, never a dimmed button: the bar does not read
-/// `castRefusal` at all, because a greyed control is a guess the player has
-/// to work past.
-class BattleSkillBar extends StatelessWidget {
-  const BattleSkillBar({super.key, required this.state, required this.bloc});
-
-  final GameViewState state;
-  final GameBloc bloc;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-    child: Wrap(
-      spacing: 6,
-      runSpacing: 4,
-      children: [
-        _BarButton(
-          label: 'Attack',
-          armedLabel: 'Attack — armed',
-          armed: state.armedAction == const ArmedAttack(),
-          onPressed: () => bloc.add(const AttackArmed()),
-        ),
-        for (final spell in state.knownSpells)
-          TextButton(
-            onPressed: () => bloc.add(
-              spell.kind == SpellKind.mend || spell.kind == SpellKind.ward
-                  ? CastPressed(spell.id)
-                  : SkillArmed(spell.id),
-            ),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              side: state.armedSpellId == spell.id
-                  ? const BorderSide(color: ink)
-                  : null,
-            ),
-            child: Text(
-              state.armedSpellId == spell.id
-                  ? '${spell.school.schoolMarking} ${spell.name} '
-                        '${spell.manaCost} — armed'
-                  : '${spell.school.schoolMarking} ${spell.name} '
-                        '${spell.manaCost}',
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 12,
-                color: ink,
-              ),
-            ),
-          ),
-        _BarButton(
-          label: 'Wait',
-          armedLabel: null,
-          armed: false,
-          onPressed: () => bloc.add(const WaitPressed()),
-        ),
-      ],
-    ),
-  );
-}
-
-/// One button of the battle bar: label, arm marking by border and word.
-class _BarButton extends StatelessWidget {
-  const _BarButton({
-    required this.label,
-    required this.armedLabel,
-    required this.armed,
-    required this.onPressed,
-  });
-
-  final String label;
-
-  /// The word the button reads while it is the armed slot, or null for a
-  /// button that never arms.
-  final String? armedLabel;
-  final bool armed;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) => TextButton(
-    onPressed: onPressed,
-    style: TextButton.styleFrom(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      side: armed ? const BorderSide(color: ink) : null,
-    ),
-    child: Text(
-      armed ? (armedLabel ?? label) : label,
-      style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: ink),
     ),
   );
 }

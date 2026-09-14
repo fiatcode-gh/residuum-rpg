@@ -256,10 +256,8 @@ void main() {
       final game = _crawl(monsters: [_ghoul(const Position(1, 2))]);
       final bloc = await _pushCrawl(tester, game);
 
-      // act - the dock's armed flow reaches the same core bump
-      bloc.add(const AttackArmed());
-      await tester.pumpAndSettle();
-      bloc.add(StageCardTapped(bloc.state.game.monsters.single));
+      // act - the map tap is the bump now
+      bloc.add(const TileTapped(Position(1, 2)));
       await tester.pumpAndSettle();
 
       // assert
