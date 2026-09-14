@@ -38,11 +38,9 @@ The epic was opened from an approved external planning handoff:
   baseline is `units/unit-0/recon.md`.
 - **Unit 1 accepted.** Its Flame dungeon-scene contract is complete on
   `visual-reboot-unit-1`.
-- **Unit 2 design settled.** The dungeon-material art direction was
-  user-approved on 2026-09-13 via the validated ChatGPT handoff
-  (`external/unit-2-chatgpt-handoff/`); the reconciled contract and art bible
-  live at `units/unit-2/`. Implementation is not yet authorized — normal local
-  execution approval is still required.
+- **Unit 2 accepted.** The graphical Crypt material language is complete on
+  `visual-reboot-unit-2`; Sea-Cave and Ruined Keep material parity remains
+  Unit 8.
 
 ## Epic status
 
@@ -50,7 +48,7 @@ The epic was opened from an approved external planning handoff:
 |---|---|---|---|---|
 | Unit 0 — design baseline + recon | none | complete | source recon and approved mock inspection; no code | matrix, seam inventory, corrections: `units/unit-0/recon.md` |
 | Unit 1 — dungeon scene foundation | Unit 0 | accepted | 682 app tests, analyzer, final COR/TTC/CRF, Pixel_10 AVD and greyscale pass | contract: `units/unit-1/CONTRACT.md`; Flame only in `packages/app` |
-| Unit 2 — graphical dungeon language | Unit 1 | contract proposed / design settled | deterministic renderer tests + full app suite/analyzer + target phone AVD/greyscale | cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
+| Unit 2 — graphical dungeon language | Unit 1 | accepted | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
 | Unit 3 — crawl interaction reboot | Unit 2 | pending | one-handed movement/melee/targeting/wait/pack without the old dock | map-first melee; favorites + overflow |
 | Unit 4 — turn timeline + duplicate identity | Unit 3 | pending | next activation sequence readable with duplicates + fast actors | encounter-local labels, timeline→map highlight |
 | Unit 5 — log drawer | Unit 3 | pending | history reviewable during combat without shrinking the map | 3-line peek, half/full overlay, auto-follow |
@@ -198,6 +196,15 @@ Append-only. Supersede old decisions; do not rewrite history.
   `authorization: not-carried` — normal local execution approval is required
   before production writes.
 
+- 2026-09-13 — Unit 2 accepted on `visual-reboot-unit-2`. The renderer uses
+  an immutable explicit known-terrain material plan, cached continuous
+  hero-local light clipped to authoritative visibility, deterministic sparse
+  decoration, and exposed known-wall faces contained within known material.
+  Stairs remain semantic glyph marks derived from material facts; core state,
+  gameplay RNG, FOV, input, and Unit 1 interaction semantics are unchanged.
+  COR and TTC completed clean; CRF findings were corrected and re-verified.
+  SEC was skipped because no security boundary changed.
+
 ## Verification receipts
 
 - 2026-09-13 — Unit 0 inspected the approved mock and source-verified the
@@ -233,6 +240,22 @@ Append-only. Supersede old decisions; do not rewrite history.
   Keep; pan-only projection reuse (`_reusesProjection`) is present. The
   approved mock was re-inspected against the proposed art bible and matches
   its direction. No production code was written during intake.
+
+### Unit 2 acceptance receipt
+
+- 2026-09-13 — Unit 2 worker Red/Green proof covers renderer-level
+  continuous-light clipping, remembered/unknown no-leak, projection cache
+  refresh, material-fact stairs, known-wall continuity, immutable plan
+  ownership, and deterministic applicable decoration. Main ran
+  `flutter test && flutter analyze` from `packages/app`: 721 tests passed
+  with no analyzer issues. Final Pixel_10 evidence is
+  `.flow/evidence/visual-reboot/unit-2-crypt-crawl-final-no-leak.png` and
+  `unit-2-crypt-crawl-final-no-leak-greyscale.png`. The device save and
+  previous-save bytes were restored and SHA-256 verified after the smoke
+  session. COR and TTC found no remaining defects; CRF findings were
+  corrected with focused proof. SEC was skipped because no security boundary
+  changed.
+
 
 ## Corrections to inherited assumptions
 

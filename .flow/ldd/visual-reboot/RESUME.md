@@ -6,11 +6,11 @@
 - Unit 1 is accepted on `visual-reboot-unit-1`: final COR/TTC/CRF were clean,
   `packages/app` passed 682 tests and analyzer, and Pixel_10 AVD/greyscale
   evidence is under `.flow/evidence/visual-reboot/`.
-- Unit 2 design is settled from the validated ChatGPT handoff
-  (2026-09-13): dungeon-material art direction user-approved, contract and
-  art bible reconciled at `units/unit-2/`. Reconcile-complete; obtain local
-  execution approval next. No production authorization is carried by the
-  handoff.
+- Unit 2 is accepted on `visual-reboot-unit-2`: graphical Crypt material,
+  visible-only continuous light, material-derived stair glyphs, and
+  known-wall face continuity are verified by the app suite/analyzer and
+  Pixel_10 colour/greyscale evidence. Unit 3 is next and needs its own local
+  execution authorization.
 - Locked inherited contracts: section 18 baseline summary in `LEDGER.md`
   (Flame never authoritative game state; graphical glyphs; map-first melee;
   four-region rule; accessibility by shape/word never hue alone) plus

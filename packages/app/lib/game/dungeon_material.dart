@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:residuum_core/core.dart';
 
 import 'dungeon_palette.dart';
@@ -9,8 +7,8 @@ import 'dungeon_palette.dart';
 /// Unit 2 separates **what the place is made of** from **what the player
 /// sees**: the glyph plan already carries terrain as terminal characters for
 /// characterization, and this plan carries the same knowledge boundary as
-/// explicit presentation facts instead — tile kind, visible-vs-remembered
-/// knowledge, and a presentation-only light value per known tile.
+/// explicit presentation facts instead — tile kind and visible-vs-remembered
+/// knowledge.
 ///
 /// Everything here is pure and deterministic. Decorative variation is hashed
 /// from coordinate, kind, knowledge, and theme — it never consumes gameplay
@@ -27,34 +25,24 @@ class MaterialCell {
     required this.position,
     required this.kind,
     required this.knowledge,
-    required this.light,
   });
 
   final Position position;
   final MaterialTileKind kind;
 
-  /// Seeing it now vs. remembering it — [MaterialKnowledge.visible] tiles get
-  /// the full material response and the warm local light; remembered tiles
-  /// are dark, flat, and unlit.
+  /// Seeing it now vs. remembering it. The renderer uses this authoritative
+  /// knowledge boundary to decide material detail and clip local light.
   final MaterialKnowledge knowledge;
-
-  /// Presentation light 0..1. Positive only inside the authoritative visible
-  /// set; remembered tiles are always 0.0.
-  final double light;
-
-  /// Whether this cell is lit by the presentation light.
-  bool get lit => knowledge == MaterialKnowledge.visible && light > 0;
 
   @override
   bool operator ==(Object other) =>
       other is MaterialCell &&
       other.position == position &&
       other.kind == kind &&
-      other.knowledge == knowledge &&
-      other.light == light;
+      other.knowledge == knowledge;
 
   @override
-  int get hashCode => Object.hash(position, kind, knowledge, light);
+  int get hashCode => Object.hash(position, kind, knowledge);
 }
 
 /// The material layer's deterministic decorative decisions for one tile.
@@ -102,12 +90,14 @@ class MaterialMark {
 /// a second FOV, and without ever drawing outside the authoritative known
 /// set.
 class MaterialPlan {
-  const MaterialPlan({
-    required this.cells,
-    required this.marks,
-    required this.masonry,
+  MaterialPlan({
+    required List<MaterialCell> cells,
+    required Map<Position, MaterialMark> marks,
+    required Set<Position> masonry,
     required this.heroPosition,
-  });
+  }) : cells = List.unmodifiable(cells),
+       marks = Map.unmodifiable(marks),
+       masonry = Set.unmodifiable(masonry);
 
   final List<MaterialCell> cells;
 
@@ -168,12 +158,11 @@ double _unit01(int h) => (h & 0xFFFFFFFF) / 0xFFFFFFFF;
 /// Builds the material plan for one crawl.
 ///
 /// Only tiles in `visible ∪ explored` appear; the visible set stays
-/// authoritative for both presence and lighting. Unknown neighbors influence
-/// nothing: a wall's edge treatment is computed only from **known** adjacency,
-/// so the material can never disclose unseen geometry.
+/// authoritative for material presence. Unknown neighbors influence nothing:
+/// a wall's edge treatment is computed only from **known** adjacency, so the
+/// material can never disclose unseen geometry.
 MaterialPlan materialPlan(GameState game, DungeonPalette palette) {
   final cells = <MaterialCell>[];
-  final marks = <Position, MaterialMark>{};
   final known = {...game.visible, ...game.explored};
   final hero = game.hero.position;
 
@@ -182,45 +171,33 @@ MaterialPlan materialPlan(GameState game, DungeonPalette palette) {
     final knowledge = game.visible.contains(position)
         ? MaterialKnowledge.visible
         : MaterialKnowledge.remembered;
-    final dx = position.x - hero.x;
-    final dy = position.y - hero.y;
-    final distance = math.sqrt(dx * dx + dy * dy);
-    final falloff = _presentationLight(distance);
-    final light = knowledge == MaterialKnowledge.visible ? falloff : 0.0;
-
     cells.add(
-      MaterialCell(
-        position: position,
-        kind: kind,
-        knowledge: knowledge,
-        light: light,
-      ),
+      MaterialCell(position: position, kind: kind, knowledge: knowledge),
     );
-    marks[position] = _markFor(position, kind, knowledge, palette);
   }
 
   cells.sort((a, b) {
     final byY = a.position.y.compareTo(b.position.y);
     return byY != 0 ? byY : a.position.x.compareTo(b.position.x);
   });
+  final masonry = _masonryMass(cells);
+  final marks = {
+    for (final cell in cells)
+      cell.position: _markFor(
+        cell.position,
+        cell.kind,
+        cell.knowledge,
+        palette,
+        masonry: masonry.contains(cell.position),
+      ),
+  };
 
   return MaterialPlan(
     cells: cells,
     marks: marks,
-    masonry: _masonryMass(cells),
+    masonry: masonry,
     heroPosition: hero,
   );
-}
-
-/// The presentation light at a distance from the hero, 0..1.
-///
-/// A smoothstep over the FOV radius: near-full light holds a plateau around
-/// the hero, then eases off to the edge of sight — a warm pool on the stone,
-/// not a straight-line wedge. The visible set stays authoritative; this only
-/// shapes the light inside it.
-double _presentationLight(double distance) {
-  final t = (1.0 - distance / (fovRadius + 1)).clamp(0.0, 1.0);
-  return t * t * (3.0 - 2.0 * t);
 }
 
 /// Which walls read as one masonry mass.
@@ -250,27 +227,32 @@ MaterialMark _markFor(
   Position position,
   MaterialTileKind kind,
   MaterialKnowledge knowledge,
-  DungeonPalette palette,
-) {
+  DungeonPalette palette, {
+  required bool masonry,
+}) {
   final themeSalt = palette.themeSalt;
-  final gritH = _hash(position, themeSalt ^ 0x1111, kind.index);
-  final speckH = _hash(position, themeSalt ^ 0x2222, kind.index);
-  final crackH = _hash(position, themeSalt ^ 0x3333, kind.index);
-  final edgeH = _hash(position, themeSalt ^ 0x4444, kind.index);
-
   final remembered = knowledge == MaterialKnowledge.remembered;
-  final detailScale = remembered ? 0.35 : 1.0;
-
+  final visibleFloor =
+      knowledge == MaterialKnowledge.visible && kind == MaterialTileKind.floor;
+  final visibleExposedWall =
+      knowledge == MaterialKnowledge.visible &&
+      kind == MaterialTileKind.wall &&
+      !masonry;
   final grit =
-      _unit01(gritH) *
+      _unit01(_hash(position, themeSalt ^ 0x1111, kind.index)) *
       (kind == MaterialTileKind.wall ? 0.7 : 0.4) *
-      detailScale;
-  final speck = _unit01(speckH) > (remembered ? 0.93 : 0.86);
-  final crack = kind == MaterialTileKind.wall && !remembered
-      ? (_unit01(crackH) > 0.82 ? _unit01(crackH >> 16) * 0.6 : 0.0)
+      (remembered ? 0.35 : 1.0);
+  final speck =
+      visibleFloor &&
+      _unit01(_hash(position, themeSalt ^ 0x2222, kind.index)) > 0.86;
+  final crackHash = visibleExposedWall
+      ? _hash(position, themeSalt ^ 0x3333, kind.index)
+      : 0;
+  final crack = _unit01(crackHash) > 0.82
+      ? _unit01(crackHash >> 16) * 0.6
       : 0.0;
-  final edge = kind == MaterialTileKind.wall
-      ? _unit01(edgeH) * (remembered ? 0.25 : 0.85)
+  final edge = visibleExposedWall
+      ? _unit01(_hash(position, themeSalt ^ 0x4444, kind.index)) * 0.85
       : 0.0;
 
   return MaterialMark(grit: grit, speck: speck, crack: crack, edge: edge);

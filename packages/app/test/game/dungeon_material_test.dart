@@ -10,6 +10,13 @@ const _arena = '''
 #..........#
 ############''';
 
+const _crackArena = '''
+.........
+....#....
+.........
+.........
+.........''';
+
 Actor _heroAt(Position position) => Actor(
   id: 'hero',
   name: 'you',
@@ -26,11 +33,13 @@ Actor _heroAt(Position position) => Actor(
 GameState _game({
   required Set<Position> visible,
   required Set<Position> explored,
+  Position heroPosition = const Position(1, 1),
+  FloorMap? map,
 }) {
-  final map = FloorMap.parse(_arena);
+  final floorMap = map ?? FloorMap.parse(_arena);
   return GameState(
-    map: map,
-    hero: _heroAt(const Position(1, 1)),
+    map: floorMap,
+    hero: _heroAt(heroPosition),
     monsters: const [],
     rng: Rng(1),
     lootRng: Rng(2),
@@ -55,18 +64,9 @@ FloorMap _arenaWith(Position position, Tile tile) {
 }
 
 /// One material cell, reduced for comparison.
-({
-  Position position,
-  MaterialTileKind kind,
-  MaterialKnowledge knowledge,
-  double light,
-})
-_cell(MaterialCell cell) => (
-  position: cell.position,
-  kind: cell.kind,
-  knowledge: cell.knowledge,
-  light: cell.light,
-);
+({Position position, MaterialTileKind kind, MaterialKnowledge knowledge}) _cell(
+  MaterialCell cell,
+) => (position: cell.position, kind: cell.kind, knowledge: cell.knowledge);
 
 MaterialPlan _plan(GameState game) => materialPlan(game, DungeonPalette.crypt);
 
@@ -155,79 +155,34 @@ void main() {
       }
     });
 
-    test('lights only visible geometry', () {
-      // arrange
-      final visible = computeFov(
-        FloorMap.parse(_arena),
-        const Position(1, 1),
-        fovRadius,
-      );
-      const remembered = Position(9, 2);
-      final game = _game(visible: visible, explored: {...visible, remembered});
+    test(
+      'keeps material cells independent of the presentation light source',
+      () {
+        // arrange — visibility is authoritative and held fixed; moving the
+        // presentation source must not create a second light-derived material
+        // data model beneath the renderer.
+        final visible = computeFov(
+          FloorMap.parse(_arena),
+          const Position(1, 1),
+          fovRadius,
+        );
+        final atFirstSource = _game(visible: visible, explored: visible);
+        final atSecondSource = _game(
+          visible: visible,
+          explored: visible,
+          heroPosition: const Position(2, 1),
+        );
 
-      // act
-      final plan = _plan(game);
+        // act
+        final first = _plan(atFirstSource);
+        final second = _plan(atSecondSource);
 
-      // assert
-      for (final cell in plan.cells) {
-        if (cell.knowledge == MaterialKnowledge.remembered) {
-          expect(cell.light, 0.0, reason: 'remembered ${cell.position} unlit');
-        } else {
-          expect(cell.light, greaterThan(0.0));
-        }
-      }
-      expect(plan.cellAt(remembered)!.light, 0.0);
-    });
-
-    test('is lit strongest at the hero and falls off with distance', () {
-      // arrange
-      final visible = computeFov(
-        FloorMap.parse(_arena),
-        const Position(1, 1),
-        fovRadius,
-      );
-      final game = _game(visible: visible, explored: visible);
-      final plan = _plan(game);
-
-      // act
-      final atHero = plan.cellAt(const Position(1, 1))!.light;
-      final nearHero = plan.cellAt(const Position(2, 1))!.light;
-      final farCell = plan.cellAt(const Position(1, 3))!.light;
-
-      // assert
-      expect(atHero, greaterThan(nearHero));
-      expect(nearHero, greaterThan(farCell));
-      expect(atHero, lessThanOrEqualTo(1.0));
-    });
-
-    test('falls off smoothly, holding a plateau near the hero', () {
-      // arrange
-      final visible = computeFov(
-        FloorMap.parse(_arena),
-        const Position(1, 1),
-        fovRadius,
-      );
-      final game = _game(visible: visible, explored: visible);
-      final plan = _plan(game);
-
-      // act
-      final lights = [
-        for (var d = 0; d <= 8; d++)
-          plan.cellAt(Position(1 + d, 1))?.light ?? -1,
-      ];
-
-      // assert — a smooth hero-local gradient: near-full at the hero, a
-      // gentle plateau, then a slower tail than a straight line — never the
-      // constant-slope wedge of a linear falloff
-      expect(lights[0], greaterThan(0.95));
-      expect(lights[1], greaterThan(0.94));
-      expect(lights[1], greaterThan(lights[2]));
-      final middleDrop = lights[3] - lights[5];
-      final nearDrop = lights[1] - lights[2];
-      expect(middleDrop, lessThan(nearDrop * 4));
-      expect(lights[8], greaterThan(0.0));
-      expect(lights[8], lessThan(0.15));
-    });
+        // assert — local light belongs to the renderer's single clipped
+        // gradient, not to each material cell.
+        expect(first.cells, second.cells);
+        expect(first.marks, second.marks);
+      },
+    );
 
     test('produces identical marks for identical inputs', () {
       // arrange
@@ -246,6 +201,119 @@ void main() {
       expect(first.cells.map(_cell), second.cells.map(_cell));
       expect(first.marks, second.marks);
       expect(first.marks, isNotEmpty);
+    });
+
+    test('defensively owns the renderer plan collections', () {
+      const position = Position(2, 1);
+      const cell = MaterialCell(
+        position: position,
+        kind: MaterialTileKind.floor,
+        knowledge: MaterialKnowledge.visible,
+      );
+      const mark = MaterialMark(grit: 0.3, speck: false, crack: 0, edge: 0);
+      final cells = [cell];
+      final marks = {position: mark};
+      final masonry = {position};
+      final plan = MaterialPlan(
+        cells: cells,
+        marks: marks,
+        masonry: masonry,
+        heroPosition: position,
+      );
+
+      expect(() => plan.cells.add(cell), throwsUnsupportedError);
+      expect(() => plan.marks[position] = mark, throwsUnsupportedError);
+      expect(() => plan.masonry.add(position), throwsUnsupportedError);
+
+      cells.clear();
+      marks.clear();
+      masonry.clear();
+      expect(plan.cells, [cell]);
+      expect(plan.marks, {position: mark});
+      expect(plan.masonry, {position});
+    });
+
+    test('omits decoration hashes the renderer cannot use', () {
+      final visible = computeFov(
+        FloorMap.parse(_arena),
+        const Position(1, 1),
+        fovRadius,
+      );
+      final plan = _plan(
+        _game(visible: visible, explored: {...visible, const Position(9, 2)}),
+      );
+
+      for (final cell in plan.cells) {
+        final mark = plan.markAt(cell.position)!;
+        final visibleFloor =
+            cell.knowledge == MaterialKnowledge.visible &&
+            cell.kind == MaterialTileKind.floor;
+        if (!visibleFloor) {
+          expect(mark.speck, isFalse, reason: '${cell.position} has no speck');
+        }
+
+        final visibleExposedWall =
+            cell.knowledge == MaterialKnowledge.visible &&
+            cell.kind == MaterialTileKind.wall &&
+            !plan.masonryAt(cell.position);
+        if (!visibleExposedWall) {
+          expect(mark.crack, 0.0, reason: '${cell.position} has no crack');
+          expect(mark.edge, 0.0, reason: '${cell.position} has no edge hash');
+        }
+      }
+    });
+
+    test('keeps applicable decoration hashes stable', () {
+      final visible = computeFov(
+        FloorMap.parse(_arena),
+        const Position(1, 1),
+        fovRadius,
+      );
+      final plan = _plan(_game(visible: visible, explored: visible));
+      final floor = plan.markAt(const Position(2, 1))!;
+      final speckedFloor = plan.markAt(const Position(2, 3))!;
+
+      const crackPosition = Position(4, 1);
+      final crackMap = FloorMap.parse(_crackArena);
+      final crackVisible = computeFov(
+        crackMap,
+        const Position(1, 1),
+        fovRadius,
+      );
+      expect(crackVisible, contains(crackPosition));
+      final crackPlan = _plan(
+        _game(map: crackMap, visible: crackVisible, explored: crackVisible),
+      );
+      expect(crackPlan.masonryAt(crackPosition), isFalse);
+      final crackedWall = crackPlan.markAt(crackPosition)!;
+      final exposedWall = plan.markAt(const Position(8, 0))!;
+
+      expect(
+        [
+          floor.grit,
+          floor.speck,
+          speckedFloor.grit,
+          speckedFloor.speck,
+          exposedWall.grit,
+          exposedWall.crack,
+          exposedWall.edge,
+          crackedWall.grit,
+          crackedWall.crack,
+          crackedWall.edge,
+        ],
+        const [
+          0.10746535102544943,
+          false,
+          0.1745148270797252,
+          true,
+          0.6811134932285904,
+          0.0,
+          0.03287066006634167,
+          0.021708223042476042,
+          0.17513918256739602,
+          0.7281350945071632,
+        ],
+      );
     });
 
     test('marks depend only on position, kind, knowledge, and theme', () {
@@ -368,7 +436,6 @@ void main() {
       // act
       final plan = _plan(game);
 
-      // assert — (8, 0) has one known wall west, a known floor south, an
       // assert — (8, 0) has one known wall west, a known floor south, an
       // unknown east; (8, 4) mirrors it from the bottom row with the same
       // known-wall count and its own unknown east. Same known facts, same

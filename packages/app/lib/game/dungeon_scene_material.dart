@@ -1,5 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'package:residuum_core/core.dart';
 
 import 'dungeon_material.dart';
 import 'glyph_plan.dart';
@@ -79,13 +80,39 @@ class MaterialCellPaint {
       Object.hash(fill, edge, gritStrength, speck, crackStrength);
 }
 
+/// Walls carry a stronger surface response than floors.
+const double _wallGritFactor = 1.75;
+const double _wallEdgeStrokeWidth = 1.2;
+const double _wallEdgeInset = 0.7;
+
+/// Builds the authoritative clip for the local-light pass.
+///
+/// It contains current visibility only: remembered terrain stays unlit, and
+/// unknown positions have no material cell to add. The renderer may smooth
+/// light inside this path, but it must never infer geometry beyond it.
+Path visibleMaterialMask(MaterialPlan plan) {
+  final mask = Path();
+  for (final cell in plan.cells) {
+    if (cell.knowledge != MaterialKnowledge.visible) continue;
+    mask.addRect(
+      Rect.fromLTWH(
+        cell.position.x * cameraCellSize,
+        cell.position.y * cameraCellSize,
+        cameraCellSize,
+        cameraCellSize,
+      ),
+    );
+  }
+  return mask;
+}
+
 /// Decides one known tile's material paint.
 ///
 /// Remembered geometry paints flat, dark, and unlit — one value for the whole
-/// remembered region, no light lift. Visible geometry takes the warm
-/// presentation light the plan already clipped to authoritative visibility,
-/// and masonry walls share one continuous surface treatment while exposed
-/// faces carry their own edge.
+/// remembered region. Visible geometry shares one neutral stone foundation;
+/// the canvas applies its warm local gradient in a single clipped pass so
+/// logical cells cannot turn into stepped light squares. Masonry walls share
+/// one continuous surface treatment while exposed faces carry their own edge.
 MaterialCellPaint materialCellPaint(
   MaterialCell cell, {
   required bool masonry,
@@ -94,18 +121,23 @@ MaterialCellPaint materialCellPaint(
     return MaterialCellPaint(
       fill: rememberedStoneColor,
       edge: masonry ? 0.06 : 0.12,
-      gritStrength: cell.kind == MaterialTileKind.wall ? 0.05 : 0.03,
+      gritStrength: cell.kind == MaterialTileKind.wall
+          ? 0.05
+          : 0.05 / _wallGritFactor,
       speck: false,
       crackStrength: 0.0,
     );
   }
 
   final wall = cell.kind == MaterialTileKind.wall;
+  final stairs =
+      cell.kind == MaterialTileKind.stairsDown ||
+      cell.kind == MaterialTileKind.stairsUp;
   return MaterialCellPaint(
-    fill: stoneLitColor(cell.light),
-    edge: wall ? (masonry ? 0.0 : 0.55) : 0.0,
-    gritStrength: wall ? 0.14 : 0.08,
-    speck: !wall,
+    fill: _visibleStone,
+    edge: wall ? 0.55 : 0.0,
+    gritStrength: wall ? 0.08 * _wallGritFactor : 0.08,
+    speck: !wall && !stairs,
     crackStrength: wall && !masonry ? 0.5 : 0.0,
   );
 }
@@ -123,7 +155,9 @@ class MaterialComponent extends PositionComponent {
         position: Vector2.zero(),
         size: Vector2.all(1),
         priority: GlyphLayer.terrain.index,
-      );
+      ) {
+    _rebuildRenderPlan();
+  }
 
   /// The material plan currently painted.
   ///
@@ -132,6 +166,11 @@ class MaterialComponent extends PositionComponent {
   /// changes exactly as the glyph components do.
   MaterialPlan plan;
 
+  late Path _visibleMask;
+  late Rect _visibleLightBounds;
+  late Paint _visibleLight;
+  late List<_PreparedMaterialCell> _cells;
+
   /// Adopts a new plan, replacing the painted one.
   ///
   /// A pan-only viewport change hands back the identical plan and this is a
@@ -139,93 +178,227 @@ class MaterialComponent extends PositionComponent {
   void adopt(MaterialPlan next) {
     if (identical(plan, next)) return;
     plan = next;
+    _rebuildRenderPlan();
+  }
+
+  void _rebuildRenderPlan() {
+    final knownWalls = {
+      for (final cell in plan.cells)
+        if (cell.kind == MaterialTileKind.wall) cell.position,
+    };
+    _cells = [
+      for (final cell in plan.cells)
+        _PreparedMaterialCell.from(
+          mark: plan.markAt(cell.position)!,
+          paint: materialCellPaint(
+            cell,
+            masonry: plan.masonryAt(cell.position),
+          ),
+          rect: _cellRect(cell),
+          faces: _wallFaces(cell, knownWalls),
+        ),
+    ];
+    _visibleMask = visibleMaterialMask(plan);
+    _visibleLightBounds = _visibleMask.getBounds();
+    final heroCenter = Offset(
+      (plan.heroPosition.x + 0.5) * cameraCellSize,
+      (plan.heroPosition.y + 0.5) * cameraCellSize,
+    );
+    final radius = (fovRadius + 1) * cameraCellSize;
+    _visibleLight = Paint()
+      ..shader = RadialGradient(colors: [stoneLitColor(1), stoneLitColor(0)])
+          .createShader(Rect.fromCircle(center: heroCenter, radius: radius));
   }
 
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    for (final cell in plan.cells) {
-      _drawCell(canvas, cell);
+    for (final cell in _cells) {
+      _drawCellBase(canvas, cell);
+    }
+    _drawVisibleLight(canvas);
+    for (final cell in _cells) {
+      _drawCellDecoration(canvas, cell);
     }
   }
 
-  void _drawCell(Canvas canvas, MaterialCell cell) {
-    final mark = plan.markAt(cell.position);
-    if (mark == null) return;
-    final masonry = plan.masonryAt(cell.position);
-    final paint = materialCellPaint(cell, masonry: masonry);
-    final rect = Rect.fromLTWH(
-      cell.position.x * cameraCellSize,
-      cell.position.y * cameraCellSize,
-      cameraCellSize,
-      cameraCellSize,
+  void _drawCellBase(Canvas canvas, _PreparedMaterialCell cell) {
+    canvas.drawRect(cell.rect, cell.basePaint);
+  }
+
+  void _drawVisibleLight(Canvas canvas) {
+    if (_visibleLightBounds.isEmpty) return;
+    canvas
+      ..save()
+      ..clipPath(_visibleMask)
+      ..drawRect(_visibleLightBounds, _visibleLight)
+      ..restore();
+  }
+
+  void _drawCellDecoration(Canvas canvas, _PreparedMaterialCell cell) {
+    if (cell.gritPaint != null) {
+      canvas.drawRect(cell.gritRect!, cell.gritPaint!);
+    }
+    if (cell.speckPaint != null) {
+      canvas.drawCircle(cell.speckCenter!, 1.6, cell.speckPaint!);
+    }
+    if (cell.crackPaint != null) {
+      canvas.drawPath(cell.crackPath!, cell.crackPaint!);
+    }
+    if (cell.edgePaint != null) {
+      canvas.drawPath(cell.edgePath, cell.edgePaint!);
+    }
+  }
+
+  Rect _cellRect(MaterialCell cell) => Rect.fromLTWH(
+    cell.position.x * cameraCellSize,
+    cell.position.y * cameraCellSize,
+    cameraCellSize,
+    cameraCellSize,
+  );
+
+  _WallFaces _wallFaces(MaterialCell cell, Set<Position> knownWalls) {
+    if (cell.kind != MaterialTileKind.wall) return const _WallFaces.none();
+    final position = cell.position;
+    return _WallFaces(
+      north: !knownWalls.contains(position.step(Direction.north)),
+      east: !knownWalls.contains(position.step(Direction.east)),
+      south: !knownWalls.contains(position.step(Direction.south)),
+      west: !knownWalls.contains(position.step(Direction.west)),
     );
-
-    canvas.drawRect(rect, Paint()..color = paint.fill);
-
-    if (paint.gritStrength > 0) _drawGrit(canvas, rect, mark, paint);
-
-    if (paint.speck && mark.speck) _drawSpeck(canvas, rect, mark);
-
-    if (paint.crackStrength > 0 && mark.crack > 0) {
-      _drawCrack(canvas, rect, mark);
-    }
-    if (paint.edge > 0) _drawMasonryEdge(canvas, rect, mark, paint);
   }
+}
 
-  void _drawGrit(
-    Canvas canvas,
-    Rect rect,
-    MaterialMark mark,
-    MaterialCellPaint paint,
-  ) {
-    final alpha = (paint.gritStrength * mark.grit).clamp(0.0, 1.0);
-    if (alpha <= 0.004) return;
-    final brush = Paint()..color = _warmInk.withValues(alpha: alpha);
+class _PreparedMaterialCell {
+  _PreparedMaterialCell._({
+    required this.rect,
+    required this.basePaint,
+    required this.gritRect,
+    required this.gritPaint,
+    required this.speckCenter,
+    required this.speckPaint,
+    required this.crackPath,
+    required this.crackPaint,
+    required this.edgePath,
+    required this.edgePaint,
+  });
+
+  factory _PreparedMaterialCell.from({
+    required MaterialMark mark,
+    required MaterialCellPaint paint,
+    required Rect rect,
+    required _WallFaces faces,
+  }) {
+    final gritAlpha = (paint.gritStrength * mark.grit).clamp(0.0, 1.0);
     final h = mark.grit.hashCode;
-    final ox = (h % 1000) / 1000 * cameraCellSize * 0.8;
-    final oy = ((h ~/ 1000) % 1000) / 1000 * cameraCellSize * 0.8;
-    canvas.drawRect(
-      Rect.fromLTWH(rect.left + ox, rect.top + oy, 1.2, 1.2),
-      brush,
+    final gritRect = gritAlpha <= 0.004
+        ? null
+        : Rect.fromLTWH(
+            rect.left + (h % 1000) / 1000 * cameraCellSize * 0.8,
+            rect.top + ((h ~/ 1000) % 1000) / 1000 * cameraCellSize * 0.8,
+            1.2,
+            1.2,
+          );
+    final crackPath = paint.crackStrength > 0 && mark.crack > 0
+        ? (Path()
+            ..moveTo(rect.left + 4, rect.top + 6)
+            ..quadraticBezierTo(
+              rect.left + cameraCellSize * 0.5,
+              rect.top + cameraCellSize * 0.55,
+              rect.right - 3,
+              rect.top + cameraCellSize * 0.35,
+            ))
+        : null;
+    final inner = rect.deflate(_wallEdgeInset);
+    final edgePath = Path();
+    if (paint.edge > 0 && faces.hasAny) {
+      if (faces.north) {
+        edgePath
+          ..moveTo(inner.left, inner.top)
+          ..lineTo(inner.right, inner.top);
+      }
+      if (faces.east) {
+        edgePath
+          ..moveTo(inner.right, inner.top)
+          ..lineTo(inner.right, inner.bottom);
+      }
+      if (faces.south) {
+        edgePath
+          ..moveTo(inner.right, inner.bottom)
+          ..lineTo(inner.left, inner.bottom);
+      }
+      if (faces.west) {
+        edgePath
+          ..moveTo(inner.left, inner.bottom)
+          ..lineTo(inner.left, inner.top);
+      }
+    }
+    return _PreparedMaterialCell._(
+      rect: rect,
+      basePaint: Paint()..color = paint.fill,
+      gritRect: gritRect,
+      gritPaint: gritRect == null
+          ? null
+          : (Paint()..color = _warmInk.withValues(alpha: gritAlpha)),
+      speckCenter: paint.speck && mark.speck
+          ? Offset(
+              rect.left + cameraCellSize * 0.35 + mark.grit * 10,
+              rect.top + cameraCellSize * 0.6,
+            )
+          : null,
+      speckPaint: paint.speck && mark.speck
+          ? (Paint()..color = _stoneEdge.withValues(alpha: 0.35))
+          : null,
+      crackPath: crackPath,
+      crackPaint: crackPath == null
+          ? null
+          : (Paint()
+              ..color = dungeonVoid.withValues(alpha: 0.5)
+              ..strokeWidth = 1
+              ..style = PaintingStyle.stroke),
+      edgePath: edgePath,
+      edgePaint: edgePath.getBounds().isEmpty
+          ? null
+          : (Paint()
+              ..color = _stoneEdge.withValues(
+                alpha: 0.15 + (paint.edge * mark.edge).clamp(0.0, 1.0) * 0.4,
+              )
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = _wallEdgeStrokeWidth
+              ..strokeCap = StrokeCap.butt),
     );
   }
 
-  void _drawSpeck(Canvas canvas, Rect rect, MaterialMark mark) {
-    final chip = Paint()..color = _stoneEdge.withValues(alpha: 0.35);
-    final cx = rect.left + cameraCellSize * 0.35 + mark.grit * 10;
-    final cy = rect.top + cameraCellSize * 0.6;
-    canvas.drawCircle(Offset(cx, cy), 1.6, chip);
-  }
+  final Rect rect;
+  final Paint basePaint;
+  final Rect? gritRect;
+  final Paint? gritPaint;
+  final Offset? speckCenter;
+  final Paint? speckPaint;
+  final Path? crackPath;
+  final Paint? crackPaint;
+  final Path edgePath;
+  final Paint? edgePaint;
+}
 
-  void _drawCrack(Canvas canvas, Rect rect, MaterialMark mark) {
-    final hairline = Paint()
-      ..color = dungeonVoid.withValues(alpha: 0.5)
-      ..strokeWidth = 1
-      ..style = PaintingStyle.stroke;
-    final start = Offset(rect.left + 4, rect.top + 6);
-    final mid = Offset(
-      rect.left + cameraCellSize * 0.5,
-      rect.top + cameraCellSize * 0.55,
-    );
-    final end = Offset(rect.right - 3, rect.top + cameraCellSize * 0.35);
-    final path = Path()
-      ..moveTo(start.dx, start.dy)
-      ..quadraticBezierTo(mid.dx, mid.dy, end.dx, end.dy);
-    canvas.drawPath(path, hairline);
-  }
+class _WallFaces {
+  const _WallFaces({
+    required this.north,
+    required this.east,
+    required this.south,
+    required this.west,
+  });
 
-  void _drawMasonryEdge(
-    Canvas canvas,
-    Rect rect,
-    MaterialMark mark,
-    MaterialCellPaint paint,
-  ) {
-    final strength = (paint.edge * mark.edge).clamp(0.0, 1.0);
-    final brush = Paint()
-      ..color = _stoneEdge.withValues(alpha: 0.15 + strength * 0.4)
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke;
-    canvas.drawRect(rect.deflate(0.6), brush);
-  }
+  const _WallFaces.none()
+    : north = false,
+      east = false,
+      south = false,
+      west = false;
+
+  final bool north;
+  final bool east;
+  final bool south;
+  final bool west;
+
+  bool get hasAny => north || east || south || west;
 }

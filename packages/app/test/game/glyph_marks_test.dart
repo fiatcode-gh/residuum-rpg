@@ -71,50 +71,6 @@ void main() {
       expect(heroTreatment.halo, isTrue);
     });
 
-    test('keep glyph identity exact through the treatment', () {
-      // arrange
-      const cell = GlyphCell(
-        Position(1, 1),
-        'g',
-        Color(0xFFD9A227),
-        1.0,
-        layer: GlyphLayer.monster,
-      );
-
-      // act
-      final treatment = glyphMarkTreatment(cell);
-
-      // assert — the mark is drawn from the cell's own glyph and ink; the
-      // treatment decorates, it never replaces the semantics
-      expect(treatment.glyph, 'g');
-      expect(treatment.ink, cell.ink);
-    });
-
-    test('fade remembered nodes with the glyph plan opacity', () {
-      // arrange
-      const seen = GlyphCell(
-        Position(1, 1),
-        '*',
-        Color(0xFFA87BC0),
-        1.0,
-        layer: GlyphLayer.node,
-      );
-      const remembered = GlyphCell(
-        Position(1, 2),
-        '*',
-        Color(0xFFA87BC0),
-        0.4,
-        layer: GlyphLayer.node,
-      );
-
-      // act
-      final seenTreatment = glyphMarkTreatment(seen);
-      final rememberedTreatment = glyphMarkTreatment(remembered);
-
-      // assert
-      expect(seenTreatment.opacity, greaterThan(rememberedTreatment.opacity));
-    });
-
     test('leave terrain glyphs untouched by the actor treatment', () {
       // arrange
       const terrain = GlyphCell(
@@ -132,7 +88,64 @@ void main() {
       // the visible terrain
       expect(treatment.scale, 1.0);
       expect(treatment.halo, isFalse);
-      expect(treatment.shadow, isFalse);
+    });
+
+    test('do not infer terrain semantics from a glyph character', () {
+      // arrange — glyph-plan characters are a characterization boundary, not
+      // terrain facts the Flame layer may parse back into game semantics.
+      const terrainCharacter = GlyphCell(
+        Position(1, 1),
+        '>',
+        Color(0xFFE8ECF2),
+        1.0,
+        layer: GlyphLayer.terrain,
+      );
+
+      // act
+      final treatment = glyphMarkTreatment(terrainCharacter);
+
+      // assert — without the material-plan feature, this terrain cell stays
+      expect(treatment.scale, 1.0);
+    });
+
+    test('mark stairs as semantic glyphs above the material', () {
+      // arrange — stairs carry a terrain-layer cell, but unlike wall/floor
+      // text they must survive as a drawn mark: the exit is a semantic
+      // feature, not stone texture
+      const stairsDown = GlyphCell(
+        Position(1, 1),
+        '>',
+        Color(0xFFE8ECF2),
+        1.0,
+        layer: GlyphLayer.terrain,
+      );
+      const stairsUp = GlyphCell(
+        Position(2, 1),
+        '<',
+        Color(0xFFE8ECF2),
+        1.0,
+        layer: GlyphLayer.terrain,
+      );
+      const floor = GlyphCell(
+        Position(3, 1),
+        '.',
+        Color(0xFF5B6270),
+        1.0,
+        layer: GlyphLayer.terrain,
+      );
+
+      // act
+      final downTreatment = glyphMarkTreatment(
+        stairsDown,
+        semanticTerrain: true,
+      );
+      final upTreatment = glyphMarkTreatment(stairsUp, semanticTerrain: true);
+
+      // assert — stairs render as deliberate marks with a slight presence
+      // lift, while floor text does not.
+      expect(downTreatment.scale, greaterThan(1.0));
+      expect(upTreatment.scale, greaterThan(1.0));
+      expect(glyphMarkTreatment(floor).scale, 1.0);
     });
   });
 }

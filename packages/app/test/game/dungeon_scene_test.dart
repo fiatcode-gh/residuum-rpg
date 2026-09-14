@@ -1,7 +1,10 @@
+import 'dart:ui' as ui;
+
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/dungeon_material.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/dungeon_scene_material.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
@@ -15,6 +18,13 @@ const _arena = '''
 #######
 #.....#
 #.....#
+#.....#
+#######''';
+
+const _stairsArena = '''
+#######
+#.....#
+#..>..#
 #.....#
 #######''';
 
@@ -74,6 +84,25 @@ GameViewState _viewState({Offset pan = Offset.zero, ArmedAction? armedAction}) {
   );
 }
 
+GameViewState _stairsViewState() {
+  const heroPosition = Position(1, 1);
+  final map = FloorMap.parse(_stairsArena);
+  final visible = computeFov(map, heroPosition, fovRadius);
+  return GameViewState(
+    game: GameState(
+      map: map,
+      hero: _heroAt(heroPosition),
+      monsters: const [],
+      rng: Rng(1),
+      lootRng: Rng(2),
+      visible: visible,
+      explored: visible,
+      buildFloor: (depth) => throw StateError('no floor below'),
+    ),
+    log: const [],
+  );
+}
+
 GameViewState _overflowingViewState(Position hero, {Offset pan = Offset.zero}) {
   final map = FloorMap.parse(_overflowingArena);
   final visible = computeFov(map, hero, fovRadius);
@@ -101,6 +130,32 @@ GameViewState _overflowingViewState(Position hero, {Offset pan = Offset.zero}) {
   opacity: cell.opacity,
   marked: cell.marked,
 );
+
+Future<Color> _materialPixel(
+  MaterialComponent component,
+  GameViewState state,
+  Offset point,
+) async {
+  final recorder = ui.PictureRecorder();
+  final canvas = ui.Canvas(recorder)..drawColor(dungeonVoid, ui.BlendMode.src);
+  component.render(canvas);
+  final image = await recorder.endRecording().toImage(
+    (state.game.map.width * cameraCellSize).round(),
+    (state.game.map.height * cameraCellSize).round(),
+  );
+  try {
+    final rgba = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    final offset = (point.dy.round() * image.width + point.dx.round()) * 4;
+    return Color.fromARGB(
+      rgba!.getUint8(offset + 3),
+      rgba.getUint8(offset),
+      rgba.getUint8(offset + 1),
+      rgba.getUint8(offset + 2),
+    );
+  } finally {
+    image.dispose();
+  }
+}
 
 void main() {
   test('the scene snapshot preserves glyph projection and camera facts', () {
@@ -148,6 +203,185 @@ void main() {
     );
 
     expect(identical(panned.cells, snapshot.cells), isTrue);
+  });
+
+  testWidgets(
+    'synchronizes retained material for a new projection but not a pan',
+    (tester) async {
+      const hostKey = Key('material-synchronization-scene');
+
+      Future<void> pumpScene(GameViewState state) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: SizedBox(
+              width: 360,
+              height: 360,
+              child: DungeonSceneHost(
+                key: hostKey,
+                state: state,
+                palette: DungeonPalette.crypt,
+                onTap: (_) {},
+                onPan: (_) {},
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+      }
+
+      final sampledFloor = Offset(11.5 * cameraCellSize, 1.94 * cameraCellSize);
+      var state = _overflowingViewState(const Position(10, 1));
+      await pumpScene(state);
+      final materialBefore = tester
+          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+          .game!
+          .world
+          .children
+          .whereType<MaterialComponent>()
+          .single;
+      final planBefore = materialBefore.plan;
+      final outputBefore = (await tester.runAsync(
+        () => _materialPixel(materialBefore, state, sampledFloor),
+      ))!;
+
+      state = _overflowingViewState(const Position(18, 1));
+      await pumpScene(state);
+      final materialAfterProjection = tester
+          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+          .game!
+          .world
+          .children
+          .whereType<MaterialComponent>()
+          .single;
+      final planAfterProjection = materialAfterProjection.plan;
+      final outputAfterProjection = (await tester.runAsync(
+        () => _materialPixel(materialAfterProjection, state, sampledFloor),
+      ))!;
+
+      expect(materialAfterProjection, same(materialBefore));
+      expect(planAfterProjection, isNot(same(planBefore)));
+      expect(planAfterProjection.heroPosition, const Position(18, 1));
+      expect(outputAfterProjection, isNot(outputBefore));
+
+      state = GameViewState(
+        game: state.game,
+        log: state.log,
+        pan: const Offset(1000, 0),
+        armedAction: state.armedAction,
+      );
+      await pumpScene(state);
+      final materialAfterPan = tester
+          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+          .game!
+          .world
+          .children
+          .whereType<MaterialComponent>()
+          .single;
+      final outputAfterPan = (await tester.runAsync(
+        () => _materialPixel(materialAfterPan, state, sampledFloor),
+      ))!;
+
+      expect(materialAfterPan, same(materialBefore));
+      expect(materialAfterPan.plan, same(planAfterProjection));
+      expect(outputAfterPan, outputAfterProjection);
+    },
+  );
+
+  test('selects stair glyphs from material facts, not terrain characters', () {
+    // arrange — material and glyph characters deliberately disagree. Both
+    // stair kinds must be retained, while terminal-looking terrain in floor
+    // and wall facts remains suppressed.
+    const down = Position(1, 1);
+    const up = Position(2, 1);
+    const floor = Position(3, 1);
+    const wall = Position(4, 1);
+    const hero = Position(5, 1);
+    final material = MaterialPlan(
+      cells: [
+        MaterialCell(
+          position: down,
+          kind: MaterialTileKind.stairsDown,
+          knowledge: MaterialKnowledge.visible,
+        ),
+        MaterialCell(
+          position: up,
+          kind: MaterialTileKind.stairsUp,
+          knowledge: MaterialKnowledge.visible,
+        ),
+        MaterialCell(
+          position: floor,
+          kind: MaterialTileKind.floor,
+          knowledge: MaterialKnowledge.visible,
+        ),
+        MaterialCell(
+          position: wall,
+          kind: MaterialTileKind.wall,
+          knowledge: MaterialKnowledge.visible,
+        ),
+      ],
+      marks: {},
+      masonry: {},
+      heroPosition: hero,
+    );
+    const glyphs = [
+      GlyphCell(down, '#', Colors.white, fullOpacity),
+      GlyphCell(up, '.', Colors.white, fullOpacity),
+      GlyphCell(floor, '>', Colors.white, fullOpacity),
+      GlyphCell(wall, '<', Colors.white, fullOpacity),
+      GlyphCell(hero, '@', Colors.white, fullOpacity, layer: GlyphLayer.hero),
+    ];
+
+    // act
+    final selected = glyphCellsAboveMaterial(glyphs, material);
+
+    // assert — stair identity comes from the down/up material facts; floor
+    // and wall glyph characters never bypass the material layer.
+    expect(selected.map((cell) => cell.position), [down, up, hero]);
+    expect(selected.map((cell) => cell.glyph), ['#', '.', '@']);
+  });
+
+  testWidgets('draws semantic stairs above continuous material', (
+    tester,
+  ) async {
+    // arrange
+    final state = _stairsViewState();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 360,
+          height: 360,
+          child: DungeonSceneHost(
+            state: state,
+            palette: DungeonPalette.crypt,
+            onTap: (_) {},
+            onPan: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    // act — terrain components are only present where an explicit material
+    // fact says the terrain is a semantic stair, never merely from its glyph.
+    final world = tester
+        .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+        .game!
+        .world;
+    Iterable<PositionComponent> terrainAt(Position position) =>
+        world.children.whereType<PositionComponent>().where(
+          (component) =>
+              component.priority == GlyphLayer.terrain.index &&
+              component.position ==
+                  Vector2(
+                    position.x * cameraCellSize,
+                    position.y * cameraCellSize,
+                  ),
+        );
+
+    // assert — the exit stays a final glyph above the material while plain
+    // floor text remains absent.
+    expect(terrainAt(const Position(3, 2)), hasLength(1));
+    expect(terrainAt(const Position(2, 2)), isEmpty);
   });
 
   testWidgets(
