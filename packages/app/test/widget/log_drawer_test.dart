@@ -258,7 +258,11 @@ void main() {
 
   testWidgets('follow holds the reader at newest while active', (tester) async {
     await onAPhone(tester);
-    final bloc = GameBloc(game: _game(), stepDelay: Duration.zero);
+    final bloc = GameBloc(
+      game: _game(),
+      log: _manyLines(60),
+      stepDelay: Duration.zero,
+    );
     addTearDown(bloc.close);
     await _pushGame(tester, bloc);
 
@@ -271,6 +275,10 @@ void main() {
 
     expect(find.byKey(logUnreadKey), findsNothing);
     expect(_inDrawer('You hold your ground.'), findsOneWidget);
+    final drawerRect = tester.getRect(find.byKey(logDrawerKey));
+    final newestRowRect = tester.getRect(_inDrawer('You hold your ground.'));
+    expect(newestRowRect.top, greaterThanOrEqualTo(drawerRect.top - 0.5));
+    expect(newestRowRect.bottom, lessThanOrEqualTo(drawerRect.bottom + 0.5));
   });
 
   testWidgets(

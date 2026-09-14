@@ -14,11 +14,18 @@ const Color _logNewest = Color(0xFFE6EAF0);
 const Color _logOlder = Color(0xFF8A919E);
 const Color _logHandle = Color(0xFF8A919E);
 
-TextStyle _rowStyle(bool newest) => TextStyle(
+const TextStyle _newestRowStyle = TextStyle(
   fontFamily: 'monospace',
   fontSize: 13,
-  color: newest ? _logNewest : _logOlder,
+  color: _logNewest,
 );
+const TextStyle _olderRowStyle = TextStyle(
+  fontFamily: 'monospace',
+  fontSize: 13,
+  color: _logOlder,
+);
+
+TextStyle _rowStyle(bool newest) => newest ? _newestRowStyle : _olderRowStyle;
 
 /// The centred drag handle pill the mock draws atop both the peek and the
 /// drawer: the one shape that says "there is more here" without a word.
@@ -38,9 +45,9 @@ class _HandlePill extends StatelessWidget {
   );
 }
 
-/// The fixed compact strip above [_Controls]: the last few lines of the
-/// message log, newest last, the same value-only contrast the log has always
-/// used. The whole strip is the handle that opens the drawer.
+/// The fixed compact strip above the crawl's action controls: the last few
+/// lines of the message log, newest last, the same value-only contrast the
+/// log has always used. The whole strip is the handle that opens the drawer.
 class LogPeek extends StatelessWidget {
   const LogPeek({required this.state, required this.bloc, super.key});
 

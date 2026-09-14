@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/actor_presentation.dart';
 import 'package:residuum_app/game/event_messages.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/log_line.dart';
@@ -144,11 +145,12 @@ void main() {
     const seededWalkId = 3;
     const seededArmed = 'firebolt';
     const seededSelected = 'ghoul-1';
+    final seededIdentity = ActorIdentityContext.fromGame(seededGame);
 
     blocTest<GameBloc, GameViewState>(
       'the drawer handle, follow-broken and close events all carry pan, '
-      'the walk, the arm, the selection and the game and log references '
-      'through unchanged',
+      'the walk, the arm, the selection, the fled flag, the actor identity '
+      'and the game and log references through unchanged',
       build: () => GameBloc(game: seededGame),
       seed: () => GameViewState(
         game: seededGame,
@@ -156,7 +158,9 @@ void main() {
         autoPath: seededAutoPath,
         walkId: seededWalkId,
         pan: seededPan,
+        hasFled: true,
         armedSpellId: seededArmed,
+        actorIdentity: seededIdentity,
         selectedActorId: seededSelected,
       ),
       act: (bloc) => bloc
@@ -171,7 +175,13 @@ void main() {
               .having((s) => s.pan, 'pan', seededPan)
               .having((s) => s.autoPath, 'autoPath', same(seededAutoPath))
               .having((s) => s.walkId, 'walkId', seededWalkId)
+              .having((s) => s.hasFled, 'hasFled', isTrue)
               .having((s) => s.armedSpellId, 'armedSpellId', seededArmed)
+              .having(
+                (s) => s.actorIdentity,
+                'actorIdentity',
+                same(seededIdentity),
+              )
               .having(
                 (s) => s.selectedActorId,
                 'selectedActorId',

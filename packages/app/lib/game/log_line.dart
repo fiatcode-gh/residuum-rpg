@@ -6,7 +6,7 @@ enum LogCategory {
   hit('→', 'hit'),
   died('†', 'died'),
   noticed('◎', 'noticed'),
-  moved('↕', 'moved'),
+  moved('⇅', 'moved'),
   refused('✕', 'refused'),
   item('■', 'item'),
   raised('▲', 'raised'),

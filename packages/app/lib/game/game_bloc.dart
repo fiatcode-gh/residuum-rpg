@@ -866,11 +866,6 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     Emitter<GameViewState> emit,
   ) {
     if (state.game.isGameOver) return;
-    const cycle = {
-      LogDrawerExtent.peek: LogDrawerExtent.half,
-      LogDrawerExtent.half: LogDrawerExtent.full,
-      LogDrawerExtent.full: LogDrawerExtent.peek,
-    };
     emit(
       GameViewState(
         game: state.game,
@@ -882,7 +877,11 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         hasFled: state.hasFled,
         actorIdentity: state.actorIdentity,
         selectedActorId: state.selectedActorId,
-        logDrawerExtent: cycle[state.logDrawerExtent]!,
+        logDrawerExtent: switch (state.logDrawerExtent) {
+          LogDrawerExtent.peek => LogDrawerExtent.half,
+          LogDrawerExtent.half => LogDrawerExtent.full,
+          LogDrawerExtent.full => LogDrawerExtent.peek,
+        },
         logFollowing: state.logFollowing,
         logUnread: state.logUnread,
       ),
