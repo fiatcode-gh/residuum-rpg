@@ -12,8 +12,10 @@
   Pixel_10 colour/greyscale evidence.
 - Unit 3 is merged to `main` at `4164741`. Its deferred AVD/greyscale pass was
   folded into Unit 4 and is now discharged; no Unit 3 code was reopened.
-- **Unit 4 is accepted on `residuum-visual-reboot-4` at `cfd472f`** (code
-  `0d27a18`). TTC-1A closed by a targeted `flow-acceptance-reviewer` PASS; the
+- **Unit 4 is accepted and published as
+  [PR #13](https://github.com/fiatcode-gh/residuum-rpg/pull/13)** from
+  `residuum-visual-reboot-4` at `0eb76d3` (code `0d27a18`). Merge is user-owned
+  and has not happened. TTC-1A closed by a targeted review PASS; the
   final tree passes scoped `dart format` (19 files, 0 changed), `flutter
   analyze` (no issues), and full `flutter test` (765 tests) from
   `packages/app`; the combined Unit 3 + Unit 4 colour/greyscale device gate
@@ -29,10 +31,18 @@
   session and restored afterwards; both verify SHA-256 identical to the
   pre-session backup. The working tree is clean and no `packages/` file changed
   in this session.
-- Current action: Unit 4 is ready for `flow-integrating`. Decide with the user
-  how to integrate `residuum-visual-reboot-4` (PR against `main`, direct merge,
-  or hold), then unit 5 planning. Nothing remote has been pushed or opened
-  this session.
+- Unit 5 is the active unit. `units/unit-5/recon.md` is written and
+  source-verified; the next action is the Unit 5 `CONTRACT.md`, then
+  `flow-planning` for its execution-grade plan. The one contract question to
+  settle first: the mock's expanded log draws a per-line category icon, which
+  `GameViewState.log`'s `List<String>` cannot carry — either introduce a
+  structured presentation entry or drop per-line icons for this unit. Never
+  infer a category by matching sentence text.
+- Sequencing decided with the user: keep the original 1 → 8 order, no chrome or
+  asset unit interleaved, and plan the art pass only after Unit 8. HUD chrome
+  (depth header, labelled HP/Mana bars, icon control chips, peek above
+  controls) still has no owning unit and must be placed before the epic closes.
+  `packages/app` has no asset pipeline at all today.
 - Locked inherited contracts: section 18 baseline summary in `LEDGER.md`
   (Flame never authoritative game state; graphical glyphs; map-first melee;
   four-region rule; accessibility by shape/word never hue alone) plus

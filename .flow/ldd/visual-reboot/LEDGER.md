@@ -304,6 +304,26 @@ Append-only. Supersede old decisions; do not rewrite history.
   `startRoadEncounter`/`roadSeed` to pick a world and day that already contain
   the required cast, then play it — never add a fixture or bend generation.
 
+- 2026-09-14 — Unit 4 published as
+  [PR #13](https://github.com/fiatcode-gh/residuum-rpg/pull/13) against `main`
+  with user approval. Merge remains user-owned.
+- 2026-09-14 — **Art/asset work is deferred until Units 5-8 are done.** A gap
+  read of the mock's crawl panel against the live screen found three remaining
+  differences: HUD chrome (depth header plus labelled HP/Mana bars, icon control
+  chips, peek above controls), the log drawer (Unit 5), and an art pass (tile
+  texture, wall-face art, torch and prop sprites, edge fog). `packages/app` has
+  no `assets:` block, no asset directory, and no sprite reference anywhere in
+  `lib/`, so the art pass needs an asset pipeline that does not exist yet. The
+  user rejected interleaving a chrome/asset unit before Unit 5; the original
+  1 → 8 order stands and asset planning happens after Unit 8. HUD chrome has no
+  owning unit yet and must be placed before the epic closes.
+- 2026-09-14 — Unit 5 recon completed and recorded at `units/unit-5/recon.md`.
+  The log is already exact, ordered, and identity-correct; what is missing is
+  the drawer, the follow state, and any structure on an entry. The open
+  contract question is per-line category icons, which `List<String>` cannot
+  carry: either introduce a structured presentation entry or drop icons for
+  this unit, never infer a category from sentence text.
+
 ## Verification receipts
 
 - 2026-09-13 — Unit 0 inspected the approved mock and source-verified the
