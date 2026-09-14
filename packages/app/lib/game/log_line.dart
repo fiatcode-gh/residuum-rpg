@@ -22,6 +22,9 @@ enum LogCategory {
   final String word;
 }
 
+/// How much of the message log the drawer is showing.
+enum LogDrawerExtent { peek, half, full }
+
 /// One line of the message log: the sentence, and the one kind it is.
 final class LogLine extends Equatable {
   const LogLine(this.sentence, this.category);
