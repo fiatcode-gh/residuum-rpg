@@ -31,18 +31,34 @@
   session and restored afterwards; both verify SHA-256 identical to the
   pre-session backup. The working tree is clean and no `packages/` file changed
   in this session.
-- Unit 5 is the active unit. `units/unit-5/recon.md` is written and
-  source-verified; the next action is the Unit 5 `CONTRACT.md`, then
-  `flow-planning` for its execution-grade plan. The one contract question to
-  settle first: the mock's expanded log draws a per-line category icon, which
-  `GameViewState.log`'s `List<String>` cannot carry — either introduce a
-  structured presentation entry or drop per-line icons for this unit. Never
-  infer a category by matching sentence text.
+- **Unit 5 is the active unit and its contract is locked** at
+  `units/unit-5/CONTRACT.md`, committed on `main` at `864aa6e`. Recon
+  (`units/unit-5/recon.md`) is source-verified. Three forks were settled with
+  the user and are recorded in `LEDGER.md`: a structured presentation entry
+  replaces `GameViewState.log`'s `List<String>` now rather than deferring
+  per-line icons; Unit 5 moves the peek above the controls; and game-over
+  collapses the drawer, leaving `_DeathOverlay` as the one interactive surface.
+  The category set is deliberately not enumerated in the contract — the design
+  spec has no log-category vocabulary, so naming must come from existing `core`
+  event words, and membership is planning work.
+- `flow-planner` was dispatched for the Unit 5 execution-grade plan
+  (`units/unit-5/PLAN.md` + `plan-tasks/`). Its most consequential open call is
+  follow-state ownership: the bloc knows when lines are appended, the widget
+  knows scroll position, and the contract needs an exact unread count that is
+  bloc-provable. On a READY receipt, verify the plan, then take a Unit 5 feature
+  branch and dispatch one fresh `flow-plan-executor` per task, sequentially and
+  non-isolated. Implementation is **not** yet authorized by the user.
+- Hard invariant for every Unit 5 worker: a category comes from the `GameEvent`
+  variant where `describeEvent` already switches on it, or from the app's own
+  injection call site (`roadOpeningLog`, `_openingLog`, `_asSentence`, and the
+  three bloc refusals). Never from matching sentence text. The migration touches
+  87 `log` references across 8 test files and must not change any asserted
+  sentence.
 - Sequencing decided with the user: keep the original 1 → 8 order, no chrome or
-  asset unit interleaved, and plan the art pass only after Unit 8. HUD chrome
-  (depth header, labelled HP/Mana bars, icon control chips, peek above
-  controls) still has no owning unit and must be placed before the epic closes.
-  `packages/app` has no asset pipeline at all today.
+  asset unit interleaved, and plan the art pass only after Unit 8. Remaining
+  unowned HUD chrome is the depth header, labelled HP/Mana bars, and icon
+  control chips — the peek reorder is now Unit 5's. These must be placed before
+  the epic closes. `packages/app` has no asset pipeline at all today.
 - Locked inherited contracts: section 18 baseline summary in `LEDGER.md`
   (Flame never authoritative game state; graphical glyphs; map-first melee;
   four-region rule; accessibility by shape/word never hue alone) plus
