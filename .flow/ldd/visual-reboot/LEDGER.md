@@ -328,7 +328,7 @@ Append-only. Supersede old decisions; do not rewrite history.
   only covered adjacency, so the retired adjacency-only path was unprotected)
   and one Minor (`inspectTargetAt` missing a visibility gate). Corrected by the
   executor with fresh proof; Main re-verified 736 tests + clean analyzer.
-  SEC skipped (no trust boundary). Contract satisfaction, plan conformance,
+  skip (no trust boundary). Contract satisfaction, plan conformance,
   correctness PASS.
 - 2026-09-14 — **AVD/greyscale acceptance BLOCKED (environment).** Two
   Pixel_10 launches died at scene-init/memory stage on this 14 GiB host
@@ -336,6 +336,9 @@ Append-only. Supersede old decisions; do not rewrite history.
   registered. Not a code defect. Criterion 10 (device evidence) remains open
   and must be captured on a host that can boot the AVD before Unit 3 is
   accepted for merge.
+- 2026-09-14 — Unit 3 pushed to `origin/residuum-visual-reboot-3` and opened
+  as PR #12 (`https://github.com/fiatcode-gh/residuum-rpg/pull/12`). Merge is
+  user-owned and gated on the still-open AVD acceptance.
 
 
 ## Corrections to inherited assumptions
