@@ -41,11 +41,12 @@ The epic was opened from an approved external planning handoff:
 - **Unit 2 accepted.** The graphical Crypt material language is complete on
   `visual-reboot-unit-2`; Sea-Cave and Ruined Keep material parity remains
   Unit 8.
-- **Unit 3 contract proposed** at `units/unit-3/CONTRACT.md` (2026-09-14):
-  map-first melee, map-targeted casts, inspect via long-press or non-adjacent
-  tap, one contextual shelf with readied + overflow, recenter affordance.
-  User review required before code; two open decisions (camera ease-back
-  scope, readied-slot model) are unresolved.
+- **Unit 3 merged to `main` at `4164741`.** The suite, analyzer, and acceptance
+  review passed; Pixel_10 AVD/greyscale evidence remains unavailable on this
+  host and is an open evidence debt.
+- **Unit 4 recon and contract are complete** at `units/unit-4/recon.md` and
+  `units/unit-4/CONTRACT.md`. It is ready for execution planning; no production
+  code is authorized by this record.
 
 ## Epic status
 
@@ -54,8 +55,8 @@ The epic was opened from an approved external planning handoff:
 | Unit 0 — design baseline + recon | none | complete | source recon and approved mock inspection; no code | matrix, seam inventory, corrections: `units/unit-0/recon.md` |
 | Unit 1 — dungeon scene foundation | Unit 0 | accepted | 682 app tests, analyzer, final COR/TTC/CRF, Pixel_10 AVD and greyscale pass | contract: `units/unit-1/CONTRACT.md`; Flame only in `packages/app` |
 | Unit 2 — graphical dungeon language | Unit 1 | accepted | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
-| Unit 3 — crawl interaction reboot | Unit 2 | planned | one-handed movement/melee/targeting/wait/pack without the old dock | map-first melee; favorites + overflow |
-| Unit 4 — turn timeline + duplicate identity | Unit 3 | pending | next activation sequence readable with duplicates + fast actors | encounter-local labels, timeline→map highlight |
+| Unit 3 — crawl interaction reboot | Unit 2 | merged; device evidence pending | 736 app tests, analyzer, review pass; AVD blocked on this host | map-first melee; favorites + overflow |
+| Unit 4 — turn timeline + duplicate identity | Unit 3 | recon/contract complete | next activation sequence readable with duplicates + fast actors | `units/unit-4/CONTRACT.md`; execution planning next |
 | Unit 5 — log drawer | Unit 3 | pending | history reviewable during combat without shrinking the map | 3-line peek, half/full overlay, auto-follow |
 | Unit 6 — character / spells / pack | Unit 3 | pending | no duplicated information architecture | consolidation |
 | Unit 7 — town + rooms + heroes | Unit 6 | pending | transactional/refusal semantics preserved | art bible locked before static art |
@@ -260,6 +261,25 @@ Append-only. Supersede old decisions; do not rewrite history.
   disarm negative, and gated inspect on `game.visible.contains`. Correction
   committed `0156a0b`; full suite 736 passed and analyzer clean. Security
   skip (no trust boundary).
+
+- 2026-09-14 — Unit 4 start: source recon at `4164741` confirmed that
+  `GameViewState.upNext` already exposes core's literal repeated scheduled
+  actors, while `BattleDock` still renders stage cards plus raw-name
+  `NOW`/`IN n` prose. `glyphPlan`/the Flame scene have a stable entity-id
+  projection seam and `_describe` already supplies pre-step event names. The
+  reconciled contract at `units/unit-4/CONTRACT.md` locks the direct
+  `[YOU] → upNext → [YOU]` queue, no-knowledge-leak truncation, view-scoped
+  deterministic duplicate labels, map badge/selected-outline ownership, and
+  token inspect/focus without a core action. No production code written.
+
+- 2026-09-14 — Unit 4 execution plan accepted by the architect at
+  `units/unit-4/PLAN.md`, with three sequential fresh-executor briefs:
+  identity/queue/bloc lifetime; map badges/selection/focus; then timeline and
+  legacy cutover. COR/TTC/CRF passed and SEC is skipped (no external trust
+  boundary). The plan requires a non-main `residuum-visual-reboot-4` checkout
+  from `4164741`, focused worker proof per task, Main's final app suite/analyzer
+  and acceptance review, and Pixel_10 colour/greyscale evidence. Normal local
+  implementation authorization remains the next gate.
 
 ## Verification receipts
 
