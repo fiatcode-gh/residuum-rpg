@@ -37,8 +37,10 @@ The epic was opened from an approved external planning handoff:
 - **Unit 0 complete; no production code written.** Its source-verified
   baseline is `units/unit-0/recon.md`.
 - **Unit 1 accepted.** Its Flame dungeon-scene contract is complete on
-  `visual-reboot-unit-1`. Unit 2 remains pending its art-bible decision and
-  separate authorization.
+  `visual-reboot-unit-1`.
+- **Unit 2 accepted.** The graphical Crypt material language is complete on
+  `visual-reboot-unit-2`; Sea-Cave and Ruined Keep material parity remains
+  Unit 8.
 
 ## Epic status
 
@@ -46,7 +48,7 @@ The epic was opened from an approved external planning handoff:
 |---|---|---|---|---|
 | Unit 0 — design baseline + recon | none | complete | source recon and approved mock inspection; no code | matrix, seam inventory, corrections: `units/unit-0/recon.md` |
 | Unit 1 — dungeon scene foundation | Unit 0 | accepted | 682 app tests, analyzer, final COR/TTC/CRF, Pixel_10 AVD and greyscale pass | contract: `units/unit-1/CONTRACT.md`; Flame only in `packages/app` |
-| Unit 2 — graphical dungeon language | Unit 1 | pending | target-size screenshot matches approved direction | deterministic texture, lighting, fog |
+| Unit 2 — graphical dungeon language | Unit 1 | accepted | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
 | Unit 3 — crawl interaction reboot | Unit 2 | pending | one-handed movement/melee/targeting/wait/pack without the old dock | map-first melee; favorites + overflow |
 | Unit 4 — turn timeline + duplicate identity | Unit 3 | pending | next activation sequence readable with duplicates + fast actors | encounter-local labels, timeline→map highlight |
 | Unit 5 — log drawer | Unit 3 | pending | history reviewable during combat without shrinking the map | 3-line peek, half/full overlay, auto-follow |
@@ -110,10 +112,10 @@ log drawer; no unit reordering is needed.
 
 ### User/product decisions
 
-- Art bible (handoff 11.4): palette, lighting rules, engraving treatment,
-  texture density, portrait framing, icon language, contrast targets — must
-  be locked with the user before Unit 7's static art (and ideally before
-  Unit 2 sets the material language).
+- Dungeon/material art bible subset: **locked for Unit 2**
+  (`units/unit-2/ART-BIBLE.md`). Portrait framing, bulk static-art
+  composition, and the full non-dungeon icon language remain to lock before
+  Unit 7.
 - Does the old-wave m3-quests (M3Q, save v4, `../m3/LEDGER.md`) still run,
   and where in the sequence?
 
@@ -168,6 +170,41 @@ Append-only. Supersede old decisions; do not rewrite history.
   glyph/message remain legible in greyscale. Unit 1 is accepted; Unit 2 is
   not authorized.
 
+- 2026-09-13 — User approved the Unit 2 dungeon-material art direction: an
+  etched dark-fantasy diagram built from continuous cold-charcoal stone,
+  near-black unknown void, dark/flat remembered geometry, restrained warm
+  amber illumination clipped to authoritative visibility, low-to-medium
+  deterministic procedural texture, and crisp graphical-glyph actors.
+  Value/detail, not hue alone, must distinguish knowledge and targeting
+  states. Exact palette anchors may tune during device acceptance without
+  reopening the direction. This lock covers dungeon material language;
+  portrait framing, bulk static-art composition, and the full non-dungeon
+  icon family remain deferred before Unit 7.
+
+- 2026-09-13 — Unit 2 intake: the ChatGPT planning handoff
+  (`external/unit-2-chatgpt-handoff/`) passed the planning-handoff validator
+  against observed ref `216cd469788486db6ba907490462cce0c87e8079`; local HEAD
+  equals the observed ref with no intervening commits. Its Unit 2 contract
+  and art bible are reconciled canonically at `units/unit-2/`. Unit 2
+  separates material terrain presentation from semantic glyph/entity
+  projection: the renderer receives explicit known-terrain tile/knowledge
+  facts rather than parsing terminal terrain glyphs; procedural decoration
+  uses presentation-only deterministic coordinate/theme hashing, never
+  gameplay RNG; lighting is a smooth presentation transform clipped to the
+  authoritative visible set, never a second FOV/shadow simulation;
+  Sea-Cave/Ruined Keep material parity stays with Unit 8. The handoff carries
+  `authorization: not-carried` — normal local execution approval is required
+  before production writes.
+
+- 2026-09-13 — Unit 2 accepted on `visual-reboot-unit-2`. The renderer uses
+  an immutable explicit known-terrain material plan, cached continuous
+  hero-local light clipped to authoritative visibility, deterministic sparse
+  decoration, and exposed known-wall faces contained within known material.
+  Stairs remain semantic glyph marks derived from material facts; core state,
+  gameplay RNG, FOV, input, and Unit 1 interaction semantics are unchanged.
+  COR and TTC completed clean; CRF findings were corrected and re-verified.
+  SEC was skipped because no security boundary changed.
+
 ## Verification receipts
 
 - 2026-09-13 — Unit 0 inspected the approved mock and source-verified the
@@ -190,6 +227,35 @@ Append-only. Supersede old decisions; do not rewrite history.
   `unit-1-adjacent-monster-tap.png`, and
   `unit-1-adjacent-monster-tap-greyscale.png`; the latter preserves the
   glyph outline and refusal message without hue.
+
+### Unit 2 intake receipt
+
+- 2026-09-13 — Unit 2 intake validation: `validate-planning-handoff.py` ok
+  (`kind=ldd repository=fiatcode-gh/residuum-rpg observed_ref=216cd46…`).
+  Local checkout confirmed on `main` at the same ref, dirty tree limited to
+  the untracked handoff bundle. Source seams re-verified at that ref:
+  `dungeon_scene.dart` renders `glyphPlan` cells through `_GlyphComponent`;
+  `glyph_plan.dart` owns terrain/node/litter/monster/hero projection over
+  `visible`/`explored`; `dungeon_palette.dart` selects Crypt/Sea-Cave/Ruined
+  Keep; pan-only projection reuse (`_reusesProjection`) is present. The
+  approved mock was re-inspected against the proposed art bible and matches
+  its direction. No production code was written during intake.
+
+### Unit 2 acceptance receipt
+
+- 2026-09-13 — Unit 2 worker Red/Green proof covers renderer-level
+  continuous-light clipping, remembered/unknown no-leak, projection cache
+  refresh, material-fact stairs, known-wall continuity, immutable plan
+  ownership, and deterministic applicable decoration. Main ran
+  `flutter test && flutter analyze` from `packages/app`: 721 tests passed
+  with no analyzer issues. Final Pixel_10 evidence is
+  `.flow/evidence/visual-reboot/unit-2-crypt-crawl-final-no-leak.png` and
+  `unit-2-crypt-crawl-final-no-leak-greyscale.png`. The device save and
+  previous-save bytes were restored and SHA-256 verified after the smoke
+  session. COR and TTC found no remaining defects; CRF findings were
+  corrected with focused proof. SEC was skipped because no security boundary
+  changed.
+
 
 ## Corrections to inherited assumptions
 

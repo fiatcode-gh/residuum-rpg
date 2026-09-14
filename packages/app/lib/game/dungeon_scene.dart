@@ -5,8 +5,11 @@ import 'package:flame/text.dart';
 import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 
+import 'dungeon_material.dart';
 import 'dungeon_palette.dart';
+import 'dungeon_scene_material.dart';
 import 'game_bloc.dart';
+import 'glyph_marks.dart';
 import 'glyph_plan.dart';
 import 'grid_geometry.dart';
 
@@ -14,11 +17,34 @@ const dungeonSceneKey = Key('dungeon-scene');
 const dungeonSceneHostKey = Key('dungeon-scene-host');
 const dungeonSceneSlotKey = Key('dungeon-scene-slot');
 
+/// Keeps actor glyphs and explicit terrain features above the material layer.
+///
+/// Terrain characters remain a characterization boundary: only a stair fact
+/// from [material] may promote a terrain cell above the continuous stone.
+List<GlyphCell> glyphCellsAboveMaterial(
+  List<GlyphCell> cells,
+  MaterialPlan material,
+) {
+  final stairPositions = <Position>{
+    for (final cell in material.cells)
+      if (cell.kind == MaterialTileKind.stairsDown ||
+          cell.kind == MaterialTileKind.stairsUp)
+        cell.position,
+  };
+  return [
+    for (final cell in cells)
+      if (cell.layer != GlyphLayer.terrain ||
+          stairPositions.contains(cell.position))
+        cell,
+  ];
+}
+
 class DungeonSceneSnapshot {
   DungeonSceneSnapshot._({
     required this.columns,
     required this.rows,
     required this.cells,
+    required this.material,
     required this.focus,
     required this.pan,
   });
@@ -32,6 +58,7 @@ class DungeonSceneSnapshot {
     cells: List.unmodifiable(
       glyphPlan(state.game, palette, markedIds: state.armedTargets),
     ),
+    material: materialPlan(state.game, palette),
     focus: state.game.hero.position,
     pan: state.pan,
   );
@@ -45,6 +72,7 @@ class DungeonSceneSnapshot {
     columns: columns,
     rows: rows,
     cells: cells,
+    material: material,
     focus: focus,
     pan: pan,
   );
@@ -52,6 +80,10 @@ class DungeonSceneSnapshot {
   final int columns;
   final int rows;
   final List<GlyphCell> cells;
+
+  /// The deterministic material layer beneath the glyph actors.
+  final MaterialPlan material;
+
   final Position focus;
   final Offset pan;
 }
@@ -139,8 +171,11 @@ class _DungeonScene extends FlameGame with TapCallbacks, DragCallbacks {
   ValueChanged<Offset> _onPan;
   final Map<GlyphRenderId, _GlyphComponent> _glyphs = {};
 
+  MaterialComponent? _material;
+
   @override
-  Color backgroundColor() => const Color(0xFF0E1014);
+  Color backgroundColor() => dungeonVoid;
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
@@ -198,7 +233,15 @@ class _DungeonScene extends FlameGame with TapCallbacks, DragCallbacks {
   );
 
   void _synchronizeComponents() {
-    final cellsById = {for (final cell in _snapshot.cells) cell.renderId: cell};
+    _synchronizeMaterial();
+
+    final cellsById = {
+      for (final cell in glyphCellsAboveMaterial(
+        _snapshot.cells,
+        _snapshot.material,
+      ))
+        cell.renderId: cell,
+    };
     final removed = <_GlyphComponent>[
       for (final entry in _glyphs.entries)
         if (!cellsById.containsKey(entry.key)) entry.value,
@@ -207,19 +250,33 @@ class _DungeonScene extends FlameGame with TapCallbacks, DragCallbacks {
     _glyphs.removeWhere((id, _) => !cellsById.containsKey(id));
 
     final added = <_GlyphComponent>[];
-    for (final cell in _snapshot.cells) {
+    for (final cell in cellsById.values) {
+      final treatment = glyphMarkTreatment(
+        cell,
+        semanticTerrain: cell.layer == GlyphLayer.terrain,
+      );
       final existing = _glyphs[cell.renderId];
       if (existing == null) {
-        final component = _GlyphComponent(cell);
+        final component = _GlyphComponent(cell, treatment);
         _glyphs[cell.renderId] = component;
         added.add(component);
       } else {
-        existing.synchronize(cell);
+        existing.synchronize(cell, treatment);
       }
     }
     world.addAll(added);
     _updateCamera();
     if (isMounted) processLifecycleEvents();
+  }
+
+  void _synchronizeMaterial() {
+    final material = _snapshot.material;
+    if (_material == null) {
+      _material = MaterialComponent(material);
+      world.add(_material!);
+    } else {
+      _material!.adopt(material);
+    }
   }
 
   void _updateCamera() {
@@ -230,7 +287,7 @@ class _DungeonScene extends FlameGame with TapCallbacks, DragCallbacks {
 }
 
 class _GlyphComponent extends PositionComponent {
-  _GlyphComponent(GlyphCell cell)
+  _GlyphComponent(GlyphCell cell, GlyphMarkTreatment treatment)
     : _cell = cell,
       super(
         position: _mapPosition(cell),
@@ -243,7 +300,9 @@ class _GlyphComponent extends PositionComponent {
       anchor: Anchor.center,
       position: Vector2.all(cameraCellSize / 2),
     );
+    _applyTreatment(treatment);
     _updateMark(cell);
+    if (treatment.halo) add(_halo);
     add(_text);
   }
 
@@ -251,7 +310,18 @@ class _GlyphComponent extends PositionComponent {
   late final TextComponent _text;
   RectangleComponent? _mark;
 
-  void synchronize(GlyphCell cell) {
+  /// The hero's very small halo — a soft value contrast behind the mark so
+  /// the hero reads against the stone at a glance. Shape, not hue: the halo
+  /// is the cell's own ink at a whisper of alpha.
+  CircleComponent get _halo => CircleComponent(
+    radius: cameraCellSize * 0.42,
+    position: Vector2.all(cameraCellSize / 2),
+    anchor: Anchor.center,
+    paint: Paint()
+      ..color = _cell.ink.withValues(alpha: 0.10 + 0.06 * _cell.opacity),
+  );
+
+  void synchronize(GlyphCell cell, GlyphMarkTreatment treatment) {
     final before = _cell;
     _cell = cell;
     position.setFrom(_mapPosition(cell));
@@ -262,9 +332,14 @@ class _GlyphComponent extends PositionComponent {
         ..text = cell.glyph
         ..textRenderer = _textPaint(cell);
     }
+    _applyTreatment(treatment);
     if (before.marked != cell.marked || before.ink != cell.ink) {
       _updateMark(cell);
     }
+  }
+
+  void _applyTreatment(GlyphMarkTreatment treatment) {
+    _text.scale = Vector2.all(treatment.scale);
   }
 
   static Vector2 _mapPosition(GlyphCell cell) => Vector2(
