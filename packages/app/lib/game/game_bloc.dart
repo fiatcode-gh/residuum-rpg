@@ -209,13 +209,14 @@ class GameViewState {
         };
 
   /// The enemy a map tap or long-press at [position] would open for
-  /// inspection, or null when nothing stands there.
+  /// inspection, or null when nothing stands there or the hero cannot see it.
   ///
   /// Pure and side-effect-free: it names a sheet, dispatches nothing and
   /// mutates nothing. Whether a tap is inspect versus melee versus cast is
   /// decided later — melee and cast precedence in the bloc's tap handler, the
   /// routing between them in the widget.
-  Actor? inspectTargetAt(Position position) => game.monsterAt(position);
+  Actor? inspectTargetAt(Position position) =>
+      game.visible.contains(position) ? game.monsterAt(position) : null;
 
   int get depth => game.depth;
 

@@ -382,6 +382,58 @@ void main() {
     );
 
     blocTest<GameBloc, GameViewState>(
+      'a map tap on a distant visible monster while armed casts at it',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(3, 1))],
+          spells: spellsById,
+          knownSpells: const {'firebolt'},
+          mana: 10,
+        ).copyWith(visible: {const Position(1, 1), const Position(3, 1)}),
+      ),
+      act: (bloc) => bloc
+        ..add(const SkillArmed('firebolt'))
+        ..add(const TileTapped(Position(3, 1))),
+      expect: () => [
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>()
+            .having((s) => s.armedSpellId, 'armed', isNull)
+            .having((s) => s.mana, 'mana', 10 - firebolt.manaCost)
+            .having(
+              (s) => s.log.where(
+                (line) => line.startsWith('Firebolt burns the ghoul'),
+              ),
+              'cast line',
+              isNotEmpty,
+            ),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a map tap on a distant unseen monster while armed disarms only',
+      build: () => GameBloc(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(3, 1))],
+          spells: spellsById,
+          knownSpells: const {'firebolt'},
+          mana: 10,
+        ).copyWith(visible: {const Position(1, 1)}),
+      ),
+      act: (bloc) => bloc
+        ..add(const SkillArmed('firebolt'))
+        ..add(const TileTapped(Position(3, 1))),
+      expect: () => [
+        isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
+        isA<GameViewState>()
+            .having((s) => s.armedSpellId, 'armed', isNull)
+            .having((s) => s.mana, 'mana', 10)
+            .having((s) => s.log, 'log', isEmpty),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
       'a tap on a non-target tile while armed disarms and moves nothing',
       build: () => GameBloc(
         game: arenaGame(
@@ -420,6 +472,23 @@ void main() {
       // assert
       expect(target?.id, 'ghoul-1');
       expect(nothing, isNull);
+      addTearDown(bloc.close);
+    });
+
+    test('inspectTargetAt names only a monster the hero can see', () {
+      // arrange - the ghoul stands explored but outside the hero's sight
+      final bloc = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [ghoul(const Position(4, 2))],
+        ).copyWith(visible: {const Position(3, 2)}),
+      );
+
+      // act
+      final unseen = bloc.state.inspectTargetAt(const Position(4, 2));
+
+      // assert
+      expect(unseen, isNull);
       addTearDown(bloc.close);
     });
 
