@@ -41,6 +41,11 @@ The epic was opened from an approved external planning handoff:
 - **Unit 2 accepted.** The graphical Crypt material language is complete on
   `visual-reboot-unit-2`; Sea-Cave and Ruined Keep material parity remains
   Unit 8.
+- **Unit 3 contract proposed** at `units/unit-3/CONTRACT.md` (2026-09-14):
+  map-first melee, map-targeted casts, inspect via long-press or non-adjacent
+  tap, one contextual shelf with readied + overflow, recenter affordance.
+  User review required before code; two open decisions (camera ease-back
+  scope, readied-slot model) are unresolved.
 
 ## Epic status
 
@@ -49,7 +54,7 @@ The epic was opened from an approved external planning handoff:
 | Unit 0 — design baseline + recon | none | complete | source recon and approved mock inspection; no code | matrix, seam inventory, corrections: `units/unit-0/recon.md` |
 | Unit 1 — dungeon scene foundation | Unit 0 | accepted | 682 app tests, analyzer, final COR/TTC/CRF, Pixel_10 AVD and greyscale pass | contract: `units/unit-1/CONTRACT.md`; Flame only in `packages/app` |
 | Unit 2 — graphical dungeon language | Unit 1 | accepted | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
-| Unit 3 — crawl interaction reboot | Unit 2 | pending | one-handed movement/melee/targeting/wait/pack without the old dock | map-first melee; favorites + overflow |
+| Unit 3 — crawl interaction reboot | Unit 2 | planned | one-handed movement/melee/targeting/wait/pack without the old dock | map-first melee; favorites + overflow |
 | Unit 4 — turn timeline + duplicate identity | Unit 3 | pending | next activation sequence readable with duplicates + fast actors | encounter-local labels, timeline→map highlight |
 | Unit 5 — log drawer | Unit 3 | pending | history reviewable during combat without shrinking the map | 3-line peek, half/full overlay, auto-follow |
 | Unit 6 — character / spells / pack | Unit 3 | pending | no duplicated information architecture | consolidation |
@@ -127,6 +132,37 @@ log drawer; no unit reordering is needed.
 ## Decision log
 
 Append-only. Supersede old decisions; do not rewrite history.
+
+- 2026-09-14 — Unit 3 re-orient and recon: verified at source that the Flame
+  scene already emits `onTap(position)`/`onPan(delta)` intents through
+  `TapCallbacks`/`DragCallbacks` (Flame 1.38.2 also ships `LongPressCallbacks`
+  with `canvasPosition`); `_onTileTapped` still refuses adjacent-monster taps
+  with the watched refusal; `BattleSkillBar` still carries the explicit
+  `Attack`/`ArmedAttack`/`AttackArmed`/`StageCardTapped` armed flow; target
+  marks already render on the map via `markedIds: state.armedTargets` but map
+  taps never cast. No Unit 3 surface drifted since Unit 2. The Unit 3 contract
+  is proposed at `units/unit-3/CONTRACT.md`; two open decisions (camera
+  ease-back scope, readied-slot model) await the user. No production code
+  written.
+
+- 2026-09-14 — Unit 3 open decisions resolved by the user: camera ease-back is
+  deferred (Unit 3 ships only the recenter affordance over the current instant
+  snap); readied slots are the fixed school-order first few known spells plus
+  Wait with no pinning/persistence. Contract is decision-complete and ready for
+  user review before any planning or code.
+
+- 2026-09-14 — Unit 3 contract approved by the user. Execution-grade plan
+  written at `units/unit-3/PLAN.md` with three sequential task briefs
+  (`01-bloc-interaction`, `02-scene-input`, `03-shelf-and-screen`) on one
+  non-isolated checkout `residuum-visual-reboot-3` from `affc138`. Plan quality
+  gate: COR run, TTC run, CRF run, SEC skip. Key locked contracts: armed state
+  collapses `ArmedAction`/`ArmedAttack`/`ArmedSpell` to one `String?
+  armedSpellId`; map tap decides melee/cast/disarm in the bloc by
+  branch-by-branch precedence; armed + non-target tap disarms (no move);
+  map-targeted cast uses any visible monster (reconciled to core
+  `_castRefusal`); stage cards become inspect-only; `AttackArmed`/
+  `StageCardTapped`/`_outOfReach` are removed, not shimmed. Awaiting local
+  implementation authorization before dispatch.
 
 - 2026-09-13 — Epic bootstrapped during the docs/LDD restructure. The
   external handoff is accepted as approved design direction; its proposed

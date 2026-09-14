@@ -9,8 +9,11 @@
 - Unit 2 is accepted on `visual-reboot-unit-2`: graphical Crypt material,
   visible-only continuous light, material-derived stair glyphs, and
   known-wall face continuity are verified by the app suite/analyzer and
-  Pixel_10 colour/greyscale evidence. Unit 3 is next and needs its own local
-  execution authorization.
+  Pixel_10 colour/greyscale evidence.
+- Unit 3 contract approved (2026-09-14); execution-grade plan at
+  `units/unit-3/PLAN.md` + three task briefs. Next action: user implementation
+  authorization, then dispatch one sequential `flow-plan-executor` on a fresh
+  `residuum-visual-reboot-3` branch from `affc138`. No production code written.
 - Locked inherited contracts: section 18 baseline summary in `LEDGER.md`
   (Flame never authoritative game state; graphical glyphs; map-first melee;
   four-region rule; accessibility by shape/word never hue alone) plus
