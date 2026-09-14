@@ -61,7 +61,7 @@ Actor _ghoulAt(Position position) => Actor(
   energy: actThreshold,
 );
 
-GameViewState _viewState({Offset pan = Offset.zero, ArmedAction? armedAction}) {
+GameViewState _viewState({Offset pan = Offset.zero, String? armedSpellId}) {
   const heroPosition = Position(1, 1);
   final map = FloorMap.parse(_arena);
   final visible = computeFov(map, heroPosition, fovRadius);
@@ -80,7 +80,7 @@ GameViewState _viewState({Offset pan = Offset.zero, ArmedAction? armedAction}) {
     ),
     log: const [],
     pan: pan,
-    armedAction: armedAction,
+    armedSpellId: armedSpellId,
   );
 }
 
@@ -161,7 +161,7 @@ void main() {
   test('the scene snapshot preserves glyph projection and camera facts', () {
     final state = _viewState(
       pan: const Offset(12, -8),
-      armedAction: const ArmedAttack(),
+      armedSpellId: 'firebolt',
     );
 
     final snapshot = DungeonSceneSnapshot.fromViewState(
@@ -222,6 +222,7 @@ void main() {
                 palette: DungeonPalette.crypt,
                 onTap: (_) {},
                 onPan: (_) {},
+                onLongPress: (_) {},
               ),
             ),
           ),
@@ -267,7 +268,7 @@ void main() {
         game: state.game,
         log: state.log,
         pan: const Offset(1000, 0),
-        armedAction: state.armedAction,
+        armedSpellId: state.armedSpellId,
       );
       await pumpScene(state);
       final materialAfterPan = tester
@@ -355,6 +356,7 @@ void main() {
             palette: DungeonPalette.crypt,
             onTap: (_) {},
             onPan: (_) {},
+            onLongPress: (_) {},
           ),
         ),
       ),
@@ -402,6 +404,7 @@ void main() {
                 palette: DungeonPalette.crypt,
                 onTap: taps.add,
                 onPan: pans.add,
+                onLongPress: (_) {},
               ),
             ),
           ),
@@ -458,6 +461,7 @@ void main() {
                   palette: DungeonPalette.crypt,
                   onTap: taps.add,
                   onPan: (_) {},
+                  onLongPress: (_) {},
                 ),
               ),
             ),
@@ -591,6 +595,61 @@ void main() {
         Position(5, 1),
         Position(11, 1),
       ]);
+    },
+  );
+
+  testWidgets(
+    'a long-press projects to a tile and leaves taps and drags intact',
+    (tester) async {
+      final taps = <Position>[];
+      final longPresses = <Position>[];
+      final state = _viewState();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Center(
+            child: SizedBox(
+              width: 360,
+              height: 360,
+              child: DungeonSceneHost(
+                state: state,
+                palette: DungeonPalette.crypt,
+                onTap: taps.add,
+                onPan: (_) {},
+                onLongPress: longPresses.add,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final scene = find.byKey(dungeonSceneKey);
+      final size = tester.getSize(scene);
+      final geometry = GridGeometry.camera(
+        size,
+        state.game.map.width,
+        state.game.map.height,
+        state.game.hero.position,
+      );
+      final local =
+          geometry.topLeftOf(2, 1) +
+          Offset(geometry.cellSize / 2, geometry.cellSize / 2);
+
+      await tester.longPressAt(tester.getTopLeft(scene) + local);
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(longPresses, [const Position(2, 1)]);
+
+      await tester.tapAt(tester.getTopLeft(scene) + local);
+      await tester.dragFrom(
+        tester.getCenter(scene),
+        const Offset(48, 24),
+        touchSlopX: 0,
+        touchSlopY: 0,
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(taps, [const Position(2, 1)]);
+      expect(longPresses, const [Position(2, 1)]);
     },
   );
 }

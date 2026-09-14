@@ -16,20 +16,6 @@ final class TileTapped extends GameBlocEvent {
   final Position position;
 }
 
-/// The player tapped a stage card in the battle dock.
-///
-/// Adjacent, the card is the D89 grammar exactly: no armed skill is the
-/// bump-attack ([TileTapped] at the monster's tile), an armed spell is
-/// [CastPressed] at the named target. Beyond one orthogonal step, **core never
-/// sees the tap** — the dock's sentence is the app translating a useless
-/// gesture into information, a presentation refusal and not an engine one, so
-/// the rules layer gains no verb and no exception to carry.
-final class StageCardTapped extends GameBlocEvent {
-  const StageCardTapped(this.monster);
-
-  final Actor monster;
-}
-
 final class DescendPressed extends GameBlocEvent {
   const DescendPressed();
 }
@@ -107,61 +93,23 @@ final class MapPanned extends GameBlocEvent {
   final Offset delta;
 }
 
-/// What the player armed in the battle skill bar, one slot at a time.
+/// What the player armed on the map or the shelf: the spell the next legal
+/// target tap will cast.
 ///
-/// A view-scoped fact, not a rule: the armed slot names the action the next
-/// legal target tap will apply. Attack arms like a spell does — the bump is
-/// still core's blocked move, but the gesture that reaches it is the armed
-/// flow now.
-sealed class ArmedAction {
-  const ArmedAction();
-}
-
-/// The armed slot holds the attack.
-final class ArmedAttack extends ArmedAction {
-  const ArmedAttack();
-
-  @override
-  bool operator ==(Object other) => other is ArmedAttack;
-
-  @override
-  int get hashCode => 'ArmedAttack'.hashCode;
-
-  @override
-  String toString() => 'ArmedAttack()';
-}
-
-/// The armed slot holds the spell with this id.
-final class ArmedSpell extends ArmedAction {
-  const ArmedSpell(this.spellId);
-
-  final String spellId;
-
-  @override
-  bool operator ==(Object other) =>
-      other is ArmedSpell && other.spellId == spellId;
-
-  @override
-  int get hashCode => Object.hash(ArmedSpell, spellId);
-
-  @override
-  String toString() => 'ArmedSpell($spellId)';
-}
-
-/// The player tapped a skill button in the battle bar, arming [spellId], or
-/// disarmed by naming null.
+/// A view-scoped fact, not a rule: the armed id names the aim the next tap
+/// applies, and the tap that reaches it decides cast, disarm or move.
 final class SkillArmed extends GameBlocEvent {
   const SkillArmed(this.spellId);
 
   final String? spellId;
 }
 
-/// The player tapped Attack in the battle bar, arming the bump.
+/// The player pressed the recenter affordance over the map.
 ///
-/// Tapping it again disarms: an armed slot nobody can put down would make the
-/// second tap a guess.
-final class AttackArmed extends GameBlocEvent {
-  const AttackArmed();
+/// A view-scoped reset like [MapPanned]'s inverse: the pan returns to zero,
+/// and nothing about the game — the arm, the walk, the log — moves with it.
+final class RecenterPressed extends GameBlocEvent {
+  const RecenterPressed();
 }
 
 /// The player pressed the system back button while the crawl was on screen.
@@ -206,7 +154,7 @@ class GameViewState {
     this.walkId = 0,
     this.pan = Offset.zero,
     this.hasFled = false,
-    this.armedAction,
+    this.armedSpellId,
   });
 
   final GameState game;
@@ -237,42 +185,38 @@ class GameViewState {
   /// the whole of what fleeing is.
   final bool hasFled;
 
-  /// The action the player armed in the battle skill bar, or null for none.
+  /// The spell the player armed, or null for nothing armed.
   ///
   /// A view-scoped fact like [pan] and [hasFled]: an aim is a fact about the
   /// interface, not the rules. The same constructor-drop convention as [pan]
   /// enforces its reset rule — any handler that builds a fresh view state
   /// without naming this field disarms silently — and the handlers that name
   /// it are exactly the ones that change nothing about the game: the pan, the
-  /// system back refusal, the walk refusal and the walk's own bookkeeping.
-  /// Everything that steps the game drops the arm, the completed cast
-  /// included, and the battle view closing always rides a stepped state.
-  final ArmedAction? armedAction;
+  /// recenter, the system back refusal, the walk refusal and the walk's own
+  /// bookkeeping. Everything that steps the game drops the arm, the completed
+  /// cast included, and the battle view closing always rides a stepped state.
+  final String? armedSpellId;
 
-  /// The spell the armed slot holds, or null when it holds nothing or holds
-  /// the attack — the bar's spell buttons read only their own arming.
-  String? get armedSpellId => switch (armedAction) {
-    ArmedSpell(spellId: final id) => id,
-    _ => null,
-  };
-
-  /// The monsters the armed action may land on, by id, in stage order.
+  /// The monsters the armed spell may land on, by id, in stage order.
   ///
-  /// Attack reaches what the bump rule reaches: the orthogonally adjacent.
   /// A target-needing spell keeps the sight rule it has always had: anything
   /// the hero can see. Nothing armed marks nothing.
-  Set<String> get armedTargets => switch (armedAction) {
-    ArmedAttack() => {
-      for (final monster in game.monsters)
-        if (monster.position.isOrthogonallyAdjacentTo(game.hero.position))
-          monster.id,
-    },
-    ArmedSpell() => {
-      for (final monster in game.monsters)
-        if (game.visible.contains(monster.position)) monster.id,
-    },
-    null => const {},
-  };
+  Set<String> get armedTargets => armedSpellId == null
+      ? const {}
+      : {
+          for (final monster in game.monsters)
+            if (game.visible.contains(monster.position)) monster.id,
+        };
+
+  /// The enemy a map tap or long-press at [position] would open for
+  /// inspection, or null when nothing stands there or the hero cannot see it.
+  ///
+  /// Pure and side-effect-free: it names a sheet, dispatches nothing and
+  /// mutates nothing. Whether a tap is inspect versus melee versus cast is
+  /// decided later — melee and cast precedence in the bloc's tap handler, the
+  /// routing between them in the widget.
+  Actor? inspectTargetAt(Position position) =>
+      game.visible.contains(position) ? game.monsterAt(position) : null;
 
   int get depth => game.depth;
 
@@ -575,7 +519,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
          ),
        ) {
     on<TileTapped>(_onTileTapped);
-    on<StageCardTapped>(_onStageCardTapped);
+    on<RecenterPressed>(_onRecenterPressed);
     on<WaitPressed>(_onWaitPressed);
     on<DescendPressed>(_onDescendPressed);
     on<AscendPressed>(_onAscendPressed);
@@ -591,7 +535,6 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     on<QuickDrinkPressed>(_onQuickDrinkPressed);
     on<MapPanned>(_onMapPanned);
     on<SkillArmed>(_onSkillArmed);
-    on<AttackArmed>(_onAttackArmed);
     on<SystemBackPressed>(_onSystemBackPressed);
     on<FleePressed>(_onFleePressed);
   }
@@ -609,6 +552,14 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   /// constant belongs beside [stepDelay].
   final NodeId? dungeon;
 
+  /// Decides what a map tap means, in exactly one place.
+  ///
+  /// The precedence is armed-cast, then map melee, then the movement rules:
+  /// an armed tap on a visible monster is the named cast, a bare tap on an
+  /// adjacent monster is the bump the rules have always answered, and
+  /// everything else is the walk/step/refusal logic the crawl has always had.
+  /// While armed, a tap that is not a legal target disarms rather than moves —
+  /// a targeting mode that silently walks on a stray tap is a trap.
   void _onTileTapped(TileTapped event, Emitter<GameViewState> emit) {
     final game = state.game;
     if (game.isGameOver) return;
@@ -616,8 +567,17 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       emit(_stopWalking());
       return;
     }
+    if (state.armedSpellId != null) {
+      final monster = game.monsterAt(event.position);
+      if (monster != null && game.visible.contains(monster.position)) {
+        _act(CastSpellAction(state.armedSpellId!, targetId: monster.id), emit);
+      } else {
+        emit(GameViewState(game: game, log: state.log, walkId: state.walkId));
+      }
+      return;
+    }
     final direction = game.hero.position.directionTo(event.position);
-    if (direction != null && game.monsterAt(event.position) == null) {
+    if (direction != null) {
       emit(_afterAction(MoveAction(direction)));
       return;
     }
@@ -629,7 +589,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
           game: game,
           log: [...state.log, _watchedRefusal],
           walkId: state.walkId,
-          armedAction: state.armedAction,
+          armedSpellId: state.armedSpellId,
         ),
       );
       return;
@@ -643,45 +603,10 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         log: state.log,
         autoPath: path,
         walkId: walkId,
-        armedAction: state.armedAction,
+        armedSpellId: state.armedSpellId,
       ),
     );
     add(AutoWalkAdvanced(walkId));
-  }
-
-  /// Applies the armed action at a stage card.
-  ///
-  /// The view only sends this event with an armed slot; a bare tap is the
-  /// enemy's numbers, which costs no turn and reaches no rule. Adjacent, the
-  /// armed spell is the named cast and the armed attack is the bump dispatch
-  /// core always answered — the same [MoveAction] a blocked move is, swung
-  /// from the dock now that the map refuses to swing. Beyond the action's
-  /// targets, the walk sentence — log-only, the arm carried so the next tap
-  /// keeps it.
-  void _onStageCardTapped(StageCardTapped event, Emitter<GameViewState> emit) {
-    if (state.game.isGameOver) return;
-    final armed = state.armedAction;
-    if (armed == null) return;
-    final monster = event.monster;
-    if (state.game.hero.position.isOrthogonallyAdjacentTo(monster.position)) {
-      if (armed case ArmedSpell(spellId: final spellId)) {
-        add(CastPressed(spellId, targetId: monster.id));
-      } else {
-        final direction = state.game.hero.position.directionTo(
-          monster.position,
-        );
-        if (direction != null) emit(_afterAction(MoveAction(direction)));
-      }
-      return;
-    }
-    emit(
-      GameViewState(
-        game: state.game,
-        log: [...state.log, _outOfReach(monster.name)],
-        walkId: state.walkId,
-        armedAction: state.armedAction,
-      ),
-    );
   }
 
   void _onDescendPressed(DescendPressed event, Emitter<GameViewState> emit) {
@@ -739,23 +664,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       log: state.log,
       autoPath: state.autoPath,
       walkId: state.walkId,
-      armedAction: event.spellId == null ? null : ArmedSpell(event.spellId!),
-    ),
-  );
-
-  /// Arms the attack, or puts it down when it is already the armed slot.
-  ///
-  /// One armed slot at a time: arming the attack disarms whatever spell held
-  /// the slot, and nothing steps — an aim is not a hero action.
-  void _onAttackArmed(AttackArmed event, Emitter<GameViewState> emit) => emit(
-    GameViewState(
-      game: state.game,
-      log: state.log,
-      autoPath: state.autoPath,
-      walkId: state.walkId,
-      armedAction: state.armedAction == const ArmedAttack()
-          ? null
-          : const ArmedAttack(),
+      armedSpellId: event.spellId,
     ),
   );
 
@@ -771,9 +680,25 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       autoPath: state.autoPath,
       walkId: state.walkId,
       pan: state.pan + event.delta,
-      armedAction: state.armedAction,
+      armedSpellId: state.armedSpellId,
     ),
   );
+
+  /// Resets the camera to the hero without spending a turn or disarming.
+  ///
+  /// The mirror of [_onMapPanned] with no delta: a recenter changes nothing
+  /// about the game, so the arm, the walk in progress and the log all carry
+  /// through exactly as a drag carries them.
+  void _onRecenterPressed(RecenterPressed event, Emitter<GameViewState> emit) =>
+      emit(
+        GameViewState(
+          game: state.game,
+          log: state.log,
+          autoPath: state.autoPath,
+          walkId: state.walkId,
+          armedSpellId: state.armedSpellId,
+        ),
+      );
 
   /// Walks off the edge of the road, which ends the fight.
   ///
@@ -820,7 +745,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
           state.game.isEncounter ? _roadBackRefusal : _backRefusal,
         ],
         walkId: state.walkId + 1,
-        armedAction: state.armedAction,
+        armedSpellId: state.armedSpellId,
       ),
     );
   }
@@ -911,7 +836,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     game: state.game,
     log: state.log,
     walkId: state.walkId + 1,
-    armedAction: state.armedAction,
+    armedSpellId: state.armedSpellId,
   );
 
   Iterable<String> _describe(GameState before, List<GameEvent> events) {
@@ -1040,14 +965,6 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
 /// — until now it refused in silence, which read to the player as a dead tap
 /// rather than a decision the game had made.
 const String _watchedRefusal = 'Something is watching. You stay put.';
-
-/// What a stage card says when its monster stands beyond one orthogonal step.
-///
-/// Names the monster and names the walk — the two things the player needs and
-/// the two things the tap took away. Core is not told: the hero's position is
-/// unchanged, the fight is unchanged, and the only fact added is the sentence
-/// itself.
-String _outOfReach(String name) => '$name is out of reach. Walk to it.';
 
 /// What the log says when the system back button is pressed in the dungeon.
 ///

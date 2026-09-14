@@ -70,27 +70,6 @@ void main() {
       expect(state.armedTargets, isEmpty);
     });
 
-    test('the armed attack marks the orthogonally adjacent, only them', () {
-      // arrange - one adjacent, one diagonal, one far
-      final state = GameViewState(
-        game: battleGame(
-          monsters: [
-            ghoulAt(const Position(1, 2)),
-            ghoulAt(const Position(2, 2), id: 'ghoul-2'),
-            ghoulAt(const Position(5, 1), id: 'ghoul-3'),
-          ],
-        ),
-        log: const [],
-        armedAction: const ArmedAttack(),
-      );
-
-      // act
-      final targets = state.armedTargets;
-
-      // assert - the diagonal neighbour is not a target: movement is 4-way
-      expect(targets, {'ghoul-1'});
-    });
-
     test('an armed target-needing spell marks every visible enemy', () {
       // arrange - the far ghoul is visible and marked; the sight rule is
       // unchanged
@@ -102,11 +81,31 @@ void main() {
           ],
         ),
         log: const [],
-        armedAction: const ArmedSpell('firebolt'),
+        armedSpellId: 'firebolt',
       );
 
       // act + assert
       expect(state.armedTargets, {'ghoul-1', 'ghoul-2'});
+    });
+
+    test('the armed spell marks no monster the hero cannot see', () {
+      // arrange - the near ghoul is in the default FOV, the far one is edited
+      // out of the sight set afterwards
+      final game = battleGame(
+        monsters: [
+          ghoulAt(const Position(1, 2)),
+          ghoulAt(const Position(5, 1), id: 'ghoul-2'),
+        ],
+      ).copyWith(visible: {const Position(1, 1), const Position(1, 2)});
+      final state = GameViewState(
+        game: game,
+        log: const [],
+        armedSpellId: 'firebolt',
+      );
+
+      // act + assert - the sight rule is armedTargets', not adjacency: the
+      // unseen monster is not a legal target even though it stands nearer
+      expect(state.armedTargets, {'ghoul-1'});
     });
   });
 

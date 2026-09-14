@@ -90,3 +90,17 @@ class GridGeometry {
     return Position(x, y);
   }
 }
+
+/// Whether the focus cell is outside the viewport the [geometry] draws.
+///
+/// The origin is already the clamped camera origin, so this answers the
+/// question the recenter affordance needs — has the player's pan dragged the
+/// hero off the glass — without touching the camera. The cell's extent
+/// counts: a hero partially on screen is on screen.
+bool heroOffScreen(Size viewport, GridGeometry geometry, Position focus) {
+  final topLeft = geometry.topLeftOf(focus.x, focus.y);
+  return topLeft.dx < 0 ||
+      topLeft.dy < 0 ||
+      topLeft.dx + geometry.cellSize > viewport.width ||
+      topLeft.dy + geometry.cellSize > viewport.height;
+}

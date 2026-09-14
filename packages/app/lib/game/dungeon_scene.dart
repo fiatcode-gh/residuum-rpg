@@ -94,6 +94,7 @@ class DungeonSceneHost extends StatefulWidget {
     required this.palette,
     required this.onTap,
     required this.onPan,
+    required this.onLongPress,
     super.key,
   });
 
@@ -101,6 +102,9 @@ class DungeonSceneHost extends StatefulWidget {
   final DungeonPalette palette;
   final ValueChanged<Position> onTap;
   final ValueChanged<Offset> onPan;
+
+  /// The tile a completed long-press landed on: the inspect gesture.
+  final ValueChanged<Position> onLongPress;
 
   @override
   State<DungeonSceneHost> createState() => _DungeonSceneHostState();
@@ -111,7 +115,7 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
   late DungeonSceneSnapshot _snapshot;
   late GameState _projectionGame;
   late DungeonPalette _projectionPalette;
-  late ArmedAction? _projectionArmedAction;
+  late String? _projectionArmedSpellId;
 
   @override
   void initState() {
@@ -125,6 +129,7 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
       snapshot: _snapshot,
       onTap: widget.onTap,
       onPan: widget.onPan,
+      onLongPress: widget.onLongPress,
     );
   }
 
@@ -140,18 +145,23 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
           )
         : DungeonSceneSnapshot.fromViewState(widget.state, widget.palette);
     _rememberProjectionInputs();
-    _scene.synchronize(_snapshot, onTap: widget.onTap, onPan: widget.onPan);
+    _scene.synchronize(
+      _snapshot,
+      onTap: widget.onTap,
+      onPan: widget.onPan,
+      onLongPress: widget.onLongPress,
+    );
   }
 
   bool get _reusesProjection =>
       identical(_projectionGame, widget.state.game) &&
       _projectionPalette == widget.palette &&
-      _projectionArmedAction == widget.state.armedAction;
+      _projectionArmedSpellId == widget.state.armedSpellId;
 
   void _rememberProjectionInputs() {
     _projectionGame = widget.state.game;
     _projectionPalette = widget.palette;
-    _projectionArmedAction = widget.state.armedAction;
+    _projectionArmedSpellId = widget.state.armedSpellId;
   }
 
   @override
@@ -159,16 +169,19 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
       GameWidget(key: dungeonSceneKey, game: _scene);
 }
 
-class _DungeonScene extends FlameGame with TapCallbacks, DragCallbacks {
+class _DungeonScene extends FlameGame
+    with TapCallbacks, DragCallbacks, LongPressCallbacks {
   _DungeonScene({
     required this._snapshot,
     required this._onTap,
     required this._onPan,
+    required this._onLongPress,
   });
 
   DungeonSceneSnapshot _snapshot;
   ValueChanged<Position> _onTap;
   ValueChanged<Offset> _onPan;
+  ValueChanged<Position> _onLongPress;
   final Map<GlyphRenderId, _GlyphComponent> _glyphs = {};
 
   MaterialComponent? _material;
@@ -199,11 +212,13 @@ class _DungeonScene extends FlameGame with TapCallbacks, DragCallbacks {
     DungeonSceneSnapshot snapshot, {
     required ValueChanged<Position> onTap,
     required ValueChanged<Offset> onPan,
+    required ValueChanged<Position> onLongPress,
   }) {
     final projectionChanged = !identical(_snapshot.cells, snapshot.cells);
     _snapshot = snapshot;
     _onTap = onTap;
     _onPan = onPan;
+    _onLongPress = onLongPress;
     if (isLoaded && projectionChanged) {
       _synchronizeComponents();
     } else if (isLoaded) {
@@ -222,6 +237,15 @@ class _DungeonScene extends FlameGame with TapCallbacks, DragCallbacks {
   @override
   void onDragUpdate(DragUpdateEvent event) {
     _onPan(Offset(event.canvasDelta.x, event.canvasDelta.y));
+  }
+
+  @override
+  void onLongPressStart(LongPressStartEvent event) {
+    super.onLongPressStart(event);
+    final position = _geometry.positionAt(
+      Offset(event.canvasPosition.x, event.canvasPosition.y),
+    );
+    if (position != null) _onLongPress(position);
   }
 
   GridGeometry get _geometry => GridGeometry.camera(

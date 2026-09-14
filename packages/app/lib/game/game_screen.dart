@@ -5,11 +5,19 @@ import 'package:residuum_core/core.dart';
 
 import '../town/town_bloc.dart';
 import '../world/world_bloc.dart';
-import 'game_bloc.dart';
 import 'battle_view.dart';
 import 'dungeon_palette.dart';
 import 'dungeon_scene.dart';
+import 'game_bloc.dart';
+import 'grid_geometry.dart';
 import 'inventory_screen.dart';
+import 'spell_row.dart';
+import '../town/town_style.dart' show ink, dim;
+
+const recenterKey = Key('recenter');
+const shelfKey = Key('battle-shelf');
+const overflowKey = Key('shelf-overflow');
+const shelfWaitKey = Key('shelf-wait');
 
 class GameScreen extends StatelessWidget {
   const GameScreen({super.key});
@@ -55,17 +63,50 @@ class GameScreen extends StatelessWidget {
                         key: dungeonSceneSlotKey,
                         child: Padding(
                           padding: const EdgeInsets.all(8),
-                          child: DungeonSceneHost(
-                            key: dungeonSceneHostKey,
-                            state: state,
-                            palette: paletteFor(bloc.dungeon),
-                            onTap: (position) => bloc.add(TileTapped(position)),
-                            onPan: (delta) => bloc.add(MapPanned(delta)),
+                          child: LayoutBuilder(
+                            builder: (mapContext, constraints) {
+                              final size = constraints.biggest;
+                              return Stack(
+                                children: [
+                                  DungeonSceneHost(
+                                    key: dungeonSceneHostKey,
+                                    state: state,
+                                    palette: paletteFor(bloc.dungeon),
+                                    onTap: (position) => _onMapTap(
+                                      context,
+                                      bloc,
+                                      state,
+                                      position,
+                                    ),
+                                    onPan: (delta) =>
+                                        bloc.add(MapPanned(delta)),
+                                    onLongPress: (position) => _onMapLongPress(
+                                      context,
+                                      state,
+                                      position,
+                                    ),
+                                  ),
+                                  if (_heroOffScreen(state, size))
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: FloatingActionButton.small(
+                                        key: recenterKey,
+                                        onPressed: () =>
+                                            bloc.add(const RecenterPressed()),
+                                        child: const Icon(
+                                          Icons.center_focus_strong,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
                           ),
                         ),
                       ),
                       if (state.isBattleOpen)
-                        BattleSkillBar(state: state, bloc: bloc),
+                        BattleShelf(state: state, bloc: bloc),
                       _HitPoints(state: state),
                       _Controls(state: state),
                       _MessageLog(log: state.log),
@@ -80,6 +121,55 @@ class GameScreen extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// Routes a map tap: all meaning stays in the bloc; only inspection is routed
+/// here, because it is presentation-only.
+///
+/// Armed, the tap is the bloc's to decide — cast at a marked monster or
+/// disarm. Bare, a tap on a monster beyond one orthogonal step is the enemy's
+/// numbers, and a tap on an adjacent monster is the bump the bloc answers.
+void _onMapTap(
+  BuildContext context,
+  GameBloc bloc,
+  GameViewState state,
+  Position position,
+) {
+  if (state.armedSpellId != null) {
+    bloc.add(TileTapped(position));
+    return;
+  }
+  final monster = state.inspectTargetAt(position);
+  final adjacent = state.game.hero.position.isOrthogonallyAdjacentTo(position);
+  if (monster != null && !adjacent) {
+    showEnemyInfo(context, monster);
+    return;
+  }
+  bloc.add(TileTapped(position));
+}
+
+/// Opens the enemy's numbers under the long-press, at no turn cost.
+void _onMapLongPress(
+  BuildContext context,
+  GameViewState state,
+  Position position,
+) {
+  if (state.inspectTargetAt(position) case final Actor monster) {
+    showEnemyInfo(context, monster);
+  }
+}
+
+/// Whether the hero has been panned off the glass, which is what puts the
+/// recenter affordance over the map.
+bool _heroOffScreen(GameViewState state, Size size) {
+  final geometry = GridGeometry.camera(
+    size,
+    state.game.map.width,
+    state.game.map.height,
+    state.game.hero.position,
+    state.pan,
+  );
+  return heroOffScreen(size, geometry, state.game.hero.position);
 }
 
 class _HitPoints extends StatelessWidget {
@@ -355,20 +445,22 @@ class _Controls extends StatelessWidget {
                   ),
                 ),
               ),
+              if (state.isEncounter &&
+                  !state.isRoadClear &&
+                  !state.isBattleOpen)
+                Expanded(
+                  child: _Control(
+                    label: 'Wait',
+                    onPressed: () =>
+                        context.read<GameBloc>().add(const WaitPressed()),
+                  ),
+                ),
               if (state.canFlee)
                 Expanded(
                   child: _Control(
                     label: 'Flee',
                     onPressed: () =>
                         context.read<GameBloc>().add(const FleePressed()),
-                  ),
-                ),
-              if (state.isEncounter && !state.isRoadClear)
-                Expanded(
-                  child: _Control(
-                    label: 'Wait',
-                    onPressed: () =>
-                        context.read<GameBloc>().add(const WaitPressed()),
                   ),
                 ),
               if (state.isRoadClear)
@@ -635,6 +727,193 @@ class _DeathOverlay extends StatelessWidget {
             child: Text(state.isEncounter ? 'Wake at home' : 'Return to town'),
           ),
         ],
+      ),
+    ),
+  );
+}
+
+/// The one combat shelf: readied abilities, the overflow into the full
+/// grimoire, a quick drink, and Wait.
+///
+/// Consolidation, not restriction: the readied slots are the first few known
+/// spells in the pack's own order — school, then name — and the overflow lists
+/// every known spell, so nothing a hero knows is unreachable from the shelf.
+/// A target spell arms and the map carries the aim; Mend and Ward land on the
+/// hero and cast from the row itself.
+///
+/// The armed state reads by border and word — never a hue — the same grammar
+/// the old bar used.
+class BattleShelf extends StatelessWidget {
+  const BattleShelf({super.key, required this.state, required this.bloc});
+
+  final GameViewState state;
+  final GameBloc bloc;
+
+  /// How many known spells sit readied on the shelf before the overflow.
+  static const int readiedSpellCount = 3;
+
+  void _onSpell(Spell spell) {
+    if (spell.kind == SpellKind.mend || spell.kind == SpellKind.ward) {
+      bloc.add(CastPressed(spell.id));
+    } else {
+      bloc.add(SkillArmed(state.armedSpellId == spell.id ? null : spell.id));
+    }
+  }
+
+  Widget _shelfButton(Spell spell) {
+    final armed = state.armedSpellId == spell.id;
+    return TextButton(
+      key: Key('shelf-spell-${spell.id}'),
+      onPressed: () => _onSpell(spell),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        side: armed ? const BorderSide(color: ink) : null,
+      ),
+      child: Text(
+        armed
+            ? '${spell.school.schoolMarking} ${spell.name} '
+                  '${spell.manaCost} — armed'
+            : '${spell.school.schoolMarking} ${spell.name} ${spell.manaCost}',
+        style: const TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 12,
+          color: ink,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openOverflow(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'Spells',
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 13,
+                      color: ink,
+                    ),
+                  ),
+                ),
+                for (final spell in state.knownSpells)
+                  _OverflowRow(
+                    spell: spell,
+                    armed: state.armedSpellId == spell.id,
+                    onCast: () {
+                      Navigator.of(sheetContext).pop();
+                      _onSpell(spell);
+                    },
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final readied = state.knownSpells.take(readiedSpellCount);
+    final overflowCount = state.knownSpells.length - readiedSpellCount;
+    final potion = state.firstPotion;
+    return Padding(
+      key: shelfKey,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        children: [
+          if (potion != null)
+            _ShelfButton(
+              label: 'Drink (${state.potionCount})',
+              onPressed: state.game.isGameOver
+                  ? null
+                  : () => bloc.add(const QuickDrinkPressed()),
+            ),
+          for (final spell in readied) _shelfButton(spell),
+          if (overflowCount > 0)
+            _ShelfButton(
+              key: overflowKey,
+              label: '+$overflowCount',
+              onPressed: () => _openOverflow(context),
+            ),
+          _ShelfButton(
+            key: shelfWaitKey,
+            label: 'Wait',
+            onPressed: () => bloc.add(const WaitPressed()),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One wide shelf button: a word, tappable, in the dock's ink.
+class _ShelfButton extends StatelessWidget {
+  const _ShelfButton({required this.label, required this.onPressed, super.key});
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => TextButton(
+    onPressed: onPressed,
+    style: TextButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+    ),
+    child: Text(
+      label,
+      style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: ink),
+    ),
+  );
+}
+
+/// One row of the overflow grimoire: what the shelf button casts, in full.
+class _OverflowRow extends StatelessWidget {
+  const _OverflowRow({
+    required this.spell,
+    required this.armed,
+    required this.onCast,
+  });
+
+  final Spell spell;
+  final bool armed;
+  final VoidCallback onCast;
+
+  @override
+  Widget build(BuildContext context) => SpellRow(
+    spell: spell,
+    style: const TextStyle(fontFamily: 'monospace', fontSize: 13, color: ink),
+    dimStyle: const TextStyle(
+      fontFamily: 'monospace',
+      fontSize: 11,
+      color: dim,
+    ),
+    detail: effectOf(spell),
+    trailing: TextButton(
+      key: Key('overflow-${spell.id}'),
+      onPressed: onCast,
+      style: TextButton.styleFrom(
+        side: armed ? const BorderSide(color: ink) : null,
+      ),
+      child: Text(
+        armed ? '— armed' : spell.school.schoolMarking,
+        style: const TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 12,
+          color: ink,
+        ),
       ),
     ),
   );

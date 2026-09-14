@@ -116,23 +116,21 @@ Future<void> _tapTile(WidgetTester tester, Position tile) async {
 }
 
 void main() {
-  testWidgets(
-    'a map tap on an adjacent monster tile refuses like watched ground',
-    (tester) async {
-      // arrange - the ghoul stands one step below, in sight
-      final game = battleGame(monsters: [ghoulAt(const Position(1, 2))]);
-      final bloc = await _pushGame(tester, game);
+  testWidgets('a map tap on an adjacent monster tile is the bump attack', (
+    tester,
+  ) async {
+    // arrange - the ghoul stands one step below, in sight
+    final game = battleGame(monsters: [ghoulAt(const Position(1, 2))]);
+    final bloc = await _pushGame(tester, game);
 
-      // act - tap the monster's tile on the map itself
-      await _tapTile(tester, const Position(1, 2));
-      await tester.pumpAndSettle();
+    // act - tap the monster's tile on the map itself
+    await _tapTile(tester, const Position(1, 2));
+    await tester.pumpAndSettle();
 
-      // assert - the map never swings: the tap is refused, one sentence
-      expect(find.textContaining('You hit the ghoul'), findsNothing);
-      expect(find.text('Something is watching. You stay put.'), findsOneWidget);
-      expect(bloc.state.game.monsters.single.hp, 10);
-      expect(bloc.state.game.hero.hp, 20);
-      expect(bloc.state.game.hero.position, const Position(1, 1));
-    },
-  );
+    // assert - the map swings now: the bump fired, one sentence
+    expect(find.textContaining('You hit the ghoul'), findsOneWidget);
+    expect(find.text('Something is watching. You stay put.'), findsNothing);
+    expect(bloc.state.game.monsters.single.hp, lessThan(10));
+    expect(bloc.state.game.hero.position, const Position(1, 1));
+  });
 }

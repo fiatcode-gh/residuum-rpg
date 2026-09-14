@@ -172,9 +172,7 @@ void main() {
 
       // act
       for (var swing = 0; swing < 3; swing++) {
-        game.add(const AttackArmed());
-        await game.stream.first;
-        game.add(StageCardTapped(game.state.game.monsters.single));
+        game.add(TileTapped(game.state.game.monsters.single.position));
         await game.stream.first;
       }
       await saver.settled();
@@ -709,9 +707,7 @@ void main() {
         final game = GameBloc(game: resumed.run!, stepDelay: Duration.zero);
         games.add(game);
         saver.watchGame(game);
-        game.add(const AttackArmed());
-        await game.stream.first;
-        game.add(StageCardTapped(game.state.game.monsters.single));
+        game.add(TileTapped(game.state.game.monsters.single.position));
         await game.stream.first;
         town.add(RunSuspended(game.state.game, day: 0, dungeon: cryptNode));
         await town.stream.first;
