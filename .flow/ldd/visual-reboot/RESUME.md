@@ -14,8 +14,8 @@
   folded into Unit 4 and is now discharged; no Unit 3 code was reopened.
 - **Unit 4 is accepted and published as
   [PR #13](https://github.com/fiatcode-gh/residuum-rpg/pull/13)** from
-  `residuum-visual-reboot-4` at `0eb76d3` (code `0d27a18`). Merge is user-owned
-  and has not happened. TTC-1A closed by a targeted review PASS; the
+  `residuum-visual-reboot-4` at `0eb76d3` (code `0d27a18`). **Both #13 and #14
+  are now merged to `main`** (`650fa7c`, `15e737a`). TTC-1A closed by a targeted review PASS; the
   final tree passes scoped `dart format` (19 files, 0 changed), `flutter
   analyze` (no issues), and full `flutter test` (765 tests) from
   `packages/app`; the combined Unit 3 + Unit 4 colour/greyscale device gate
@@ -31,12 +31,18 @@
   session and restored afterwards; both verify SHA-256 identical to the
   pre-session backup. The working tree is clean and no `packages/` file changed
   in this session.
-- **Unit 5 is accepted** on `residuum-visual-reboot-5` at `0bf6da1` (code
-  `3a78971` → `36aa0d5` → `7f93bc9`, correction `0bf6da1`). Its contract is on
-  `main` at `864aa6e`; the plan and evidence are on the branch. **Nothing is
-  published — no push, no PR.** The next action is a user decision on
-  integration: open a PR from `residuum-visual-reboot-5`, merge it locally, or
-  hold. `flow-integrating` owns that step and it needs explicit approval.
+- **Unit 5 is accepted and published as
+  [PR #15](https://github.com/fiatcode-gh/residuum-rpg/pull/15)** from
+  `residuum-visual-reboot-5` at `cf27196` (code `3a78971` → `36aa0d5` →
+  `7f93bc9`, correction `0bf6da1`). Opened with user approval; **merge is
+  user-owned and has not happened.** All four CI gates pass — `gates (app)`,
+  `gates (content)`, `gates (core)` and GitGuardian. The PR carries the contract
+  commit `864aa6e` too, because that was still unpushed on local `main`; local
+  `main` fast-forwards cleanly once #15 merges.
+- Corrected a stale claim that was in this file: Unit 4's PR #13 **and** #14 are
+  already merged into `main` (`650fa7c`, `15e737a`), and Unit 5's base descends
+  from both. Earlier RESUME text saying Unit 4's merge "has not happened" was
+  out of date — verify merge state at source before repeating it.
 - Final tree at `0bf6da1`: `dart format` 94 files/0 changed, `flutter analyze`
   no issues, full `packages/app` suite **797 tests** passing, all run by the
   architect. The integrated acceptance review returned ACCEPT WITH FINDINGS;

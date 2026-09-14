@@ -61,7 +61,7 @@ The epic was opened from an approved external planning handoff:
 | Unit 2 — graphical dungeon language | Unit 1 | accepted | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
 | Unit 3 — crawl interaction reboot | Unit 2 | merged; device evidence pending | 736 app tests, analyzer, review pass; AVD blocked on this host | map-first melee; favorites + overflow |
 | Unit 4 — turn timeline + duplicate identity | Unit 3 | interrupted acceptance; WIP checkpoint | initial full app 764 + analyzer clean; first correction full app 765 + analyzer clean; final semantics fix focused 34 + focused analyze clean; closure/final-tree broad/device gates pending | head `0d27a186`; session limit stopped the combined AVD gate during encounter search |
-| Unit 5 — log drawer | Unit 3 | **accepted**; not published | 797 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT WITH FINDINGS, all must-fix corrected; full criterion 12 colour + greyscale device gate on `emulator-5554` | head `0bf6da1`; peek above controls, half/full overlay, bloc-owned follow/unread, ten-member `LogCategory`; contract: `units/unit-5/CONTRACT.md` |
+| Unit 5 — log drawer | Unit 3 | **accepted**; PR #15 open, unmerged | 797 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT WITH FINDINGS, all must-fix corrected; full criterion 12 colour + greyscale device gate on `emulator-5554` | head `0bf6da1`; peek above controls, half/full overlay, bloc-owned follow/unread, ten-member `LogCategory`; contract: `units/unit-5/CONTRACT.md` |
 | Unit 6 — character / spells / pack | Unit 3 | pending | no duplicated information architecture | consolidation |
 | Unit 7 — town + rooms + heroes | Unit 6 | pending | transactional/refusal semantics preserved | art bible locked before static art |
 | Unit 8 — world + theme parity | Unit 7 | pending | final accessibility + device-size pass | Sea-Cave/Keep material identity |
@@ -519,8 +519,21 @@ Append-only. Supersede old decisions; do not rewrite history.
 ### Unit 5 acceptance receipt
 
 - 2026-09-14 — **Unit 5 is accepted** on `residuum-visual-reboot-5` at `0bf6da1`
-  (code `3a78971` → `36aa0d5` → `7f93bc9`, correction `0bf6da1`). Publication and
-  merge remain user-owned; nothing was pushed.
+  (code `3a78971` → `36aa0d5` → `7f93bc9`, correction `0bf6da1`) and
+  **published with user approval as
+  [PR #15](https://github.com/fiatcode-gh/residuum-rpg/pull/15)** at `cf27196`.
+  All four CI gates pass: `gates (app)`, `gates (content)`, `gates (core)` and
+  GitGuardian. **Merge remains user-owned and has not happened.** The PR also
+  carries the contract commit `864aa6e`, which was still unpushed on local
+  `main`; because it is the same commit, local `main` fast-forwards cleanly once
+  #15 merges. This matches Unit 4, whose contract and recon also entered `main`
+  only through its unit PR.
+- 2026-09-14 — Correction to this ledger's own record: Unit 4's PR #13 **and**
+  #14 were already merged to `main` (`650fa7c`, `15e737a`) before this session
+  began, and Unit 5's base `864aa6e` descends from both. The RESUME text saying
+  Unit 4's merge "has not happened" was stale and was repeated once in this
+  session before being checked. Merge state is cheap to verify with
+  `git merge-base --is-ancestor`; verify it rather than quoting the pointer.
 - Final tree: `dart format --output=none --set-exit-if-changed lib test` reports
   94 files, 0 changed; `flutter analyze` reports no issues; the full
   `packages/app` suite passes 797 tests. Run by the architect at `0bf6da1`. Only
