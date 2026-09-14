@@ -14,15 +14,30 @@
   correction `0156a0b`, 736 app tests, clean analyzer, and an acceptance-review
   pass. Its deferred AVD/greyscale pass is folded into Unit 4's final combined
   device acceptance on the recreated AVD; no Unit 3 code is reopened.
-- Unit 4 implementation is complete on `residuum-visual-reboot-4`: Tasks 01–03
-  landed (identity/queue/bloc lifetime; map badges/selection/focus; timeline
-  legacy cutover). Acceptance-review corrections, whole-app verification, and
-  the combined recreated-AVD colour/greyscale gate remain; do not claim
-  acceptance yet. That device gate covers Unit 3's one-handed flow and Unit 4's
-  identity/timeline flow.
-- Current action: correct the two accepted Unit 4 test-coverage findings, then
-  rerun the affected focused proof and acceptance review before the app-wide and
-  recreated-AVD gates.
+- Unit 4 is an interrupted WIP checkpoint on `residuum-visual-reboot-4`,
+  pushed at `0d27a186` (`feat(wip): visual reboot unit 4`). Tasks 01–03 are
+  implemented. The first acceptance review found two Important TTC coverage
+  gaps plus stale LDD status; the coverage gaps were corrected. A targeted
+  re-review found one remaining second-duplicate semantics assertion gap; that
+  exact test-only correction also landed with 34 `battle_view_test.dart` tests,
+  scoped format, and focused analysis green. No post-correction closure review
+  was completed.
+- Main-owned broad proof after the first correction wave was clean:
+  `flutter analyze` passed and full `flutter test` passed 765 tests. The final
+  semantics assertion changed the test tree afterward, so rerun final-tree
+  formatting/analyze/full-test gates before claiming acceptance.
+- The recreated `Medium_Phone` AVD eventually registered in `adb`, the Flutter
+  app launched, and exploratory screenshots were captured through crawl
+  navigation. The 5-hour session limit terminated the session during encounter
+  search before the combined Unit 3 + Unit 4 colour/greyscale criteria were
+  exercised. Treat those screenshots as exploratory only. The interrupted
+  session recorded no completed device acceptance or save-slot
+  backup/restoration receipt.
+- Current action: in a fresh session, verify local HEAD/tree against remote
+  `0d27a186`, close TTC-1A with a targeted acceptance re-review, rerun final
+  formatting + `packages/app` analyzer/full-test gates, then perform the
+  combined current-phone Unit 3 + Unit 4 colour/greyscale device gate. Only
+  after those proofs may Unit 4 be marked accepted and enter `flow-integrating`.
 - Locked inherited contracts: section 18 baseline summary in `LEDGER.md`
   (Flame never authoritative game state; graphical glyphs; map-first melee;
   four-region rule; accessibility by shape/word never hue alone) plus

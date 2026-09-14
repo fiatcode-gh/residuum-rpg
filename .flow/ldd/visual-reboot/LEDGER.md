@@ -44,10 +44,13 @@ The epic was opened from an approved external planning handoff:
 - **Unit 3 merged to `main` at `4164741`.** The suite, analyzer, and acceptance
   review passed. Its deferred AVD/greyscale evidence is scheduled for the
   combined final Unit 3 + Unit 4 device gate on the recreated AVD.
-- **Unit 4 implementation is complete** on `residuum-visual-reboot-4`: Tasks
-  01–03 landed. Acceptance-review corrections, whole-app verification, and the
-  combined Unit 3 + Unit 4 recreated-AVD device gate remain; no acceptance is
-  claimed yet.
+- **Unit 4 is an interrupted acceptance checkpoint** on
+  `residuum-visual-reboot-4`, remotely checkpointed at WIP head `0d27a186`.
+  Tasks 01–03 and all known review corrections are implemented. Acceptance
+  remains open for the final TTC-1A closure review, final-tree formatting/app
+  gates, and the combined Unit 3 + Unit 4 recreated-AVD colour/greyscale gate.
+  The prior session limit stopped the device pass during encounter search; no
+  device acceptance is claimed.
 
 ## Epic status
 
@@ -57,7 +60,7 @@ The epic was opened from an approved external planning handoff:
 | Unit 1 — dungeon scene foundation | Unit 0 | accepted | 682 app tests, analyzer, final COR/TTC/CRF, Pixel_10 AVD and greyscale pass | contract: `units/unit-1/CONTRACT.md`; Flame only in `packages/app` |
 | Unit 2 — graphical dungeon language | Unit 1 | accepted | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
 | Unit 3 — crawl interaction reboot | Unit 2 | merged; device evidence pending | 736 app tests, analyzer, review pass; AVD blocked on this host | map-first melee; favorites + overflow |
-| Unit 4 — turn timeline + duplicate identity | Unit 3 | implementation complete; acceptance pending | focused task proof complete; whole-app gates, acceptance corrections, and recreated-AVD evidence pending | `units/unit-4/CONTRACT.md`; Unit 3 device debt is folded into the final gate |
+| Unit 4 — turn timeline + duplicate identity | Unit 3 | interrupted acceptance; WIP checkpoint | initial full app 764 + analyzer clean; first correction full app 765 + analyzer clean; final semantics fix focused 34 + focused analyze clean; closure/final-tree broad/device gates pending | head `0d27a186`; session limit stopped the combined AVD gate during encounter search |
 | Unit 5 — log drawer | Unit 3 | pending | history reviewable during combat without shrinking the map | 3-line peek, half/full overlay, auto-follow |
 | Unit 6 — character / spells / pack | Unit 3 | pending | no duplicated information architecture | consolidation |
 | Unit 7 — town + rooms + heroes | Unit 6 | pending | transactional/refusal semantics preserved | art bible locked before static art |
@@ -368,6 +371,41 @@ Append-only. Supersede old decisions; do not rewrite history.
   as PR #12 (`https://github.com/fiatcode-gh/residuum-rpg/pull/12`). Merge is
   user-owned and gated on the still-open AVD acceptance.
 
+
+### Unit 4 interrupted-session receipt
+
+- 2026-09-14 — Tasks 01–03 completed on `residuum-visual-reboot-4`. Main's
+  first broad gate passed `flutter analyze` and full `flutter test` with 764
+  tests before acceptance review. The single `flow-acceptance-reviewer`
+  returned CHANGES with two Important TTC coverage gaps plus stale LDD status;
+  it found no Critical production defect and statically traced the production
+  behavior/ownership path cleanly.
+- 2026-09-14 — `CorrectUnit4Coverage` fixed the duplicate-identity/survivor
+  contract and genuinely overflowing phone-timeline coverage without changing
+  production code. Focused proof passed 40 tests; Main then passed full
+  `flutter test` with 765 tests and `flutter analyze` clean. Targeted
+  `ReReviewUnit4Coverage` resolved TTC-2 and narrowed TTC-1 to one remaining
+  Important gap: the second duplicate timeline token's exact assistive
+  semantics were not asserted.
+- 2026-09-14 — `CloseTimelineSemantics` added the exact second-duplicate
+  semantics assertion (`the ghoul²`, button=true) as a test-only correction.
+  `battle_view_test.dart` passed 34 tests; scoped format changed nothing and
+  focused analysis was clean. The session ended before a targeted closure
+  re-review. Because this assertion changed the final test tree after the
+  765-test broad gate, final-tree formatting/analyzer/full-test proof remains
+  open.
+- 2026-09-14 — The recreated `Medium_Phone` AVD timed out its initial
+  180-second readiness wait but later registered as `emulator-5554`; Flutter
+  reached its ready state. Exploratory local screenshots were captured from
+  town/crypt/dungeon/crawl progression, but the session limit terminated the
+  run during encounter search before Unit 3's one-handed melee/cast/inspect
+  flow, Unit 4's duplicate/repeated-activation/timeline focus flow, or the
+  greyscale selected/target-state criterion were accepted. No completed device
+  acceptance or save-slot backup/restoration receipt was recorded.
+- 2026-09-14 — After the involuntary session-limit stop, the user created and
+  pushed recovery checkpoint `0d27a186` (`feat(wip): visual reboot unit 4`) to
+  `origin/residuum-visual-reboot-4`. This is a resumable WIP checkpoint, not a
+  Unit 4 acceptance or integration decision.
 
 ## Corrections to inherited assumptions
 
