@@ -61,7 +61,7 @@ The epic was opened from an approved external planning handoff:
 | Unit 2 — graphical dungeon language | Unit 1 | accepted | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
 | Unit 3 — crawl interaction reboot | Unit 2 | merged; device evidence pending | 736 app tests, analyzer, review pass; AVD blocked on this host | map-first melee; favorites + overflow |
 | Unit 4 — turn timeline + duplicate identity | Unit 3 | interrupted acceptance; WIP checkpoint | initial full app 764 + analyzer clean; first correction full app 765 + analyzer clean; final semantics fix focused 34 + focused analyze clean; closure/final-tree broad/device gates pending | head `0d27a186`; session limit stopped the combined AVD gate during encounter search |
-| Unit 5 — log drawer | Unit 3 | pending | history reviewable during combat without shrinking the map | 3-line peek, half/full overlay, auto-follow |
+| Unit 5 — log drawer | Unit 3 | contract specified; plan pending | history reviewable during combat without shrinking the map | 3-line peek above the controls, half/full overlay, auto-follow, structured entry with per-line category; contract: `units/unit-5/CONTRACT.md` |
 | Unit 6 — character / spells / pack | Unit 3 | pending | no duplicated information architecture | consolidation |
 | Unit 7 — town + rooms + heroes | Unit 6 | pending | transactional/refusal semantics preserved | art bible locked before static art |
 | Unit 8 — world + theme parity | Unit 7 | pending | final accessibility + device-size pass | Sea-Cave/Keep material identity |
@@ -323,6 +323,34 @@ Append-only. Supersede old decisions; do not rewrite history.
   contract question is per-line category icons, which `List<String>` cannot
   carry: either introduce a structured presentation entry or drop icons for
   this unit, never infer a category from sentence text.
+- 2026-09-14 — **Unit 5's three contract forks are settled with the user and
+  `units/unit-5/CONTRACT.md` is written.**
+  1. *Structured entry now.* `GameViewState.log` becomes a list of an app-only
+     presentation entry carrying the sentence plus one category, rather than
+     `List<String>`. Decisive facts: the log is pure view state that
+     deliberately does not survive a suspend (`main.dart:572`), so there is no
+     save-format exposure; and the only correct category source is the
+     `GameEvent` variant, available exactly where `describeEvent` already
+     switches on it (`event_messages.dart:19-79`). Deferring icons would not
+     shrink the migration, only move it into a later unit that is not about the
+     log. Rejected: dropping icons for this unit; a parallel category list
+     beside the strings; any text-matching inference.
+  2. *Unit 5 moves the peek above the controls*, matching the mock. This
+     discharges one item from the unowned HUD-chrome list; the depth header,
+     labelled HP/Mana bars, and icon control chips remain unowned.
+  3. *Death wins.* Game-over collapses the drawer and inerts its handle; the
+     `_DeathOverlay` scrim (`game_screen.dart:714`, `0xCC0E1014` over the whole
+     `Stack`) stays the one interactive surface. Rejected: keeping the log
+     readable behind the overlay, and rendering the final lines inside the
+     overlay.
+  The category set itself is contract-bounded but not enumerated in the
+  contract: the design spec has no log-category vocabulary, so naming must come
+  from existing `core` event words and inventing a synonym is a defect. The
+  contract fixes the distinctions the set must support and forbids a catch-all
+  member; the enum's membership is planning work.
+- 2026-09-14 — Migration cost measured before deciding, not estimated:
+  `packages/app/test` has 87 `log`-touching references across 8 files. Mechanical
+  churn for the entry migration, and it must not change any asserted sentence.
 
 ## Verification receipts
 
