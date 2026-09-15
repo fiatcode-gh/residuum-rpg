@@ -336,6 +336,32 @@ class TownViewState {
   /// one the transaction would have refused with.
   String? temperReason(String itemId) => temperRefusal(profile, itemId);
 
+  /// Why wearing [itemId] is refused, or null when it is allowed.
+  ///
+  /// This is a rule-owned reason projection; the screen asks the rule rather
+  /// than duplicating its refusal sentence.
+  String? wearReason(String itemId) =>
+      wearRefusal(profile.loadout, profile.inventory, itemId);
+
+  /// Why taking off [slot] is refused, or null when it is allowed.
+  ///
+  /// This is a rule-owned reason projection; the screen asks the rule rather
+  /// than duplicating its refusal sentence.
+  String? takeOffReason(EquipSlot slot) =>
+      takeOffRefusal(profile.equipment, profile.inventory, slot);
+
+  /// Why reading [itemId] is refused, or null when it is allowed.
+  ///
+  /// This is a rule-owned reason projection; the screen asks the rule rather
+  /// than duplicating its refusal sentence.
+  String? readReason(String itemId) => readRefusal(
+    profile.loadout,
+    profile.inventory,
+    profile.knownSpells,
+    spellsById,
+    itemId,
+  );
+
   /// The steel the hero is wearing that the bench could work, in slot order.
   ///
   /// **The bench says worn by position, not by a word.** Wearing a piece

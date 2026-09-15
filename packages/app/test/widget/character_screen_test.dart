@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/event_messages.dart' show skillName;
 import 'package:residuum_app/notice/notice.dart';
-import 'package:residuum_app/town/character_screen.dart';
 import 'package:residuum_app/town/town_bloc.dart';
+import 'package:residuum_app/town/town_screen.dart';
 import 'package:residuum_app/world/world_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
@@ -26,23 +26,17 @@ Profile _hero({
   gold: 25,
 );
 
-/// A hero carrying one of everything the pack reads: a weapon, an armour
-/// piece, a potion and a book, with a chest piece worn, one spell learned,
-/// one material gathered, and one trained school.
+Item _item(String id, BaseItem base) =>
+    Item(id: id, base: base, rarity: Rarity.common);
+
 Profile _stocked() => _hero(
   inventory: [
-    Item(id: 'sword-1', base: rustySword, rarity: Rarity.common),
-    Item(id: 'cap-1', base: leatherCap, rarity: Rarity.fine),
-    Item(id: 'potion-1', base: healingPotion, rarity: Rarity.common),
-    Item(id: 'book-1', base: bookOfMend, rarity: Rarity.common),
+    _item('sword-1', rustySword),
+    _item('cap-1', leatherCap),
+    _item('potion-1', healingPotion),
+    _item('book-1', bookOfMend),
   ],
-  equipment: {
-    EquipSlot.chest: Item(
-      id: 'jerkin-1',
-      base: leatherJerkin,
-      rarity: Rarity.common,
-    ),
-  },
+  equipment: {EquipSlot.chest: _item('jerkin-1', leatherJerkin)},
   knownSpells: {firebolt.id},
   materials: const {MaterialId.ore: 2},
   skills: {
@@ -51,8 +45,7 @@ Profile _stocked() => _hero(
   },
 );
 
-/// The character room, under a real town bloc and a real world bloc.
-Future<TownBloc> _openRoom(
+Future<TownBloc> _openCharacterDoor(
   WidgetTester tester,
   Profile profile, {
   SaveNotice? notice,
@@ -69,200 +62,126 @@ Future<TownBloc> _openRoom(
           BlocProvider.value(value: town),
           BlocProvider.value(value: world),
         ],
-        child: const CharacterScreen(),
+        child: const TownScreen(),
       ),
     ),
   );
   await tester.pumpAndSettle();
+  await tester.tap(find.text('Character'));
+  await tester.pumpAndSettle();
   return town;
 }
 
-Future<void> _scrollTo(WidgetTester tester, Finder finder) async {
-  await tester.scrollUntilVisible(finder, 100);
+Future<void> _tapRoute(WidgetTester tester, String key, String title) async {
+  await tester.tap(find.byKey(Key(key)));
   await tester.pumpAndSettle();
+  expect(find.text(title), findsOneWidget);
 }
 
 void main() {
-  group('the town character room', () {
-    testWidgets("drops the town's notice", (tester) async {
+  group('Town Character overview', () {
+    testWidgets('shows only facts and four routes', (tester) async {
       // arrange
       await onAPhone(tester);
+      final profile = _stocked();
 
       // act
-      await _openRoom(
+      final town = await _openCharacterDoor(
         tester,
-        _stocked(),
+        profile,
         notice: const SentenceNotice('the forge speaks'),
       );
-
-      // assert - the notice is the town's, not the hero's: it stays where the
-      // work that spoke it happened, and does not follow the hero in here
-      expect(find.text('— the forge speaks.'), findsNothing);
-    });
-
-    testWidgets('shows the derived stats the town knows', (tester) async {
-      // arrange
-      await onAPhone(tester);
-
-      // act
-      await _openRoom(tester, _stocked());
-
-      // assert — the Pack's stats panel, read off the profile: the attack the
-      // body and the worn gear give, not what the pack is carrying
-      for (final label in ['Attack', 'Armour', 'Dodge', 'Speed', 'Health']) {
-        expect(find.textContaining(label), findsWidgets, reason: label);
-      }
-    });
-
-    testWidgets('shows the known spells with their school, never a cast', (
-      tester,
-    ) async {
-      // arrange
-      await onAPhone(tester);
-
-      // act
-      await _openRoom(tester, _stocked());
-
-      // assert — the school is a marking and a word, and there is no casting
-      // in town: the row names the spell and its school and stops there
-      await _scrollTo(tester, find.textContaining('Wrath'));
-      expect(find.text('Firebolt'), findsWidgets);
-      expect(find.textContaining('Wrath'), findsWidgets);
-      expect(find.text('Cast'), findsNothing);
-    });
-
-    testWidgets('shows the six worn slots in the pack order', (tester) async {
-      // arrange
-      await onAPhone(tester);
-
-      // act
-      await _openRoom(tester, _stocked());
+      addTearDown(town.close);
 
       // assert
-      for (final slot in [
-        'main hand',
-        'off hand',
-        'head',
-        'chest',
-        'hands',
-        'feet',
+      final (attackMin, attackMax) = heroAttack(profile.hero, profile.loadout);
+      expect(find.text('Attack   $attackMin-$attackMax'), findsOneWidget);
+      expect(
+        find.text('Armour   ${heroArmor(profile.loadout)}'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Dodge    ${heroDodgePercent(profile.loadout)}%'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Speed    ${heroSpeed(profile.hero, profile.loadout)}'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Health   ${profile.hero.hp}/${profile.maxHp}'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Mana     ${heroMaxMana(profile.loadout)}'),
+        findsOneWidget,
+      );
+      expect(find.text('Spells known    1'), findsOneWidget);
+      expect(
+        find.text('Skills trained  1/${SkillId.values.length}'),
+        findsOneWidget,
+      );
+      expect(find.byType(TabBar), findsNothing);
+      for (final key in const [
+        'character-route-gear',
+        'character-route-spells',
+        'character-route-skills',
+        'character-route-pack',
       ]) {
-        await _scrollTo(tester, find.text(slot));
-        expect(find.text(slot), findsOneWidget, reason: slot);
+        expect(find.byKey(Key(key)), findsOneWidget);
       }
-      expect(
-        find.textContaining('Leather Jerkin', skipOffstage: false),
-        findsWidgets,
-      );
+      expect(find.textContaining('Rusty Sword'), findsNothing);
+      expect(find.textContaining('Leather Jerkin'), findsNothing);
+      expect(find.text('Firebolt'), findsNothing);
+      expect(find.text('Ore'), findsNothing);
+      expect(find.text('Wrath'), findsNothing);
+      expect(find.textContaining('forge speaks'), findsNothing);
     });
 
-    testWidgets('carries the whole pack in the pack four sections', (
+    testWidgets('routes are presentation-only and retain bloc identity', (
       tester,
     ) async {
       // arrange
       await onAPhone(tester);
+      final town = await _openCharacterDoor(tester, _stocked());
+      addTearDown(town.close);
+      final beforeState = town.state;
+      final beforeProfile = town.state.profile;
 
       // act
-      await _openRoom(tester, _stocked());
-
-      // assert — every section present even where empty, in the fixed order,
-      // asserted downward because the scroll helper only drags one way
-      await _scrollTo(tester, find.text('WEAPONS'));
-      expect(
-        find.textContaining('Rusty Sword', skipOffstage: false),
-        findsWidgets,
-      );
-      await _scrollTo(tester, find.text('ARMOUR'));
-      expect(find.text('ARMOUR'), findsWidgets);
-      await _scrollTo(tester, find.textContaining('Leather Cap'));
-      expect(
-        find.textContaining('Leather Cap', skipOffstage: false),
-        findsWidgets,
-      );
-      await _scrollTo(tester, find.text('POTIONS'));
-      expect(find.text('POTIONS'), findsWidgets);
-      await _scrollTo(tester, find.textContaining('Healing Potion'));
-      expect(
-        find.textContaining('Healing Potion', skipOffstage: false),
-        findsWidgets,
-      );
-      await _scrollTo(tester, find.text('BOOKS'));
-      expect(find.text('BOOKS'), findsWidgets);
-      await _scrollTo(tester, find.textContaining('Book of Mend'));
-      expect(
-        find.textContaining('Book of Mend', skipOffstage: false),
-        findsWidgets,
-      );
-    });
-
-    testWidgets('gives every material a row even at zero', (tester) async {
-      // arrange
-      await onAPhone(tester);
-
-      // act
-      await _openRoom(tester, _stocked());
-
-      // assert
-      await _scrollTo(tester, find.text('Ore'));
-      expect(find.text('Ore'), findsOneWidget);
-      expect(find.text('2'), findsWidgets);
-      await _scrollTo(tester, find.text('Ingot'));
-      expect(find.text('Ingot'), findsOneWidget);
-      await _scrollTo(tester, find.text('Herb'));
-      expect(find.text('Herb'), findsOneWidget);
-    });
-
-    testWidgets('shows every skill with its level', (tester) async {
-      // arrange
-      await onAPhone(tester);
-
-      // act
-      await _openRoom(tester, _stocked());
-
-      // assert
-      for (final skill in SkillId.values) {
-        await _scrollTo(tester, find.text(skillName(skill)));
-        expect(find.text(skillName(skill)), findsWidgets, reason: skill.name);
+      for (final route in const [
+        ('character-route-gear', 'Gear'),
+        ('character-route-spells', 'Spells'),
+        ('character-route-skills', 'Skills'),
+        ('character-route-pack', 'Pack'),
+      ]) {
+        await _tapRoute(tester, route.$1, route.$2);
+        expect(find.textContaining('forge speaks'), findsNothing);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
       }
-      await _scrollTo(tester, find.text('2'));
-      expect(find.text('1'), findsWidgets);
-    });
-
-    testWidgets('wears a carried piece through WearPressed', (tester) async {
-      // arrange
-      await onAPhone(tester);
-      final town = await _openRoom(
-        tester,
-        _hero(
-          inventory: [Item(id: 'cap-1', base: leatherCap, rarity: Rarity.fine)],
-        ),
-      );
-      expect(town.state.profile.equipment[EquipSlot.head], isNull);
-
-      // act
-      await _scrollTo(tester, find.text('Wear'));
-      await tester.tap(find.text('Wear').first);
-      await tester.pumpAndSettle();
 
       // assert
-      expect(town.state.profile.equipment[EquipSlot.head], isNotNull);
-      expect(
-        town.state.profile.inventory.map((item) => item.id),
-        isNot(contains('cap-1')),
-      );
+      expect(town.state, same(beforeState));
+      expect(town.state.profile, same(beforeProfile));
     });
+  });
 
-    testWidgets('takes a worn piece off through TakeOffPressed', (
+  group('Town Gear route', () {
+    testWidgets('shows slots in order and takes off a worn item', (
       tester,
     ) async {
       // arrange
       await onAPhone(tester);
-      final town = await _openRoom(tester, _stocked());
-      expect(town.state.profile.equipment[EquipSlot.chest], isNotNull);
+      final town = await _openCharacterDoor(tester, _stocked());
+      addTearDown(town.close);
+      await _tapRoute(tester, 'character-route-gear', 'Gear');
 
       // act
-      await _scrollTo(tester, find.text('Take off'));
-      await tester.tap(find.text('Take off').first);
+      for (final slot in EquipSlot.values) {
+        expect(find.byKey(Key('gear-slot-${slot.name}')), findsOneWidget);
+      }
+      await tester.tap(find.byKey(const Key('gear-take-off-chest')));
       await tester.pumpAndSettle();
 
       // assert
@@ -271,25 +190,115 @@ void main() {
         town.state.profile.inventory.map((item) => item.id),
         contains('jerkin-1'),
       );
+      expect(find.text('—'), findsWidgets);
     });
 
-    testWidgets('reads a carried book through ReadBookPressed', (tester) async {
+    testWidgets('shows the exact full-pack refusal and disables Take off', (
+      tester,
+    ) async {
       // arrange
       await onAPhone(tester);
-      final town = await _openRoom(tester, _stocked());
-      expect(town.state.profile.knownSpells, isNot(contains('mend')));
+      final carried = [
+        for (var index = 0; index < inventoryCap; index++)
+          _item('carried-$index', healingPotion),
+      ];
+      final profile = _hero(
+        inventory: carried,
+        equipment: {EquipSlot.chest: _item('jerkin-1', leatherJerkin)},
+      );
+      final town = await _openCharacterDoor(
+        tester,
+        profile,
+        notice: const SentenceNotice('the forge speaks'),
+      );
+      addTearDown(town.close);
+      await _tapRoute(tester, 'character-route-gear', 'Gear');
 
       // act
-      await _scrollTo(tester, find.text('Read'));
-      await tester.tap(find.text('Read').first);
-      await tester.pumpAndSettle();
+      final takeOff = tester.widget<FilledButton>(
+        find.byKey(const Key('gear-take-off-chest')),
+      );
 
       // assert
-      expect(town.state.profile.knownSpells, contains('mend'));
-      expect(
-        town.state.profile.inventory.map((item) => item.id),
-        isNot(contains('book-1')),
-      );
+      expect(find.text('your hands are too full to stow it'), findsOneWidget);
+      expect(takeOff.onPressed, isNull);
+      expect(town.state.profile, same(profile));
+      expect(find.textContaining('forge speaks'), findsNothing);
     });
+  });
+
+  group('Town Spells route', () {
+    testWidgets('orders every known spell and offers no action', (
+      tester,
+    ) async {
+      // arrange
+      await onAPhone(tester);
+      final town = await _openCharacterDoor(
+        tester,
+        _hero(knownSpells: {bind.id, mend.id, firebolt.id}),
+      );
+      addTearDown(town.close);
+
+      // act
+      await _tapRoute(tester, 'character-route-spells', 'Spells');
+
+      // assert
+      expect(find.text('Firebolt'), findsOneWidget);
+      expect(find.text('Mend'), findsOneWidget);
+      expect(find.text('Bind'), findsOneWidget);
+      expect(
+        find.textContaining('Wrath · 2 mana · 2-4 fire △'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Mending · 3 mana · heals 8'), findsOneWidget);
+      expect(
+        find.textContaining('Binding · 3 mana · holds 3 turns'),
+        findsOneWidget,
+      );
+      expect(find.text('Cast'), findsNothing);
+      expect(find.textContaining('unavailable'), findsNothing);
+      expect(find.textContaining('locked'), findsNothing);
+    });
+
+    testWidgets('shows the exact empty sentence', (tester) async {
+      // arrange
+      await onAPhone(tester);
+      final town = await _openCharacterDoor(tester, _hero());
+      addTearDown(town.close);
+
+      // act
+      await _tapRoute(tester, 'character-route-spells', 'Spells');
+
+      // assert
+      expect(find.text('You have not learned any spell yet.'), findsOneWidget);
+    });
+  });
+
+  testWidgets('Town Skills lists every skill and trained progression', (
+    tester,
+  ) async {
+    // arrange
+    await onAPhone(tester);
+    final town = await _openCharacterDoor(tester, _stocked());
+    addTearDown(town.close);
+
+    // act
+    await _tapRoute(tester, 'character-route-skills', 'Skills');
+    for (final skill in SkillId.values) {
+      await tester.scrollUntilVisible(
+        find.byKey(Key('skill-${skill.name}')),
+        100,
+      );
+      await tester.pumpAndSettle();
+    }
+
+    // assert
+    for (final skill in SkillId.values) {
+      expect(find.byKey(Key('skill-${skill.name}')), findsOneWidget);
+      expect(find.text(skillName(skill)), findsOneWidget);
+    }
+    expect(find.text('1'), findsWidgets);
+    expect(find.text('2/6'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

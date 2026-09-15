@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
-import 'package:residuum_app/game/inventory_screen.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -58,18 +57,6 @@ Future<GameBloc> _openCrawl(WidgetTester tester, GameState game) async {
   await tester.pumpWidget(
     MaterialApp(
       home: BlocProvider.value(value: bloc, child: const GameScreen()),
-    ),
-  );
-  await tester.pumpAndSettle();
-  return bloc;
-}
-
-Future<GameBloc> _openPack(WidgetTester tester, GameState game) async {
-  await onAPhone(tester);
-  final bloc = GameBloc(game: game, stepDelay: Duration.zero);
-  await tester.pumpWidget(
-    MaterialApp(
-      home: BlocProvider.value(value: bloc, child: const InventoryScreen()),
     ),
   );
   await tester.pumpAndSettle();
@@ -168,105 +155,6 @@ void main() {
       expect(find.widgetWithText(FilledButton, 'Pick up'), findsOneWidget);
       expect(find.widgetWithText(FilledButton, 'Mine'), findsOneWidget);
       expect(tester.takeException(), isNull);
-      addTearDown(bloc.close);
-    });
-  });
-
-  group('the Materials panel', () {
-    testWidgets('has a row for every material, even the ones at zero', (
-      tester,
-    ) async {
-      // arrange
-      final game = _crawl(materials: const {MaterialId.ore: 4});
-
-      // act
-      final bloc = await _openPack(tester, game);
-      await tester.scrollUntilVisible(find.text('MATERIALS'), 200);
-      await tester.pumpAndSettle();
-
-      // assert - a row that came and went would move the rows below it under a
-      // thumb already reaching for one
-      expect(find.text('MATERIALS'), findsOneWidget);
-      for (final material in MaterialId.values) {
-        expect(find.text(material.word), findsOneWidget);
-      }
-      addTearDown(bloc.close);
-    });
-
-    testWidgets('says the count beside the word and the mark', (tester) async {
-      // arrange
-      final game = _crawl(
-        materials: const {MaterialId.ore: 4, MaterialId.ingot: 2},
-      );
-
-      // act
-      final bloc = await _openPack(tester, game);
-      await tester.scrollUntilVisible(find.text('MATERIALS'), 200);
-      await tester.pumpAndSettle();
-
-      // assert
-      expect(find.text('4'), findsWidgets);
-      expect(find.text(MaterialId.ore.marking), findsOneWidget);
-      expect(find.text(MaterialId.ingot.marking), findsOneWidget);
-      addTearDown(bloc.close);
-    });
-
-    testWidgets('every mark on the panel is its own shape', (tester) async {
-      // arrange
-      final game = _crawl();
-
-      // act
-      final bloc = await _openPack(tester, game);
-      await tester.scrollUntilVisible(find.text('MATERIALS'), 200);
-      await tester.pumpAndSettle();
-
-      // assert - the whole panel has to read with the colour thrown away
-      for (final material in MaterialId.values) {
-        expect(
-          find.text(material.marking),
-          findsOneWidget,
-          reason: material.name,
-        );
-      }
-      addTearDown(bloc.close);
-    });
-  });
-
-  group('the skill list at nine', () {
-    testWidgets('has a row for each craft, named in words', (tester) async {
-      // arrange
-      final game = _crawl();
-
-      // act
-      final bloc = await _openPack(tester, game);
-      await tester.scrollUntilVisible(find.text('Blacksmith'), 200);
-      await tester.pumpAndSettle();
-
-      // assert - nine rows now, and the bottom one still has to be reachable on
-      // a phone: the list scrolls, and this is the test that says it does
-      expect(find.text('Herbcraft'), findsOneWidget);
-      expect(find.text('Blacksmith'), findsOneWidget);
-      addTearDown(bloc.close);
-    });
-
-    testWidgets('a trained craft shows its level like any other skill', (
-      tester,
-    ) async {
-      // arrange
-      final game = _crawl(
-        skills: {
-          ...untrainedSkills,
-          SkillId.blacksmith: const SkillState(level: 6, xp: 2),
-        },
-      );
-
-      // act
-      final bloc = await _openPack(tester, game);
-      await tester.scrollUntilVisible(find.text('Blacksmith'), 200);
-      await tester.pumpAndSettle();
-
-      // assert
-      expect(find.text('6'), findsWidgets);
       addTearDown(bloc.close);
     });
   });

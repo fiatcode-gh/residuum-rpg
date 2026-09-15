@@ -12,7 +12,7 @@ import 'game_bloc.dart';
 import 'log_drawer.dart';
 import 'log_line.dart';
 import 'grid_geometry.dart';
-import 'inventory_screen.dart';
+import 'pack_screen.dart';
 import 'spell_row.dart';
 import '../town/town_style.dart' show ink, dim;
 
@@ -459,7 +459,7 @@ class _Controls extends StatelessWidget {
                     MaterialPageRoute<void>(
                       builder: (_) => BlocProvider.value(
                         value: bloc,
-                        child: const InventoryScreen(),
+                        child: const CrawlPackScreen(),
                       ),
                     ),
                   ),
