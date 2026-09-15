@@ -7,24 +7,25 @@
   `15e737a`, #15 `55a226d`, #16 `319d945`, and #17 `f322d78` are all MERGED;
   Units 1–2 landed directly at `5f8db47` / `06a8b9f` / `7cd32f2`; Unit 3 at
   `4164741`.
-- **Unit 8 is code-complete and locally accepted**, uncommitted on
-  `residuum-visual-reboot-8` over `c85c7f9`. The independent acceptance review
-  rejected the unit; all four findings are now closed. U8-AR-3 went to the
-  repository convention rather than the brief (no new app **library** Dartdoc;
-  both briefs corrected in place, source already complied). U8-AR-1 was the one
-  real defect and is Red-backed. The scoped closure review
-  (`agent://U8Closure`) returned ACCEPT WITH FINDINGS with zero must-fix, and
-  its three optional craft items are folded in.
-- Final architect gates from `packages/app`: full `flutter test` **826
-  passing**, `dart format --set-exit-if-changed` over `lib` and `test` 100 files
-  0 changed, `flutter analyze` no issues, `core`/`content` untouched.
+- **Unit 8 is code-complete, locally accepted, and on a PR.** The whole
+  correction round is one commit, `54d6b4b` `fix: close unit eight review
+  findings`, on `residuum-visual-reboot-8` over `c85c7f9` and pushed; PR
+  **#18** `feat: reboot the world map and regional material` is open against
+  `main`. The independent acceptance review had rejected the unit; all four
+  findings are closed. U8-AR-3 went to the repository convention rather than the
+  brief (no new app **library** Dartdoc; both briefs corrected in place, source
+  already complied). U8-AR-1 was the one real defect and is Red-backed. The
+  scoped closure review (`agent://U8Closure`) returned ACCEPT WITH FINDINGS,
+  zero must-fix, and its three optional craft items are folded in.
+- Final architect gates at `54d6b4b` from `packages/app`: full `flutter test`
+  **826 passing**, `dart format --set-exit-if-changed` over `lib` and `test`
+  100 files 0 changed, `flutter analyze` no issues, `core`/`content` untouched.
 
 ## Exact next action
 
-Ask the user to authorize the local commit and the push of
-`residuum-visual-reboot-8`; neither has happened, so the whole session's work is
-**uncommitted**. Then the only remaining Unit 8 criterion is the deferred device
-gate (contract criterion 9), which the user moved to a later session.
+Run Unit 8's deferred device gate (contract criterion 9) on `Medium_Phone`
+before Unit 9 opens, then integrate PR #18 on the user's word. Nothing else in
+Unit 8 is outstanding, and the working tree is clean.
 
 ## Deferred device evidence
 

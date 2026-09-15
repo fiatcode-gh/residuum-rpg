@@ -1152,3 +1152,11 @@ Append-only. Supersede old decisions; do not rewrite history.
   reaches the below-fold diagram nodes, and whether the Sea-Cave strata and
   Ruined Keep fracture strokes read at phone density. Back up both device save
   slots first and read `app_flutter/save.json`, never `files/save.json`.
+- 2026-09-15 — **The user authorized the commit, the push and the PR.** The
+  session's work is one commit, `54d6b4b` `fix: close unit eight review
+  findings`, pushed to `origin/residuum-visual-reboot-8`, and PR **#18**
+  `feat: reboot the world map and regional material` is open against `main`.
+  Its body records the deferred device evidence explicitly, so a reviewer is not
+  led to believe the unit was validated on hardware.
+- Today's journal entry for the unit is logged under `[[Residuum]]` in
+  `journals/2026_09_15.md` with the device gate carried as a fresh TODO.
