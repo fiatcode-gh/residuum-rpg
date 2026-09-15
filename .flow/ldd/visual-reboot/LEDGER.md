@@ -523,11 +523,13 @@ Append-only. Supersede old decisions; do not rewrite history.
   **published with user approval as
   [PR #15](https://github.com/fiatcode-gh/residuum-rpg/pull/15)** at `cf27196`.
   All four CI gates pass: `gates (app)`, `gates (content)`, `gates (core)` and
-  GitGuardian. **Merge remains user-owned and has not happened.** The PR also
-  carries the contract commit `864aa6e`, which was still unpushed on local
-  `main`; because it is the same commit, local `main` fast-forwards cleanly once
-  #15 merges. This matches Unit 4, whose contract and recon also entered `main`
-  only through its unit PR.
+  GitGuardian. **Merge remains user-owned and has not happened.** The contract
+  commit `864aa6e` was briefly committed on local `main`; at the user's
+  direction local `main` was rewound to `origin/main` (`15e737a`) so the commit
+  lives only on the unit branch and enters `main` through the PR. That is the
+  same route Unit 4's contract and recon took. Nothing was lost — the commit
+  stayed reachable from `residuum-visual-reboot-5` throughout, and only a branch
+  pointer moved.
 - 2026-09-14 — Correction to this ledger's own record: Unit 4's PR #13 **and**
   #14 were already merged to `main` (`650fa7c`, `15e737a`) before this session
   began, and Unit 5's base `864aa6e` descends from both. The RESUME text saying

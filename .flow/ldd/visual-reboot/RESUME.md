@@ -36,9 +36,9 @@
   `residuum-visual-reboot-5` at `cf27196` (code `3a78971` → `36aa0d5` →
   `7f93bc9`, correction `0bf6da1`). Opened with user approval; **merge is
   user-owned and has not happened.** All four CI gates pass — `gates (app)`,
-  `gates (content)`, `gates (core)` and GitGuardian. The PR carries the contract
-  commit `864aa6e` too, because that was still unpushed on local `main`; local
-  `main` fast-forwards cleanly once #15 merges.
+  `gates (content)`, `gates (core)` and GitGuardian. The contract commit
+  `864aa6e` lives on the branch and enters `main` through this PR, exactly as
+  Unit 4's contract did; local `main` sits clean at `origin/main` (`15e737a`).
 - Corrected a stale claim that was in this file: Unit 4's PR #13 **and** #14 are
   already merged into `main` (`650fa7c`, `15e737a`), and Unit 5's base descends
   from both. Earlier RESUME text saying Unit 4's merge "has not happened" was
