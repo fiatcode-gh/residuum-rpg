@@ -36,37 +36,31 @@ The epic was opened from an approved external planning handoff:
 
 - **Unit 0 complete; no production code written.** Its source-verified
   baseline is `units/unit-0/recon.md`.
-- **Unit 1 accepted.** Its Flame dungeon-scene contract is complete on
-  `visual-reboot-unit-1`.
-- **Unit 2 accepted.** The graphical Crypt material language is complete on
-  `visual-reboot-unit-2`; Sea-Cave and Ruined Keep material parity remains
-  Unit 8.
-- **Unit 3 merged to `main` at `4164741`.** The suite, analyzer, and acceptance
-  review passed. Its deferred AVD/greyscale evidence is scheduled for the
-  combined final Unit 3 + Unit 4 device gate on the recreated AVD.
-- **Unit 4 is an interrupted acceptance checkpoint** on
-  `residuum-visual-reboot-4`, remotely checkpointed at WIP head `0d27a186`.
-  Tasks 01–03 and all known review corrections are implemented. Acceptance
-  remains open for the final TTC-1A closure review, final-tree formatting/app
-  gates, and the combined Unit 3 + Unit 4 recreated-AVD colour/greyscale gate.
-  The prior session limit stopped the device pass during encounter search; no
-  device acceptance is claimed.
+- **Units 1–6 are all accepted and present on `main`.** Verified at source on
+  2026-09-15: PR #13 `650fa7c`, #14 `15e737a`, #15 `55a226d`, #16 `319d945`
+  are all MERGED, and `main` is at `319d945` with a clean worktree in sync
+  with `origin/main`. Earlier "interrupted"/"uncommitted" wording in this file
+  for Units 4 and 6 is superseded.
+- Sea-Cave and Ruined Keep material parity remains Unit 8.
+- **Unit 7 (town + transactional rooms + heroes) is the active unit.** It is
+  in the contract stage; no implementation is authorized.
 
 ## Epic status
 
 | Unit | Dependencies | State | Verification | Notes |
 |---|---|---|---|---|
 | Unit 0 — design baseline + recon | none | complete | source recon and approved mock inspection; no code | matrix, seam inventory, corrections: `units/unit-0/recon.md` |
-| Unit 1 — dungeon scene foundation | Unit 0 | accepted | 682 app tests, analyzer, final COR/TTC/CRF, Pixel_10 AVD and greyscale pass | contract: `units/unit-1/CONTRACT.md`; Flame only in `packages/app` |
-| Unit 2 — graphical dungeon language | Unit 1 | accepted | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
-| Unit 3 — crawl interaction reboot | Unit 2 | merged; device evidence pending | 736 app tests, analyzer, review pass; AVD blocked on this host | map-first melee; favorites + overflow |
-| Unit 4 — turn timeline + duplicate identity | Unit 3 | interrupted acceptance; WIP checkpoint | initial full app 764 + analyzer clean; first correction full app 765 + analyzer clean; final semantics fix focused 34 + focused analyze clean; closure/final-tree broad/device gates pending | head `0d27a186`; session limit stopped the combined AVD gate during encounter search |
+| Unit 1 — dungeon scene foundation | Unit 0 | **merged** to `main` | 682 app tests, analyzer, final COR/TTC/CRF, Pixel_10 AVD and greyscale pass | on `main` at `5f8db47`; contract: `units/unit-1/CONTRACT.md`; Flame only in `packages/app` |
+| Unit 2 — graphical dungeon language | Unit 1 | **merged** to `main` | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | on `main` at `06a8b9f`/`7cd32f2`; cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
+| Unit 3 — crawl interaction reboot | Unit 2 | **merged** to `main` | 736 app tests, analyzer, review pass; deferred AVD/greyscale discharged by the combined Unit 3 + Unit 4 device gate | merged at `4164741`; map-first melee; favorites + overflow |
+| Unit 4 — turn timeline + duplicate identity | Unit 3 | **merged** to `main` | final tree `dart format` 19 files/0 changed, analyzer clean, full app 765 tests; combined Unit 3 + Unit 4 colour/greyscale gate on `emulator-5554` | merged by PR #13 `650fa7c` and PR #14 `15e737a`; code `0d27a18` |
 | Unit 5 — log drawer | Unit 3 | **merged** to `main` | 797 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT WITH FINDINGS, all must-fix corrected; full criterion 12 colour + greyscale device gate on `emulator-5554` | merged by PR #15 at `55a226d`; `0bf6da1` is an ancestor; contract: `units/unit-5/CONTRACT.md` |
-| Unit 6 — character / spells / pack | Unit 3 | **accepted locally; uncommitted** | 789 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT; Medium_Phone colour/greyscale device gate | source base `55a226d`; contract: `units/unit-6/CONTRACT.md` |
-| Unit 7 — town + rooms + heroes | Unit 6 | pending | transactional/refusal semantics preserved | art bible locked before static art |
+| Unit 6 — character / spells / pack | Unit 3 | **merged** to `main` | 789 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT; Medium_Phone colour/greyscale device gate | merged by PR #16 at `319d945` (code `89927ef`); contract: `units/unit-6/CONTRACT.md` |
+| Unit 7 — town + rooms + heroes | Unit 6 | **contract approved**; planning | transactional/refusal semantics preserved | no static art; contract: `units/unit-7/CONTRACT.md` |
 | Unit 8 — world + theme parity | Unit 7 | pending | final accessibility + device-size pass | Sea-Cave/Keep material identity |
+| Unit 9 — crawl HUD chrome | Unit 8 | pending | own colour/greyscale device pass | depth header, labelled HP/Mana bars, icon control chips |
 
-Recon locks the execution order: **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8**.
+Recon locks the execution order: **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9**.
 Units 4 and 5 stay sequential so identity-correct event names land before the
 log drawer; no unit reordering is needed.
 
@@ -124,8 +118,12 @@ log drawer; no unit reordering is needed.
 
 - Dungeon/material art bible subset: **locked for Unit 2**
   (`units/unit-2/ART-BIBLE.md`). Portrait framing, bulk static-art
-  composition, and the full non-dungeon icon language remain to lock before
-  Unit 7.
+  composition, room-background ratios, and the full non-dungeon icon language
+  are **deferred to the post-Unit-8 art pass**, not blockers for Unit 7: the
+  Unit 7 contract delivers town atmosphere as typographic and procedural
+  treatment and adds no asset surface.
+- Where do the leftover crawl HUD chrome items (depth header, labelled HP/Mana
+  bars, icon control chips) land — Unit 8, or a new Unit 9?
 - Does the old-wave m3-quests (M3Q, save v4, `../m3/LEDGER.md`) still run,
   and where in the sequence?
 
@@ -670,3 +668,46 @@ Append-only. Supersede old decisions; do not rewrite history.
   copied before install and restored after capture. Their final SHA-256 values
   exactly match the backups: `save.json` `18995c4…b46d3` and
   `save-previous.json` `8909f70c…a9b11`.
+
+### Unit 6 integration and epic state correction
+
+- 2026-09-15 — **Unit 6 merged.** PR #16 is MERGED at `319d945` with code
+  `89927ef`; the branch is gone and `main` is clean and in sync with
+  `origin/main`. Checked at the same time: PRs #13 `650fa7c`, #14 `15e737a`,
+  #15 `55a226d` are all MERGED, and Units 1–2 sit on `main` directly at
+  `5f8db47` / `06a8b9f` / `7cd32f2`. **Units 1–6 are therefore all on `main`.**
+  The epic status table's earlier "interrupted acceptance" row for Unit 4 and
+  "accepted locally; uncommitted" row for Unit 6 were stale and are corrected
+  above. Verify merge state at the forge before repeating a merge claim from
+  this file.
+
+### Unit 7 opening
+
+- 2026-09-15 — **Unit 7 recon** (`agent://TownRoomsScout`,
+  `agent://HeroesScout`) verified the town surface at source. Every town room
+  is still original M3-era composition on `TownRoom` + `town_style.dart`;
+  Units 1–6 rebooted the crawl and the Character information architecture only,
+  and Unit 6's `CharacterScreen` renders inside the old town grammar. `TownBloc`
+  carries 23 events and `TownViewState` projects every refusal computed in core
+  (`smeltReason`, `brewReason`, `temperReason`, `wearReason`, `takeOffReason`,
+  `readReason`). Recon correction 9 holds: Heroes is a `WorldScreen` action
+  reading the live `SaveDocument`, not a town door and not a bloc consumer.
+- 2026-09-15 — **The game is one active hero with a roster of alts, never a
+  party.** Each `SavedHero` owns its profile, suspended run, world whereabouts,
+  and merchant visit; deleting the last hero is a replacement write because the
+  roster is never empty. Nothing in the reboot may imply party play.
+- 2026-09-15 — **Unit 7 contract drafted** at `units/unit-7/CONTRACT.md`,
+  awaiting explicit user approval. Its own locked position, pending that
+  approval: no static art, no `assets/` declaration, no portrait slot, and no
+  icon family in this unit — town atmosphere is typographic and procedural
+  only, and the art bible stays deferred to the post-Unit-8 art pass already
+  agreed with the user. Marks stay text codepoints and every new one is read on
+  device before acceptance.
+- 2026-09-15 — **The user approved the Unit 7 contract as written.** That
+  approval covers the WHAT/boundary/acceptance in `units/unit-7/CONTRACT.md`,
+  including its no-static-art lock. It authorizes planning only; local
+  implementation needs separate approval of the execution-grade plan.
+- 2026-09-15 — **The leftover crawl HUD chrome becomes Unit 9**, after Unit 8,
+  by the user's decision. Unit 8 stays focused on world and theme parity, and
+  the depth header, labelled HP/Mana bars, and icon control chips get their own
+  colour/greyscale device pass rather than riding a broader final unit.
