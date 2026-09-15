@@ -310,6 +310,7 @@ class _HeroRow extends StatelessWidget {
               width: 88,
               child: TextButton(
                 onPressed: onDelete,
+                style: TextButton.styleFrom(foregroundColor: ink),
                 child: const Text(
                   'Delete',
                   maxLines: 1,

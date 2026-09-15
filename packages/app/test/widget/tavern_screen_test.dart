@@ -41,6 +41,8 @@ Future<(TownBloc, WorldBloc)> _openTavern(
     ),
   );
   await tester.pumpAndSettle();
+  addTearDown(town.close);
+  addTearDown(worldBloc.close);
   return (town, worldBloc);
 }
 

@@ -49,6 +49,8 @@ Future<TownBloc> _openTown(
     ),
   );
   await tester.pumpAndSettle();
+  addTearDown(town.close);
+  addTearDown(world.close);
   return town;
 }
 

@@ -200,8 +200,7 @@ void main() {
 
       // act
       await enterTown(tester, 'Stonebridge');
-      await tester.tap(find.text('Merchant'));
-      await tester.pumpAndSettle();
+      await openTownDoor(tester, 'Merchant');
       await tester.tap(find.textContaining('Buy ').first);
       await tester.pumpAndSettle();
       await tester.pageBack();
@@ -231,8 +230,7 @@ void main() {
 
       // act
       await enterTown(tester, 'Stonebridge');
-      await tester.tap(find.text('Inn'));
-      await tester.pumpAndSettle();
+      await openTownDoor(tester, 'Inn');
       await tester.tap(find.textContaining('Rest'));
       await tester.pumpAndSettle();
       await tester.pageBack();

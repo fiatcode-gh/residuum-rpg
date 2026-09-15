@@ -416,6 +416,35 @@ void main() {
       expect(find.textContaining('temper'), findsWidgets);
     });
 
+    testWidgets(
+      'a temper that levels Blacksmith shows the forge its own sentence',
+      (tester) async {
+        // arrange - one xp short of Blacksmith 1, so the temper's own
+        // training crosses the level
+        final leveling = newProfile(worldSeed: 4).copyWith(
+          inventory: [_gear('drop-1', ironSword)],
+          equipment: const {},
+          materials: const {MaterialId.ingot: 2},
+          gold: 500,
+          skills: {
+            ...untrainedSkills,
+            SkillId.blacksmith: SkillState(xp: xpToNext(0) - 1),
+          },
+        );
+        final bloc = await _openRoom(tester, const ForgeScreen(), leveling);
+
+        // act
+        await tester.tap(find.widgetWithText(TextButton, 'Temper'));
+        await tester.pumpAndSettle();
+
+        // assert - read the bloc's own winning sentence off the forge
+        // screen rather than re-deriving or hard-coding it
+        expect(bloc.state.profile.skills[SkillId.blacksmith]!.level, 1);
+        final sentence = bloc.state.notice!.sentence;
+        expect(find.text('— $sentence.'), findsOneWidget);
+      },
+    );
+
     testWidgets('offers no potion for the bench at all', (tester) async {
       // arrange
       final profile = _hero(

@@ -153,6 +153,7 @@ class _TemperRow extends StatelessWidget {
               Expanded(child: Text(item.displayName, style: mono)),
               TextButton(
                 onPressed: reason == null ? onTemper : null,
+                style: TextButton.styleFrom(foregroundColor: ink),
                 child: const Text(
                   'Temper',
                   style: TextStyle(fontFamily: 'monospace', fontSize: 12),
