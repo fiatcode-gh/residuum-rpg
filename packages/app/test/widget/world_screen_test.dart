@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
+import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_app/world/world_bloc.dart';
@@ -800,7 +801,10 @@ void main() {
       // assert
       expect(find.byType(GameScreen), findsOneWidget);
       expect(_fightOnScreen(tester).state.log, [
-        'You can only leave by walking off the edge of the road.',
+        const LogLine(
+          'You can only leave by walking off the edge of the road.',
+          LogCategory.refused,
+        ),
       ]);
     });
 

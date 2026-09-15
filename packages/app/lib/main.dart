@@ -6,6 +6,7 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import 'game/game_bloc.dart';
+import 'game/log_line.dart';
 import 'game/game_screen.dart';
 import 'save/autosaver.dart';
 import 'save/boot.dart';
@@ -613,7 +614,7 @@ class _SessionState extends State<_Session> {
   /// It says it once. The notice is a fact about the launch, not about this
   /// crawl, and a hero who walks out and back in twice would otherwise be told
   /// three times that a save was recovered an hour ago.
-  List<String> _openingLog() {
+  List<LogLine> _openingLog() {
     final report = _reported ? null : widget.boot.notice;
     _reported = true;
     return [
@@ -628,10 +629,15 @@ class _SessionState extends State<_Session> {
   /// One wording, two renderings. A notice is written to sit inside the town's
   /// `— ….` frame, so it is lowercase and unpunctuated; the log has no frame and
   /// its lines are sentences. Wording it twice would let the two drift.
-  static String _asSentence(String notice) =>
-      '${notice[0].toUpperCase()}${notice.substring(1)}.';
+  static LogLine _asSentence(String notice) => LogLine(
+    '${notice[0].toUpperCase()}${notice.substring(1)}.',
+    LogCategory.reported,
+  );
 
-  static const String _resumed = 'The crawl resumes.';
+  static const LogLine _resumed = LogLine(
+    'The crawl resumes.',
+    LogCategory.reported,
+  );
 
   bool _reported = false;
 }

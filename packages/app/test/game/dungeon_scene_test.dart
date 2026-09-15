@@ -11,6 +11,7 @@ import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/glyph_plan.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
+import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -293,6 +294,73 @@ void main() {
       expect(materialAfterPan, same(materialBefore));
       expect(materialAfterPan.plan, same(planAfterProjection));
       expect(outputAfterPan, outputAfterProjection);
+    },
+  );
+
+  testWidgets(
+    'does not rebuild the Flame scene when only the log drawer extent '
+    'changes',
+    (tester) async {
+      const hostKey = Key('drawer-extent-scene');
+
+      Future<void> pumpScene(GameViewState state) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: SizedBox(
+              width: 360,
+              height: 360,
+              child: DungeonSceneHost(
+                key: hostKey,
+                state: state,
+                palette: DungeonPalette.crypt,
+                onTap: (_) {},
+                onPan: (_) {},
+                onLongPress: (_) {},
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+      }
+
+      final state = _viewState();
+      await pumpScene(state);
+      final gameBefore = tester
+          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+          .game;
+      final materialBefore = tester
+          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+          .game!
+          .world
+          .children
+          .whereType<MaterialComponent>()
+          .single;
+      final planBefore = materialBefore.plan;
+
+      final withDrawerOpen = GameViewState(
+        game: state.game,
+        log: state.log,
+        pan: state.pan,
+        armedSpellId: state.armedSpellId,
+        actorIdentity: state.actorIdentity,
+        selectedActorId: state.selectedActorId,
+        logDrawerExtent: LogDrawerExtent.full,
+      );
+      await pumpScene(withDrawerOpen);
+      final gameAfter = tester
+          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+          .game;
+      final materialAfter = tester
+          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+          .game!
+          .world
+          .children
+          .whereType<MaterialComponent>()
+          .single;
+
+      expect(gameAfter, same(gameBefore));
+      expect(materialAfter, same(materialBefore));
+      expect(materialAfter.plan, same(planBefore));
     },
   );
 

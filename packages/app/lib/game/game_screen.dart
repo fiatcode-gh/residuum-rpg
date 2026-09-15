@@ -9,6 +9,8 @@ import 'battle_view.dart';
 import 'dungeon_palette.dart';
 import 'dungeon_scene.dart';
 import 'game_bloc.dart';
+import 'log_drawer.dart';
+import 'log_line.dart';
 import 'grid_geometry.dart';
 import 'inventory_screen.dart';
 import 'spell_row.dart';
@@ -18,6 +20,7 @@ const recenterKey = Key('recenter');
 const shelfKey = Key('battle-shelf');
 const overflowKey = Key('shelf-overflow');
 const shelfWaitKey = Key('shelf-wait');
+const controlsKey = Key('crawl-controls');
 
 class GameScreen extends StatelessWidget {
   const GameScreen({super.key});
@@ -117,10 +120,12 @@ class GameScreen extends StatelessWidget {
                       if (state.isBattleOpen)
                         BattleShelf(state: state, bloc: bloc),
                       _HitPoints(state: state),
-                      _Controls(state: state),
-                      _MessageLog(log: state.log),
+                      LogPeek(key: logPeekKey, state: state, bloc: bloc),
+                      _Controls(key: controlsKey, state: state),
                     ],
                   ),
+                  if (state.logDrawerExtent != LogDrawerExtent.peek)
+                    LogDrawer(key: logDrawerKey, state: state, bloc: bloc),
                   if (state.game.isGameOver) _DeathOverlay(state: state),
                 ],
               );
@@ -368,7 +373,7 @@ class _BattleGlyph extends StatelessWidget {
 }
 
 class _Controls extends StatelessWidget {
-  const _Controls({required this.state});
+  const _Controls({required this.state, super.key});
 
   final GameViewState state;
 
@@ -674,32 +679,6 @@ class _Control extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-      ),
-    ),
-  );
-}
-
-class _MessageLog extends StatelessWidget {
-  const _MessageLog({required this.log});
-
-  final List<String> log;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    height: 104,
-    width: double.infinity,
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    color: const Color(0xFF15181F),
-    child: ListView.builder(
-      reverse: true,
-      itemCount: log.length,
-      itemBuilder: (context, index) => Text(
-        log[log.length - 1 - index],
-        style: TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 13,
-          color: Color(index == 0 ? 0xFFE6EAF0 : 0xFF8A919E),
-        ),
       ),
     ),
   );

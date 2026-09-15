@@ -11,6 +11,8 @@ import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import 'support/log_sentences.dart';
+
 /// The battle dock: activation timeline, skill bar, and the gestures that
 /// carry an armed cast through core's `targetId`.
 ///
@@ -297,7 +299,7 @@ void main() {
 
       // assert - dock down: the crawl, unchanged; the log row still speaks
       expect(bloc.state.game.monsters, isEmpty);
-      expect(bloc.state.log.last, 'The ghoul dies.');
+      expect(logSentences(bloc.state).last, 'The ghoul dies.');
       expect(find.byType(BattleDock), findsNothing);
       expect(find.byType(BattleShelf), findsNothing);
       expect(find.byType(DungeonSceneHost), findsOneWidget);
@@ -670,9 +672,8 @@ void main() {
 
       // assert - the shot landed on the named target, not the further one
       expect(
-        bloc.state.log.where(
-          (line) => line.startsWith('Firebolt burns the ghoul'),
-        ),
+        logSentences(bloc.state)
+            .where((line) => line.startsWith('Firebolt burns the ghoul')),
         isNotEmpty,
       );
     });
@@ -817,7 +818,7 @@ void main() {
       // assert - the pool paid for it and no target was needed
       expect(bloc.state.game.mana, 7);
       expect(
-        bloc.state.log.where((line) => line.startsWith('You mend')),
+        logSentences(bloc.state).where((line) => line.startsWith('You mend')),
         isNotEmpty,
       );
     });
@@ -840,7 +841,8 @@ void main() {
       // assert
       expect(find.text('not enough mana'), findsNothing);
       expect(
-        bloc.state.log.where((line) => line.startsWith('Not enough mana')),
+        logSentences(bloc.state)
+            .where((line) => line.startsWith('Not enough mana')),
         isNotEmpty,
       );
     });

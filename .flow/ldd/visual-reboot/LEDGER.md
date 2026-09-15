@@ -61,7 +61,7 @@ The epic was opened from an approved external planning handoff:
 | Unit 2 — graphical dungeon language | Unit 1 | accepted | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
 | Unit 3 — crawl interaction reboot | Unit 2 | merged; device evidence pending | 736 app tests, analyzer, review pass; AVD blocked on this host | map-first melee; favorites + overflow |
 | Unit 4 — turn timeline + duplicate identity | Unit 3 | interrupted acceptance; WIP checkpoint | initial full app 764 + analyzer clean; first correction full app 765 + analyzer clean; final semantics fix focused 34 + focused analyze clean; closure/final-tree broad/device gates pending | head `0d27a186`; session limit stopped the combined AVD gate during encounter search |
-| Unit 5 — log drawer | Unit 3 | pending | history reviewable during combat without shrinking the map | 3-line peek, half/full overlay, auto-follow |
+| Unit 5 — log drawer | Unit 3 | **accepted**; PR #15 open, unmerged | 797 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT WITH FINDINGS, all must-fix corrected; full criterion 12 colour + greyscale device gate on `emulator-5554` | head `0bf6da1`; peek above controls, half/full overlay, bloc-owned follow/unread, ten-member `LogCategory`; contract: `units/unit-5/CONTRACT.md` |
 | Unit 6 — character / spells / pack | Unit 3 | pending | no duplicated information architecture | consolidation |
 | Unit 7 — town + rooms + heroes | Unit 6 | pending | transactional/refusal semantics preserved | art bible locked before static art |
 | Unit 8 — world + theme parity | Unit 7 | pending | final accessibility + device-size pass | Sea-Cave/Keep material identity |
@@ -323,6 +323,34 @@ Append-only. Supersede old decisions; do not rewrite history.
   contract question is per-line category icons, which `List<String>` cannot
   carry: either introduce a structured presentation entry or drop icons for
   this unit, never infer a category from sentence text.
+- 2026-09-14 — **Unit 5's three contract forks are settled with the user and
+  `units/unit-5/CONTRACT.md` is written.**
+  1. *Structured entry now.* `GameViewState.log` becomes a list of an app-only
+     presentation entry carrying the sentence plus one category, rather than
+     `List<String>`. Decisive facts: the log is pure view state that
+     deliberately does not survive a suspend (`main.dart:572`), so there is no
+     save-format exposure; and the only correct category source is the
+     `GameEvent` variant, available exactly where `describeEvent` already
+     switches on it (`event_messages.dart:19-79`). Deferring icons would not
+     shrink the migration, only move it into a later unit that is not about the
+     log. Rejected: dropping icons for this unit; a parallel category list
+     beside the strings; any text-matching inference.
+  2. *Unit 5 moves the peek above the controls*, matching the mock. This
+     discharges one item from the unowned HUD-chrome list; the depth header,
+     labelled HP/Mana bars, and icon control chips remain unowned.
+  3. *Death wins.* Game-over collapses the drawer and inerts its handle; the
+     `_DeathOverlay` scrim (`game_screen.dart:714`, `0xCC0E1014` over the whole
+     `Stack`) stays the one interactive surface. Rejected: keeping the log
+     readable behind the overlay, and rendering the final lines inside the
+     overlay.
+  The category set itself is contract-bounded but not enumerated in the
+  contract: the design spec has no log-category vocabulary, so naming must come
+  from existing `core` event words and inventing a synonym is a defect. The
+  contract fixes the distinctions the set must support and forbids a catch-all
+  member; the enum's membership is planning work.
+- 2026-09-14 — Migration cost measured before deciding, not estimated:
+  `packages/app/test` has 87 `log`-touching references across 8 files. Mechanical
+  churn for the entry migration, and it must not change any asserted sentence.
 
 ## Verification receipts
 
@@ -487,6 +515,81 @@ Append-only. Supersede old decisions; do not rewrite history.
   (`18995c4a…`, `8909f70c…`). Session-local checkpoints used during evidence
   capture stay in the untracked evidence directory. Throwaway content probes
   were deleted; `git status` is clean and no `packages/` file changed.
+
+### Unit 5 acceptance receipt
+
+- 2026-09-14 — **Unit 5 is accepted** on `residuum-visual-reboot-5` at `0bf6da1`
+  (code `3a78971` → `36aa0d5` → `7f93bc9`, correction `0bf6da1`) and
+  **published with user approval as
+  [PR #15](https://github.com/fiatcode-gh/residuum-rpg/pull/15)** at `cf27196`.
+  All four CI gates pass: `gates (app)`, `gates (content)`, `gates (core)` and
+  GitGuardian. **Merge remains user-owned and has not happened.** The contract
+  commit `864aa6e` was briefly committed on local `main`; at the user's
+  direction local `main` was rewound to `origin/main` (`15e737a`) so the commit
+  lives only on the unit branch and enters `main` through the PR. That is the
+  same route Unit 4's contract and recon took. Nothing was lost — the commit
+  stayed reachable from `residuum-visual-reboot-5` throughout, and only a branch
+  pointer moved.
+- 2026-09-14 — Correction to this ledger's own record: Unit 4's PR #13 **and**
+  #14 were already merged to `main` (`650fa7c`, `15e737a`) before this session
+  began, and Unit 5's base `864aa6e` descends from both. The RESUME text saying
+  Unit 4's merge "has not happened" was stale and was repeated once in this
+  session before being checked. Merge state is cheap to verify with
+  `git merge-base --is-ancestor`; verify it rather than quoting the pointer.
+- Final tree: `dart format --output=none --set-exit-if-changed lib test` reports
+  94 files, 0 changed; `flutter analyze` reports no issues; the full
+  `packages/app` suite passes 797 tests. Run by the architect at `0bf6da1`. Only
+  `.flow/` documents changed afterwards, so that proof still describes the code.
+- The integrated `flow-acceptance-reviewer` pass returned ACCEPT WITH FINDINGS
+  with one must-fix (F1) and five optional items; F1–F5 were all corrected in one
+  round. F1 was real: the test claiming criterion 5's headline behavior ran
+  against a one-line log where `maxScrollExtent == 0`, so `_maybeJumpToNewest`
+  could have been deleted outright without failing. It is now seeded with 60
+  lines and asserts the appended row lies inside the viewport; its Red is sharp
+  (0 widgets found).
+- **Device gate finding, and the lesson worth keeping.** `LogCategory.moved`
+  shipped as `↕` (U+2195). On the phone target Android resolved that codepoint
+  through the colour emoji font: a blue-cyan box at saturation 0.51
+  (`rgb(65,117,134)`) that ignored the row's `style.color`. Two violations at
+  once — hue carried part of the category, and the mark lost the newest/older
+  value contrast. The codepoint was swapped to `⇅` (U+21C5); the shape
+  vocabulary was never in question. Re-measured after the fix: no coloured pixel
+  in the mark column, and the mark takes its row's colour exactly, older
+  `rgb(138,145,158)` and newest `rgb(230,234,240)`.
+  **No widget test can catch this class of defect** — the test font resolves
+  every codepoint and `find.text` matches regardless of emoji fallback. Only a
+  device gate sees it. U+2B65 was also probed and is tofu on this target.
+- Criterion 12 is fully discharged in colour and greyscale, in
+  `.flow/evidence/visual-reboot/unit-5-device/` with a `-greyscale.png` twin of
+  every frame: peek above the controls on a one-line log, multi-line peek,
+  half and full extents overlaying a live map, composition restored after
+  collapse, follow held at newest, follow broken with the viewport held and
+  `↓ 4 new` reporting an exact count, the affordance returning to newest, the
+  full combat glyph column, the death overlay, and a road encounter's one-line
+  log. One frame carries eight categories at once — `⇅ ◎ ✕ ← → † ■ ◆` — all
+  monochrome and mutually legible in greyscale, with `←` on `claws you` and `→`
+  on `You hit`, and Unit 4's `rat¹`/`rat²` identity carried into the sentences.
+  The `■` / `◆` pair the review flagged as the narrowest silhouette gap reads as
+  two shapes at true phone density.
+- The inert death handle was proven, not asserted: `ev-death-drawer-collapsed`
+  and `ev-death-handle-inert` are **pixel-identical below the status bar**
+  (0 of 7,484,400 subpixels differ), so tapping the handle while dead changes
+  nothing.
+- Device scenes were sourced deterministically rather than by hunting:
+  `buildFloor(1, worldSeed: 752, visit: 1)` puts two giant rats within a few
+  steps of `heroSpawn`, and `roadSeed(travelSeedFor(10), day: 1)` rolls 11
+  against danger 15 so the first Stonebridge → Crypt departure meets a fight.
+  Death was reached honestly by waiting beside a dire wolf, 20 → 0. No fixture,
+  no bent generation, no save edit, no code change.
+- Device save hygiene: `save.json` and `save-previous.json` were copied off the
+  device before the session and restored afterwards; both verify SHA-256
+  identical to the pre-session backup (`18995c4a…`, `8909f70c…`). The
+  on-device saves were deliberately cleared mid-session for seed control and
+  restored from those host-side backups, which were never written to.
+- Host note: the AVD on this machine is now `Medium_Phone` (Android 17,
+  1080x2400), not the `Pixel_10` earlier units used. It segfaults on launch from
+  a tool shell (`qemu-system-x86_64-headless`, exit 139, no error line, KVM
+  healthy); the user launched it and it then ran fine for the whole session.
 
 ## Corrections to inherited assumptions
 
