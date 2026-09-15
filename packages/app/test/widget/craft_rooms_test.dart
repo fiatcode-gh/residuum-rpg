@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/item_presentation.dart';
 import 'package:residuum_app/town/alchemist_screen.dart';
 import 'package:residuum_app/town/forge_screen.dart';
 import 'package:residuum_app/town/town_bloc.dart';
-import 'package:residuum_app/town/town_screen.dart';
+import 'package:residuum_app/town/town_style.dart';
 import 'package:residuum_app/notice/notice.dart';
 import 'package:residuum_app/world/world_bloc.dart';
 import 'package:residuum_content/content.dart';
@@ -32,6 +33,22 @@ int _stateBrewing(int brews) {
     if (clean) return state;
   }
   throw StateError('no state brews clean');
+}
+
+/// A craft stream whose next rolls fail exactly where [failed] says true.
+int _stateRolling(List<bool> failed) {
+  for (var state = 1; state < 2000000; state++) {
+    final rng = Rng.fromState(state);
+    var matches = true;
+    for (final want in failed) {
+      if ((rng.rollRange(0, 99) < 5) != want) {
+        matches = false;
+        break;
+      }
+    }
+    if (matches) return state;
+  }
+  throw StateError('no state rolls that pattern');
 }
 
 Profile _hero({
@@ -78,52 +95,35 @@ Future<TownBloc> _openRoom(
   return town;
 }
 
+/// One town room under a bloc the caller built directly, for tests that need
+/// a starting notice or a craft stream the room's own transaction stream
+/// would not otherwise produce.
+Future<void> _openWithBloc(
+  WidgetTester tester,
+  TownBloc bloc,
+  Widget room,
+) async {
+  await onAPhone(tester);
+  final world = WorldBloc(
+    world: newWhereabouts(),
+    worldSeed: bloc.state.profile.worldSeed,
+  );
+  await tester.pumpWidget(
+    MaterialApp(
+      home: MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: bloc),
+          BlocProvider.value(value: world),
+        ],
+        child: room,
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  addTearDown(bloc.close);
+}
+
 void main() {
-  group('the town door column', () {
-    testWidgets('offers all seven doors on a phone', (tester) async {
-      // act
-      await _openRoom(tester, const TownScreen(), _hero());
-
-      // assert - a door a player cannot reach is a door that is not there, and
-      // the fork that overflowed a 600-pixel screen by 45 pixels is on record
-      for (final door in [
-        'Merchant',
-        'Bank',
-        'Inn',
-        'Character',
-        'Tavern',
-        'Forge',
-        'Alchemist',
-      ]) {
-        await tester.scrollUntilVisible(find.text(door), 100);
-        await tester.pumpAndSettle();
-        expect(find.text(door), findsOneWidget, reason: door);
-      }
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('says what the hero has gathered, mark and word and count', (
-      tester,
-    ) async {
-      // arrange
-      final profile = _hero(materials: const {MaterialId.ore: 5});
-
-      // act
-      await _openRoom(tester, const TownScreen(), profile);
-
-      // assert
-      for (final material in MaterialId.values) {
-        expect(
-          find.textContaining(material.word),
-          findsWidgets,
-          reason: material.name,
-        );
-      }
-      expect(find.text(MaterialId.ore.marking), findsOneWidget);
-      expect(find.text('5'), findsWidgets);
-    });
-  });
-
   group('the forge', () {
     testWidgets('offers Smelt only when there is ore for it', (tester) async {
       // arrange
@@ -416,6 +416,35 @@ void main() {
       expect(find.textContaining('temper'), findsWidgets);
     });
 
+    testWidgets(
+      'a temper that levels Blacksmith shows the forge its own sentence',
+      (tester) async {
+        // arrange - one xp short of Blacksmith 1, so the temper's own
+        // training crosses the level
+        final leveling = newProfile(worldSeed: 4).copyWith(
+          inventory: [_gear('drop-1', ironSword)],
+          equipment: const {},
+          materials: const {MaterialId.ingot: 2},
+          gold: 500,
+          skills: {
+            ...untrainedSkills,
+            SkillId.blacksmith: SkillState(xp: xpToNext(0) - 1),
+          },
+        );
+        final bloc = await _openRoom(tester, const ForgeScreen(), leveling);
+
+        // act
+        await tester.tap(find.widgetWithText(TextButton, 'Temper'));
+        await tester.pumpAndSettle();
+
+        // assert - read the bloc's own winning sentence off the forge
+        // screen rather than re-deriving or hard-coding it
+        expect(bloc.state.profile.skills[SkillId.blacksmith]!.level, 1);
+        final sentence = bloc.state.notice!.sentence;
+        expect(find.text('— $sentence.'), findsOneWidget);
+      },
+    );
+
     testWidgets('offers no potion for the bench at all', (tester) async {
       // arrange
       final profile = _hero(
@@ -431,6 +460,80 @@ void main() {
       // read on this screen
       expect(find.text('You have no steel for the bench.'), findsOneWidget);
       expect(find.widgetWithText(TextButton, 'Temper'), findsNothing);
+    });
+
+    testWidgets('the notice sits above the materials block', (tester) async {
+      // arrange
+      final bloc = TownBloc(
+        profile: _hero(),
+        notice: const SentenceNotice('the fire is banked'),
+      );
+
+      // act
+      await _openWithBloc(tester, bloc, const ForgeScreen());
+
+      // assert - the notice reads directly under the purse, above the
+      // materials heading, matching every other room
+      expect(
+        tester.getTopLeft(find.byType(Notice)).dy,
+        lessThan(tester.getTopLeft(find.text('MATERIALS')).dy),
+      );
+    });
+
+    testWidgets(
+      'lays out purse, notice, materials, smelting and the bench in that '
+      'order',
+      (tester) async {
+        // arrange
+        final bloc = TownBloc(
+          profile: _hero(materials: const {MaterialId.ore: 4}),
+          notice: const SentenceNotice('the fire is banked'),
+        );
+
+        // act
+        await _openWithBloc(tester, bloc, const ForgeScreen());
+
+        // assert - top to bottom, exactly the locked shape
+        final ys = <double>[
+          tester.getTopLeft(find.byType(Purse)).dy,
+          tester.getTopLeft(find.byType(Notice)).dy,
+          tester.getTopLeft(find.text('MATERIALS')).dy,
+          tester.getTopLeft(find.byType(MaterialRows)).dy,
+          tester.getTopLeft(find.text('SMELTING')).dy,
+          tester.getTopLeft(find.textContaining('ore makes 1 ingot')).dy,
+          tester.getTopLeft(find.byType(CountStepper)).dy,
+          tester.getTopLeft(find.widgetWithText(FilledButton, 'Smelt')).dy,
+          tester.getTopLeft(find.textContaining('ore is ready')).dy,
+          tester.getTopLeft(find.text('THE BENCH')).dy,
+        ];
+        for (var i = 1; i < ys.length; i++) {
+          expect(ys[i], greaterThan(ys[i - 1]), reason: 'row $i out of order');
+        }
+
+        // assert - one shared material block, not a second private one
+        expect(find.byType(MaterialRows), findsOneWidget);
+        expect(find.text('MATERIALS'), findsOneWidget);
+      },
+    );
+
+    testWidgets('a refused row shows its stat line, reason and next-tier price '
+        'together', (tester) async {
+      // arrange - four Blacksmith levels short of the next tier's gate
+      final item = _gear('drop-1', ironSword, temper: 1);
+      final gated = _hero(
+        inventory: [item],
+        materials: const {MaterialId.ingot: 9},
+        gold: 500,
+        blacksmith: 4,
+      );
+
+      // act
+      await _openRoom(tester, const ForgeScreen(), gated);
+
+      // assert - a refusal never hides the price of the tier it blocks
+      expect(find.text(statLine(item)), findsOneWidget);
+      expect(find.text('that needs Blacksmith 5'), findsOneWidget);
+      expect(find.text('Next tier: 2 ingots.'), findsOneWidget);
     });
   });
 
@@ -516,6 +619,73 @@ void main() {
         const Item(id: 'x', base: healingPotion, rarity: Rarity.common),
       );
       expect(find.textContaining('$worth gold'), findsOneWidget);
+    });
+
+    testWidgets('a batch loss wins the notice slot over a level-up', (
+      tester,
+    ) async {
+      // arrange - one xp short of Herbcraft 10, and a batch whose first draw
+      // fails
+      final leveling = newProfile(worldSeed: 4).copyWith(
+        materials: const {MaterialId.herb: 6},
+        skills: {
+          ...untrainedSkills,
+          SkillId.herbcraft: SkillState(level: 9, xp: xpToNext(9) - 2),
+        },
+        craftRngState: _stateRolling(const [true, false]),
+      );
+      final bloc = await _openRoom(tester, const AlchemistScreen(), leveling);
+
+      // act
+      await tester.tap(find.text('+'));
+      await tester.pump();
+      await tester.tap(find.text('+'));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Brew'));
+      await tester.pumpAndSettle();
+
+      // assert - Herbcraft still levels, but the widget shows the bloc's own
+      // winning sentence rather than re-deriving the batch loss
+      expect(bloc.state.profile.skills[SkillId.herbcraft]!.level, 10);
+      final sentence = bloc.state.notice!.sentence;
+      expect(find.text('— $sentence.'), findsOneWidget);
+      expect(find.textContaining('Herbcraft rises to'), findsNothing);
+    });
+
+    testWidgets('lays out purse, notice, materials and brewing in that order', (
+      tester,
+    ) async {
+      // arrange
+      final bloc = TownBloc(
+        profile: _hero(materials: const {MaterialId.herb: 6}),
+        notice: const SentenceNotice('the pot is banked'),
+      );
+
+      // act
+      await _openWithBloc(tester, bloc, const AlchemistScreen());
+
+      // assert - top to bottom, exactly the locked shape
+      final ys = <double>[
+        tester.getTopLeft(find.byType(Purse)).dy,
+        tester.getTopLeft(find.byType(Notice)).dy,
+        tester.getTopLeft(find.text('MATERIALS')).dy,
+        tester.getTopLeft(find.byType(MaterialRows)).dy,
+        tester.getTopLeft(find.text('BREWING')).dy,
+        tester
+            .getTopLeft(find.textContaining('herbs make 1 healing potion'))
+            .dy,
+        tester.getTopLeft(find.textContaining('The shelf asks')).dy,
+        tester.getTopLeft(find.byType(CountStepper)).dy,
+        tester.getTopLeft(find.widgetWithText(FilledButton, 'Brew')).dy,
+        tester.getTopLeft(find.textContaining('you have what it takes')).dy,
+      ];
+      for (var i = 1; i < ys.length; i++) {
+        expect(ys[i], greaterThan(ys[i - 1]), reason: 'row $i out of order');
+      }
+
+      // assert - one shared material block, not a second private one
+      expect(find.byType(MaterialRows), findsOneWidget);
+      expect(find.text('MATERIALS'), findsOneWidget);
     });
   });
 }

@@ -34,6 +34,11 @@ const String vaultIsShort = 'Your vault does not have it.';
 /// has to — while an empty purse or vault leaves its dial at zero with its
 /// sentence beside it, which is the inn's rule: a dead control with its reason
 /// beside it, never vanishing.
+///
+/// **Two zones, not four sections.** Each side of the death penalty gets one
+/// heading that names both its gold and its gear, so the page reads as
+/// carried, then banked, rather than a gold section followed by two more item
+/// sections that state the same division a second way.
 class BankScreen extends StatefulWidget {
   const BankScreen({super.key});
 
@@ -65,51 +70,22 @@ class _BankScreenState extends State<BankScreen> {
           children: [
             Purse(carried: state.gold, banked: state.bankedGold),
             Notice(state.notice),
-            const Heading('Gold'),
+            const Heading('Carried — lost if you die'),
             CountStepper(
               value: pendingBank,
               cap: state.gold,
               onChanged: (next) => setState(() => _pendingBank = next),
             ),
-            FilledButton(
+            Commit(
+              label: 'Bank gold',
               onPressed: pendingBank <= 0
                   ? null
                   : () {
                       bloc.add(DepositGoldPressed(pendingBank));
                       setState(() => _pendingBank = 0);
                     },
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              child: const Text(
-                'Bank gold',
-                style: TextStyle(fontFamily: 'monospace', fontSize: 14),
-              ),
             ),
             if (state.gold <= 0) Text(purseIsShort, style: monoDim),
-            const SizedBox(height: 10),
-            CountStepper(
-              value: pendingTake,
-              cap: state.bankedGold,
-              onChanged: (next) => setState(() => _pendingTake = next),
-            ),
-            FilledButton(
-              onPressed: pendingTake <= 0
-                  ? null
-                  : () {
-                      bloc.add(WithdrawGoldPressed(pendingTake));
-                      setState(() => _pendingTake = 0);
-                    },
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              child: const Text(
-                'Take gold',
-                style: TextStyle(fontFamily: 'monospace', fontSize: 14),
-              ),
-            ),
-            if (state.bankedGold <= 0) Text(vaultIsShort, style: monoDim),
-            const Heading('Carried — lost if you die'),
             if (state.profile.inventory.isEmpty)
               const NothingHere('You are carrying nothing.'),
             for (final item in state.profile.inventory)
@@ -120,6 +96,21 @@ class _BankScreenState extends State<BankScreen> {
                 onPressed: () => bloc.add(DepositItemPressed(item.id)),
               ),
             const Heading('Banked — safe from death'),
+            CountStepper(
+              value: pendingTake,
+              cap: state.bankedGold,
+              onChanged: (next) => setState(() => _pendingTake = next),
+            ),
+            Commit(
+              label: 'Take gold',
+              onPressed: pendingTake <= 0
+                  ? null
+                  : () {
+                      bloc.add(WithdrawGoldPressed(pendingTake));
+                      setState(() => _pendingTake = 0);
+                    },
+            ),
+            if (state.bankedGold <= 0) Text(vaultIsShort, style: monoDim),
             if (state.profile.bank.isEmpty)
               const NothingHere('The vault is empty.'),
             for (final item in state.profile.bank)

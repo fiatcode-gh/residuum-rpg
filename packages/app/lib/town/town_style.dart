@@ -23,6 +23,29 @@ const TextStyle monoDim = TextStyle(
   color: dim,
 );
 
+/// The width of every leading mark column in the town.
+///
+/// One constant rather than a number repeated per row, because the markings
+/// are not all one cell wide in the device's monospace font and a column
+/// that drifts by two pixels steps sideways on the phone.
+const double markColumn = 28;
+
+/// The type a place announces itself in.
+const TextStyle placeName = TextStyle(
+  fontFamily: 'monospace',
+  fontSize: 20,
+  letterSpacing: 5,
+  color: ink,
+);
+
+/// The type a room inside a place announces itself in.
+const TextStyle roomName = TextStyle(
+  fontFamily: 'monospace',
+  fontSize: 15,
+  letterSpacing: 4,
+  color: ink,
+);
+
 /// A section title above a list.
 ///
 /// The town screens tell their two lists apart by this heading and by the order
@@ -109,7 +132,7 @@ class ItemRow extends StatelessWidget {
     child: Row(
       children: [
         SizedBox(
-          width: 28,
+          width: markColumn,
           child: Text(marking, style: monoDim, textAlign: TextAlign.center),
         ),
         Expanded(
@@ -157,20 +180,13 @@ class Purse extends StatelessWidget {
   final int banked;
 
   @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: panel,
-      borderRadius: BorderRadius.circular(4),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Carried  $carried gold', style: mono),
-        Text('Banked   $banked gold', style: mono),
-      ],
-    ),
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('Carried  $carried gold', style: mono),
+      Text('Banked   $banked gold', style: mono),
+      const Divider(color: rule, height: 20),
+    ],
   );
 }
 
@@ -201,35 +217,16 @@ class MaterialRows extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 1),
           child: Row(
             children: [
-              SizedBox(width: 28, child: Text(id.marking, style: mono)),
+              SizedBox(
+                width: markColumn,
+                child: Text(id.marking, style: mono),
+              ),
               SizedBox(width: 84, child: Text(id.word, style: mono)),
               Text('${materials[id] ?? 0}', style: mono),
             ],
           ),
         ),
     ],
-  );
-}
-
-/// [MaterialRows] inside a panel, for the rooms that spend them.
-///
-/// [Purse]'s sibling: the two panels sit one above the other at the top of the
-/// forge and the alchemist, so what a transaction costs and what the hero has to
-/// pay it with are read in one glance.
-class MaterialsPanel extends StatelessWidget {
-  const MaterialsPanel({required this.materials, super.key});
-
-  final Map<MaterialId, int> materials;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: panel,
-      borderRadius: BorderRadius.circular(4),
-    ),
-    child: MaterialRows(materials: materials),
   );
 }
 
@@ -360,6 +357,34 @@ class _CountStepperState extends State<CountStepper> {
   }
 }
 
+/// The one control that commits a room's work.
+///
+/// Six screens hand-rolled the same full-width button at two font sizes and
+/// two paddings; a town with one grammar has one of them. Null [onPressed]
+/// leaves the control on the row and dead rather than taking it away, which
+/// is the inn's rule and the bank's: a control that vanishes teaches nothing.
+class Commit extends StatelessWidget {
+  const Commit({required this.label, required this.onPressed, super.key});
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: FilledButton(
+      onPressed: onPressed,
+      style: FilledButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontFamily: 'monospace', fontSize: 15),
+      ),
+    ),
+  );
+}
+
 /// The scaffold every town room shares.
 class TownRoom extends StatelessWidget {
   const TownRoom({required this.title, required this.children, super.key});
@@ -369,14 +394,15 @@ class TownRoom extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: Text(title, style: const TextStyle(fontFamily: 'monospace')),
-      backgroundColor: panel,
-      foregroundColor: ink,
-    ),
+    appBar: AppBar(backgroundColor: panel, foregroundColor: ink),
     body: ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      children: [...children, const SizedBox(height: 24)],
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+      children: [
+        Text(title, style: roomName),
+        const Divider(color: rule, height: 22),
+        ...children,
+        const SizedBox(height: 24),
+      ],
     ),
   );
 }

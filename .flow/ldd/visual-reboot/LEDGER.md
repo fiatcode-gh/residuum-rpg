@@ -36,37 +36,31 @@ The epic was opened from an approved external planning handoff:
 
 - **Unit 0 complete; no production code written.** Its source-verified
   baseline is `units/unit-0/recon.md`.
-- **Unit 1 accepted.** Its Flame dungeon-scene contract is complete on
-  `visual-reboot-unit-1`.
-- **Unit 2 accepted.** The graphical Crypt material language is complete on
-  `visual-reboot-unit-2`; Sea-Cave and Ruined Keep material parity remains
-  Unit 8.
-- **Unit 3 merged to `main` at `4164741`.** The suite, analyzer, and acceptance
-  review passed. Its deferred AVD/greyscale evidence is scheduled for the
-  combined final Unit 3 + Unit 4 device gate on the recreated AVD.
-- **Unit 4 is an interrupted acceptance checkpoint** on
-  `residuum-visual-reboot-4`, remotely checkpointed at WIP head `0d27a186`.
-  Tasks 01–03 and all known review corrections are implemented. Acceptance
-  remains open for the final TTC-1A closure review, final-tree formatting/app
-  gates, and the combined Unit 3 + Unit 4 recreated-AVD colour/greyscale gate.
-  The prior session limit stopped the device pass during encounter search; no
-  device acceptance is claimed.
+- **Units 1–6 are all accepted and present on `main`.** Verified at source on
+  2026-09-15: PR #13 `650fa7c`, #14 `15e737a`, #15 `55a226d`, #16 `319d945`
+  are all MERGED, and `main` is at `319d945` with a clean worktree in sync
+  with `origin/main`. Earlier "interrupted"/"uncommitted" wording in this file
+  for Units 4 and 6 is superseded.
+- Sea-Cave and Ruined Keep material parity remains Unit 8.
+- **Unit 7 (town + transactional rooms + heroes) is the active unit.** It is
+  in the contract stage; no implementation is authorized.
 
 ## Epic status
 
 | Unit | Dependencies | State | Verification | Notes |
 |---|---|---|---|---|
 | Unit 0 — design baseline + recon | none | complete | source recon and approved mock inspection; no code | matrix, seam inventory, corrections: `units/unit-0/recon.md` |
-| Unit 1 — dungeon scene foundation | Unit 0 | accepted | 682 app tests, analyzer, final COR/TTC/CRF, Pixel_10 AVD and greyscale pass | contract: `units/unit-1/CONTRACT.md`; Flame only in `packages/app` |
-| Unit 2 — graphical dungeon language | Unit 1 | accepted | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
-| Unit 3 — crawl interaction reboot | Unit 2 | merged; device evidence pending | 736 app tests, analyzer, review pass; AVD blocked on this host | map-first melee; favorites + overflow |
-| Unit 4 — turn timeline + duplicate identity | Unit 3 | interrupted acceptance; WIP checkpoint | initial full app 764 + analyzer clean; first correction full app 765 + analyzer clean; final semantics fix focused 34 + focused analyze clean; closure/final-tree broad/device gates pending | head `0d27a186`; session limit stopped the combined AVD gate during encounter search |
+| Unit 1 — dungeon scene foundation | Unit 0 | **merged** to `main` | 682 app tests, analyzer, final COR/TTC/CRF, Pixel_10 AVD and greyscale pass | on `main` at `5f8db47`; contract: `units/unit-1/CONTRACT.md`; Flame only in `packages/app` |
+| Unit 2 — graphical dungeon language | Unit 1 | **merged** to `main` | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | on `main` at `06a8b9f`/`7cd32f2`; cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
+| Unit 3 — crawl interaction reboot | Unit 2 | **merged** to `main` | 736 app tests, analyzer, review pass; deferred AVD/greyscale discharged by the combined Unit 3 + Unit 4 device gate | merged at `4164741`; map-first melee; favorites + overflow |
+| Unit 4 — turn timeline + duplicate identity | Unit 3 | **merged** to `main` | final tree `dart format` 19 files/0 changed, analyzer clean, full app 765 tests; combined Unit 3 + Unit 4 colour/greyscale gate on `emulator-5554` | merged by PR #13 `650fa7c` and PR #14 `15e737a`; code `0d27a18` |
 | Unit 5 — log drawer | Unit 3 | **merged** to `main` | 797 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT WITH FINDINGS, all must-fix corrected; full criterion 12 colour + greyscale device gate on `emulator-5554` | merged by PR #15 at `55a226d`; `0bf6da1` is an ancestor; contract: `units/unit-5/CONTRACT.md` |
-| Unit 6 — character / spells / pack | Unit 3 | **accepted locally; uncommitted** | 789 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT; Medium_Phone colour/greyscale device gate | source base `55a226d`; contract: `units/unit-6/CONTRACT.md` |
-| Unit 7 — town + rooms + heroes | Unit 6 | pending | transactional/refusal semantics preserved | art bible locked before static art |
+| Unit 6 — character / spells / pack | Unit 3 | **merged** to `main` | 789 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT; Medium_Phone colour/greyscale device gate | merged by PR #16 at `319d945` (code `89927ef`); contract: `units/unit-6/CONTRACT.md` |
+| Unit 7 — town + rooms + heroes | Unit 6 | **accepted**; awaiting integration | 816 app tests, `dart format` 99 files 0 changed, analyzer clean; acceptance review ACCEPT WITH FINDINGS, all taken findings corrected; `Medium_Phone` device gate with greyscale twins | branch `residuum-visual-reboot-7` at `cb8fcbc`; contract: `units/unit-7/CONTRACT.md` |
 | Unit 8 — world + theme parity | Unit 7 | pending | final accessibility + device-size pass | Sea-Cave/Keep material identity |
+| Unit 9 — crawl HUD chrome | Unit 8 | pending | own colour/greyscale device pass | depth header, labelled HP/Mana bars, icon control chips |
 
-Recon locks the execution order: **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8**.
+Recon locks the execution order: **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9**.
 Units 4 and 5 stay sequential so identity-correct event names land before the
 log drawer; no unit reordering is needed.
 
@@ -124,8 +118,12 @@ log drawer; no unit reordering is needed.
 
 - Dungeon/material art bible subset: **locked for Unit 2**
   (`units/unit-2/ART-BIBLE.md`). Portrait framing, bulk static-art
-  composition, and the full non-dungeon icon language remain to lock before
-  Unit 7.
+  composition, room-background ratios, and the full non-dungeon icon language
+  are **deferred to the post-Unit-8 art pass**, not blockers for Unit 7: the
+  Unit 7 contract delivers town atmosphere as typographic and procedural
+  treatment and adds no asset surface.
+- Where do the leftover crawl HUD chrome items (depth header, labelled HP/Mana
+  bars, icon control chips) land — Unit 8, or a new Unit 9?
 - Does the old-wave m3-quests (M3Q, save v4, `../m3/LEDGER.md`) still run,
   and where in the sequence?
 
@@ -670,3 +668,228 @@ Append-only. Supersede old decisions; do not rewrite history.
   copied before install and restored after capture. Their final SHA-256 values
   exactly match the backups: `save.json` `18995c4…b46d3` and
   `save-previous.json` `8909f70c…a9b11`.
+
+### Unit 6 integration and epic state correction
+
+- 2026-09-15 — **Unit 6 merged.** PR #16 is MERGED at `319d945` with code
+  `89927ef`; the branch is gone and `main` is clean and in sync with
+  `origin/main`. Checked at the same time: PRs #13 `650fa7c`, #14 `15e737a`,
+  #15 `55a226d` are all MERGED, and Units 1–2 sit on `main` directly at
+  `5f8db47` / `06a8b9f` / `7cd32f2`. **Units 1–6 are therefore all on `main`.**
+  The epic status table's earlier "interrupted acceptance" row for Unit 4 and
+  "accepted locally; uncommitted" row for Unit 6 were stale and are corrected
+  above. Verify merge state at the forge before repeating a merge claim from
+  this file.
+
+### Unit 7 opening
+
+- 2026-09-15 — **Unit 7 recon** (`agent://TownRoomsScout`,
+  `agent://HeroesScout`) verified the town surface at source. Every town room
+  is still original M3-era composition on `TownRoom` + `town_style.dart`;
+  Units 1–6 rebooted the crawl and the Character information architecture only,
+  and Unit 6's `CharacterScreen` renders inside the old town grammar. `TownBloc`
+  carries 23 events and `TownViewState` projects every refusal computed in core
+  (`smeltReason`, `brewReason`, `temperReason`, `wearReason`, `takeOffReason`,
+  `readReason`). Recon correction 9 holds: Heroes is a `WorldScreen` action
+  reading the live `SaveDocument`, not a town door and not a bloc consumer.
+- 2026-09-15 — **The game is one active hero with a roster of alts, never a
+  party.** Each `SavedHero` owns its profile, suspended run, world whereabouts,
+  and merchant visit; deleting the last hero is a replacement write because the
+  roster is never empty. Nothing in the reboot may imply party play.
+- 2026-09-15 — **Unit 7 contract drafted** at `units/unit-7/CONTRACT.md`,
+  awaiting explicit user approval. Its own locked position, pending that
+  approval: no static art, no `assets/` declaration, no portrait slot, and no
+  icon family in this unit — town atmosphere is typographic and procedural
+  only, and the art bible stays deferred to the post-Unit-8 art pass already
+  agreed with the user. Marks stay text codepoints and every new one is read on
+  device before acceptance.
+- 2026-09-15 — **The user approved the Unit 7 contract as written.** That
+  approval covers the WHAT/boundary/acceptance in `units/unit-7/CONTRACT.md`,
+  including its no-static-art lock. It authorizes planning only; local
+  implementation needs separate approval of the execution-grade plan.
+- 2026-09-15 — **The leftover crawl HUD chrome becomes Unit 9**, after Unit 8,
+  by the user's decision. Unit 8 stays focused on world and theme parity, and
+  the depth header, labelled HP/Mana bars, and icon control chips get their own
+  colour/greyscale device pass rather than riding a broader final unit.
+
+### Unit 7 planning and execution shape
+
+- 2026-09-15 — **The execution-grade plan is written and approved by the
+  user**: `units/unit-7/PLAN.md` plus four briefs under `units/unit-7/
+  plan-tasks/`. Planner receipt: `agent://Unit7Planner`. Implementation is
+  authorized within that envelope only; publication remains user-owned.
+- 2026-09-15 — Work happens on `residuum-visual-reboot-7`, branched from `main`
+  at `319d945`. The contract and plan ride the unit branch as `105dea2`, the
+  same way Unit 5's contract commit reached `main` through its PR.
+- 2026-09-15 — **The user chose to parallelize tasks 02–04** after task 01.
+  Task 01 rewrites the shared grammar, so it runs alone and non-isolated;
+  02 (counter rooms), 03 (crafting rooms) and 04 (Heroes) are file-disjoint and
+  read-only on `town_style.dart`/`town_screen.dart`, so they run concurrently in
+  isolated workspaces off the committed task-01 grammar. The known cost of that
+  choice is three isolated checkouts merging back over a just-rewritten
+  `town_style.dart`; Main owns the integrated broad gates afterwards.
+- 2026-09-15 — Plan decisions worth carrying past this unit: **no new mark
+  codepoint is introduced anywhere in Unit 7** (a structural answer to the
+  Unit 5 colour-emoji trap rather than a test for it), and `Heading`,
+  `NothingHere`, `ItemRow`, `MaterialRows`, `CountStepper` and `Notice` are
+  **frozen** because `world_screen.dart` (Unit 8) and the crawl Pack share
+  them. Reshaping is confined to the town-only primitives: `Purse`, `TownRoom`,
+  the new `Commit`, and the deletion of `MaterialsPanel`.
+
+### Unit 7 task 01 receipt
+
+- 2026-09-15 — **Task 01 (town grammar + shell) is landed and verified**, on
+  `residuum-visual-reboot-7` as `45b44e8`. Worker receipt:
+  `agent://U7T01Shell`. `town_style.dart` now exports `markColumn`,
+  `placeName`, `roomName` and `Commit`; `Purse` lost its card; `TownRoom`
+  renders its title in the body; `MaterialsPanel` is deleted and both former
+  call sites use `Heading('Materials')` + `MaterialRows`. The shell has a place
+  header, the status block, and seven keyed doors with purpose lines.
+- Architect-run evidence at that commit, from `packages/app`: full `flutter
+  test` **795 passing** (789 before the unit, plus 8 new town-shell tests, less
+  2 migrated out of `craft_rooms_test.dart`), `dart format
+  --set-exit-if-changed` 11 files 0 changed, `flutter analyze` no issues.
+- **A real regression was caught by the architect's broad gate that the worker's
+  focused run could not see.** Three tavern tests in `world_screen_test.dart`
+  tap `find.text('Tavern')` without scrolling. The rebooted shell is taller, so
+  on the 800x600 test surface the fifth door now sits at y=608 — below the fold
+  — and the tap derived an off-screen offset. The worker never ran that file
+  because its brief named it another task's gate.
+- **Decision: the design stands and the call sites scroll.** The contract
+  already says the last door stays reachable on a 600-pixel-tall screen by
+  scrolling rather than clipping, and the shell's scroll skeleton exists for
+  exactly that. Those three taps encoded a stale geometry assumption, not a
+  behavioural contract. `test/support/world_nav.dart` gained
+  `openTownDoor(tester, label)`, which ensures the door is visible before
+  tapping; only the three tavern call sites migrated to it. Every assertion in
+  those tests is unchanged.
+- **Trap for Unit 8 and Unit 9:** the town door column is now within about 8
+  pixels of the 600-pixel fold. Any further growth pushes door 5 and below out
+  of reach of an unscrolled tap, and roughly a dozen town-door taps across
+  `boot_wiring_test.dart`, `roster_session_test.dart`, `suspend_door_test.dart`,
+  `character_screen_test.dart` and `world_screen_test.dart` still tap directly.
+  Prefer `openTownDoor` in new tests.
+
+### Unit 7 tasks 02–04 and integration checkpoint
+
+- 2026-09-15 — **Tasks 02, 03 and 04 ran concurrently in isolated workspaces**
+  off `45b44e8` and are integrated as `340980c`. Receipts:
+  `agent://U7T02Counter`, `agent://U7T03Craft`, `agent://U7T04Heroes`.
+  02 restructured the bank into two zones and retired `Heading('Gold')`, moved
+  the tavern's notice under `Purse`, and added `tavern_screen_test.dart` — the
+  tavern's first test file ever. 03 moved both crafting notices up, gave each
+  room exactly one material block, and put `_TemperRow` on `markColumn` so the
+  bench aligns with the material rows. 04 keyed every roster row
+  (`Key('roster-hero-$id')`) so a hero's facts are attributable to that hero,
+  and quietened the per-row delete to a `TextButton`.
+- **OMP did not auto-apply any of the three isolated patches**; all three were
+  merged by the architect with `git apply --include='packages/*'`. The full
+  patches also carried the architect's own uncommitted `.flow` edits, which
+  conflicted — restricting the apply to `packages/` is the working recipe, and
+  the next epic should expect the same.
+- **Architect-run integrated evidence at `340980c`**, from `packages/app`: full
+  `flutter test` **815 passing** (795 after task 01), `dart format
+  --set-exit-if-changed` over `lib` and `test` 99 files 0 changed, `flutter
+  analyze` no issues. Scope audit: zero changes under `packages/core` and
+  `packages/content`, and zero changes under `packages/app/lib` outside
+  `lib/town/`.
+- `merchant_screen.dart` is the one room task 02 did not edit, reporting that
+  its structure already matched the brief. That judgement is referred to the
+  acceptance review rather than taken on trust.
+
+### Unit 7 acceptance review
+
+- 2026-09-15 — The integrated acceptance review returned **ACCEPT WITH
+  FINDINGS** at `340980c`: one must-fix and five optional. Full text:
+  `agent://U7Acceptance`. It independently re-ran analyze, format and the 815
+  tests, diffed every displayed string literal in the nine town library files
+  base versus head, audited every added non-ASCII codepoint, and hashed
+  `roster_screen.dart`'s sealed-type region to prove `RosterChoice` is
+  byte-identical.
+- **Correction to this ledger's own evidence claim (the must-fix, F1).** Unit 7
+  did **not** leave every regression gate untouched. Besides the nine library
+  files it also edited `packages/app/test/support/world_nav.dart` (new
+  `openTownDoor` helper) and `packages/app/test/widget/world_screen_test.dart`
+  (three tavern call sites). The edit is correct and behaviour-preserving — it
+  unpinned a composition assumption, not a behaviour — but the plan's TTC
+  argument rested on that suite passing unedited, and it did not. The
+  architect's own scope audit missed it because the audit covered
+  `packages/app/lib` only. Audit `packages/app/test` too, next time.
+- Findings taken in one correction round (`agent://U7Corrections`): route the
+  eight remaining raw town-door taps through `openTownDoor` (F2); give the
+  roster `Delete` and forge `Temper` texts an explicit town colour so one rule
+  governs button-borne text (F3); add the missing end-to-end proof that the
+  forge shows its blacksmith level-up sentence (F4); close the two new suites'
+  leaked blocs with `addTearDown` (F5).
+- **Finding F6 is deliberately not fixed here and is Unit 8 input.**
+  `character_screen.dart` is the room behind door 4 and is still built from
+  four full-width `FilledButton` slabs plus a `Container` with
+  `BoxDecoration(color: panel)` — the card-and-slab furniture Unit 7 stripped
+  from `Purse`, `MaterialsPanel` and the doors. The plan froze every Unit 6
+  route, which gave it the rebooted scaffold but not a rebooted interior. After
+  Unit 7 it is the last old-grammar surface in the town.
+
+### Greyscale evidence rule, narrowed
+
+- 2026-09-15 — **The blanket "every device frame gets a greyscale twin" rule is
+  retired at the user's decision.** From Unit 7's device gate onward, colour
+  capture is the default and a greyscale twin is required only for a frame that
+  introduces a **new mark codepoint** or a **non-neutral colour**.
+- The reasoning is specific, not a relaxation of the accessibility contract,
+  which is unchanged: no state may be carried by hue alone. The town palette
+  has no hue in it — `ink` `0xFFE6EAF0`, `dim` `0xFF8A919E`, `panel`
+  `0xFF15181F`, `rule` `0xFF2A2E38` are all neutral greys — so desaturating a
+  town frame is close to a no-op, which is why every Unit 6 twin matched its
+  original. The twin earns nothing on a hueless screen.
+- Where it does earn its keep is colour the project did not author:
+  **font fallback** (Unit 5's `↕` U+2195 rendered through Android's colour
+  emoji font and ignored the row's text colour) and **theme defaults** (this
+  unit's finding F3: roster `Delete` and forge `Temper` let Material's primary
+  decide their text colour). Neither is a palette mistake, so palette care
+  cannot catch either.
+- **Unit 9 (crawl HUD chrome) is the expected trigger to reinstate twins** —
+  labelled HP/Mana bars are exactly where a hue-only state first appears. Unit 8
+  needs them for any frame touching the Sea-Cave and Ruined Keep palettes, which
+  are not neutral.
+- Unit 7's own gate was already capturing twins when this was decided and was
+  allowed to finish; its evidence set is therefore the last complete twinned set
+  in this epic.
+
+### Unit 7 device gate and acceptance
+
+- 2026-09-15 — **Unit 7 is accepted.** The device gate passed at `cb8fcbc` on
+  `emulator-5554` (`Medium_Phone`, Android 17, 1080x2400, about 411x914 logical).
+  Verifier receipt: `agent://U7Device`. Evidence is
+  `.flow/evidence/visual-reboot/unit-7-device/`: nine frames — town shell, the
+  Alchemist-fold frame, Merchant, Bank, Inn, Tavern, Forge, Alchemist, Heroes —
+  each with a greyscale twin.
+- **The forge alignment question is answered quantitatively, not by eye.** The
+  item-name text of the three material rows begins at x=128/130/129 and the
+  bench's `Common Rusty Sword` at x=129 — within about 2 pixels, which is
+  antialiasing. `markColumn` does what it was introduced to do.
+- **The fold question is answered for this device only.** All seven doors sit on
+  screen at rest with room to spare, and a scroll gesture produced no movement.
+  This AVD is far taller than the 600-pixel reference the plan worried about, so
+  the tightest case was *not* exercised. The widget-level 600-pixel reachability
+  walk in `town_shell_test.dart` remains the only proof for that geometry.
+- **No hue-only state.** Every dead control stays distinguishable by lightness
+  once desaturated and is additionally backed by its own refusal sentence. The
+  only codepoint Unit 7 introduced anywhere is U+2014, and it renders as a
+  proper dash — no tofu, no colour-emoji resolution.
+- Both device save slots were backed up before install and verified by the
+  architect after all driving: `save.json`
+  `18995c4ac55edc6dfb23b0b13b0e09cf2d79747e6028964b0187a2a4182b46d3` and
+  `save-previous.json`
+  `8909f70c64c633c1678b42ff90390216be2e76c29e3ff2f482219d470f8a9b11`, identical
+  to the pre-session backup.
+- **Device trap worth carrying:** the saves live in `app_flutter/`, not
+  `files/`, and the installed package is `com.example.residuum_app`. A
+  `run-as … cat files/save.json` silently returns an *error string*, and hashing
+  that yields a plausible-looking but meaningless digest — two slots appearing to
+  share one hash is the tell. Read `app_flutter/save.json`.
+- **Observation for the art pass, not a Unit 7 defect:** the town's only hue is
+  Material's default seed on `FilledButton` — the lilac `Bank`, `Ask 15` and
+  `New hero` controls. Unit 7 stripped the slabs from the doors, so those
+  remaining filled controls are now the one coloured element on an otherwise
+  neutral screen. It carries no meaning by itself and reads in greyscale, but it
+  is unauthored colour and the town has no theme of its own.

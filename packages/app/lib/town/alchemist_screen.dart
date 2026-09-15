@@ -14,6 +14,11 @@ import 'town_style.dart';
 /// and it is not bought with coin. The button goes dead with its sentence beside
 /// it instead of disappearing, so a hero one herb short reads exactly that.
 ///
+/// **The purse, the notice and the materials sit in the town's own order.**
+/// Gold first, then whatever the last visit's notice said, then what the pot
+/// has to work with — the alchemist inherits that grammar rather than
+/// restating it, the same order every other room in the town keeps.
+///
 /// **The pending brew count is view state, not game state.** It is a dial — a
 /// thing the player is about to do, not something that happened — so it lives
 /// in this screen's own [State] and dies with the screen. The cap clamps at the
@@ -53,9 +58,9 @@ class _AlchemistScreenState extends State<AlchemistScreen> {
           title: 'Alchemist',
           children: [
             Purse(carried: state.gold, banked: state.bankedGold),
-            const SizedBox(height: 10),
-            MaterialsPanel(materials: state.materials),
             Notice(state.notice),
+            const Heading('Materials'),
+            MaterialRows(materials: state.materials),
             const Heading('Brewing'),
             Text('$brewCost herbs make 1 healing potion.', style: mono),
             Text(
@@ -68,21 +73,14 @@ class _AlchemistScreenState extends State<AlchemistScreen> {
               cap: cap,
               onChanged: (next) => setState(() => _pending = next),
             ),
-            const SizedBox(height: 10),
-            FilledButton(
+            Commit(
+              label: 'Brew',
               onPressed: pending <= 0
                   ? null
                   : () {
                       bloc.add(BrewPressed(pending));
                       setState(() => _pending = 0);
                     },
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text(
-                'Brew',
-                style: TextStyle(fontFamily: 'monospace', fontSize: 15),
-              ),
             ),
             const SizedBox(height: 10),
             Text(

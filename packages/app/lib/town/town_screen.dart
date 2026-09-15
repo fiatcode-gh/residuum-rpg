@@ -14,16 +14,18 @@ import 'tavern_screen.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
 
-/// One town: seven doors, a purse and what the hero has gathered.
+/// One town: a header, a status block and seven doors, each saying what it
+/// is for.
 ///
 /// A menu rather than a map, which is the design's own choice and not a
 /// shortcut — there is nothing to explore in a town, and a walkable one would
 /// charge the player footsteps for a shop they can already see.
 ///
-/// **Pushed over the world screen, and named in its own title bar.** The way
-/// down is not here any more: entering a dungeon is offered at the dungeon's own
-/// node, so leaving town is the back button and nothing else. The roster moved
-/// to the world screen for a structural reason — see `WorldScreen.onOpenRoster`.
+/// **The town's name is the header, not the title bar.** The `AppBar` carries
+/// only the automatically inserted back button, which is the way out of town
+/// now that entering a dungeon is offered at the dungeon's own node. The
+/// roster moved to the world screen for a structural reason — see
+/// `WorldScreen.onOpenRoster`.
 ///
 /// **The forge and the alchemist are in both towns, like the inn.** A one-town
 /// forge has real friction either way round: Northgate starts undiscovered, so a
@@ -36,7 +38,8 @@ import 'town_style.dart';
 ///
 /// Nothing here is told apart by colour. Carried and banked gold are two
 /// labelled rows in a fixed order, the materials are a mark and a word and a
-/// number each, and every refusal is a sentence.
+/// number each, each door carries a purpose line rather than a mark, and every
+/// refusal is a sentence.
 class TownScreen extends StatelessWidget {
   const TownScreen({super.key});
 
@@ -52,16 +55,7 @@ class TownScreen extends StatelessWidget {
   /// 45 pixels, and a door a player cannot reach is a door that is not there.
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: BlocBuilder<TownBloc, TownViewState>(
-        builder: (context, state) => Text(
-          _titleFor(state.town),
-          style: const TextStyle(fontFamily: 'monospace'),
-        ),
-      ),
-      backgroundColor: panel,
-      foregroundColor: ink,
-    ),
+    appBar: AppBar(backgroundColor: panel, foregroundColor: ink),
     body: SafeArea(
       child: BlocBuilder<TownBloc, TownViewState>(
         builder: (context, state) => LayoutBuilder(
@@ -74,6 +68,8 @@ class TownScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      Text(_titleFor(state.town), style: placeName),
+                      const SizedBox(height: 4),
                       Text(_descentsSoFar(state.profile.visit), style: monoDim),
                       const Divider(color: rule, height: 28),
                       Text(
@@ -82,37 +78,51 @@ class TownScreen extends StatelessWidget {
                       ),
                       Text('Carried  ${state.gold} gold', style: mono),
                       Text('Banked   ${state.bankedGold} gold', style: mono),
-                      const Divider(color: rule, height: 28),
+                      const Heading('Materials'),
                       MaterialRows(materials: state.materials),
                       Notice(state.notice),
                       const Spacer(),
                       _Door(
+                        key: const Key('town-door-merchant'),
                         label: 'Merchant',
+                        purpose: 'Buy, sell, and buy back',
                         onPressed: () => _open(context, const MerchantScreen()),
                       ),
                       _Door(
+                        key: const Key('town-door-bank'),
                         label: 'Bank',
+                        purpose: 'Gold and gear, safe from death',
                         onPressed: () => _open(context, const BankScreen()),
                       ),
                       _Door(
+                        key: const Key('town-door-inn'),
                         label: 'Inn',
+                        purpose: 'A bed for the night',
                         onPressed: () => _open(context, const InnScreen()),
                       ),
                       _Door(
+                        key: const Key('town-door-character'),
                         label: 'Character',
+                        purpose: 'Gear, spells, skills, and pack',
                         onPressed: () =>
                             _open(context, const CharacterScreen()),
                       ),
                       _Door(
+                        key: const Key('town-door-tavern'),
                         label: 'Tavern',
+                        purpose: 'Ask about the roads',
                         onPressed: () => _open(context, const TavernScreen()),
                       ),
                       _Door(
+                        key: const Key('town-door-forge'),
                         label: 'Forge',
+                        purpose: 'Smelt ore, temper steel',
                         onPressed: () => _open(context, const ForgeScreen()),
                       ),
                       _Door(
+                        key: const Key('town-door-alchemist'),
                         label: 'Alchemist',
+                        purpose: 'Brew herbs into potions',
                         onPressed: () =>
                             _open(context, const AlchemistScreen()),
                       ),
@@ -164,23 +174,39 @@ class TownScreen extends StatelessWidget {
 }
 
 class _Door extends StatelessWidget {
-  const _Door({required this.label, required this.onPressed});
+  const _Door({
+    required this.label,
+    required this.purpose,
+    required this.onPressed,
+    super.key,
+  });
 
   final String label;
+  final String purpose;
   final VoidCallback? onPressed;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 5),
-    child: FilledButton(
-      onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const Divider(color: rule, height: 1),
+      TextButton(
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          foregroundColor: ink,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label, style: mono),
+            const SizedBox(height: 2),
+            Text(purpose, style: monoDim),
+          ],
+        ),
       ),
-      child: Text(
-        label,
-        style: const TextStyle(fontFamily: 'monospace', fontSize: 15),
-      ),
-    ),
+    ],
   );
 }

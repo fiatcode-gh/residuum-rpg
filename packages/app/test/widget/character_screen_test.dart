@@ -10,6 +10,7 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../support/phone.dart';
+import '../support/world_nav.dart';
 
 Profile _hero({
   List<Item> inventory = const [],
@@ -67,8 +68,7 @@ Future<TownBloc> _openCharacterDoor(
     ),
   );
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Character'));
-  await tester.pumpAndSettle();
+  await openTownDoor(tester, 'Character');
   return town;
 }
 

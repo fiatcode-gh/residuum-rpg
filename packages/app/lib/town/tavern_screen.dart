@@ -27,6 +27,7 @@ class TavernScreen extends StatelessWidget {
           title: 'Tavern',
           children: [
             Purse(carried: town.gold, banked: town.bankedGold),
+            Notice(town.notice ?? world.notice),
             const Heading('What they are saying'),
             if (offered == null)
               const NothingHere(
@@ -40,7 +41,6 @@ class TavernScreen extends StatelessWidget {
                 action: 'Ask $rumorPrice',
                 onPressed: () => _ask(context, world, town),
               ),
-            Notice(town.notice ?? world.notice),
             const Heading('What you have been told'),
             if (world.log.isEmpty)
               const NothingHere('Nothing yet.')

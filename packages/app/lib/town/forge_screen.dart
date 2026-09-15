@@ -18,6 +18,12 @@ import 'town_style.dart';
 /// item's own stat line. And every row's price is on the row: a refusal never
 /// takes the next tier's cost down with it.
 ///
+/// **The purse, the notice and the materials sit in the town's own order.**
+/// Gold first, then whatever the last visit's notice said, then what the hero
+/// has gathered — the forge inherits that grammar rather than restating it, and
+/// the bench's own marking column lines up under the materials rows above it
+/// because both read off the same [markColumn].
+///
 /// **The pending smelt count is view state, not game state.** It is a dial — a
 /// thing the player is about to do, not something that happened — so it lives
 /// in this screen's own [State] and dies with the screen; a screen that dies
@@ -47,9 +53,9 @@ class _ForgeScreenState extends State<ForgeScreen> {
           title: 'Forge',
           children: [
             Purse(carried: state.gold, banked: state.bankedGold),
-            const SizedBox(height: 10),
-            MaterialsPanel(materials: state.materials),
             Notice(state.notice),
+            const Heading('Materials'),
+            MaterialRows(materials: state.materials),
             const Heading('Smelting'),
             Text('$smeltCost ore makes 1 ingot.', style: mono),
             const SizedBox(height: 10),
@@ -58,21 +64,14 @@ class _ForgeScreenState extends State<ForgeScreen> {
               cap: cap,
               onChanged: (next) => setState(() => _pending = next),
             ),
-            const SizedBox(height: 10),
-            FilledButton(
+            Commit(
+              label: 'Smelt',
               onPressed: pending <= 0
                   ? null
                   : () {
                       bloc.add(SmeltPressed(pending));
                       setState(() => _pending = 0);
                     },
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text(
-                'Smelt',
-                style: TextStyle(fontFamily: 'monospace', fontSize: 15),
-              ),
             ),
             const SizedBox(height: 10),
             Text(
@@ -148,12 +147,13 @@ class _TemperRow extends StatelessWidget {
           Row(
             children: [
               SizedBox(
-                width: 26,
+                width: markColumn,
                 child: Text(item.rarity.marking, style: mono),
               ),
               Expanded(child: Text(item.displayName, style: mono)),
               TextButton(
                 onPressed: reason == null ? onTemper : null,
+                style: TextButton.styleFrom(foregroundColor: ink),
                 child: const Text(
                   'Temper',
                   style: TextStyle(fontFamily: 'monospace', fontSize: 12),
@@ -162,17 +162,17 @@ class _TemperRow extends StatelessWidget {
             ],
           ),
           Padding(
-            padding: const EdgeInsets.only(left: 26),
+            padding: const EdgeInsets.only(left: markColumn),
             child: Text(statLine(item), style: monoDim),
           ),
           if (reason != null)
             Padding(
-              padding: const EdgeInsets.only(left: 26),
+              padding: const EdgeInsets.only(left: markColumn),
               child: Text(reason!, style: monoDim),
             ),
           if (price != null)
             Padding(
-              padding: const EdgeInsets.only(left: 26),
+              padding: const EdgeInsets.only(left: markColumn),
               child: Text(
                 'Next tier: ${price.ingots} '
                 '${price.ingots == 1 ? 'ingot' : 'ingots'}.',

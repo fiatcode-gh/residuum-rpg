@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/notice/notice.dart';
 import 'package:residuum_app/town/roster_screen.dart';
 import 'package:residuum_content/content.dart';
 
@@ -24,6 +25,27 @@ SaveDocument _oneHero() => SaveDocument.one(
   id: 'hero-1',
   label: 'Hero 1',
   profile: newProfile(worldSeed: 111),
+);
+
+SaveDocument _threeHeroes() => SaveDocument(
+  active: 'hero-2',
+  heroes: {
+    'hero-1': SavedHero(
+      label: 'Ilse',
+      profile: newProfile(worldSeed: 111).copyWith(gold: 40, visit: 2),
+      run: startDungeonRunAt(cryptNode, newProfile(worldSeed: 111)),
+      dungeon: cryptNode,
+      campDay: 0,
+    ),
+    'hero-2': SavedHero(
+      label: 'Bram',
+      profile: newProfile(worldSeed: 222).copyWith(bankedGold: 90),
+    ),
+    'hero-3': SavedHero(
+      label: 'Cato',
+      profile: newProfile(worldSeed: 333).copyWith(gold: 15, visit: 1),
+    ),
+  },
 );
 
 /// The roster, opened over a screen, with whatever it answered kept for the
@@ -272,6 +294,181 @@ void main() {
       // assert
       expect(opened.chosen, const MakeHero('Hero 3'));
     });
+  });
+
+  group('a keyed roster row', () {
+    testWidgets(
+      "each hero's row is keyed, and its facts belong to that hero alone",
+      (tester) async {
+        // arrange
+        final opened = _Opened();
+        final document = _threeHeroes();
+
+        // act
+        await opened.open(tester, document);
+
+        // assert
+        for (final id in document.heroes.keys) {
+          final hero = document.heroes[id]!;
+          final row = find.byKey(Key('roster-hero-$id'));
+          expect(row, findsOneWidget);
+          expect(
+            find.descendant(of: row, matching: find.text(hero.label)),
+            findsOneWidget,
+          );
+          expect(
+            find.descendant(of: row, matching: find.text(rosterLine(hero))),
+            findsOneWidget,
+          );
+        }
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('roster-hero-hero-2')),
+            matching: find.text('playing'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('roster-hero-hero-1')),
+            matching: find.text('playing'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('roster-hero-hero-3')),
+            matching: find.text('playing'),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets('the rows appear in document.heroes.keys order', (
+      tester,
+    ) async {
+      // arrange
+      final opened = _Opened();
+      final document = _threeHeroes();
+
+      // act
+      await opened.open(tester, document);
+
+      // assert
+      final tops = [
+        for (final id in document.heroes.keys)
+          tester.getTopLeft(find.byKey(Key('roster-hero-$id'))).dy,
+      ];
+      for (var i = 1; i < tops.length; i++) {
+        expect(tops[i], greaterThan(tops[i - 1]));
+      }
+    });
+
+    testWidgets("a row's delete belongs to that hero, not its position", (
+      tester,
+    ) async {
+      // arrange
+      final opened = _Opened();
+      final document = _threeHeroes();
+      await opened.open(tester, document);
+
+      // act — hero-3 is neither first nor active, so a positional coincidence
+      // cannot pass this.
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const Key('roster-hero-hero-3')),
+          matching: find.text('Delete'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // assert
+      expect(find.text('Delete Cato?'), findsOneWidget);
+    });
+
+    testWidgets(
+      "the played hero's own row still answers nothing, another's answers "
+      'with them',
+      (tester) async {
+        // arrange
+        final opened = _Opened();
+        final document = _threeHeroes();
+        await opened.open(tester, document);
+
+        // act
+        await tester.tap(
+          find.descendant(
+            of: find.byKey(const Key('roster-hero-hero-2')),
+            matching: find.text('Bram'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // assert
+        expect(opened.chosen, isNull);
+        expect(opened.closed, isFalse);
+
+        // act
+        await tester.tap(
+          find.descendant(
+            of: find.byKey(const Key('roster-hero-hero-3')),
+            matching: find.text('Cato'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // assert
+        expect(opened.chosen, const PlayHero('hero-3'));
+      },
+    );
+
+    testWidgets('the notice renders above the first row', (tester) async {
+      // arrange
+      final document = _twoHeroes();
+
+      // act
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RosterScreen(
+            document: document,
+            notice: const SentenceNotice('a wandering hero was found'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // assert
+      final noticeY = tester
+          .getTopLeft(find.textContaining('a wandering hero was found'))
+          .dy;
+      final firstRowY = tester
+          .getTopLeft(find.byKey(const Key('roster-hero-hero-1')))
+          .dy;
+      expect(noticeY, lessThan(firstRowY));
+    });
+
+    testWidgets(
+      "a row for a hero standing in a crawl reads depth, never 'crawl'",
+      (tester) async {
+        // arrange
+        final opened = _Opened();
+        final document = _threeHeroes();
+
+        // act
+        await opened.open(tester, document);
+
+        // assert
+        expect(
+          find.descendant(
+            of: find.byKey(const Key('roster-hero-hero-1')),
+            matching: find.textContaining('below (depth 1)'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.textContaining('crawl'), findsNothing);
+      },
+    );
   });
 
   group('a roster row', () {

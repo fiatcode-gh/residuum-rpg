@@ -13,6 +13,18 @@ Future<void> backToTheWorld(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// Presses one of the town's doors, scrolling it into reach first.
+///
+/// The town column is taller than a short test surface, so the doors near its
+/// foot are below the fold until the screen is scrolled — the same scroll the
+/// player makes on a short phone.
+Future<void> openTownDoor(WidgetTester tester, String label) async {
+  await tester.ensureVisible(find.text(label));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label));
+  await tester.pumpAndSettle();
+}
+
 /// Walks the hero to [place] and waits out every day of the journey.
 ///
 /// The days are pumped rather than settled, because a day passes on a timer

@@ -429,8 +429,7 @@ void main() {
 
       // act
       await enterTown(tester, 'Stonebridge');
-      await tester.tap(find.text('Tavern'));
-      await tester.pumpAndSettle();
+      await openTownDoor(tester, 'Tavern');
       await tester.tap(find.text('Ask $rumorPrice'));
       await tester.pumpAndSettle();
       await tester.pageBack();
@@ -458,8 +457,7 @@ void main() {
 
       // act
       await enterTown(tester, 'Stonebridge');
-      await tester.tap(find.text('Tavern'));
-      await tester.pumpAndSettle();
+      await openTownDoor(tester, 'Tavern');
 
       // assert
       expect(find.textContaining('anything left to tell'), findsOneWidget);
@@ -474,8 +472,7 @@ void main() {
 
       // act
       await enterTown(tester, 'Stonebridge');
-      await tester.tap(find.text('Tavern'));
-      await tester.pumpAndSettle();
+      await openTownDoor(tester, 'Tavern');
       await tester.tap(find.text('Ask $rumorPrice'));
       await tester.pumpAndSettle();
 
@@ -498,8 +495,7 @@ void main() {
 
       // act
       await enterTown(tester, 'Stonebridge');
-      await tester.tap(find.text('Merchant'));
-      await tester.pumpAndSettle();
+      await openTownDoor(tester, 'Merchant');
       final here = tester
           .widgetList<Text>(find.byType(Text))
           .map((text) => text.data)
@@ -513,8 +509,7 @@ void main() {
       await backToTheWorld(tester);
       await walkTo(tester, 'Northgate');
       await enterTown(tester, 'Northgate');
-      await tester.tap(find.text('Merchant'));
-      await tester.pumpAndSettle();
+      await openTownDoor(tester, 'Merchant');
       final there = tester
           .widgetList<Text>(find.byType(Text))
           .map((text) => text.data)
@@ -544,8 +539,7 @@ void main() {
 
       // act
       await enterTown(tester, 'Stonebridge');
-      await tester.tap(find.text('Merchant'));
-      await tester.pumpAndSettle();
+      await openTownDoor(tester, 'Merchant');
       await tester.tap(find.textContaining('Buy ').first);
       await tester.pumpAndSettle();
       await tester.pageBack();
@@ -582,8 +576,7 @@ void main() {
       await walkTo(tester, 'Stonebridge');
       final home = app.saved!;
       await enterTown(tester, 'Stonebridge');
-      await tester.tap(find.text('Inn'));
-      await tester.pumpAndSettle();
+      await openTownDoor(tester, 'Inn');
       await tester.pageBack();
       await tester.pumpAndSettle();
       await backToTheWorld(tester);

@@ -44,8 +44,7 @@ void main() {
 
       // act
       await enterTown(tester, 'Stonebridge');
-      await tester.tap(find.text('Bank'));
-      await tester.pumpAndSettle();
+      await openTownDoor(tester, 'Bank');
       await tester.tap(find.text('MAX').first);
       await tester.pump();
       await tester.tap(find.text('Bank gold'));
