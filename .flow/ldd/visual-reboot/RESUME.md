@@ -31,14 +31,12 @@
   session and restored afterwards; both verify SHA-256 identical to the
   pre-session backup. The working tree is clean and no `packages/` file changed
   in this session.
-- **Unit 5 is accepted and published as
-  [PR #15](https://github.com/fiatcode-gh/residuum-rpg/pull/15)** from
-  `residuum-visual-reboot-5` at `cf27196` (code `3a78971` → `36aa0d5` →
-  `7f93bc9`, correction `0bf6da1`). Opened with user approval; **merge is
-  user-owned and has not happened.** All four CI gates pass — `gates (app)`,
-  `gates (content)`, `gates (core)` and GitGuardian. The contract commit
-  `864aa6e` lives on the branch and enters `main` through this PR, exactly as
-  Unit 4's contract did; local `main` sits clean at `origin/main` (`15e737a`).
+- **Unit 5 merged as [PR #15](https://github.com/fiatcode-gh/residuum-rpg/pull/15)**
+  at `55a226d` on 2026-09-15. The merged code is `0bf6da1`; all four CI gates
+  passed before merge. The Unit 5 contract commit `864aa6e` reached `main`
+  through the PR with the code, and `0bf6da1` is an ancestor of the current
+  main head. The earlier unmerged status in this file is superseded by this
+  source check.
 - Corrected a stale claim that was in this file: Unit 4's PR #13 **and** #14 are
   already merged into `main` (`650fa7c`, `15e737a`), and Unit 5's base descends
   from both. Earlier RESUME text saying Unit 4's merge "has not happened" was
@@ -72,6 +70,32 @@
   SHA-256 identical (`18995c4a…`, `8909f70c…`). The AVD here is now
   `Medium_Phone` (Android 17), not `Pixel_10`, and it segfaults when launched
   from a tool shell — ask the user to start it.
+- **Unit 6 is accepted and committed locally** as `89927ef` on
+  `residuum-visual-reboot-6` at source base `55a226d`, with
+  [PR #16](https://github.com/fiatcode-gh/residuum-rpg/pull/16) open. It
+  replaces the crawl long Pack with `CrawlPackScreen`/shared `PackContents`,
+  and makes town Character a compact route hub for Gear, read-only Spells,
+  Skills, and Pack.
+- Acceptance review returned **ACCEPT** (COR/TTC/CRF PASS; SEC skip). A bounded
+  follow-up keeps the selected Pack ChoiceChip semantically enabled while its
+  no-op tap preserves game/log identity, and corrects stale known-spell
+  ownership dartdoc. Final Main evidence from `packages/app`: `dart format`
+  checked 97 files with 0 changes, `flutter analyze` found no issues, and full
+  `flutter test` passed **789 tests**.
+- The Unit 6 device gate passed on user-started `Medium_Phone` (Android 17,
+  1080x2400). Evidence under
+  `.flow/evidence/visual-reboot/unit-6-device/` covers the Character overview,
+  Gear, empty Spells, Skills, town Pack, and corrected crawl Pack in normal
+  colour and greyscale. All six filters were exercised; check mark, label, and
+  position identify the active filter in greyscale. Filter Books → back leaves
+  the app frame pixel-identical to its pre-filter state (`0 (0)` differing
+  pixels after status-bar crop).
+- Both device saves were copied before install and restored after all driving.
+  Final on-device SHA-256 matches the backups: `save.json`
+  `18995c4…b46d3`; `save-previous.json` `8909f70c…a9b11`. The app is stopped.
+  No commit, push, pull request, or merge is authorized. Exact next action:
+  obtain the user's integration decision, or begin Unit 7 only after its
+  product/design contract is independently settled.
 - Sequencing decided with the user: keep the original 1 → 8 order, no chrome or
   asset unit interleaved, and plan the art pass only after Unit 8. Remaining
   unowned HUD chrome is the depth header, labelled HP/Mana bars, and icon

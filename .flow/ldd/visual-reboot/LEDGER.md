@@ -61,8 +61,8 @@ The epic was opened from an approved external planning handoff:
 | Unit 2 — graphical dungeon language | Unit 1 | accepted | 721 app tests, analyzer, corrective COR/TTC/CRF, Pixel_10 AVD and greyscale pass | cold-charcoal continuous material, warm clipped light, strict no-geometry-leak fog |
 | Unit 3 — crawl interaction reboot | Unit 2 | merged; device evidence pending | 736 app tests, analyzer, review pass; AVD blocked on this host | map-first melee; favorites + overflow |
 | Unit 4 — turn timeline + duplicate identity | Unit 3 | interrupted acceptance; WIP checkpoint | initial full app 764 + analyzer clean; first correction full app 765 + analyzer clean; final semantics fix focused 34 + focused analyze clean; closure/final-tree broad/device gates pending | head `0d27a186`; session limit stopped the combined AVD gate during encounter search |
-| Unit 5 — log drawer | Unit 3 | **accepted**; PR #15 open, unmerged | 797 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT WITH FINDINGS, all must-fix corrected; full criterion 12 colour + greyscale device gate on `emulator-5554` | head `0bf6da1`; peek above controls, half/full overlay, bloc-owned follow/unread, ten-member `LogCategory`; contract: `units/unit-5/CONTRACT.md` |
-| Unit 6 — character / spells / pack | Unit 3 | pending | no duplicated information architecture | consolidation |
+| Unit 5 — log drawer | Unit 3 | **merged** to `main` | 797 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT WITH FINDINGS, all must-fix corrected; full criterion 12 colour + greyscale device gate on `emulator-5554` | merged by PR #15 at `55a226d`; `0bf6da1` is an ancestor; contract: `units/unit-5/CONTRACT.md` |
+| Unit 6 — character / spells / pack | Unit 3 | **accepted locally; uncommitted** | 789 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT; Medium_Phone colour/greyscale device gate | source base `55a226d`; contract: `units/unit-6/CONTRACT.md` |
 | Unit 7 — town + rooms + heroes | Unit 6 | pending | transactional/refusal semantics preserved | art bible locked before static art |
 | Unit 8 — world + theme parity | Unit 7 | pending | final accessibility + device-size pass | Sea-Cave/Keep material identity |
 
@@ -607,3 +607,66 @@ Append-only. Supersede old decisions; do not rewrite history.
   later actor-label decoration.
 - `Market` in the handoff is stale: the current town door is `Merchant`, and
   Heroes is entered from the world screen.
+
+### Unit 6
+
+- 2026-09-15 — Unit 6 source recon completed at `55a226d`, after PR #15
+  merged. The two current long pages duplicate stats, spells, worn gear,
+  carried items, materials, and skills; their item rows are not cosmetic:
+  crawl dispatches drink/read/wear/drop, town dispatches wear/read/take-off.
+  The user settled the information architecture: Character is a concise
+  overview with Gear, Spells, Skills, and Pack routes; Spells is read-only and
+  crawl casting remains exclusively on the exhaustive Unit 3 shelf/overflow;
+  Pack filters only All, Weapons, Armour, Potions, Books, and Materials as
+  transient presentation state. `units/unit-6/{recon,CONTRACT}.md` are the
+  authority. No production code changed.
+
+- 2026-09-15 — Unit 6 execution plan accepted at source base `55a226d`.
+  `PLAN.md` and its two fresh-executor tasks pass the integrated planning gate:
+  COR/TTC/CRF PASS; SEC skip because this is local Flutter presentation with no
+  new trust boundary. The graph is `01-filtered-crawl-pack` then
+  `02-town-character-and-routes`, then Main formatter/analyzer/full-suite,
+  scope/review, and device gates. The shared `PackContents` seam is deliberately
+  the sole cross-task interface; it retains local filter state across bloc
+  rebuilds and resets on route disposal. First implementation task is ready.
+
+### Unit 6 acceptance receipt
+
+- 2026-09-15 — **Unit 6 is accepted locally** on
+  `residuum-visual-reboot-6`, with `55a226d` as its source base. It is committed
+  locally as `89927ef` and open as
+  [PR #16](https://github.com/fiatcode-gh/residuum-rpg/pull/16); no merge or
+  other remote action is authorized. The crawl long Pack is replaced by
+  `CrawlPackScreen`/shared `PackContents`; town Character is an overview that
+  routes to Gear, read-only Spells, Skills, and town Pack. Core, content,
+  saves, dependencies, and generated paths remain untouched.
+- The independent acceptance review returned **ACCEPT**: COR, TTC, and CRF
+  passed; SEC was skipped because no trust boundary changed. Its selected-chip
+  accessibility observation was corrected before device evidence: the active
+  ChoiceChip remains selected **and enabled**, and tapping it is a local
+  no-op. Its stale known-spell ownership dartdoc observation was also
+  corrected. The optional route-specific ordering-test observation is recorded
+  as accepted risk, not a behavior defect: shared ordering owners and existing
+  tests cover the current contract.
+- Fresh final app evidence from `packages/app`: `dart format
+  --set-exit-if-changed --output=none lib test` checked 97 files with 0
+  changes; `flutter analyze` found no issues; `flutter test` passed **789
+  tests**. The correction's focused semantic proof passed 18 Pack tests and
+  asserts the selected filter is both selected and enabled while the game and
+  log object identities remain unchanged.
+- Current-phone evidence is in
+  `.flow/evidence/visual-reboot/unit-6-device/`. `Medium_Phone` (Android 17,
+  1080x2400) shows the compact Character overview, Gear, Spells, Skills, town
+  Pack, and crawl Pack in normal colour and greyscale. Every locked filter was
+  exercised on the corrected crawl Pack; `ev-corrected-crawl-pack-all*` and
+  `ev-corrected-crawl-pack-books*` show the selected check mark, label, and
+  position remaining legible in greyscale. The captured hero had no learned
+  spell, so device evidence shows the honest empty grimoire while the full
+  widget suite proves nonempty spell-row facts and read-only behavior.
+- Filter navigation was shown not to spend a turn: after opening Pack,
+  selecting Books, and returning, the cropped app frames are pixel-identical
+  (`magick compare -metric AE`: `0 (0)`) in
+  `ev-filter-no-turn-{before,after}-app.png`. Both device save slots were
+  copied before install and restored after capture. Their final SHA-256 values
+  exactly match the backups: `save.json` `18995c4…b46d3` and
+  `save-previous.json` `8909f70c…a9b11`.

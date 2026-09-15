@@ -9,6 +9,8 @@ import 'log_line.dart';
 import 'actor_presentation.dart';
 import 'activation_timeline.dart';
 
+import 'spell_row.dart';
+
 sealed class GameBlocEvent {
   const GameBlocEvent();
 }
@@ -503,22 +505,13 @@ class GameViewState {
   /// What is left of the hero's ward, or zero when none stands.
   int get warded => game.warded;
 
-  /// Every spell the hero can cast, in the order the pack screen lists them.
+  /// Every known spell, in the order shared by the crawl shelf and Spells room.
   ///
   /// School first and then name, so a spell keeps its place in the list from one
-  /// screen to the next. Position is information a player relies on, which is the
-  /// whole reason the pack's own sections are in a fixed order too.
-  List<Spell> get knownSpells {
-    final known = [
-      for (final id in game.knownSpells)
-        if (game.spells[id] case final Spell spell) spell,
-    ];
-    known.sort((one, other) {
-      final bySchool = one.school.index.compareTo(other.school.index);
-      return bySchool != 0 ? bySchool : one.name.compareTo(other.name);
-    });
-    return known;
-  }
+  /// surface to the next. Position is information a player relies on, which is
+  /// the whole reason those surfaces use a fixed order.
+  List<Spell> get knownSpells =>
+      knownSpellsInOrder(game.knownSpells, game.spells);
 
   /// Every spell book in the pack, so the screen can offer Read on each.
   List<Item> get carriedBooks => [

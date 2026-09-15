@@ -192,3 +192,13 @@ int _byShelfOrder(Item one, Item other) {
 }
 
 int _slotRank(Item item) => item.base.slot?.index ?? EquipSlot.values.length;
+
+/// What the six slots are called, in the player's words rather than Dart's.
+String slotLabel(EquipSlot slot) => switch (slot) {
+  EquipSlot.mainHand => 'main hand',
+  EquipSlot.offHand => 'off hand',
+  EquipSlot.head => 'head',
+  EquipSlot.chest => 'chest',
+  EquipSlot.hands => 'hands',
+  EquipSlot.feet => 'feet',
+};

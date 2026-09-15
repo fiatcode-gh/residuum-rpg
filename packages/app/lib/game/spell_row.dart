@@ -10,12 +10,11 @@ import 'package:residuum_core/core.dart';
 /// correctly in greyscale and aloud.
 ///
 /// One grammar for every screen that lists known spells, carried here because
-/// a fourth private copy was the threshold the craft rules forbid. The screens
-/// differ only in what they hang on the row, and each hangs its own: the Pack
-/// offers the cast and speaks the refusal, the character room reads alone, and
-/// the battle skill bar keeps the facts and drops the layout. Text styles are
-/// parameters rather than decisions, so a screen keeps the type it shipped
-/// with and the lift moves no pixel.
+/// a fourth private copy was the threshold the craft rules forbid. The dedicated
+/// Spells room reads alone, while the Unit 3 shelf overflow offers the cast
+/// action. The Pack has no known-spell list and keeps only its carried-item
+/// actions. Text styles are parameters rather than decisions, so a screen keeps
+/// the type it shipped with and the lift moves no pixel.
 class SpellRow extends StatelessWidget {
   const SpellRow({
     super.key,
@@ -46,7 +45,7 @@ class SpellRow extends StatelessWidget {
   /// player can act on; a dimmed control is a thing they have to guess at.
   final String? reason;
 
-  /// The row's action, if the screen offers one — the Pack's Cast button.
+  /// The row's optional trailing action, if the screen offers one.
   final Widget? trailing;
 
   @override
@@ -76,6 +75,18 @@ class SpellRow extends StatelessWidget {
       ],
     ),
   );
+}
+
+List<Spell> knownSpellsInOrder(Set<String> ids, Map<String, Spell> spells) {
+  final known = [
+    for (final id in ids)
+      if (spells[id] case final Spell spell) spell,
+  ];
+  known.sort((one, other) {
+    final bySchool = one.school.index.compareTo(other.school.index);
+    return bySchool != 0 ? bySchool : one.name.compareTo(other.name);
+  });
+  return known;
 }
 
 /// What a spell does, in the numbers the player is choosing between.
