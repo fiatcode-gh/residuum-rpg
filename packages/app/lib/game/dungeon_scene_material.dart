@@ -3,36 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 
 import 'dungeon_material.dart';
+import 'dungeon_palette.dart';
 import 'glyph_plan.dart';
 import 'grid_geometry.dart';
 
-/// The art-bible material anchors for the Crypt baseline.
-///
-/// These are the 2026-09-13 approved anchors from
-/// `.flow/ldd/visual-reboot/units/unit-2/ART-BIBLE.md`. Exact values may tune
-/// during device acceptance without reopening the direction.
 const Color dungeonVoid = Color(0xFF050607);
-const Color rememberedStoneColor = Color(0xFF1A1E20);
-const Color _visibleStone = Color(0xFF292A27);
-const Color _stoneEdge = Color(0xFF48463F);
-const Color _warmInk = Color(0xFFD4B77B);
-const Color _hotLight = Color(0xFFE8C58A);
 
-/// How far the warm light lifts stone value at full presentation light.
-///
-/// Light alters value first, hue second, so the lift is capped well below a
-/// game-like glow: lit stone stays charcoal with warmth, not amber.
-const double _maxLightLift = 0.30;
+enum SurfacePattern { none, tideStrata, ashlarFracture, roadWear }
 
-/// How much of the lift may go into warmth once the value step is paid.
-const double _maxWarmth = 0.12;
-
-/// The warm light color mixed onto lit stone, by presentation light value.
-Color stoneLitColor(double light) {
-  final warmed = Color.lerp(_visibleStone, _hotLight, _maxWarmth * light)!;
+Color stoneLitColor(DungeonPalette palette, double light) {
+  final warmed = Color.lerp(
+    palette.visibleStone,
+    palette.lightInk,
+    palette.maxTintMix * light,
+  )!;
   final hsl = HSLColor.fromColor(warmed);
   return hsl
-      .withLightness((hsl.lightness + _maxLightLift * light).clamp(0.0, 1.0))
+      .withLightness(
+        (hsl.lightness + palette.maxLightLift * light).clamp(0.0, 1.0),
+      )
       .toColor();
 }
 
@@ -49,6 +38,8 @@ class MaterialCellPaint {
     required this.gritStrength,
     required this.speck,
     required this.crackStrength,
+    required this.pattern,
+    required this.patternStrength,
   });
 
   /// The stone surface color for the cell.
@@ -66,6 +57,10 @@ class MaterialCellPaint {
   /// 0..1 hairline-crack strength; 0 means no crack.
   final double crackStrength;
 
+  final SurfacePattern pattern;
+
+  final double patternStrength;
+
   @override
   bool operator ==(Object other) =>
       other is MaterialCellPaint &&
@@ -73,11 +68,20 @@ class MaterialCellPaint {
       other.edge == edge &&
       other.gritStrength == gritStrength &&
       other.speck == speck &&
-      other.crackStrength == crackStrength;
+      other.crackStrength == crackStrength &&
+      other.pattern == pattern &&
+      other.patternStrength == patternStrength;
 
   @override
-  int get hashCode =>
-      Object.hash(fill, edge, gritStrength, speck, crackStrength);
+  int get hashCode => Object.hash(
+    fill,
+    edge,
+    gritStrength,
+    speck,
+    crackStrength,
+    pattern,
+    patternStrength,
+  );
 }
 
 /// Walls carry a stronger surface response than floors.
@@ -109,23 +113,24 @@ Path visibleMaterialMask(MaterialPlan plan) {
 /// Decides one known tile's material paint.
 ///
 /// Remembered geometry paints flat, dark, and unlit — one value for the whole
-/// remembered region. Visible geometry shares one neutral stone foundation;
-/// the canvas applies its warm local gradient in a single clipped pass so
-/// logical cells cannot turn into stepped light squares. Masonry walls share
-/// one continuous surface treatment while exposed faces carry their own edge.
+/// remembered region. Visible geometry shares one regional stone foundation;
+/// the canvas applies its local gradient in a single clipped pass.
 MaterialCellPaint materialCellPaint(
   MaterialCell cell, {
+  required DungeonPalette palette,
   required bool masonry,
 }) {
   if (cell.knowledge == MaterialKnowledge.remembered) {
     return MaterialCellPaint(
-      fill: rememberedStoneColor,
+      fill: palette.rememberedStone,
       edge: masonry ? 0.06 : 0.12,
       gritStrength: cell.kind == MaterialTileKind.wall
           ? 0.05
           : 0.05 / _wallGritFactor,
       speck: false,
       crackStrength: 0.0,
+      pattern: SurfacePattern.none,
+      patternStrength: 0.0,
     );
   }
 
@@ -133,12 +138,63 @@ MaterialCellPaint materialCellPaint(
   final stairs =
       cell.kind == MaterialTileKind.stairsDown ||
       cell.kind == MaterialTileKind.stairsUp;
+  final (
+    edge,
+    grit,
+    pattern,
+    patternStrength,
+    crackStrength,
+    speck,
+  ) = switch (palette.material) {
+    RegionMaterial.cryptStone => (
+      wall ? 0.55 : 0.0,
+      wall ? 0.08 * _wallGritFactor : 0.08,
+      SurfacePattern.none,
+      0.0,
+      wall && !masonry ? 0.5 : 0.0,
+      !wall && !stairs,
+    ),
+    RegionMaterial.seaCaveStone => (
+      wall ? 0.42 : 0.0,
+      wall ? 0.10 : 0.055,
+      stairs ? SurfacePattern.none : SurfacePattern.tideStrata,
+      stairs
+          ? 0.0
+          : wall
+          ? 0.36
+          : 0.20,
+      0.0,
+      !wall && !stairs,
+    ),
+    RegionMaterial.ruinedKeepMasonry => (
+      wall ? 0.68 : 0.0,
+      wall ? 0.15 : 0.07,
+      stairs ? SurfacePattern.none : SurfacePattern.ashlarFracture,
+      stairs
+          ? 0.0
+          : wall
+          ? 0.45
+          : 0.28,
+      wall && !masonry ? 0.70 : 0.0,
+      !wall && !stairs,
+    ),
+    RegionMaterial.lowlandRoad => (
+      wall ? 0.32 : 0.0,
+      wall ? 0.07 : 0.045,
+      wall || stairs ? SurfacePattern.none : SurfacePattern.roadWear,
+      wall || stairs ? 0.0 : 0.24,
+      0.0,
+      false,
+    ),
+  };
   return MaterialCellPaint(
-    fill: _visibleStone,
-    edge: wall ? 0.55 : 0.0,
-    gritStrength: wall ? 0.08 * _wallGritFactor : 0.08,
-    speck: !wall && !stairs,
-    crackStrength: wall && !masonry ? 0.5 : 0.0,
+    fill: palette.visibleStone,
+    edge: stairs ? 0.0 : edge,
+    gritStrength: grit,
+    speck: stairs ? false : speck,
+    crackStrength: stairs ? 0.0 : crackStrength,
+    pattern: stairs ? SurfacePattern.none : pattern,
+    patternStrength: stairs ? 0.0 : patternStrength,
   );
 }
 
@@ -192,8 +248,12 @@ class MaterialComponent extends PositionComponent {
           mark: plan.markAt(cell.position)!,
           paint: materialCellPaint(
             cell,
+            palette: plan.palette,
             masonry: plan.masonryAt(cell.position),
           ),
+          palette: plan.palette,
+          kind: cell.kind,
+          patternPhase: plan.markAt(cell.position)!.pattern,
           rect: _cellRect(cell),
           faces: _wallFaces(cell, knownWalls),
         ),
@@ -206,8 +266,12 @@ class MaterialComponent extends PositionComponent {
     );
     final radius = (fovRadius + 1) * cameraCellSize;
     _visibleLight = Paint()
-      ..shader = RadialGradient(colors: [stoneLitColor(1), stoneLitColor(0)])
-          .createShader(Rect.fromCircle(center: heroCenter, radius: radius));
+      ..shader = RadialGradient(
+        colors: [
+          stoneLitColor(plan.palette, 1),
+          stoneLitColor(plan.palette, 0),
+        ],
+      ).createShader(Rect.fromCircle(center: heroCenter, radius: radius));
   }
 
   @override
@@ -238,6 +302,13 @@ class MaterialComponent extends PositionComponent {
   void _drawCellDecoration(Canvas canvas, _PreparedMaterialCell cell) {
     if (cell.gritPaint != null) {
       canvas.drawRect(cell.gritRect!, cell.gritPaint!);
+    }
+    if (cell.patternPaint != null) {
+      canvas
+        ..save()
+        ..clipRect(cell.rect)
+        ..drawPath(cell.patternPath!, cell.patternPaint!)
+        ..restore();
     }
     if (cell.speckPaint != null) {
       canvas.drawCircle(cell.speckCenter!, 1.6, cell.speckPaint!);
@@ -275,6 +346,8 @@ class _PreparedMaterialCell {
     required this.basePaint,
     required this.gritRect,
     required this.gritPaint,
+    required this.patternPath,
+    required this.patternPaint,
     required this.speckCenter,
     required this.speckPaint,
     required this.crackPath,
@@ -286,6 +359,9 @@ class _PreparedMaterialCell {
   factory _PreparedMaterialCell.from({
     required MaterialMark mark,
     required MaterialCellPaint paint,
+    required DungeonPalette palette,
+    required MaterialTileKind kind,
+    required double patternPhase,
     required Rect rect,
     required _WallFaces faces,
   }) {
@@ -300,15 +376,15 @@ class _PreparedMaterialCell {
             1.2,
           );
     final crackPath = paint.crackStrength > 0 && mark.crack > 0
-        ? (Path()
-            ..moveTo(rect.left + 4, rect.top + 6)
-            ..quadraticBezierTo(
-              rect.left + cameraCellSize * 0.5,
-              rect.top + cameraCellSize * 0.55,
-              rect.right - 3,
-              rect.top + cameraCellSize * 0.35,
-            ))
+        ? _crackPath(rect, palette.material)
         : null;
+    final patternPath = _patternPath(
+      rect: rect,
+      kind: kind,
+      pattern: paint.pattern,
+      strength: paint.patternStrength,
+      phase: patternPhase,
+    );
     final inner = rect.deflate(_wallEdgeInset);
     final edgePath = Path();
     if (paint.edge > 0 && faces.hasAny) {
@@ -333,13 +409,24 @@ class _PreparedMaterialCell {
           ..lineTo(inner.left, inner.top);
       }
     }
+    final rounded = palette.material == RegionMaterial.seaCaveStone;
     return _PreparedMaterialCell._(
       rect: rect,
       basePaint: Paint()..color = paint.fill,
       gritRect: gritRect,
       gritPaint: gritRect == null
           ? null
-          : (Paint()..color = _warmInk.withValues(alpha: gritAlpha)),
+          : (Paint()..color = palette.detailInk.withValues(alpha: gritAlpha)),
+      patternPath: patternPath,
+      patternPaint: patternPath == null
+          ? null
+          : (Paint()
+              ..color = palette.detailInk.withValues(
+                alpha: (0.18 + paint.patternStrength * 0.42).clamp(0.0, 1.0),
+              )
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 1
+              ..strokeCap = rounded ? StrokeCap.round : StrokeCap.butt),
       speckCenter: paint.speck && mark.speck
           ? Offset(
               rect.left + cameraCellSize * 0.35 + mark.grit * 10,
@@ -347,7 +434,7 @@ class _PreparedMaterialCell {
             )
           : null,
       speckPaint: paint.speck && mark.speck
-          ? (Paint()..color = _stoneEdge.withValues(alpha: 0.35))
+          ? (Paint()..color = palette.edgeInk.withValues(alpha: 0.35))
           : null,
       crackPath: crackPath,
       crackPaint: crackPath == null
@@ -360,12 +447,12 @@ class _PreparedMaterialCell {
       edgePaint: edgePath.getBounds().isEmpty
           ? null
           : (Paint()
-              ..color = _stoneEdge.withValues(
+              ..color = palette.edgeInk.withValues(
                 alpha: 0.15 + (paint.edge * mark.edge).clamp(0.0, 1.0) * 0.4,
               )
               ..style = PaintingStyle.stroke
               ..strokeWidth = _wallEdgeStrokeWidth
-              ..strokeCap = StrokeCap.butt),
+              ..strokeCap = rounded ? StrokeCap.round : StrokeCap.butt),
     );
   }
 
@@ -373,12 +460,77 @@ class _PreparedMaterialCell {
   final Paint basePaint;
   final Rect? gritRect;
   final Paint? gritPaint;
+  final Path? patternPath;
+  final Paint? patternPaint;
   final Offset? speckCenter;
   final Paint? speckPaint;
   final Path? crackPath;
   final Paint? crackPaint;
   final Path edgePath;
   final Paint? edgePaint;
+}
+
+Path _crackPath(Rect rect, RegionMaterial material) {
+  if (material == RegionMaterial.ruinedKeepMasonry) {
+    return Path()
+      ..moveTo(rect.left + 5, rect.top + 8)
+      ..lineTo(rect.left + cameraCellSize * 0.48, rect.top + 16)
+      ..lineTo(rect.right - 5, rect.top + 9);
+  }
+  return Path()
+    ..moveTo(rect.left + 4, rect.top + 6)
+    ..quadraticBezierTo(
+      rect.left + cameraCellSize * 0.5,
+      rect.top + cameraCellSize * 0.55,
+      rect.right - 3,
+      rect.top + cameraCellSize * 0.35,
+    );
+}
+
+Path? _patternPath({
+  required Rect rect,
+  required MaterialTileKind kind,
+  required SurfacePattern pattern,
+  required double strength,
+  required double phase,
+}) {
+  if (pattern == SurfacePattern.none || strength <= 0) return null;
+  final safe = rect.deflate(5);
+  final shift = phase.clamp(0.0, 1.0) * 5;
+  switch (pattern) {
+    case SurfacePattern.tideStrata:
+      final path = Path()
+        ..moveTo(safe.left + shift, safe.top + 6)
+        ..lineTo(safe.left + safe.width * 0.43, safe.top + 6)
+        ..moveTo(safe.left + safe.width * 0.57, safe.top + 6)
+        ..lineTo(safe.right - shift, safe.top + 6)
+        ..moveTo(safe.left + 2.5 + shift, safe.bottom - 7)
+        ..lineTo(safe.left + safe.width * 0.34, safe.bottom - 7)
+        ..moveTo(safe.left + safe.width * 0.50, safe.bottom - 7)
+        ..lineTo(safe.right - 2.5 - shift, safe.bottom - 7);
+      return path;
+    case SurfacePattern.ashlarFracture:
+      if (kind == MaterialTileKind.floor && phase >= 0.28) return null;
+      if (kind == MaterialTileKind.wall) {
+        return Path()
+          ..moveTo(safe.left + 2 + shift, safe.top + 8)
+          ..lineTo(safe.left + safe.width * 0.50, safe.top + 8)
+          ..lineTo(safe.left + safe.width * 0.50, safe.top + 16);
+      }
+      return Path()
+        ..moveTo(safe.left + 3 + shift, safe.top + 10)
+        ..lineTo(safe.left + safe.width * 0.48, safe.top + 18)
+        ..lineTo(safe.right - 3, safe.top + 11);
+    case SurfacePattern.roadWear:
+      if (kind != MaterialTileKind.floor) return null;
+      return Path()
+        ..moveTo(safe.left + 4 + shift, safe.bottom - 9)
+        ..lineTo(safe.left + safe.width * 0.42 + shift, safe.top + 9)
+        ..moveTo(safe.left + safe.width * 0.55 + shift, safe.bottom - 9)
+        ..lineTo(safe.right - 4, safe.top + 9);
+    case SurfacePattern.none:
+      return null;
+  }
 }
 
 class _WallFaces {

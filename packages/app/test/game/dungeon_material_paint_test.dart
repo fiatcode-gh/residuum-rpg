@@ -46,6 +46,21 @@ GameState _game({
 );
 
 MaterialPlan _plan(GameState game) => materialPlan(game, DungeonPalette.crypt);
+MaterialCellPaint _paint(MaterialPlan plan, MaterialCell cell) =>
+    materialCellPaint(
+      cell,
+      palette: plan.palette,
+      masonry: plan.masonryAt(cell.position),
+    );
+
+Future<ByteData> _renderBytes(MaterialPlan plan) async {
+  final image = await _renderMaterial(MaterialComponent(plan));
+  try {
+    return await _rgba(image);
+  } finally {
+    image.dispose();
+  }
+}
 
 Future<ui.Image> _renderMaterial(MaterialComponent component) {
   final recorder = ui.PictureRecorder();
@@ -67,10 +82,44 @@ Color _pixel(ByteData rgba, int x, int y) {
   );
 }
 
+Uint8List _bytes(ByteData data) =>
+    Uint8List.view(data.buffer, data.offsetInBytes, data.lengthInBytes);
+
+MaterialPlan _singleCellPlan({
+  required DungeonPalette palette,
+  required MaterialTileKind kind,
+  double pattern = 0,
+}) {
+  const position = Position(1, 1);
+  return MaterialPlan(
+    cells: [
+      MaterialCell(
+        position: position,
+        kind: kind,
+        knowledge: MaterialKnowledge.visible,
+      ),
+    ],
+    marks: {
+      position: MaterialMark(
+        grit: 0,
+        speck: false,
+        crack: 0,
+        edge: 0,
+        pattern: pattern,
+      ),
+    },
+    masonry: const {},
+    heroPosition: position,
+    palette: palette,
+  );
+}
+
 int _channel(ByteData rgba, int x, int y, int channel) =>
     rgba.getUint8((y * 12 * 36 + x) * 4 + channel);
 
 int _at(double cell) => (cell * cameraCellSize).round();
+double _value(Color colour) =>
+    0.2126 * colour.r + 0.7152 * colour.g + 0.0722 * colour.b;
 
 void main() {
   group('the material paint decisions', () {
@@ -84,20 +133,12 @@ void main() {
       );
 
       // act
-      final paint = materialCellPaint(
-        plan.cellAt(remembered)!,
-        masonry: plan.masonryAt(remembered),
-      );
+      final paint = _paint(plan, plan.cellAt(remembered)!);
 
-      expect(paint.fill, rememberedStoneColor);
+      expect(paint.fill, DungeonPalette.crypt.rememberedStone);
       expect(
         paint.fill,
-        isNot(
-          materialCellPaint(
-            plan.cellAt(const Position(2, 1))!,
-            masonry: plan.masonryAt(const Position(2, 1)),
-          ).fill,
-        ),
+        isNot(_paint(plan, plan.cellAt(const Position(2, 1))!).fill),
       );
     });
 
@@ -108,14 +149,8 @@ void main() {
       final plan = _plan(_game(visible: visible, explored: visible, map: map));
 
       // act — these same floor cells receive different local-light amounts.
-      final atHero = materialCellPaint(
-        plan.cellAt(const Position(1, 1))!,
-        masonry: plan.masonryAt(const Position(1, 1)),
-      );
-      final far = materialCellPaint(
-        plan.cellAt(const Position(1, 3))!,
-        masonry: plan.masonryAt(const Position(1, 3)),
-      );
+      final atHero = _paint(plan, plan.cellAt(const Position(1, 1))!);
+      final far = _paint(plan, plan.cellAt(const Position(1, 3))!);
 
       // assert — a tile must not encode the local-light gradient in its solid
       // fill, or every logical cell becomes a visible lighting step. The
@@ -214,11 +249,24 @@ void main() {
             ),
           ],
           marks: {
-            visible: MaterialMark(grit: 0, speck: false, crack: 0, edge: 0),
-            remembered: MaterialMark(grit: 0, speck: false, crack: 0, edge: 0),
+            visible: MaterialMark(
+              grit: 0,
+              speck: false,
+              crack: 0,
+              edge: 0,
+              pattern: 0,
+            ),
+            remembered: MaterialMark(
+              grit: 0,
+              speck: false,
+              crack: 0,
+              edge: 0,
+              pattern: 0,
+            ),
           },
           masonry: {},
           heroPosition: heroPosition,
+          palette: DungeonPalette.crypt,
         );
 
         final nearImage = await _renderMaterial(
@@ -233,8 +281,8 @@ void main() {
         final near = _pixel(await _rgba(nearImage), _at(3.5), _at(1.5));
         final far = _pixel(await _rgba(farImage), _at(3.5), _at(1.5));
 
-        expect(near, rememberedStoneColor);
-        expect(far, rememberedStoneColor);
+        expect(near, DungeonPalette.crypt.rememberedStone);
+        expect(far, DungeonPalette.crypt.rememberedStone);
       },
     );
 
@@ -279,13 +327,26 @@ void main() {
         _pixel(movedRgba, _at(3.5), _at(1.94)).computeLuminance(),
         greaterThan(_pixel(movedRgba, _at(1.5), _at(1.94)).computeLuminance()),
       );
+      final sea = materialPlan(
+        _game(
+          map: map,
+          visible: known,
+          explored: known,
+          heroPosition: secondHero,
+        ),
+        DungeonPalette.seaCave,
+      );
+      component.adopt(sea);
+      final seaRgba = await _renderBytes(sea);
+      expect(identical(component.plan, sea), isTrue);
+      expect(_bytes(seaRgba), isNot(orderedEquals(_bytes(movedRgba))));
     });
 
     test('lift stone value before hue as light grows', () {
       // arrange
 
-      final dim = stoneLitColor(0.2);
-      final bright = stoneLitColor(0.8);
+      final dim = stoneLitColor(DungeonPalette.crypt, 0.2);
+      final bright = stoneLitColor(DungeonPalette.crypt, 0.8);
 
       // act
       final dimHsl = HSLColor.fromColor(dim);
@@ -317,11 +378,24 @@ void main() {
           ),
         ],
         marks: {
-          left: MaterialMark(grit: 0, speck: false, crack: 0, edge: 1),
-          right: MaterialMark(grit: 0, speck: false, crack: 0, edge: 1),
+          left: MaterialMark(
+            grit: 0,
+            speck: false,
+            crack: 0,
+            edge: 1,
+            pattern: 0,
+          ),
+          right: MaterialMark(
+            grit: 0,
+            speck: false,
+            crack: 0,
+            edge: 1,
+            pattern: 0,
+          ),
         },
         masonry: {},
         heroPosition: left,
+        palette: DungeonPalette.crypt,
       );
       final coveredWestPlan = MaterialPlan(
         cells: [
@@ -333,11 +407,18 @@ void main() {
           ...plan.cells,
         ],
         marks: {
-          coveredWest: MaterialMark(grit: 0, speck: false, crack: 0, edge: 1),
+          coveredWest: MaterialMark(
+            grit: 0,
+            speck: false,
+            crack: 0,
+            edge: 1,
+            pattern: 0,
+          ),
           ...plan.marks,
         },
         masonry: plan.masonry,
         heroPosition: plan.heroPosition,
+        palette: DungeonPalette.crypt,
       );
       final image = await _renderMaterial(MaterialComponent(plan));
       addTearDown(image.dispose);
@@ -387,9 +468,18 @@ void main() {
             knowledge: MaterialKnowledge.visible,
           ),
         ],
-        marks: {wall: MaterialMark(grit: 0, speck: false, crack: 0, edge: 1)},
+        marks: {
+          wall: MaterialMark(
+            grit: 0,
+            speck: false,
+            crack: 0,
+            edge: 1,
+            pattern: 0,
+          ),
+        },
         masonry: const {},
         heroPosition: wall,
+        palette: DungeonPalette.crypt,
       );
       final image = await _renderMaterial(MaterialComponent(plan));
       addTearDown(image.dispose);
@@ -432,22 +522,14 @@ void main() {
         // act
         final rendered = [
           for (final cell in plan.cells)
-            if (materialCellPaint(
-                      cell,
-                      masonry: plan.masonryAt(cell.position),
-                    ).crackStrength >
-                    0 &&
+            if (_paint(plan, cell).crackStrength > 0 &&
                 plan.markAt(cell.position)!.crack > 0)
               cell.position,
         ];
         final floorsCracked = [
           for (final cell in plan.cells)
             if (cell.kind == MaterialTileKind.floor &&
-                materialCellPaint(
-                      cell,
-                      masonry: plan.masonryAt(cell.position),
-                    ).crackStrength >
-                    0)
+                _paint(plan, cell).crackStrength > 0)
               cell.position,
         ];
 
@@ -477,11 +559,8 @@ void main() {
 
         // assert — masonry membership gates cracks, not a whole-tile outline;
         // the cached topology pass alone decides which outer faces render.
-        expect(materialCellPaint(massCell, masonry: true).edge, greaterThan(0));
-        expect(
-          materialCellPaint(loneCell, masonry: false).edge,
-          greaterThan(0),
-        );
+        expect(_paint(plan, massCell).edge, greaterThan(0));
+        expect(_paint(plan, loneCell).edge, greaterThan(0));
       },
     );
 
@@ -516,14 +595,8 @@ void main() {
       final plan = _plan(_game(visible: visible, explored: visible, map: map));
 
       // act
-      final wallPaint = materialCellPaint(
-        plan.cellAt(const Position(2, 0))!,
-        masonry: true,
-      );
-      final floorPaint = materialCellPaint(
-        plan.cellAt(const Position(2, 1))!,
-        masonry: false,
-      );
+      final wallPaint = _paint(plan, plan.cellAt(const Position(2, 0))!);
+      final floorPaint = _paint(plan, plan.cellAt(const Position(2, 1))!);
 
       // assert — structure carries more material response than the quiet
       // stone field, while floors carry no structural ornament.
@@ -548,8 +621,16 @@ void main() {
       );
 
       // act
-      final stairsPaint = materialCellPaint(stairs, masonry: false);
-      final floorPaint = materialCellPaint(twinFloor, masonry: false);
+      final stairsPaint = materialCellPaint(
+        stairs,
+        palette: DungeonPalette.crypt,
+        masonry: false,
+      );
+      final floorPaint = materialCellPaint(
+        twinFloor,
+        palette: DungeonPalette.crypt,
+        masonry: false,
+      );
 
       // assert — the material stays continuous; the final glyph layer, not a
       // highlighted tile square, keeps the semantic exit findable.
@@ -570,13 +651,10 @@ void main() {
       final rememberedFloor = plan.cellAt(remembered)!;
 
       // act
-      final paint = materialCellPaint(
-        rememberedFloor,
-        masonry: plan.masonryAt(remembered),
-      );
-      final visibleFloorPaint = materialCellPaint(
+      final paint = _paint(plan, rememberedFloor);
+      final visibleFloorPaint = _paint(
+        plan,
         plan.cellAt(const Position(2, 1))!,
-        masonry: plan.masonryAt(const Position(2, 1)),
       );
 
       // assert — the remembered floor keeps a faint grit trace (the geometry
@@ -586,7 +664,7 @@ void main() {
       expect(paint.gritStrength, lessThan(visibleFloorPaint.gritStrength));
       expect(paint.crackStrength, 0.0);
       expect(paint.speck, isFalse);
-      expect(paint.fill, rememberedStoneColor);
+      expect(paint.fill, DungeonPalette.crypt.rememberedStone);
     });
 
     test('keep the same marks across two identical plans', () {
@@ -598,19 +676,328 @@ void main() {
       final second = _plan(game);
 
       // act
-      final firstPaint = [
-        for (final cell in first.cells)
-          materialCellPaint(cell, masonry: first.masonryAt(cell.position)),
-      ];
+      final firstPaint = [for (final cell in first.cells) _paint(first, cell)];
       final secondPaint = [
-        for (final cell in second.cells)
-          materialCellPaint(cell, masonry: second.masonryAt(cell.position)),
+        for (final cell in second.cells) _paint(second, cell),
       ];
 
       // assert — deterministic presentation: rebuild, pan, revisit produce
       // the same picture
       expect(firstPaint, secondPaint);
       expect(first.masonry, second.masonry);
+    });
+    test('selects the locked surface treatment for every identity', () {
+      // arrange
+      const wall = MaterialCell(
+        position: Position(1, 1),
+        kind: MaterialTileKind.wall,
+        knowledge: MaterialKnowledge.visible,
+      );
+      const floor = MaterialCell(
+        position: Position(1, 1),
+        kind: MaterialTileKind.floor,
+        knowledge: MaterialKnowledge.visible,
+      );
+      const stairs = MaterialCell(
+        position: Position(1, 1),
+        kind: MaterialTileKind.stairsDown,
+        knowledge: MaterialKnowledge.visible,
+      );
+      const remembered = MaterialCell(
+        position: Position(1, 1),
+        kind: MaterialTileKind.floor,
+        knowledge: MaterialKnowledge.remembered,
+      );
+      const cases = [
+        (
+          palette: DungeonPalette.crypt,
+          wallEdge: 0.55,
+          wallGrit: 0.14,
+          wallPattern: SurfacePattern.none,
+          wallPatternStrength: 0.0,
+          wallCrack: 0.5,
+          floorGrit: 0.08,
+          floorPattern: SurfacePattern.none,
+          floorPatternStrength: 0.0,
+          floorSpeck: true,
+        ),
+        (
+          palette: DungeonPalette.seaCave,
+          wallEdge: 0.42,
+          wallGrit: 0.10,
+          wallPattern: SurfacePattern.tideStrata,
+          wallPatternStrength: 0.36,
+          wallCrack: 0.0,
+          floorGrit: 0.055,
+          floorPattern: SurfacePattern.tideStrata,
+          floorPatternStrength: 0.20,
+          floorSpeck: true,
+        ),
+        (
+          palette: DungeonPalette.ruinedKeep,
+          wallEdge: 0.68,
+          wallGrit: 0.15,
+          wallPattern: SurfacePattern.ashlarFracture,
+          wallPatternStrength: 0.45,
+          wallCrack: 0.70,
+          floorGrit: 0.07,
+          floorPattern: SurfacePattern.ashlarFracture,
+          floorPatternStrength: 0.28,
+          floorSpeck: true,
+        ),
+        (
+          palette: DungeonPalette.lowlandRoad,
+          wallEdge: 0.32,
+          wallGrit: 0.07,
+          wallPattern: SurfacePattern.none,
+          wallPatternStrength: 0.0,
+          wallCrack: 0.0,
+          floorGrit: 0.045,
+          floorPattern: SurfacePattern.roadWear,
+          floorPatternStrength: 0.24,
+          floorSpeck: false,
+        ),
+      ];
+
+      // act and assert
+      for (final row in cases) {
+        final wallPaint = materialCellPaint(
+          wall,
+          palette: row.palette,
+          masonry: false,
+        );
+        final floorPaint = materialCellPaint(
+          floor,
+          palette: row.palette,
+          masonry: false,
+        );
+        final stairsPaint = materialCellPaint(
+          stairs,
+          palette: row.palette,
+          masonry: false,
+        );
+        final rememberedPaint = materialCellPaint(
+          remembered,
+          palette: row.palette,
+          masonry: false,
+        );
+
+        expect(wallPaint.edge, row.wallEdge);
+        expect(wallPaint.gritStrength, row.wallGrit);
+        expect(wallPaint.pattern, row.wallPattern);
+        expect(wallPaint.patternStrength, row.wallPatternStrength);
+        expect(wallPaint.crackStrength, row.wallCrack);
+        expect(floorPaint.gritStrength, row.floorGrit);
+        expect(floorPaint.pattern, row.floorPattern);
+        expect(floorPaint.patternStrength, row.floorPatternStrength);
+        expect(floorPaint.speck, row.floorSpeck);
+        expect(stairsPaint.fill, floorPaint.fill);
+        expect(stairsPaint.edge, floorPaint.edge);
+        expect(stairsPaint.speck, isFalse);
+        expect(stairsPaint.pattern, SurfacePattern.none);
+        expect(stairsPaint.patternStrength, 0.0);
+        expect(rememberedPaint.fill, row.palette.rememberedStone);
+        expect(rememberedPaint.pattern, SurfacePattern.none);
+        expect(rememberedPaint.patternStrength, 0.0);
+        expect(rememberedPaint.gritStrength, lessThan(floorPaint.gritStrength));
+        expect(rememberedPaint.edge, lessThan(wallPaint.edge));
+      }
+    });
+
+    test(
+      'renders equal plans equally and each regional identity differently',
+      () async {
+        // arrange
+        final map = FloorMap.parse(_arena);
+        final visible = computeFov(map, const Position(1, 1), fovRadius);
+        final game = _game(map: map, visible: visible, explored: visible);
+        const palettes = [
+          DungeonPalette.crypt,
+          DungeonPalette.seaCave,
+          DungeonPalette.ruinedKeep,
+          DungeonPalette.lowlandRoad,
+        ];
+
+        // act
+        final rendered = <Uint8List>[];
+        for (final palette in palettes) {
+          final first = await _renderBytes(materialPlan(game, palette));
+          final second = await _renderBytes(materialPlan(game, palette));
+          rendered.add(_bytes(first));
+          expect(_bytes(first), orderedEquals(_bytes(second)));
+        }
+
+        // assert
+        for (var index = 1; index < rendered.length; index++) {
+          expect(rendered[index], isNot(orderedEquals(rendered.first)));
+        }
+      },
+    );
+
+    test(
+      'regional patterns alter only their interior and leave controls base',
+      () async {
+        // arrange
+        const cases = [
+          (
+            palette: DungeonPalette.seaCave,
+            kind: MaterialTileKind.floor,
+            patterned: Offset(44, 47),
+            control: Offset(54, 58),
+          ),
+          (
+            palette: DungeonPalette.ruinedKeep,
+            kind: MaterialTileKind.wall,
+            patterned: Offset(50, 49),
+            control: Offset(60, 60),
+          ),
+          (
+            palette: DungeonPalette.lowlandRoad,
+            kind: MaterialTileKind.floor,
+            patterned: Offset(48, 56),
+            control: Offset(62, 54),
+          ),
+        ];
+
+        // act and assert
+        for (final row in cases) {
+          final patterned = await _renderBytes(
+            _singleCellPlan(palette: row.palette, kind: row.kind),
+          );
+          final base = await _renderBytes(
+            _singleCellPlan(
+              palette: row.palette,
+              kind: MaterialTileKind.stairsDown,
+            ),
+          );
+          final differences = [
+            for (var x = _at(1) + 6; x <= _at(1) + 30; x++)
+              for (var y = _at(1) + 6; y <= _at(1) + 30; y++)
+                if (_pixel(patterned, x, y) != _pixel(base, x, y))
+                  Offset(x.toDouble(), y.toDouble()),
+          ];
+          expect(differences, isNotEmpty, reason: '${row.palette.material}');
+          expect(
+            _pixel(patterned, row.control.dx.toInt(), row.control.dy.toInt()),
+            _pixel(base, row.control.dx.toInt(), row.control.dy.toInt()),
+          );
+        }
+      },
+    );
+
+    test('visibility, memory, void, and exposed strokes stay bounded for every palette', () async {
+      // arrange
+      final map = FloorMap.parse(_arena);
+      const visible = Position(1, 1);
+      const remembered = Position(3, 1);
+      const wall = Position(1, 1);
+      const mark = MaterialMark(
+        grit: 0,
+        speck: false,
+        crack: 1,
+        edge: 1,
+        pattern: 0,
+      );
+      MaterialPlan rememberedPlan(DungeonPalette palette) => MaterialPlan(
+        cells: const [
+          MaterialCell(
+            position: visible,
+            kind: MaterialTileKind.floor,
+            knowledge: MaterialKnowledge.visible,
+          ),
+          MaterialCell(
+            position: remembered,
+            kind: MaterialTileKind.floor,
+            knowledge: MaterialKnowledge.remembered,
+          ),
+        ],
+        marks: {visible: mark, remembered: mark},
+        masonry: const {},
+        heroPosition: visible,
+        palette: palette,
+      );
+      MaterialPlan wallPlan(DungeonPalette palette) => MaterialPlan(
+        cells: const [
+          MaterialCell(
+            position: wall,
+            kind: MaterialTileKind.wall,
+            knowledge: MaterialKnowledge.visible,
+          ),
+        ],
+        marks: {wall: mark},
+        masonry: const {},
+        heroPosition: wall,
+        palette: palette,
+      );
+
+      // act and assert
+      for (final palette in const [
+        DungeonPalette.crypt,
+        DungeonPalette.seaCave,
+        DungeonPalette.ruinedKeep,
+        DungeonPalette.lowlandRoad,
+      ]) {
+        final known = materialPlan(
+          _game(map: map, visible: {visible}, explored: {visible, remembered}),
+          palette,
+        );
+        final mask = visibleMaterialMask(known);
+        Offset centerOf(Position position) => Offset(
+          (position.x + 0.5) * cameraCellSize,
+          (position.y + 0.5) * cameraCellSize,
+        );
+        expect(mask.contains(centerOf(visible)), isTrue);
+        expect(mask.contains(centerOf(remembered)), isFalse);
+        expect(mask.contains(centerOf(const Position(11, 1))), isFalse);
+
+        final memoryRgba = await _renderBytes(rememberedPlan(palette));
+        expect(_pixel(memoryRgba, _at(3.5), _at(1.5)), palette.rememberedStone);
+        final knownRgba = await _renderBytes(known);
+        expect(_pixel(knownRgba, _at(5.5), _at(1.5)), dungeonVoid);
+
+        final wallRgba = await _renderBytes(wallPlan(palette));
+        for (final sample in [
+          [_at(1) - 1, _at(1.5)],
+          [_at(2), _at(1.5)],
+          [_at(1.5), _at(1) - 1],
+          [_at(1.5), _at(2)],
+        ]) {
+          expect(
+            _pixel(wallRgba, sample[0], sample[1]),
+            dungeonVoid,
+            reason: '${palette.material} stroke leaked at $sample',
+          );
+        }
+      }
+    });
+    test('light growth is value-first for every palette', () {
+      // arrange and act
+      for (final palette in const [
+        DungeonPalette.crypt,
+        DungeonPalette.seaCave,
+        DungeonPalette.ruinedKeep,
+        DungeonPalette.lowlandRoad,
+      ]) {
+        final dim = stoneLitColor(palette, 0.2);
+        final bright = stoneLitColor(palette, 0.8);
+        final dimHsl = HSLColor.fromColor(dim);
+        final brightHsl = HSLColor.fromColor(bright);
+
+        // assert
+        expect(
+          bright.computeLuminance() - dim.computeLuminance(),
+          greaterThan(brightHsl.saturation - dimHsl.saturation),
+          reason: '${palette.material}',
+        );
+        expect(
+          _value(palette.rememberedStone),
+          lessThan(_value(palette.visibleStone)),
+        );
+        expect(
+          _value(palette.visibleStone),
+          lessThan(_value(stoneLitColor(palette, 1))),
+        );
+      }
     });
   });
 }

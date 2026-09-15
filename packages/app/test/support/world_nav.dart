@@ -32,8 +32,18 @@ Future<void> openTownDoor(WidgetTester tester, String label) async {
 /// scheduling frames, which a pending delay is not. Pumping a generous span and
 /// then settling is what gets the journey all the way to its end.
 Future<void> walkTo(WidgetTester tester, String place) async {
-  final row = find.ancestor(of: find.text(place), matching: find.byType(Row));
-  await tester.tap(find.descendant(of: row, matching: find.text('Walk')));
+  final control = find.ancestor(
+    of: find.text(place),
+    matching: find.byType(GestureDetector),
+  );
+  await tester.scrollUntilVisible(
+    control,
+    100,
+    scrollable: find.byType(Scrollable),
+  );
+  await tester.drag(find.byType(ListView), const Offset(0, -120));
+  await tester.pumpAndSettle();
+  await tester.tap(control);
   await tester.pumpAndSettle();
   await tester.tap(find.text('Set out'));
   await tester.pumpAndSettle();

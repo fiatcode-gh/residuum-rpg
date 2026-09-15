@@ -2,24 +2,32 @@
 
 ## Where the epic stands (verified at source 2026-09-15)
 
-- **Units 0–6 are done and all of Units 1–6 are on `main`.** `main` is at
-  `319d945`, clean and in sync with `origin/main`. PR #13 `650fa7c`, #14
-  `15e737a`, #15 `55a226d`, #16 `319d945` are all MERGED; Units 1–2 landed
-  directly at `5f8db47` / `06a8b9f` / `7cd32f2`; Unit 3 at `4164741`. Any older
-  text calling Unit 4 "interrupted" or Unit 6 "uncommitted" is stale — it was
-  corrected here after checking the forge and the branch graph.
-- **Unit 7 (town + transactional rooms + heroes) is accepted and awaiting your
-  integration decision.** It sits on `residuum-visual-reboot-7` at `cb8fcbc`,
-  four commits off `main` at `319d945`, nothing pushed and no pull request open.
-- Unit 8 is world + theme parity. **Unit 9 is the crawl HUD chrome** (depth
-  header, labelled HP/Mana bars, icon control chips), placed after Unit 8 by the
-  user's decision.
+- **Units 0–7 are done and all of Units 1–7 are on `main`.** `main` is at
+  `f322d78`, clean and in sync with `origin/main`. PR #13 `650fa7c`, #14
+  `15e737a`, #15 `55a226d`, #16 `319d945`, and #17 `f322d78` are all MERGED;
+  Units 1–2 landed directly at `5f8db47` / `06a8b9f` / `7cd32f2`; Unit 3 at
+  `4164741`.
+- **Unit 8 implementation is ready as a paused handoff** on
+  `residuum-visual-reboot-8`. Tasks 01–03 focused proof remains available
+  (49-world, 69-material, 197-integration), but the independent acceptance
+  review rejected the integrated unit.
 
 ## Exact next action
 
-Obtain the user's integration decision for Unit 7 — pull request, direct merge,
-or hold. Publication is user-owned and nothing remote has happened. After
-integration, Unit 8 opens at the contract stage.
+Resolve U8-AR-1 (semantic route-node activation), U8-AR-2 (render the actual
+live `MaterialComponent` in navigation/adoption proof), and U8-AR-4 (clip every
+cell decoration pass). First reconcile U8-AR-3: the approved Task 02 brief
+requires app Dartdoc for `MaterialMark.pattern`, while the repository convention
+forbids new app Dartdoc. After correction, run the reviewer-requested focused
+proof, one acceptance re-review, then repository gates. Device/emulator work
+remains deferred.
+
+## Deferred device evidence
+
+The user explicitly deferred Unit 8's AVD/device-size and greyscale validation
+to the next unit session. Do not start an emulator in this session. Complete the
+remaining implementation, focused proof, and code acceptance review normally;
+carry the deferred device gate forward as an explicit residual.
 
 Unit 7's final evidence at `cb8fcbc`, all architect-run from `packages/app`:
 full `flutter test` **816 passing**, `dart format --set-exit-if-changed` over

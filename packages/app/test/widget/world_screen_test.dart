@@ -1,11 +1,21 @@
-import 'package:flutter/material.dart';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
+import 'package:flame/game.dart' hide Route;
+import 'package:flutter/material.dart' hide Route;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/dungeon_material.dart';
+import 'package:residuum_app/game/dungeon_palette.dart';
+import 'package:residuum_app/game/dungeon_scene.dart';
+import 'package:residuum_app/game/dungeon_scene_material.dart';
 import 'package:residuum_app/game/game_bloc.dart';
-import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/game/grid_geometry.dart';
+import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_app/world/world_bloc.dart';
+import 'package:residuum_app/world/world_route_diagram.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -50,6 +60,13 @@ Whereabouts _knowingAll() => newWhereabouts()
     .hearingOf(seaCave)
     .hearingOf(ruinedKeep);
 
+Profile _fullyTrainedProfile() => newProfile(worldSeed: 909).copyWith(
+  skills: {
+    ...untrainedSkills,
+    for (final skill in SkillId.values) skill: const SkillState(level: 8),
+  },
+);
+
 /// A hero standing at the sea-cave, having heard of it and walked there.
 Whereabouts _atTheSeaCave() => _knowingAll()
     .arrivingAt(residuumWorld, northgate)
@@ -60,9 +77,78 @@ Whereabouts _atTheKeep() => _knowingAll()
     .arrivingAt(residuumWorld, northgate)
     .arrivingAt(residuumWorld, ruinedKeep);
 
+Whereabouts _atNorthgate() =>
+    _knowingAll().arrivingAt(residuumWorld, northgate);
+
 /// The bloc driving whatever crawl or fight is on screen.
 GameBloc _fightOnScreen(WidgetTester tester) =>
     BlocProvider.of<GameBloc>(tester.element(find.byType(GameScreen)));
+
+Future<Uint8List> _renderMaterialBytes(
+  MaterialPlan plan, {
+  required int width,
+  required int height,
+}) async {
+  final recorder = ui.PictureRecorder();
+  final canvas = ui.Canvas(recorder)..drawColor(dungeonVoid, ui.BlendMode.src);
+  final component = MaterialComponent(plan);
+  component.render(canvas);
+  final image = await recorder.endRecording().toImage(width, height);
+  try {
+    final rgba = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    return Uint8List.fromList(
+      rgba!.buffer.asUint8List(rgba.offsetInBytes, rgba.lengthInBytes),
+    );
+  } finally {
+    image.dispose();
+  }
+}
+
+Future<Uint8List> _renderCurrentMaterial(
+  WidgetTester tester,
+  DungeonPalette palette,
+) async {
+  final state = _fightOnScreen(tester).state;
+  final width = (state.game.map.width * cameraCellSize).round();
+  final height = (state.game.map.height * cameraCellSize).round();
+  return _renderMaterialBytes(
+    materialPlan(state.game, palette),
+    width: width,
+    height: height,
+  );
+}
+
+Future<({Uint8List actual, Uint8List expected, Uint8List wrong})>
+_navigationMaterialBytes(
+  WidgetTester tester, {
+  required DungeonPalette expectedPalette,
+  required DungeonPalette wrongPalette,
+}) async {
+  final state = _fightOnScreen(tester).state;
+  final gameWidget = tester.widget<GameWidget<FlameGame>>(
+    find.byKey(dungeonSceneKey),
+  );
+  final scene = gameWidget.game!;
+  final material = scene.world.children.whereType<MaterialComponent>().single;
+  final width = (state.game.map.width * cameraCellSize).round();
+  final height = (state.game.map.height * cameraCellSize).round();
+  final actual = await _renderMaterialBytes(
+    material.plan,
+    width: width,
+    height: height,
+  );
+  final expected = await _renderMaterialBytes(
+    materialPlan(state.game, expectedPalette),
+    width: width,
+    height: height,
+  );
+  final wrong = await _renderMaterialBytes(
+    materialPlan(state.game, wrongPalette),
+    width: width,
+    height: height,
+  );
+  return (actual: actual, expected: expected, wrong: wrong);
+}
 
 /// A road fight already in progress, pushed over a world exactly as the session
 /// pushes one.
@@ -75,10 +161,12 @@ Future<(TownBloc, WorldBloc)> _pushRoadFight(
   WidgetTester tester, {
   required Profile profile,
   Whereabouts? world,
+  Route? road,
   bool dead = false,
   Position? heroAt,
 }) async {
-  final fight = startRoadEncounter(profile, day: 4);
+  final route = road ?? residuumWorld.routeBetween(stonebridge, cryptNode)!;
+  final fight = startRoadEncounter(profile, day: 4, road: route);
   final placed = heroAt == null
       ? fight
       : fight.copyWith(hero: fight.hero.copyWith(position: heroAt));
@@ -106,7 +194,7 @@ Future<(TownBloc, WorldBloc)> _pushRoadFight(
                   BlocProvider.value(value: worldBloc),
                   BlocProvider.value(value: game),
                 ],
-                child: const GameScreen(),
+                child: GameScreen(palette: paletteForRoad(route)),
               ),
             ),
           ),
@@ -118,6 +206,22 @@ Future<(TownBloc, WorldBloc)> _pushRoadFight(
   await tester.tap(find.text('out there'));
   await tester.pumpAndSettle();
   return (town, worldBloc);
+}
+
+Future<void> _walkToRegionalFight(WidgetTester tester, String place) async {
+  final control = find.ancestor(
+    of: find.text(place),
+    matching: find.byType(GestureDetector),
+  );
+  await tester.ensureVisible(control);
+  await tester.pumpAndSettle();
+  await tester.tap(control);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Set out'));
+  await tester.pumpAndSettle();
+  await tester.pump(const Duration(seconds: 1));
+  await tester.pumpAndSettle();
+  expect(find.byType(GameScreen), findsOneWidget);
 }
 
 void main() {
@@ -135,52 +239,269 @@ void main() {
       expect(find.text('Day 0.'), findsOneWidget);
     });
 
-    testWidgets('draws every kind of place by shape and word, not by hue', (
+    testWidgets('fresh discovery keeps unknown places and roads redacted', (
       tester,
     ) async {
       // arrange
-      final app = PumpedApp(_oneHero(newProfile(worldSeed: 909)));
+      final semantics = tester.ensureSemantics();
+      try {
+        final profile = newProfile(worldSeed: 909);
+        final app = PumpedApp(_oneHero(profile));
 
-      // act
-      await app.pump(tester);
+        // act
+        await app.pump(tester);
 
-      // assert
-      expect(find.text('[T]'), findsOneWidget);
-      expect(find.text('(D)'), findsOneWidget);
-      expect(find.text('[?]'), findsNWidgets(3));
-      expect(find.text('Somewhere you have not heard of'), findsNWidgets(3));
+        // assert
+        expect(find.text('Stonebridge'), findsOneWidget);
+        expect(find.text('The Crypt'), findsOneWidget);
+        for (final hidden in ['Northgate', 'The Sea-Cave', 'The Ruined Keep']) {
+          expect(find.text(hidden), findsNothing);
+          expect(
+            find.bySemanticsLabel(RegExp(RegExp.escape(hidden))),
+            findsNothing,
+          );
+        }
+        expect(find.text('?'), findsNWidgets(3));
+        expect(
+          find.bySemanticsLabel('Unknown location. Not discovered.'),
+          findsNWidgets(3),
+        );
+        final route = residuumWorld.routeBetween(stonebridge, cryptNode)!;
+        final danger = dangerOn(route, profile);
+        expect(
+          find.bySemanticsLabel(
+            'Route from Stonebridge to The Crypt. '
+            '1 day(s). Current danger $danger in 100.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('1 DAY'), findsOneWidget);
+        expect(find.text('DANGER $danger/100'), findsOneWidget);
+      } finally {
+        semantics.dispose();
+      }
     });
 
-    testWidgets('says which place the hero is standing on, in words', (
+    testWidgets(
+      'rejects an unapproved route pair before discovery projection',
+      (tester) async {
+        // arrange
+        final invalidMap = WorldMap(
+          nodes: residuumWorld.nodes,
+          routes: [
+            ...residuumWorld.routes.where(
+              (route) => !route.joins(northgate, seaCave),
+            ),
+            Route(from: seaCave, to: cryptNode, days: 2),
+          ],
+        );
+
+        // act
+        await tester.pumpWidget(
+          MaterialApp(
+            home: WorldRouteDiagram(
+              map: invalidMap,
+              whereabouts: newWhereabouts(),
+              destinations: const {},
+              dangerFor: (_) => 0,
+              onDestination: (_) {},
+            ),
+          ),
+        );
+        final exception = tester.takeException();
+
+        // assert
+        expect(exception, isA<StateError>());
+      },
+    );
+
+    testWidgets('fully discovered routes show current danger and controls', (
       tester,
     ) async {
       // arrange
-      final app = PumpedApp(_oneHero(newProfile(worldSeed: 909)));
+      final semantics = tester.ensureSemantics();
+      try {
+        final profile = _fullyTrainedProfile();
+        final app = PumpedApp(_oneHero(profile, world: _knowingAll()));
 
-      // act
-      await app.pump(tester);
+        // act
+        await app.pump(tester);
 
-      // assert
-      expect(find.text('Stonebridge — you are here'), findsOneWidget);
-      expect(find.text('Here'), findsOneWidget);
+        // assert
+        for (final node in residuumWorld.nodes) {
+          expect(find.text(node.name), findsOneWidget);
+        }
+        expect(find.text('TOWN'), findsNWidgets(2));
+        expect(find.text('DUNGEON'), findsNWidgets(3));
+        expect(find.text('1 DAY'), findsNWidgets(2));
+        expect(find.text('2 DAYS'), findsNWidgets(3));
+        for (final route in residuumWorld.routes) {
+          final from = residuumWorld.nodeAt(route.from).name;
+          final to = residuumWorld.nodeAt(route.to).name;
+          final danger = dangerOn(route, profile);
+          expect(
+            find.bySemanticsLabel(
+              'Route from $from to $to. '
+              '${route.days} day(s). Current danger $danger in 100.',
+            ),
+            findsOneWidget,
+          );
+          expect(find.text('DANGER $danger/100'), findsWidgets);
+        }
+        expect(
+          tester
+              .getSemantics(
+                find.bySemanticsLabel(
+                  RegExp(
+                    r'DUNGEON The Crypt\. REACHABLE',
+                    caseSensitive: false,
+                  ),
+                ),
+              )
+              .flagsCollection
+              .isEnabled,
+          ui.Tristate.isTrue,
+        );
+        expect(
+          tester
+              .getSemantics(
+                find.bySemanticsLabel(
+                  RegExp(r'TOWN Northgate\. REACHABLE', caseSensitive: false),
+                ),
+              )
+              .flagsCollection
+              .isEnabled,
+          ui.Tristate.isTrue,
+        );
+        for (final hiddenByRoad in ['The Sea-Cave', 'The Ruined Keep']) {
+          expect(
+            tester
+                .getSemantics(
+                  find.bySemanticsLabel(
+                    RegExp(
+                      '${RegExp.escape(hiddenByRoad)}.*NO ROAD FROM HERE',
+                      caseSensitive: false,
+                    ),
+                  ),
+                )
+                .flagsCollection
+                .isEnabled,
+            ui.Tristate.isFalse,
+          );
+        }
+      } finally {
+        semantics.dispose();
+      }
     });
 
-    testWidgets('a place the hero has heard of becomes a row of its own', (
+    testWidgets('rumor discovery fills the fixed Northgate slot', (
       tester,
     ) async {
       // arrange
-      final app = PumpedApp(
-        _oneHero(newProfile(worldSeed: 909), world: _knowingAll()),
-      );
+      final semantics = tester.ensureSemantics();
+      try {
+        final app = PumpedApp(
+          _oneHero(newProfile(worldSeed: 909).copyWith(gold: 100)),
+        );
+        await app.pump(tester);
+        final before = tester.getCenter(
+          find.byKey(const Key('world-node-northgate')),
+        );
+        expect(
+          find.bySemanticsLabel('Unknown location. Not discovered.'),
+          findsNWidgets(3),
+        );
 
-      // act
-      await app.pump(tester);
+        // act
+        await enterTown(tester, 'Stonebridge');
+        await openTownDoor(tester, 'Tavern');
+        await tester.tap(find.text('Ask $rumorPrice'));
+        await tester.pumpAndSettle();
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        await backToTheWorld(tester);
 
-      // assert
-      expect(find.text('Northgate'), findsOneWidget);
-      expect(find.text('[?]'), findsNothing);
-      expect(find.text('[T]'), findsNWidgets(2));
-      expect(find.text('(D)'), findsNWidgets(3));
+        // assert
+        expect(
+          tester.getCenter(find.byKey(const Key('world-node-northgate'))),
+          before,
+        );
+        expect(find.text('Northgate'), findsOneWidget);
+        expect(find.text('TOWN'), findsNWidgets(2));
+        expect(
+          find.bySemanticsLabel('Unknown location. Not discovered.'),
+          findsNWidgets(2),
+        );
+        expect(find.text('1 DAY'), findsOneWidget);
+        expect(find.text('2 DAYS'), findsNWidgets(2));
+        expect(find.bySemanticsLabel(RegExp('The Sea-Cave')), findsNothing);
+        expect(find.bySemanticsLabel(RegExp('The Ruined Keep')), findsNothing);
+        expect(
+          find.textContaining('Route from Northgate to The Sea-Cave'),
+          findsNothing,
+        );
+        expect(
+          find.textContaining('Route from Northgate to The Ruined Keep'),
+          findsNothing,
+        );
+      } finally {
+        semantics.dispose();
+      }
+    });
+
+    testWidgets('a journey marks its road and disables every node', (
+      tester,
+    ) async {
+      // arrange
+      final semantics = tester.ensureSemantics();
+      try {
+        final app = PumpedApp(
+          _oneHero(
+            newProfile(worldSeed: 909),
+            world: Whereabouts(
+              at: stonebridge,
+              home: stonebridge,
+              discovered: {stonebridge, northgate, cryptNode},
+              day: 1,
+              journey: Journey(from: stonebridge, to: northgate, daysLeft: 1),
+            ),
+          ),
+        );
+
+        // act
+        await app.pump(tester);
+
+        // assert
+        expect(find.textContaining('On the road to Northgate'), findsOneWidget);
+        expect(find.text('Day 1. one day still to walk.'), findsOneWidget);
+        expect(find.text('Walk on'), findsOneWidget);
+        expect(find.text('ON THIS ROAD'), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(
+            RegExp(r'You are on this road\. 1 day\(s\) remain\.'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('HERE'), findsNothing);
+        for (final name in ['Stonebridge', 'Northgate', 'The Crypt']) {
+          expect(
+            tester
+                .getSemantics(
+                  find.bySemanticsLabel(
+                    RegExp(
+                      '${RegExp.escape(name)}.*TRAVEL IN PROGRESS',
+                      caseSensitive: false,
+                    ),
+                  ),
+                )
+                .flagsCollection
+                .isEnabled,
+            ui.Tristate.isFalse,
+          );
+        }
+      } finally {
+        semantics.dispose();
+      }
     });
 
     testWidgets('the Heroes door is here rather than in a town', (
@@ -260,11 +581,24 @@ void main() {
       await app.pump(tester);
 
       // act
-      final row = find.ancestor(
-        of: find.text('The Crypt'),
-        matching: find.byType(Row),
+      expect(
+        find.bySemanticsLabel(
+          RegExp(r'DUNGEON The Crypt\. REACHABLE', caseSensitive: false),
+        ),
+        findsOneWidget,
       );
-      await tester.tap(find.descendant(of: row, matching: find.text('Walk')));
+      final control = find.ancestor(
+        of: find.text('The Crypt'),
+        matching: find.byType(GestureDetector),
+      );
+      await tester.scrollUntilVisible(
+        control,
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.drag(find.byType(ListView), const Offset(0, -120));
+      await tester.pumpAndSettle();
+      await tester.tap(control);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Stay here'));
       await tester.pumpAndSettle();
@@ -314,13 +648,24 @@ void main() {
         _oneHero(newProfile(worldSeed: 909), world: _knowingAll()),
       );
       await app.pump(tester);
-      final row = find.ancestor(
-        of: find.text('Northgate'),
-        matching: find.byType(Row),
+      expect(
+        find.bySemanticsLabel(
+          RegExp(r'TOWN Northgate\. REACHABLE', caseSensitive: false),
+        ),
+        findsOneWidget,
       );
-
-      // act
-      await tester.tap(find.descendant(of: row, matching: find.text('Walk')));
+      final control = find.ancestor(
+        of: find.text('Northgate'),
+        matching: find.byType(GestureDetector),
+      );
+      await tester.scrollUntilVisible(
+        control,
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.drag(find.byType(ListView), const Offset(0, -120));
+      await tester.pumpAndSettle();
+      await tester.tap(control);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Set out'));
       await tester.pump(const Duration(milliseconds: 1));
@@ -599,12 +944,86 @@ void main() {
       await app.pump(tester);
 
       // act
-      await walkTo(tester, 'The Crypt');
+      await _walkToRegionalFight(tester, 'The Crypt');
 
       // assert
       expect(find.byType(GameScreen), findsOneWidget);
       expect(find.textContaining('The road'), findsOneWidget);
       expect(find.textContaining('Depth'), findsNothing);
+      final bytes = (await tester.runAsync(
+        () => _navigationMaterialBytes(
+          tester,
+          expectedPalette: DungeonPalette.lowlandRoad,
+          wrongPalette: DungeonPalette.crypt,
+        ),
+      ))!;
+      expect(bytes.actual, orderedEquals(bytes.expected));
+      expect(bytes.actual, isNot(orderedEquals(bytes.wrong)));
+      expect(app.saved!.world.journey, isNotNull);
+      expect(app.saved!.run, isNull);
+      expect(app.saved!.inside, isFalse);
+    });
+
+    testWidgets('a sea-cave spur fight inherits its route material', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: _dangerousSeaCaveWorld);
+      final app = PumpedApp(_oneHero(profile, world: _atNorthgate()));
+      await app.pump(tester);
+
+      // act
+      await _walkToRegionalFight(tester, 'The Sea-Cave');
+
+      // assert
+      expect(find.byType(GameScreen), findsOneWidget);
+      expect(find.textContaining('The road'), findsOneWidget);
+      expect(find.textContaining('Depth'), findsNothing);
+      expect(app.saved!.world.journey!.to, seaCave);
+      expect(app.saved!.run, isNull);
+      expect(app.saved!.inside, isFalse);
+      final bytes = (await tester.runAsync(
+        () => _navigationMaterialBytes(
+          tester,
+          expectedPalette: DungeonPalette.seaCave,
+          wrongPalette: DungeonPalette.crypt,
+        ),
+      ))!;
+      expect(bytes.actual, orderedEquals(bytes.expected));
+      expect(bytes.actual, isNot(orderedEquals(bytes.wrong)));
+    });
+
+    testWidgets('a keep spur fight inherits its route material', (
+      tester,
+    ) async {
+      // arrange
+      final profile = newProfile(worldSeed: _dangerousKeepWorld);
+      final app = PumpedApp(_oneHero(profile, world: _atNorthgate()));
+      await app.pump(tester);
+
+      // act
+      await _walkToRegionalFight(tester, 'The Ruined Keep');
+
+      // assert
+      expect(find.byType(GameScreen), findsOneWidget);
+      expect(find.textContaining('The road'), findsOneWidget);
+      expect(find.textContaining('Depth'), findsNothing);
+      expect(app.saved!.world.journey!.to, ruinedKeep);
+      expect(app.saved!.run, isNull);
+      expect(app.saved!.inside, isFalse);
+      final bytes = (await tester.runAsync(
+        () => _navigationMaterialBytes(
+          tester,
+          expectedPalette: DungeonPalette.ruinedKeep,
+          wrongPalette: DungeonPalette.seaCave,
+        ),
+      ))!;
+      expect(bytes.actual, orderedEquals(bytes.expected));
+      expect(bytes.actual, isNot(orderedEquals(bytes.wrong)));
+      final crypt = (await tester.runAsync(
+        () => _renderCurrentMaterial(tester, DungeonPalette.crypt),
+      ))!;
+      expect(bytes.actual, isNot(orderedEquals(crypt)));
     });
 
     testWidgets('writes nothing at all to disk while it is in flight', (
@@ -848,6 +1267,15 @@ void main() {
         startDungeonRunAt(seaCave, profile).map.toAscii(),
       );
       expect(find.textContaining('The Sea-Cave — depth 1/'), findsOneWidget);
+      final bytes = (await tester.runAsync(
+        () => _navigationMaterialBytes(
+          tester,
+          expectedPalette: DungeonPalette.seaCave,
+          wrongPalette: DungeonPalette.crypt,
+        ),
+      ))!;
+      expect(bytes.actual, orderedEquals(bytes.expected));
+      expect(bytes.actual, isNot(orderedEquals(bytes.wrong)));
     });
 
     testWidgets('the keep is its own dungeon, not the cave\'s', (tester) async {
@@ -867,6 +1295,19 @@ void main() {
         startDungeonRunAt(ruinedKeep, profile).map.toAscii(),
       );
       expect(find.textContaining('The Ruined Keep — depth 1/'), findsOneWidget);
+      final bytes = (await tester.runAsync(
+        () => _navigationMaterialBytes(
+          tester,
+          expectedPalette: DungeonPalette.ruinedKeep,
+          wrongPalette: DungeonPalette.seaCave,
+        ),
+      ))!;
+      expect(bytes.actual, orderedEquals(bytes.expected));
+      expect(bytes.actual, isNot(orderedEquals(bytes.wrong)));
+      final crypt = (await tester.runAsync(
+        () => _renderCurrentMaterial(tester, DungeonPalette.crypt),
+      ))!;
+      expect(bytes.actual, isNot(orderedEquals(crypt)));
     });
 
     testWidgets('a camp at this node is the resume-or-delve fork', (
@@ -1136,6 +1577,16 @@ void main() {
       // assert
       expect(find.textContaining('The Sea-Cave — depth 1/'), findsOneWidget);
       expect(app.saved!.dungeon, seaCave);
+      expect(find.text('The crawl resumes.'), findsOneWidget);
+      final bytes = (await tester.runAsync(
+        () => _navigationMaterialBytes(
+          tester,
+          expectedPalette: DungeonPalette.seaCave,
+          wrongPalette: DungeonPalette.crypt,
+        ),
+      ))!;
+      expect(bytes.actual, orderedEquals(bytes.expected));
+      expect(bytes.actual, isNot(orderedEquals(bytes.wrong)));
     });
   });
 
@@ -1240,3 +1691,15 @@ void main() {
 /// Swept off the shipped derivation: day one of world 10 rolls under the
 /// Stonebridge-to-crypt road's danger of 15.
 const int _dangerousWorld = 10;
+
+/// A world whose first day out of Northgate is a Sea-Cave spur fight.
+///
+/// Swept off the shipped derivation: day one of world 0 rolls under the
+/// Northgate-to-Sea-Cave road's danger of 30.
+const int _dangerousSeaCaveWorld = 0;
+
+/// A world whose first day out of Northgate is a Ruined-Keep spur fight.
+///
+/// Swept off the shipped derivation: day one of world 0 rolls under the
+/// Northgate-to-Ruined-Keep road's danger of 40.
+const int _dangerousKeepWorld = 0;

@@ -8,6 +8,8 @@ import 'package:residuum_core/core.dart';
 import 'game/game_bloc.dart';
 import 'game/log_line.dart';
 import 'game/game_screen.dart';
+import 'game/dungeon_palette.dart';
+
 import 'save/autosaver.dart';
 import 'save/boot.dart';
 import 'save/save_files_io.dart';
@@ -430,7 +432,7 @@ class _SessionState extends State<_Session> {
             BlocProvider.value(value: _world),
             BlocProvider.value(value: fight),
           ],
-          child: const GameScreen(),
+          child: GameScreen(palette: paletteForRoad(met.road)),
         ),
       ),
     );
@@ -595,7 +597,7 @@ class _SessionState extends State<_Session> {
             BlocProvider.value(value: _world),
             BlocProvider.value(value: game),
           ],
-          child: const GameScreen(),
+          child: GameScreen(palette: paletteForDungeon(dungeon)),
         ),
       ),
     );

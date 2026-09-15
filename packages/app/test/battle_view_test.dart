@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/battle_view.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
 import 'package:residuum_app/town/town_bloc.dart';
@@ -118,7 +119,7 @@ Future<GameBloc> _pushGame(WidgetTester tester, GameState game) async {
                   BlocProvider.value(value: town),
                   BlocProvider.value(value: bloc),
                 ],
-                child: const GameScreen(),
+                child: const GameScreen(palette: DungeonPalette.crypt),
               ),
             ),
           ),

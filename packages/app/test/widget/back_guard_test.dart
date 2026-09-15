@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
@@ -43,7 +44,7 @@ Future<GameBloc> _pushCrawl(WidgetTester tester, {bool dead = false}) async {
                   BlocProvider.value(value: town),
                   BlocProvider.value(value: game),
                 ],
-                child: const GameScreen(),
+                child: const GameScreen(palette: DungeonPalette.crypt),
               ),
             ),
           ),

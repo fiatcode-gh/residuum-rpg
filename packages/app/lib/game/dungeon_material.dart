@@ -57,6 +57,7 @@ class MaterialMark {
     required this.speck,
     required this.crack,
     required this.edge,
+    required this.pattern,
   });
 
   /// 0..1 strength of fine surface grit.
@@ -71,16 +72,19 @@ class MaterialMark {
   /// 0..1 structural edge response for walls; 0 means no edge treatment.
   final double edge;
 
+  final double pattern;
+
   @override
   bool operator ==(Object other) =>
       other is MaterialMark &&
       other.grit == grit &&
       other.speck == speck &&
       other.crack == crack &&
-      other.edge == edge;
+      other.edge == edge &&
+      other.pattern == pattern;
 
   @override
-  int get hashCode => Object.hash(grit, speck, crack, edge);
+  int get hashCode => Object.hash(grit, speck, crack, edge, pattern);
 }
 
 /// The whole material layer of one crawl, in draw order.
@@ -95,6 +99,7 @@ class MaterialPlan {
     required Map<Position, MaterialMark> marks,
     required Set<Position> masonry,
     required this.heroPosition,
+    required this.palette,
   }) : cells = List.unmodifiable(cells),
        marks = Map.unmodifiable(marks),
        masonry = Set.unmodifiable(masonry);
@@ -113,6 +118,8 @@ class MaterialPlan {
   final Set<Position> masonry;
 
   final Position heroPosition;
+
+  final DungeonPalette palette;
 
   MaterialCell? cellAt(Position position) {
     for (final cell in cells) {
@@ -197,6 +204,7 @@ MaterialPlan materialPlan(GameState game, DungeonPalette palette) {
     marks: marks,
     masonry: masonry,
     heroPosition: hero,
+    palette: palette,
   );
 }
 
@@ -255,5 +263,15 @@ MaterialMark _markFor(
       ? _unit01(_hash(position, themeSalt ^ 0x4444, kind.index)) * 0.85
       : 0.0;
 
-  return MaterialMark(grit: grit, speck: speck, crack: crack, edge: edge);
+  final pattern = remembered
+      ? 0.0
+      : _unit01(_hash(position, palette.themeSalt ^ 0x5555, kind.index));
+
+  return MaterialMark(
+    grit: grit,
+    speck: speck,
+    crack: crack,
+    edge: edge,
+    pattern: pattern,
+  );
 }

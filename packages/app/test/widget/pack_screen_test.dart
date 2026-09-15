@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/pack_screen.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
@@ -80,7 +81,10 @@ Future<GameBloc> _openCrawlAndPack(WidgetTester tester, GameState game) async {
   final bloc = GameBloc(game: game, stepDelay: Duration.zero);
   await tester.pumpWidget(
     MaterialApp(
-      home: BlocProvider.value(value: bloc, child: const GameScreen()),
+      home: BlocProvider.value(
+        value: bloc,
+        child: const GameScreen(palette: DungeonPalette.crypt),
+      ),
     ),
   );
   await tester.pumpAndSettle();
