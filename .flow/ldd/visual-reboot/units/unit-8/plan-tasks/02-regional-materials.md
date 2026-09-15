@@ -77,9 +77,12 @@ unmodifiable copies of cells/marks/masonry and the existing hero position.
 Update every direct constructor in owned tests explicitly; no optional/default
 palette.
 
-Make `MaterialMark` require `double pattern`, compare/hash it, and document it as
-0..1 deterministic phase for regional surface work. Preserve the existing
-`grit`, `speck`, `crack`, and `edge` formulas and exact salt literals. Add only:
+Make `MaterialMark` require `double pattern` and compare/hash it. It is a 0..1
+deterministic phase for regional surface work; that constraint is recorded here
+and pinned by tests, **not** by Dartdoc — `AGENTS.md` allows `///` only on the
+public API of `core` and `content`, so no new app Dartdoc is written (architect
+correction of U8-AR-3, 2026-09-15). Preserve the existing `grit`, `speck`,
+`crack`, and `edge` formulas and exact salt literals. Add only:
 
 ```dart
 pattern: remembered
@@ -273,8 +276,8 @@ suite/analyzer, whole-tree formatter, app build, emulator, or device install.
 ## Executor discretion
 
 You may choose private renderer helper/path names, private test helper names,
-fixture positions that deterministically exercise each pattern, and dartdoc
-wording consistent with current files. You may choose which safe phase threshold
+fixture positions that deterministically exercise each pattern. You may not add
+new app Dartdoc. You may choose which safe phase threshold
 selects a sparse floor fracture/wear mark, provided the test fixture proves at
 least one occurrence and the density remains sparse.
 

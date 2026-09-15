@@ -501,6 +501,70 @@ void main() {
     });
 
     test(
+      'clip every decoration pass, not just the pattern, to its own cell',
+      () async {
+        // arrange — one maximally decorated cell per palette and tile kind,
+        // isolated so the entire ring around it should stay void.
+        const position = Position(1, 1);
+        const mark = MaterialMark(
+          grit: 1,
+          speck: true,
+          crack: 1,
+          edge: 1,
+          pattern: 1,
+        );
+        MaterialPlan decoratedPlan(
+          DungeonPalette palette,
+          MaterialTileKind kind,
+        ) => MaterialPlan(
+          cells: [
+            MaterialCell(
+              position: position,
+              kind: kind,
+              knowledge: MaterialKnowledge.visible,
+            ),
+          ],
+          marks: {position: mark},
+          masonry: const {},
+          heroPosition: position,
+          palette: palette,
+        );
+        final ring = [
+          for (var x = _at(1) - 1; x <= _at(2); x++)
+            for (var y = _at(1) - 1; y <= _at(2); y++)
+              if (x == _at(1) - 1 ||
+                  x == _at(2) ||
+                  y == _at(1) - 1 ||
+                  y == _at(2))
+                [x, y],
+        ];
+
+        // act and assert
+        for (final palette in const [
+          DungeonPalette.crypt,
+          DungeonPalette.seaCave,
+          DungeonPalette.ruinedKeep,
+          DungeonPalette.lowlandRoad,
+        ]) {
+          for (final kind in const [
+            MaterialTileKind.wall,
+            MaterialTileKind.floor,
+          ]) {
+            final rgba = await _renderBytes(decoratedPlan(palette, kind));
+            for (final sample in ring) {
+              expect(
+                _pixel(rgba, sample[0], sample[1]),
+                dungeonVoid,
+                reason:
+                    '${palette.material} $kind decoration leaked at $sample',
+              );
+            }
+          }
+        }
+      },
+    );
+
+    test(
       'crack exposed visible walls occasionally, never masonry or floors',
       () {
         // arrange — a pillared hall: pillars stand alone, so every pillar

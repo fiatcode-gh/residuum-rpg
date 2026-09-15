@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flame/game.dart' hide Route;
 import 'package:flutter/material.dart' hide Route;
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/dungeon_material.dart';
@@ -84,14 +85,13 @@ Whereabouts _atNorthgate() =>
 GameBloc _fightOnScreen(WidgetTester tester) =>
     BlocProvider.of<GameBloc>(tester.element(find.byType(GameScreen)));
 
-Future<Uint8List> _renderMaterialBytes(
-  MaterialPlan plan, {
+Future<Uint8List> _renderComponentBytes(
+  MaterialComponent component, {
   required int width,
   required int height,
 }) async {
   final recorder = ui.PictureRecorder();
   final canvas = ui.Canvas(recorder)..drawColor(dungeonVoid, ui.BlendMode.src);
-  final component = MaterialComponent(plan);
   component.render(canvas);
   final image = await recorder.endRecording().toImage(width, height);
   try {
@@ -103,6 +103,18 @@ Future<Uint8List> _renderMaterialBytes(
     image.dispose();
   }
 }
+
+/// Renders the expectation side: a fresh component built from [plan], never
+/// the live scene component under test.
+Future<Uint8List> _renderMaterialBytes(
+  MaterialPlan plan, {
+  required int width,
+  required int height,
+}) => _renderComponentBytes(
+  MaterialComponent(plan),
+  width: width,
+  height: height,
+);
 
 Future<Uint8List> _renderCurrentMaterial(
   WidgetTester tester,
@@ -132,8 +144,8 @@ _navigationMaterialBytes(
   final material = scene.world.children.whereType<MaterialComponent>().single;
   final width = (state.game.map.width * cameraCellSize).round();
   final height = (state.game.map.height * cameraCellSize).round();
-  final actual = await _renderMaterialBytes(
-    material.plan,
+  final actual = await _renderComponentBytes(
+    material,
     width: width,
     height: height,
   );
@@ -393,6 +405,65 @@ void main() {
         semantics.dispose();
       }
     });
+
+    testWidgets(
+      'a reachable node exposes a tap action; blocked and unknown nodes do '
+      'not',
+      (tester) async {
+        // arrange — fully discovered gives one reachable node and one known
+        // node with no direct road; a fresh world still hides three slots.
+        final semantics = tester.ensureSemantics();
+        try {
+          final profile = _fullyTrainedProfile();
+          final discovered = PumpedApp(_oneHero(profile, world: _knowingAll()));
+          await discovered.pump(tester);
+          final cryptLabel = RegExp(
+            r'DUNGEON The Crypt\. REACHABLE',
+            caseSensitive: false,
+          );
+          final reachable = find.bySemanticsLabel(cryptLabel);
+          final blocked = find.bySemanticsLabel(
+            RegExp(
+              '${RegExp.escape('The Sea-Cave')}.*NO ROAD FROM HERE',
+              caseSensitive: false,
+            ),
+          );
+
+          // act
+          final reachableHasTap = tester
+              .getSemantics(reachable)
+              .getSemanticsData()
+              .hasAction(SemanticsAction.tap);
+          final blockedHasTap = tester
+              .getSemantics(blocked)
+              .getSemanticsData()
+              .hasAction(SemanticsAction.tap);
+          tester.semantics.tap(find.semantics.byLabel(cryptLabel));
+          await tester.pumpAndSettle();
+
+          // assert
+          expect(reachable, findsOneWidget);
+          expect(reachableHasTap, isTrue);
+          expect(blockedHasTap, isFalse);
+          expect(find.text('Set out'), findsOneWidget);
+          expect(find.text('Stay here'), findsOneWidget);
+
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pumpAndSettle();
+          final fresh = PumpedApp(_oneHero(newProfile(worldSeed: 909)));
+          await fresh.pump(tester);
+          final unknown = tester.getSemantics(
+            find.bySemanticsLabel('Unknown location. Not discovered.').first,
+          );
+          expect(
+            unknown.getSemanticsData().hasAction(SemanticsAction.tap),
+            isFalse,
+          );
+        } finally {
+          semantics.dispose();
+        }
+      },
+    );
 
     testWidgets('rumor discovery fills the fixed Northgate slot', (
       tester,

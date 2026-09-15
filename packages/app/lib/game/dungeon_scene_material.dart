@@ -300,15 +300,15 @@ class MaterialComponent extends PositionComponent {
   }
 
   void _drawCellDecoration(Canvas canvas, _PreparedMaterialCell cell) {
+    if (!cell.hasDecoration) return;
+    canvas
+      ..save()
+      ..clipRect(cell.rect);
     if (cell.gritPaint != null) {
       canvas.drawRect(cell.gritRect!, cell.gritPaint!);
     }
     if (cell.patternPaint != null) {
-      canvas
-        ..save()
-        ..clipRect(cell.rect)
-        ..drawPath(cell.patternPath!, cell.patternPaint!)
-        ..restore();
+      canvas.drawPath(cell.patternPath!, cell.patternPaint!);
     }
     if (cell.speckPaint != null) {
       canvas.drawCircle(cell.speckCenter!, 1.6, cell.speckPaint!);
@@ -319,6 +319,7 @@ class MaterialComponent extends PositionComponent {
     if (cell.edgePaint != null) {
       canvas.drawPath(cell.edgePath, cell.edgePaint!);
     }
+    canvas.restore();
   }
 
   Rect _cellRect(MaterialCell cell) => Rect.fromLTWH(
@@ -344,6 +345,7 @@ class _PreparedMaterialCell {
   _PreparedMaterialCell._({
     required this.rect,
     required this.basePaint,
+    required this.hasDecoration,
     required this.gritRect,
     required this.gritPaint,
     required this.patternPath,
@@ -410,9 +412,16 @@ class _PreparedMaterialCell {
       }
     }
     final rounded = palette.material == RegionMaterial.seaCaveStone;
+    final hasGrit = gritRect != null;
+    final hasPattern = patternPath != null;
+    final speck = paint.speck && mark.speck;
+    final hasCrack = crackPath != null;
+    final hasEdge = !edgePath.getBounds().isEmpty;
+    final hasDecoration = hasGrit || hasPattern || speck || hasCrack || hasEdge;
     return _PreparedMaterialCell._(
       rect: rect,
       basePaint: Paint()..color = paint.fill,
+      hasDecoration: hasDecoration,
       gritRect: gritRect,
       gritPaint: gritRect == null
           ? null
@@ -427,13 +436,13 @@ class _PreparedMaterialCell {
               ..style = PaintingStyle.stroke
               ..strokeWidth = 1
               ..strokeCap = rounded ? StrokeCap.round : StrokeCap.butt),
-      speckCenter: paint.speck && mark.speck
+      speckCenter: speck
           ? Offset(
               rect.left + cameraCellSize * 0.35 + mark.grit * 10,
               rect.top + cameraCellSize * 0.6,
             )
           : null,
-      speckPaint: paint.speck && mark.speck
+      speckPaint: speck
           ? (Paint()..color = palette.edgeInk.withValues(alpha: 0.35))
           : null,
       crackPath: crackPath,
@@ -458,6 +467,7 @@ class _PreparedMaterialCell {
 
   final Rect rect;
   final Paint basePaint;
+  final bool hasDecoration;
   final Rect? gritRect;
   final Paint? gritPaint;
   final Path? patternPath;

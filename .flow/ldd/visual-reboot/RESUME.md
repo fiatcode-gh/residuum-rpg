@@ -7,27 +7,34 @@
   `15e737a`, #15 `55a226d`, #16 `319d945`, and #17 `f322d78` are all MERGED;
   Units 1–2 landed directly at `5f8db47` / `06a8b9f` / `7cd32f2`; Unit 3 at
   `4164741`.
-- **Unit 8 implementation is ready as a paused handoff** on
-  `residuum-visual-reboot-8`. Tasks 01–03 focused proof remains available
-  (49-world, 69-material, 197-integration), but the independent acceptance
-  review rejected the integrated unit.
+- **Unit 8 is code-complete and locally accepted**, uncommitted on
+  `residuum-visual-reboot-8` over `c85c7f9`. The independent acceptance review
+  rejected the unit; all four findings are now closed. U8-AR-3 went to the
+  repository convention rather than the brief (no new app **library** Dartdoc;
+  both briefs corrected in place, source already complied). U8-AR-1 was the one
+  real defect and is Red-backed. The scoped closure review
+  (`agent://U8Closure`) returned ACCEPT WITH FINDINGS with zero must-fix, and
+  its three optional craft items are folded in.
+- Final architect gates from `packages/app`: full `flutter test` **826
+  passing**, `dart format --set-exit-if-changed` over `lib` and `test` 100 files
+  0 changed, `flutter analyze` no issues, `core`/`content` untouched.
 
 ## Exact next action
 
-Resolve U8-AR-1 (semantic route-node activation), U8-AR-2 (render the actual
-live `MaterialComponent` in navigation/adoption proof), and U8-AR-4 (clip every
-cell decoration pass). First reconcile U8-AR-3: the approved Task 02 brief
-requires app Dartdoc for `MaterialMark.pattern`, while the repository convention
-forbids new app Dartdoc. After correction, run the reviewer-requested focused
-proof, one acceptance re-review, then repository gates. Device/emulator work
-remains deferred.
+Ask the user to authorize the local commit and the push of
+`residuum-visual-reboot-8`; neither has happened, so the whole session's work is
+**uncommitted**. Then the only remaining Unit 8 criterion is the deferred device
+gate (contract criterion 9), which the user moved to a later session.
 
 ## Deferred device evidence
 
 The user explicitly deferred Unit 8's AVD/device-size and greyscale validation
-to the next unit session. Do not start an emulator in this session. Complete the
-remaining implementation, focused proof, and code acceptance review normally;
-carry the deferred device gate forward as an explicit residual.
+to a later session. Do not start an emulator without being asked. Two specific
+questions are waiting on it: whether a real screen reader reaches the below-fold
+diagram nodes (the 430-pixel diagram sits in `world_screen.dart`'s `ListView`,
+and at 800x600 the Crypt and Stonebridge nodes carry `isHidden` — identically at
+`c85c7f9`, so it is Task 01 geometry, not a correction defect), and whether the
+Sea-Cave strata and Ruined Keep fracture strokes read at phone density.
 
 Unit 7's final evidence at `cb8fcbc`, all architect-run from `packages/app`:
 full `flutter test` **816 passing**, `dart format --set-exit-if-changed` over

@@ -182,8 +182,9 @@ class WorldRouteDiagram extends StatelessWidget {
     final enabled = journey == null && reachable;
     final label =
         '${_kindLabel(node.kind)} ${node.name}. ${_stateLabel(state)}.';
+    final activate = enabled ? () => onDestination(node) : null;
     final child = GestureDetector(
-      onTap: enabled ? () => onDestination(node) : null,
+      onTap: activate,
       child: _MarkerShape(
         key: ValueKey('world-node-${node.id.value}-shape'),
         kind: node.kind,
@@ -236,6 +237,7 @@ class WorldRouteDiagram extends StatelessWidget {
         selected: here,
         sortKey: OrdinalSortKey((index + 10).toDouble()),
         label: label,
+        onTap: activate,
         child: ExcludeSemantics(child: child),
       ),
     );

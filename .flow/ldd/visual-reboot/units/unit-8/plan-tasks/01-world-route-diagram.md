@@ -223,9 +223,9 @@ device install. `world_bloc_test.dart` must pass without edits.
 You may choose private helper/painter names, test helper names and fixture
 placement, and small route-label padding/offset adjustments that prevent overlap
 without changing locked centers, association, text, semantics, or touch size.
-You may split private widgets inside the new file. Keep dartdoc in the existing
-app voice; do not add body comments beyond existing test arrange/act/assert
-structure.
+You may split private widgets inside the new file. Add no new app Dartdoc
+(`AGENTS.md` allows `///` only on the public API of `core` and `content`) and no
+body comments beyond existing test arrange/act/assert structure.
 
 You may not change the public constructor, node centers, route-label
 associations, node shapes/kind/state words, unknown label, route/danger wording,
