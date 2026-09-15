@@ -44,14 +44,12 @@ class InnScreen extends StatelessWidget {
           const Heading('A bed for the night'),
           Text('Health   ${state.hp} / ${state.maxHp}', style: mono),
           Text('Price    $innPrice gold', style: mono),
-          const SizedBox(height: 16),
           Commit(
             label: 'Rest',
             onPressed: state.canRest && state.gold >= innPrice
                 ? () => bloc.add(const RestPressed())
                 : null,
           ),
-          const SizedBox(height: 10),
           Text(_why(state), style: monoDim),
         ],
       ),

@@ -70,16 +70,20 @@ final class DropHero extends RosterChoice {
   String toString() => 'DropHero($id)';
 }
 
-/// Every hero on this install, and the three things that can be done about them.
+/// Every hero on this install, in a ruled list inside the town's room
+/// grammar, and the three things that can be done about them.
 ///
 /// **It reads the save document, not any bloc.** Blocs exist only for the hero
 /// being played, so every other row's health, gold, visits and depth are in the
 /// document and nowhere else. Reading the document is also what makes this screen
 /// a pure function of one value, which is what lets it be tested by pumping it.
 ///
-/// Nothing here is told apart by colour. The hero being played carries the word
-/// `playing`, and where each hero is standing is the last clause of their own
-/// line.
+/// Every answer is popped rather than called back, because each one rebuilds
+/// the whole bloc tree and this screen has to be off the stack first. Nothing
+/// here is told apart by colour: each row carries its own hero's key so its
+/// facts are never read as another hero's, the hero being played carries the
+/// word `playing`, and where each hero is standing is the last clause of their
+/// own line.
 class RosterScreen extends StatelessWidget {
   const RosterScreen({required this.document, this.notice, super.key});
 
@@ -95,6 +99,7 @@ class RosterScreen extends StatelessWidget {
       Notice(notice),
       for (final id in document.heroes.keys)
         _HeroRow(
+          key: Key('roster-hero-$id'),
           hero: document.heroes[id]!,
           playing: id == document.active,
           onPlay: id == document.active
@@ -102,7 +107,8 @@ class RosterScreen extends StatelessWidget {
               : () => Navigator.of(context).pop(PlayHero(id)),
           onDelete: () => _confirmDelete(context, id),
         ),
-      const SizedBox(height: 18),
+      const Divider(color: rule, height: 1),
+      const SizedBox(height: 12),
       Commit(label: 'New hero', onPressed: () => _create(context)),
     ],
   );
@@ -259,6 +265,7 @@ class _HeroRow extends StatelessWidget {
     required this.playing,
     required this.onPlay,
     required this.onDelete,
+    super.key,
   });
 
   final SavedHero hero;
@@ -267,50 +274,52 @@ class _HeroRow extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Row(
-      children: [
-        Expanded(
-          child: InkWell(
-            onTap: onPlay,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+  Widget build(BuildContext context) => Column(
+    children: [
+      const Divider(color: rule, height: 1),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: onPlay,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(hero.label, style: mono),
-                      if (playing) ...[
-                        const SizedBox(width: 10),
-                        const Text('playing', style: monoDim),
-                      ],
+                      Row(
+                        children: [
+                          Text(hero.label, style: mono),
+                          if (playing) ...[
+                            const SizedBox(width: 10),
+                            const Text('playing', style: monoDim),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(rosterLine(hero), style: monoDim),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(rosterLine(hero), style: monoDim),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 88,
-          child: FilledButton(
-            onPressed: onDelete,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 88,
+              child: TextButton(
+                onPressed: onDelete,
+                child: const Text(
+                  'Delete',
+                  maxLines: 1,
+                  style: TextStyle(fontFamily: 'monospace', fontSize: 12),
+                ),
+              ),
             ),
-            child: const Text(
-              'Delete',
-              maxLines: 1,
-              style: TextStyle(fontFamily: 'monospace', fontSize: 12),
-            ),
-          ),
+          ],
         ),
-      ],
-    ),
+      ),
+    ],
   );
 }
