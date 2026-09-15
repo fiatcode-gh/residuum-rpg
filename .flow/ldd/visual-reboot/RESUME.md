@@ -8,27 +8,38 @@
   directly at `5f8db47` / `06a8b9f` / `7cd32f2`; Unit 3 at `4164741`. Any older
   text calling Unit 4 "interrupted" or Unit 6 "uncommitted" is stale — it was
   corrected here after checking the forge and the branch graph.
-- **Unit 7 (town + transactional rooms + heroes) is the active unit. Its
-  contract is approved by the user as written** — `units/unit-7/CONTRACT.md`,
-  including the no-static-art lock. That approval authorizes planning only;
-  no production-writing worker may run before the plan is approved too.
-- Unit 8 is world + theme parity. **Unit 9 is new**: the leftover crawl HUD
-  chrome (depth header, labelled HP/Mana bars, icon control chips), placed
-  after Unit 8 by the user's decision so Unit 8 stays focused.
+- **Unit 7 (town + transactional rooms + heroes) is accepted and awaiting your
+  integration decision.** It sits on `residuum-visual-reboot-7` at `cb8fcbc`,
+  four commits off `main` at `319d945`, nothing pushed and no pull request open.
+- Unit 8 is world + theme parity. **Unit 9 is the crawl HUD chrome** (depth
+  header, labelled HP/Mana bars, icon control chips), placed after Unit 8 by the
+  user's decision.
 
 ## Exact next action
 
-`flow-planner` is producing the execution-grade `units/unit-7/PLAN.md` plus
-`units/unit-7/plan-tasks/NN-*.md` briefs. When it returns: verify the plan
-against the contract, present its dependency shape, locked decisions, proof
-strategy, and residual risks, and obtain **explicit plan approval** before
-dispatching the first `flow-plan-executor`.
+Obtain the user's integration decision for Unit 7 — pull request, direct merge,
+or hold. Publication is user-owned and nothing remote has happened. After
+integration, Unit 8 opens at the contract stage.
 
-Standing lock the plan must respect: Unit 7 delivers typographic and
-procedural treatment only — no image asset, no `assets/` declaration, no
-portrait slot. Portrait framing, room-background ratios, bulk static-art
-composition, and the icon-stroke language stay deferred to the post-Unit-8 art
-pass.
+Unit 7's final evidence at `cb8fcbc`, all architect-run from `packages/app`:
+full `flutter test` **816 passing**, `dart format --set-exit-if-changed` over
+`lib` and `test` 99 files 0 changed, `flutter analyze` no issues, scope audit
+clean (8 library files all under `lib/town/`, 11 test files, zero changes to
+`core`/`content`). Acceptance review `agent://U7Acceptance` returned ACCEPT WITH
+FINDINGS; its must-fix was a ledger disclosure and F2–F5 are corrected in
+`cb8fcbc`. Device gate `agent://U7Device` passed on `Medium_Phone`; both save
+slots verified byte-identical to their pre-session backups.
+
+Carried into Unit 8: finding **F6** — `character_screen.dart` is the room behind
+door 4 and is still the last old-grammar surface in the town, built from four
+full-width `FilledButton` slabs and a `panel` card. Also the town's only hue is
+Material's default seed on `FilledButton`; the town has no theme of its own.
+
+Standing locks: no image asset, no `assets/` declaration, no portrait slot, and
+**no new mark codepoint**; the art bible stays deferred to the post-Unit-8 art
+pass. Greyscale device twins are now required **only** for frames introducing a
+new mark codepoint or a non-neutral colour — Unit 8's Sea-Cave and Ruined Keep
+palettes qualify.
 
 ## Unit 7 recon summary (source-verified, 2026-09-15)
 
