@@ -103,16 +103,7 @@ class RosterScreen extends StatelessWidget {
           onDelete: () => _confirmDelete(context, id),
         ),
       const SizedBox(height: 18),
-      FilledButton(
-        onPressed: () => _create(context),
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-        child: const Text(
-          'New hero',
-          style: TextStyle(fontFamily: 'monospace', fontSize: 15),
-        ),
-      ),
+      Commit(label: 'New hero', onPressed: () => _create(context)),
     ],
   );
 

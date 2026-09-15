@@ -54,7 +54,8 @@ class _AlchemistScreenState extends State<AlchemistScreen> {
           children: [
             Purse(carried: state.gold, banked: state.bankedGold),
             const SizedBox(height: 10),
-            MaterialsPanel(materials: state.materials),
+            const Heading('Materials'),
+            MaterialRows(materials: state.materials),
             Notice(state.notice),
             const Heading('Brewing'),
             Text('$brewCost herbs make 1 healing potion.', style: mono),
@@ -69,20 +70,14 @@ class _AlchemistScreenState extends State<AlchemistScreen> {
               onChanged: (next) => setState(() => _pending = next),
             ),
             const SizedBox(height: 10),
-            FilledButton(
+            Commit(
+              label: 'Brew',
               onPressed: pending <= 0
                   ? null
                   : () {
                       bloc.add(BrewPressed(pending));
                       setState(() => _pending = 0);
                     },
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text(
-                'Brew',
-                style: TextStyle(fontFamily: 'monospace', fontSize: 15),
-              ),
             ),
             const SizedBox(height: 10),
             Text(

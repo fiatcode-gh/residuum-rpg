@@ -429,8 +429,7 @@ void main() {
 
       // act
       await enterTown(tester, 'Stonebridge');
-      await tester.tap(find.text('Tavern'));
-      await tester.pumpAndSettle();
+      await openTownDoor(tester, 'Tavern');
       await tester.tap(find.text('Ask $rumorPrice'));
       await tester.pumpAndSettle();
       await tester.pageBack();
@@ -458,8 +457,7 @@ void main() {
 
       // act
       await enterTown(tester, 'Stonebridge');
-      await tester.tap(find.text('Tavern'));
-      await tester.pumpAndSettle();
+      await openTownDoor(tester, 'Tavern');
 
       // assert
       expect(find.textContaining('anything left to tell'), findsOneWidget);
@@ -474,8 +472,7 @@ void main() {
 
       // act
       await enterTown(tester, 'Stonebridge');
-      await tester.tap(find.text('Tavern'));
-      await tester.pumpAndSettle();
+      await openTownDoor(tester, 'Tavern');
       await tester.tap(find.text('Ask $rumorPrice'));
       await tester.pumpAndSettle();
 

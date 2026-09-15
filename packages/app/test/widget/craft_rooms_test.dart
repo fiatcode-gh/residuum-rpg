@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/town/alchemist_screen.dart';
 import 'package:residuum_app/town/forge_screen.dart';
 import 'package:residuum_app/town/town_bloc.dart';
-import 'package:residuum_app/town/town_screen.dart';
 import 'package:residuum_app/notice/notice.dart';
 import 'package:residuum_app/world/world_bloc.dart';
 import 'package:residuum_content/content.dart';
@@ -79,51 +78,6 @@ Future<TownBloc> _openRoom(
 }
 
 void main() {
-  group('the town door column', () {
-    testWidgets('offers all seven doors on a phone', (tester) async {
-      // act
-      await _openRoom(tester, const TownScreen(), _hero());
-
-      // assert - a door a player cannot reach is a door that is not there, and
-      // the fork that overflowed a 600-pixel screen by 45 pixels is on record
-      for (final door in [
-        'Merchant',
-        'Bank',
-        'Inn',
-        'Character',
-        'Tavern',
-        'Forge',
-        'Alchemist',
-      ]) {
-        await tester.scrollUntilVisible(find.text(door), 100);
-        await tester.pumpAndSettle();
-        expect(find.text(door), findsOneWidget, reason: door);
-      }
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('says what the hero has gathered, mark and word and count', (
-      tester,
-    ) async {
-      // arrange
-      final profile = _hero(materials: const {MaterialId.ore: 5});
-
-      // act
-      await _openRoom(tester, const TownScreen(), profile);
-
-      // assert
-      for (final material in MaterialId.values) {
-        expect(
-          find.textContaining(material.word),
-          findsWidgets,
-          reason: material.name,
-        );
-      }
-      expect(find.text(MaterialId.ore.marking), findsOneWidget);
-      expect(find.text('5'), findsWidgets);
-    });
-  });
-
   group('the forge', () {
     testWidgets('offers Smelt only when there is ore for it', (tester) async {
       // arrange

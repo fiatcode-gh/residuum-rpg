@@ -45,17 +45,11 @@ class InnScreen extends StatelessWidget {
           Text('Health   ${state.hp} / ${state.maxHp}', style: mono),
           Text('Price    $innPrice gold', style: mono),
           const SizedBox(height: 16),
-          FilledButton(
+          Commit(
+            label: 'Rest',
             onPressed: state.canRest && state.gold >= innPrice
                 ? () => bloc.add(const RestPressed())
                 : null,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-            child: const Text(
-              'Rest',
-              style: TextStyle(fontFamily: 'monospace', fontSize: 15),
-            ),
           ),
           const SizedBox(height: 10),
           Text(_why(state), style: monoDim),

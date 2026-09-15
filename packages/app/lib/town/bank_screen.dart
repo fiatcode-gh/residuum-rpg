@@ -71,20 +71,14 @@ class _BankScreenState extends State<BankScreen> {
               cap: state.gold,
               onChanged: (next) => setState(() => _pendingBank = next),
             ),
-            FilledButton(
+            Commit(
+              label: 'Bank gold',
               onPressed: pendingBank <= 0
                   ? null
                   : () {
                       bloc.add(DepositGoldPressed(pendingBank));
                       setState(() => _pendingBank = 0);
                     },
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              child: const Text(
-                'Bank gold',
-                style: TextStyle(fontFamily: 'monospace', fontSize: 14),
-              ),
             ),
             if (state.gold <= 0) Text(purseIsShort, style: monoDim),
             const SizedBox(height: 10),
@@ -93,20 +87,14 @@ class _BankScreenState extends State<BankScreen> {
               cap: state.bankedGold,
               onChanged: (next) => setState(() => _pendingTake = next),
             ),
-            FilledButton(
+            Commit(
+              label: 'Take gold',
               onPressed: pendingTake <= 0
                   ? null
                   : () {
                       bloc.add(WithdrawGoldPressed(pendingTake));
                       setState(() => _pendingTake = 0);
                     },
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              child: const Text(
-                'Take gold',
-                style: TextStyle(fontFamily: 'monospace', fontSize: 14),
-              ),
             ),
             if (state.bankedGold <= 0) Text(vaultIsShort, style: monoDim),
             const Heading('Carried — lost if you die'),

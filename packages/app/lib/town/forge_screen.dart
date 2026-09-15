@@ -48,7 +48,8 @@ class _ForgeScreenState extends State<ForgeScreen> {
           children: [
             Purse(carried: state.gold, banked: state.bankedGold),
             const SizedBox(height: 10),
-            MaterialsPanel(materials: state.materials),
+            const Heading('Materials'),
+            MaterialRows(materials: state.materials),
             Notice(state.notice),
             const Heading('Smelting'),
             Text('$smeltCost ore makes 1 ingot.', style: mono),
@@ -59,20 +60,14 @@ class _ForgeScreenState extends State<ForgeScreen> {
               onChanged: (next) => setState(() => _pending = next),
             ),
             const SizedBox(height: 10),
-            FilledButton(
+            Commit(
+              label: 'Smelt',
               onPressed: pending <= 0
                   ? null
                   : () {
                       bloc.add(SmeltPressed(pending));
                       setState(() => _pending = 0);
                     },
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text(
-                'Smelt',
-                style: TextStyle(fontFamily: 'monospace', fontSize: 15),
-              ),
             ),
             const SizedBox(height: 10),
             Text(
