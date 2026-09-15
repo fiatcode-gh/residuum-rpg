@@ -2,24 +2,40 @@
 
 ## Where the epic stands (verified at source 2026-09-15)
 
-- **Units 0–6 are done and all of Units 1–6 are on `main`.** `main` is at
-  `319d945`, clean and in sync with `origin/main`. PR #13 `650fa7c`, #14
-  `15e737a`, #15 `55a226d`, #16 `319d945` are all MERGED; Units 1–2 landed
-  directly at `5f8db47` / `06a8b9f` / `7cd32f2`; Unit 3 at `4164741`. Any older
-  text calling Unit 4 "interrupted" or Unit 6 "uncommitted" is stale — it was
-  corrected here after checking the forge and the branch graph.
-- **Unit 7 (town + transactional rooms + heroes) is accepted and awaiting your
-  integration decision.** It sits on `residuum-visual-reboot-7` at `cb8fcbc`,
-  four commits off `main` at `319d945`, nothing pushed and no pull request open.
-- Unit 8 is world + theme parity. **Unit 9 is the crawl HUD chrome** (depth
-  header, labelled HP/Mana bars, icon control chips), placed after Unit 8 by the
-  user's decision.
+- **Units 0–7 are done and all of Units 1–7 are on `main`.** `main` is at
+  `f322d78`, clean and in sync with `origin/main`. PR #13 `650fa7c`, #14
+  `15e737a`, #15 `55a226d`, #16 `319d945`, and #17 `f322d78` are all MERGED;
+  Units 1–2 landed directly at `5f8db47` / `06a8b9f` / `7cd32f2`; Unit 3 at
+  `4164741`.
+- **Unit 8 is code-complete, locally accepted, and on a PR.** The whole
+  correction round is one commit, `54d6b4b` `fix: close unit eight review
+  findings`, on `residuum-visual-reboot-8` over `c85c7f9` and pushed; PR
+  **#18** `feat: reboot the world map and regional material` is open against
+  `main`. The independent acceptance review had rejected the unit; all four
+  findings are closed. U8-AR-3 went to the repository convention rather than the
+  brief (no new app **library** Dartdoc; both briefs corrected in place, source
+  already complied). U8-AR-1 was the one real defect and is Red-backed. The
+  scoped closure review (`agent://U8Closure`) returned ACCEPT WITH FINDINGS,
+  zero must-fix, and its three optional craft items are folded in.
+- Final architect gates at `54d6b4b` from `packages/app`: full `flutter test`
+  **826 passing**, `dart format --set-exit-if-changed` over `lib` and `test`
+  100 files 0 changed, `flutter analyze` no issues, `core`/`content` untouched.
 
 ## Exact next action
 
-Obtain the user's integration decision for Unit 7 — pull request, direct merge,
-or hold. Publication is user-owned and nothing remote has happened. After
-integration, Unit 8 opens at the contract stage.
+Run Unit 8's deferred device gate (contract criterion 9) on `Medium_Phone`
+before Unit 9 opens, then integrate PR #18 on the user's word. Nothing else in
+Unit 8 is outstanding, and the working tree is clean.
+
+## Deferred device evidence
+
+The user explicitly deferred Unit 8's AVD/device-size and greyscale validation
+to a later session. Do not start an emulator without being asked. Two specific
+questions are waiting on it: whether a real screen reader reaches the below-fold
+diagram nodes (the 430-pixel diagram sits in `world_screen.dart`'s `ListView`,
+and at 800x600 the Crypt and Stonebridge nodes carry `isHidden` — identically at
+`c85c7f9`, so it is Task 01 geometry, not a correction defect), and whether the
+Sea-Cave strata and Ruined Keep fracture strokes read at phone density.
 
 Unit 7's final evidence at `cb8fcbc`, all architect-run from `packages/app`:
 full `flutter test` **816 passing**, `dart format --set-exit-if-changed` over

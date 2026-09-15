@@ -7,6 +7,7 @@ import 'package:residuum_core/core.dart';
 import '../town/town_bloc.dart';
 import '../town/town_style.dart';
 import 'world_bloc.dart';
+import 'world_route_diagram.dart';
 
 /// The overworld: where the hero is, where they could go, and what is here.
 ///
@@ -14,11 +15,10 @@ import 'world_bloc.dart';
 /// it, and every one of them comes home with one pop — which is the shape the
 /// crawl's exits were already built for.
 ///
-/// Nothing is told apart by colour. A place carries a bracketed marker whose
-/// shape and letter say what kind it is, its name in words, and a phrase saying
-/// how it stands to the hero. A place nobody has heard of is a row of question
-/// marks rather than a dimmer version of a name, so the map reads in greyscale
-/// and reads aloud.
+/// Nothing is told apart by colour. The route diagram carries each discovered
+/// place's shape, kind, name, and state, while an undiscovered place remains a
+/// neutral question mark at its fixed site so the map reads in greyscale and
+/// reads aloud.
 class WorldScreen extends StatelessWidget {
   const WorldScreen({
     required this.onEnterTown,
@@ -56,59 +56,63 @@ class WorldScreen extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
     body: SafeArea(
       child: BlocBuilder<WorldBloc, WorldViewState>(
-        builder: (context, state) => Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: _Standing(state: state),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                children: [
-                  const Heading('The world'),
-                  for (final node in context.read<WorldBloc>().map.nodes)
-                    _Place(
-                      node: node,
-                      state: state,
-                      onGo: () => _confirmTravel(context, node, state),
+        builder: (context, state) {
+          final world = context.read<WorldBloc>();
+          final destinations = state
+              .destinationsFrom(world.map)
+              .map((node) => node.id)
+              .toSet();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: _Standing(state: state),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  children: [
+                    const Heading('The world'),
+                    BlocBuilder<TownBloc, TownViewState>(
+                      buildWhen: (before, after) =>
+                          before.profile != after.profile,
+                      builder: (context, _) => WorldRouteDiagram(
+                        map: world.map,
+                        whereabouts: state.world,
+                        destinations: destinations,
+                        dangerFor: world.dangerFor,
+                        onDestination: (node) =>
+                            _confirmTravel(context, node, state),
+                      ),
                     ),
-                  for (final unknown in _unheardOf(context, state))
-                    _Unheard(key: ValueKey(unknown.value)),
-                  Notice(state.notice),
-                  if (state.log.isNotEmpty) ...[
-                    const Heading('The road so far'),
-                    for (final line in state.log.reversed.take(8))
-                      Text(line, style: monoDim),
+                    Notice(state.notice),
+                    if (state.log.isNotEmpty) ...[
+                      const Heading('The road so far'),
+                      for (final line in state.log.reversed.take(8))
+                        Text(line, style: monoDim),
+                    ],
+                    const SizedBox(height: 12),
                   ],
-                  const SizedBox(height: 12),
-                ],
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-              child: _Here(
-                state: state,
-                onEnterTown: onEnterTown,
-                onEnterDungeon: onEnterDungeon,
-                onResumeCrawl: onResumeCrawl,
-                onDelveAnew: onDelveAnew,
-                onOpenRoster: onOpenRoster,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                child: _Here(
+                  state: state,
+                  onEnterTown: onEnterTown,
+                  onEnterDungeon: onEnterDungeon,
+                  onResumeCrawl: onResumeCrawl,
+                  onDelveAnew: onDelveAnew,
+                  onOpenRoster: onOpenRoster,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
     ),
   );
-
-  /// The places on the map the hero has never been told about.
-  static List<NodeId> _unheardOf(BuildContext context, WorldViewState state) =>
-      [
-        for (final node in context.read<WorldBloc>().map.nodes)
-          if (!state.world.discovered.contains(node.id)) node.id,
-      ];
 
   /// Asks before spending days, and says how many.
   ///
@@ -202,67 +206,6 @@ class _Standing extends StatelessWidget {
     final left = journey.daysLeft == 1 ? 'one day' : '${journey.daysLeft} days';
     return 'Day ${state.world.day}. $left still to walk.';
   }
-}
-
-/// One place on the map, and the control that walks to it.
-class _Place extends StatelessWidget {
-  const _Place({required this.node, required this.state, required this.onGo});
-
-  final WorldNode node;
-  final WorldViewState state;
-  final VoidCallback onGo;
-
-  /// The marker for a kind of place: shape and letter, never a hue.
-  static String markerFor(NodeKind kind) => switch (kind) {
-    NodeKind.town => '[T]',
-    NodeKind.dungeon => '(D)',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    if (!state.world.discovered.contains(node.id)) {
-      return const SizedBox.shrink();
-    }
-    final here = node.id == state.at && !state.isTravelling;
-    final reachable = state
-        .destinationsFrom(context.read<WorldBloc>().map)
-        .any((other) => other.id == node.id);
-    return ItemRow(
-      marking: markerFor(node.kind),
-      name: here ? '${node.name} — you are here' : node.name,
-      action: here ? 'Here' : 'Walk',
-      onPressed: here || state.isTravelling || !reachable ? null : onGo,
-      reason: _why(here: here, reachable: reachable),
-    );
-  }
-
-  /// Why the hero cannot set out for here, or null when nothing needs saying.
-  ///
-  /// **The two cases a dead Walk covers are not the same case.** Standing
-  /// somewhere explains itself — the row already says "you are here" — and a
-  /// road that does not exist does not, so only that one gets a sentence. It is
-  /// `beginTravel`'s own words, because the rule and the row must not drift into
-  /// two ways of saying one refusal.
-  String? _why({required bool here, required bool reachable}) {
-    if (here || state.isTravelling) return null;
-    return reachable ? null : 'no road runs there from here';
-  }
-}
-
-/// A place the hero has heard nothing about.
-///
-/// Drawn rather than left out, because a map with nothing missing from it is a
-/// menu — and a tavern that sells directions has to be visibly worth the coin.
-class _Unheard extends StatelessWidget {
-  const _Unheard({super.key});
-
-  @override
-  Widget build(BuildContext context) => const ItemRow(
-    marking: '[?]',
-    name: 'Somewhere you have not heard of',
-    action: 'Unknown',
-    onPressed: null,
-  );
 }
 
 /// What standing here lets the hero do.

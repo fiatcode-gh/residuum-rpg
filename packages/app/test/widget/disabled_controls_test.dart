@@ -137,7 +137,7 @@ void main() {
     });
   });
 
-  group('a dead Walk on the world screen', () {
+  group('a dead destination on the world map', () {
     testWidgets('says there is no road when there is none', (tester) async {
       await onAPhone(tester);
       // arrange
@@ -157,8 +157,10 @@ void main() {
       // act
       await app.pump(tester);
 
-      // assert — the crypt's roads run to the two towns and nowhere else
-      expect(find.text('no road runs there from here'), findsOneWidget);
+      // assert — the hero stands at the crypt, whose roads run to the two
+      // towns, so the heard-of sea-cave has no road from here
+      expect(find.text('NO ROAD FROM HERE'), findsOneWidget);
+      expect(find.text('no road runs there from here'), findsNothing);
     });
 
     testWidgets('says nothing about the place the hero is standing on', (
@@ -172,7 +174,8 @@ void main() {
       await app.pump(tester);
 
       // assert
-      expect(find.text('no road runs there from here'), findsNothing);
+      expect(find.text('NO ROAD FROM HERE'), findsNothing);
+      expect(find.text('HERE'), findsOneWidget);
     });
   });
 }

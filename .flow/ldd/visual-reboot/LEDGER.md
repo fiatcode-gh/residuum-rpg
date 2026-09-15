@@ -34,16 +34,19 @@ The epic was opened from an approved external planning handoff:
 
 ## Current state
 
-- **Unit 0 complete; no production code written.** Its source-verified
-  baseline is `units/unit-0/recon.md`.
-- **Units 1–6 are all accepted and present on `main`.** Verified at source on
-  2026-09-15: PR #13 `650fa7c`, #14 `15e737a`, #15 `55a226d`, #16 `319d945`
-  are all MERGED, and `main` is at `319d945` with a clean worktree in sync
-  with `origin/main`. Earlier "interrupted"/"uncommitted" wording in this file
-  for Units 4 and 6 is superseded.
+- **Units 1–7 are accepted and present on `main`.** Verified at source on
+  2026-09-15: PR #13 `650fa7c`, #14 `15e737a`, #15 `55a226d`, #16 `319d945`,
+  and #17 `f322d78` are MERGED. `main` is at `f322d78` with a clean worktree
+  in sync with `origin/main`.
 - Sea-Cave and Ruined Keep material parity remains Unit 8.
-- **Unit 7 (town + transactional rooms + heroes) is the active unit.** It is
-  in the contract stage; no implementation is authorized.
+- **Unit 8 implementation is ready as a paused handoff on
+  `residuum-visual-reboot-8`.** Tasks 01–03 focused proof remains accepted, but
+  the independent acceptance review rejected the integrated unit with four
+  findings: semantic node activation, live-component render proof, a
+  documentation-plan conflict, and universal decoration clipping. At the user's
+  instruction, record the review, commit and push this handoff, then pause
+  before corrections or repository gates. The Unit 8 AVD/device pass remains
+  deferred to the next unit session.
 
 ## Epic status
 
@@ -56,8 +59,7 @@ The epic was opened from an approved external planning handoff:
 | Unit 4 — turn timeline + duplicate identity | Unit 3 | **merged** to `main` | final tree `dart format` 19 files/0 changed, analyzer clean, full app 765 tests; combined Unit 3 + Unit 4 colour/greyscale gate on `emulator-5554` | merged by PR #13 `650fa7c` and PR #14 `15e737a`; code `0d27a18` |
 | Unit 5 — log drawer | Unit 3 | **merged** to `main` | 797 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT WITH FINDINGS, all must-fix corrected; full criterion 12 colour + greyscale device gate on `emulator-5554` | merged by PR #15 at `55a226d`; `0bf6da1` is an ancestor; contract: `units/unit-5/CONTRACT.md` |
 | Unit 6 — character / spells / pack | Unit 3 | **merged** to `main` | 789 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT; Medium_Phone colour/greyscale device gate | merged by PR #16 at `319d945` (code `89927ef`); contract: `units/unit-6/CONTRACT.md` |
-| Unit 7 — town + rooms + heroes | Unit 6 | **accepted**; awaiting integration | 816 app tests, `dart format` 99 files 0 changed, analyzer clean; acceptance review ACCEPT WITH FINDINGS, all taken findings corrected; `Medium_Phone` device gate with greyscale twins | branch `residuum-visual-reboot-7` at `cb8fcbc`; contract: `units/unit-7/CONTRACT.md` |
-| Unit 8 — world + theme parity | Unit 7 | pending | final accessibility + device-size pass | Sea-Cave/Keep material identity |
+| Unit 8 — world + theme parity | Unit 7 | **review rejected; paused after handoff** | Tasks 01–03 focused proof passes; U8-AR-1..4 need resolution; repository/device gates deferred | contract: `units/unit-8/CONTRACT.md`; plan: `units/unit-8/PLAN.md` |
 | Unit 9 — crawl HUD chrome | Unit 8 | pending | own colour/greyscale device pass | depth header, labelled HP/Mana bars, icon control chips |
 
 Recon locks the execution order: **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9**.
@@ -893,3 +895,268 @@ Append-only. Supersede old decisions; do not rewrite history.
   remaining filled controls are now the one coloured element on an otherwise
   neutral screen. It carries no meaning by itself and reads in greyscale, but it
   is unauthored colour and the town has no theme of its own.
+
+### Unit 7 integration and Unit 8 opening
+
+- 2026-09-15 — The user reported PR #17 merged. Fresh `origin/main` verification
+  found `f322d78` (`Merge pull request #17 from
+  fiatcode-gh/residuum-visual-reboot-7`) at `HEAD`, with Unit 7's four commits
+  in its first-parent history and a clean checkout. Unit 7 is integrated.
+- 2026-09-15 — The user selected a **spatial route diagram** for the fixed
+  five-node world and **route-linked regional material** for road encounters.
+  The resulting Unit 8 contract is drafted at `units/unit-8/CONTRACT.md`.
+  Its WHAT, boundaries, and acceptance criteria require explicit approval
+  before planning; no implementation is authorized.
+- 2026-09-15 — **The user approved the Unit 8 contract as written.** That
+  approval covers the fixed five-node route diagram, discovery boundary,
+  route-linked material, and preservation contract in
+  `units/unit-8/CONTRACT.md`. It authorizes execution planning only.
+- 2026-09-15 — `Unit8Planner` returned **READY** after producing
+  `units/unit-8/PLAN.md` and three fresh-executor briefs: fixed world diagram,
+  deterministic regional materials, then explicit route-lifetime theme wiring.
+  Main inspected the artifacts against source seams and direct callsites. The
+  plan's gate is COR/TTC/CRF PASS; SEC SKIP for no trust boundary. It awaits
+  explicit execution approval; no production implementation is authorized.
+- 2026-09-15 — **The user approved Unit 8's execution-grade plan.** This
+  authorizes local implementation in its three task capsules only. The next
+  action is creating the non-`main` `residuum-visual-reboot-8` checkout from
+  `f322d78` and dispatching task 01; no remote publication is authorized.
+- 2026-09-15 — **Task 01 is accepted.** It added the fixed 430-pixel,
+  discovery-safe world diagram and migrated world navigation tests on
+  `residuum-visual-reboot-8`, without touching forbidden production paths or
+  LDD records. Main independently inspected the patch, corrected four plan
+  deviations in a fresh bounded capsule, and ran
+  `flutter test test/widget/world_screen_test.dart`: **49 passing**. Task 02
+  may now begin.
+- 2026-09-15 — **User decision:** defer Unit 8's planned AVD/device-size and
+  greyscale evidence to the next unit session. This changes only the timing of
+  that acceptance evidence; Task 02 and Task 03 implementation, focused proof,
+  and final code review remain required before this session closes.
+- 2026-09-15 — **Task 02 is accepted.** It added explicit, deterministic
+  Crypt, Sea-Cave, Ruined Keep, and lowland material contexts plus isolated
+  renderer proofs, without touching Task 01, core/content, or architect
+  records. Main inspected the strict mappings and material invariants, then ran
+  the exact focused renderer suite: **69 passing**. A seven-line app-Dartdoc
+  convention correction followed; its source-only diff cannot affect that
+  behavior evidence. Task 03 may now begin.
+- 2026-09-15 — **Task 03 is accepted.** `GameScreen` now receives immutable
+  regional context only at the session construction boundary. Main inspected
+  the required cutover and navigation-output contract, then ran its exact
+  focused integration suite: **197 passing**. A two-line app-test Dartdoc
+  correction followed; it is source-only and leaves that behavioral proof
+  applicable. Tasks 01–03 are complete; integrated acceptance review and
+  repository gates remain before local completion.
+- 2026-09-15 — **User direction:** pause Unit 8 immediately after the
+  independent acceptance-review receipt is recorded. Do not begin repository
+  gates or corrections in this session. Before closing, create one local commit
+  and push `residuum-visual-reboot-8`; the user explicitly authorized that
+  stakeholder-visible branch update. A fresh session will choose its own
+  inference provider and resume from the review outcome; the device gate was
+  already deferred.
+- 2026-09-15 — **Independent acceptance review: REJECT.** The review accepts
+  the fixed graph, strict mapping, deterministic materials, context lifetime,
+  and focused proof as supported, but found four correction items:
+  - **U8-AR-1 (Important):** enabled diagram nodes expose no semantic tap
+    action because their child gesture semantics are excluded.
+  - **U8-AR-2 (Important):** the route/crawl output tests reconstruct a
+    `MaterialComponent` from the live plan instead of rendering the live
+    component, leaving adoption/cache behavior unproven.
+  - **U8-AR-3 (Minor):** the Task 02 brief asks for `MaterialMark.pattern`
+    Dartdoc, which conflicts with the repository rule forbidding new app
+    Dartdoc. Resolve the plan/convention contradiction before changing code.
+  - **U8-AR-4 (Minor):** grit, speck, crack, and edge passes are not all
+    clipped to their owning cell rect, contrary to the locked containment
+    invariant.
+  The user directed a pause after recording this receipt. Commit and push the
+  feature branch as the authorized handoff; do not correct findings or run
+  repository gates until the fresh session resumes.
+
+### Unit 8 correction round
+
+- 2026-09-15 — **Resumed at `c85c7f9` on `residuum-visual-reboot-8`**, clean and
+  in sync with `origin/residuum-visual-reboot-8`. The previous session's agent
+  receipts did not survive the session, so all four findings were re-verified
+  directly at source before any correction was authorized. Each one reproduces:
+  `_nodeSlot` wraps its `GestureDetector` in `ExcludeSemantics` under a
+  `Semantics(button: true)` that declares no `onTap`;
+  `_navigationMaterialBytes` builds a fresh `MaterialComponent(material.plan)`
+  for its `actual` bytes; `_drawCellDecoration` clips the pattern pass only.
+- 2026-09-15 — **U8-AR-3 is resolved in favour of the repository convention,
+  not the brief.** `AGENTS.md` allows Dartdoc only on the public API of `core`
+  and `content`, and `MaterialMark` is app API, so the Task 02 requirement to
+  "document it as 0..1 deterministic phase" was the defect. The 0..1 phase
+  constraint now lives in the brief and in the determinism tests instead. Both
+  Unit 8 briefs are corrected in place (`02-regional-materials.md` requirement
+  and latitude clause, `01-world-route-diagram.md` latitude clause); the shipped
+  source already complies, because `MaterialMark.pattern` carries no Dartdoc and
+  `dungeon_scene_material.dart`'s Dartdoc count fell from 50 to 37 over the
+  unit. No production edit was needed to close this finding.
+- 2026-09-15 — **Finding triage, recorded because it changes what the evidence
+  can claim.** Only U8-AR-1 is a live defect with an observable Red: a screen
+  reader cannot activate a reachable node. U8-AR-2 and U8-AR-4 are
+  proof-strength and invariant-conformance items. Every decoration geometry is
+  already inset inside its cell — grit reaches `0.8·cell + 1.2`, the speck
+  centre `0.35·cell + 10` with radius `1.6`, and the rounded edge cap ends
+  `0.1` inside the rect — so the missing clip leaks no pixel today and the
+  worker was told explicitly not to manufacture a Red for either.
+- 2026-09-15 — One in-plan correction capsule is dispatched to a fresh plan
+  executor (`U8Corrections`) covering U8-AR-1, U8-AR-2 and U8-AR-4 across
+  `world_route_diagram.dart`, `world_screen_test.dart`,
+  `dungeon_scene_material.dart` and `dungeon_material_paint_test.dart`. It runs
+  non-isolated on the unit branch with every git state-mutating command
+  withheld, because the architect's `.flow` records are deliberately dirty.
+- 2026-09-15 — **The correction round landed as expected.** Worker receipt:
+  `agent://U8Corrections`, uncommitted on the unit branch. U8-AR-1 had a real
+  Red first: `tester.semantics.tap` on the reachable Crypt node threw
+  `StateError: The given node does not support SemanticsAction.tap`, and the
+  one-line `onTap: enabled ? () => onDestination(node) : null` on the outer
+  `Semantics` closes it with no label, key, centre, size or style moved.
+  U8-AR-2 is now honest: `_navigationMaterialBytes` renders the live scene
+  `MaterialComponent` through a new `_renderComponentBytes`, while
+  `expected`/`wrong` stay plan-derived. U8-AR-4 wraps all five decoration
+  passes in one `save`/`clipRect(cell.rect)`/`restore` and returns early for an
+  undecorated cell, so `render` still allocates nothing.
+- 2026-09-15 — **The worker proved the AR-4 no-Red claim instead of asserting
+  it**: it snapshotted `_drawCellDecoration`'s exact bytes, temporarily reverted
+  the clip, ran the new four-palette containment test against the unclipped
+  renderer, saw it pass, then restored byte-identical content and re-ran. That
+  is the right shape for a conformance fix with no observable delta.
+- 2026-09-15 — **Dartdoc scope is narrowed further, deliberately.** U8-AR-3's
+  rule is *no new Dartdoc on app library API*. Documented private test
+  fixtures are a different thing and already landed on `main`:
+  `world_screen_test.dart` carried 17 such lines at `f322d78`. The two new
+  helper-doc lines explaining which render helper is the expectation side are
+  therefore in-convention and are not a finding.
+- 2026-09-15 — **The broad gate found a real Unit 8 regression that no focused
+  gate could see, for the second epic running.** Full `flutter test` from
+  `packages/app`: **825 tests, 1 failure** —
+  `disabled_controls_test.dart` "a dead Walk on the world screen says there is
+  no road when there is none" pins `find.text('no road runs there from here')`.
+  It is **Task 01's** regression, not the correction round's: Task 01 deleted the
+  world menu that rendered core's `TravelRefusal` as visible prose, and every
+  Unit 8 gate until now was a named focused file (49-world, 69-material,
+  197-integration), so the suite ran whole for the first time at this point.
+  `dart format --set-exit-if-changed` over `lib` and `test` is 100 files 0
+  changed and `flutter analyze` reports no issues.
+- 2026-09-15 — **Decision: the diagram's word replaces the sentence, and the
+  test migrates.** A destination with no road is now a disabled node reading
+  `NO ROAD FROM HERE`, which contract criterion 1 and the Task 01 brief already
+  locked; boundary 8 requires the replaced menu composition to be deleted
+  outright. `TravelRefusal('no road runs there from here')` still exists in
+  `packages/core/lib/src/world/travel.dart` and stays covered by
+  `core/test/world/travel_test.dart`; it simply has no app surface, because only
+  a reachable node can be selected. The player still learns the fact, so this is
+  a composition change the approved plan authorized, not a lost refusal.
+  Migration dispatched to `U8DeadNode`.
+- 2026-09-15 — **Process correction for the rest of this epic:** a focused-file
+  gate is not a unit gate. Run the full `packages/app` suite at the end of every
+  task, not only at unit close, and audit `packages/app/test` as well as
+  `packages/app/lib` (the Unit 7 F1 lesson, now paid for twice).
+- 2026-09-15 — **The migration landed and the repository gates are green**, all
+  architect-run from `packages/app` over the uncommitted worktree: full
+  `flutter test` **826 passing**, `dart format --set-exit-if-changed` over `lib`
+  and `test` 100 files 0 changed, `flutter analyze` no issues. Worker receipt:
+  `agent://U8DeadNode`. The group is now `a dead destination on the world map`
+  and asserts `NO ROAD FROM HERE` appears exactly once from the crypt while the
+  old sentence is gone, and that a fresh hero at Stonebridge sees no roadless
+  node and exactly one `HERE`. Its first `// assert` comment claimed the crypt
+  node "is reachable" when the hero is standing on it; that is corrected to the
+  node reading `HERE`.
+- 2026-09-15 — **Scope audit over both trees this time.** Zero changes under
+  `packages/core` and `packages/content`, for the whole unit against `f322d78`
+  and for this session. This session touched five files, all under
+  `packages/app`: `lib/world/world_route_diagram.dart`,
+  `lib/game/dungeon_scene_material.dart`, `test/widget/world_screen_test.dart`,
+  `test/game/dungeon_material_paint_test.dart`, and
+  `test/widget/disabled_controls_test.dart`.
+- Test count trail for this unit: 816 at Unit 7's close, 825 with Unit 8's
+  correction round (of which one failed), 826 green after the migration split
+  the roadless-node assertion in two.
+
+### Unit 8 acceptance closure
+
+- 2026-09-15 — **The scoped closure review returned ACCEPT WITH FINDINGS, zero
+  must-fix**, over the uncommitted correction round. Full text:
+  `agent://U8Closure`. It ran every mutation probe in a disposable `rsync` copy
+  and left the repository byte-identical to the state it reviewed.
+- **U8-AR-1 is closed and Red-backed.** Reverting only
+  `world_route_diagram.dart` to `c85c7f9` fails the new test with `Bad state:
+  The given node does not support SemanticsAction.tap`. The reviewer's semantics
+  dump of a fully discovered world is the useful artifact: `Town Northgate.
+  Reachable.` and `Dungeon The Crypt. Reachable.` carry tap; `No road from
+  here.`, `Here.`, all three `Travel in progress.` nodes and all three
+  `Unknown location. Not discovered.` slots do not. One node per label, so no
+  duplicate announcement.
+- **U8-AR-2 is closed as "renders the live component", and the wording matters
+  (U8-CR-3).** Instrumenting `adopt` past its identity guard produced exactly
+  two calls in the whole of `world_screen_test.dart`, neither in a test that
+  calls `_navigationMaterialBytes`. So those six tests prove the live scene
+  component's own output matches the plan-derived expectation — strictly
+  stronger than the reconstruction they replaced — but **adoption/cache
+  behaviour is owned by `dungeon_material_paint_test.dart`**, whose `refresh
+  cached material light only for a new projection` test is killed by a mutant
+  that strips `_rebuildRenderPlan()` from `adopt`, while all 52 world-screen
+  tests survive it. Do not claim the navigation tests prove adoption.
+- **U8-AR-4 is closed as a containment conformance pin, Green-before by
+  design (U8-CR-4).** The reviewer hashed raw RGBA of a full arena per palette
+  and of 40 maximal-decoration renders (5 pattern phases x 4 palettes x wall/
+  floor) against the pre-clip source: bit-identical. The clip changes no pixel
+  today. The new test keeps real teeth anyway, because `_drawCellBase` and
+  `_drawVisibleLight` sit outside any per-cell clip, so a mask or base-rect
+  regression still turns the ring non-void, and a future decoration pass added
+  outside the `save`/`restore` block would be caught.
+- **Residual risk accepted:** the clip makes leakage unobservable, so the
+  geometry-inset reasoning recorded above is no longer independently checked by
+  any test. That is the intended meaning of the invariant — contain first — but
+  it means a future escaping decoration will be silently clipped rather than
+  caught.
+- **Pre-existing Task 01 geometry the device gate must confirm:** at the default
+  800x600 test surface the semantics dump shows `Dungeon The Crypt. Reachable.`
+  and `Town Stonebridge. Here.` flagged `isHidden`, because the 430-pixel
+  diagram sits inside `world_screen.dart`'s `ListView` and those nodes fall
+  below the viewport. The flag is identical at `c85c7f9`, so the correction
+  round did not cause it, and standard viewport semantics restore the nodes
+  after a scroll. Whether a real screen reader reaches the below-fold nodes is
+  exactly what the deferred device gate is for.
+- 2026-09-15 — Optional craft findings U8-CR-1 (one activation closure instead
+  of two identical ones), U8-CR-2 (decide decoration presence once in
+  `_PreparedMaterialCell` instead of five null tests per cell per frame) and the
+  duplicated label regex half of U8-CR-5 are folded into the same change through
+  `U8Craft`. The reviewer's suggested test split in U8-CR-5 is **declined**: it
+  would duplicate the one `ensureSemantics` handle for no proof gained, and the
+  reviewer agreed it is not materially better.
+- 2026-09-15 — **The craft round is in** (`agent://U8Craft`): one `activate`
+  local feeds both `GestureDetector.onTap` and `Semantics.onTap`;
+  `_PreparedMaterialCell` carries `hasDecoration`, computed once per plan, and
+  `_drawCellDecoration` opens with `if (!cell.hasDecoration) return;`; the
+  Crypt label regex is one `cryptLabel` local. Two architect corrections
+  followed: the worker had deleted the blank line before the field list, and its
+  first `hasSpeck` re-derived `paint.speck && mark.speck` a third time — the
+  exact hand-sync hazard U8-CR-2 existed to remove — so that conjunction is now
+  one `speck` local feeding `speckCenter`, `speckPaint` and `hasDecoration`.
+- 2026-09-15 — **Unit 8 is locally complete and accepted on code.** Final
+  architect-run gates from `packages/app` over the uncommitted worktree: full
+  `flutter test` **826 passing**, `dart format --set-exit-if-changed` over `lib`
+  and `test` 100 files 0 changed, `flutter analyze` no issues. Scope audit: zero
+  changes under `packages/core` and `packages/content`; five files touched this
+  session, all under `packages/app` (`lib/world/world_route_diagram.dart`,
+  `lib/game/dungeon_scene_material.dart`, `test/widget/world_screen_test.dart`,
+  `test/game/dungeon_material_paint_test.dart`,
+  `test/widget/disabled_controls_test.dart`).
+- **The one criterion still open is acceptance criterion 9, the device gate**,
+  deferred by explicit user decision: `Medium_Phone` colour evidence for a
+  fresh/discovery-gated world, a fully discovered world, an active journey, the
+  Sea-Cave and Ruined Keep delves, and road fights on the lowland, Sea-Cave and
+  Ruined Keep routes, with greyscale twins for every non-neutral regional frame.
+  Two specific questions are waiting for it: whether a real screen reader
+  reaches the below-fold diagram nodes, and whether the Sea-Cave strata and
+  Ruined Keep fracture strokes read at phone density. Back up both device save
+  slots first and read `app_flutter/save.json`, never `files/save.json`.
+- 2026-09-15 — **The user authorized the commit, the push and the PR.** The
+  session's work is one commit, `54d6b4b` `fix: close unit eight review
+  findings`, pushed to `origin/residuum-visual-reboot-8`, and PR **#18**
+  `feat: reboot the world map and regional material` is open against `main`.
+  Its body records the deferred device evidence explicitly, so a reviewer is not
+  led to believe the unit was validated on hardware.
+- Today's journal entry for the unit is logged under `[[Residuum]]` in
+  `journals/2026_09_15.md` with the device gate carried as a fresh TODO.

@@ -67,6 +67,17 @@ FloorMap _arenaWith(Position position, Tile tile) {
 ({Position position, MaterialTileKind kind, MaterialKnowledge knowledge}) _cell(
   MaterialCell cell,
 ) => (position: cell.position, kind: cell.kind, knowledge: cell.knowledge);
+List<Object?> _markFacts(MaterialPlan plan) => [
+  for (final entry in plan.marks.entries)
+    (
+      entry.key,
+      entry.value.grit,
+      entry.value.speck,
+      entry.value.crack,
+      entry.value.edge,
+      entry.value.pattern,
+    ),
+];
 
 MaterialPlan _plan(GameState game) => materialPlan(game, DungeonPalette.crypt);
 
@@ -210,7 +221,13 @@ void main() {
         kind: MaterialTileKind.floor,
         knowledge: MaterialKnowledge.visible,
       );
-      const mark = MaterialMark(grit: 0.3, speck: false, crack: 0, edge: 0);
+      const mark = MaterialMark(
+        grit: 0.3,
+        speck: false,
+        crack: 0,
+        edge: 0,
+        pattern: 0,
+      );
       final cells = [cell];
       final marks = {position: mark};
       final masonry = {position};
@@ -219,6 +236,7 @@ void main() {
         marks: marks,
         masonry: masonry,
         heroPosition: position,
+        palette: DungeonPalette.crypt,
       );
 
       expect(() => plan.cells.add(cell), throwsUnsupportedError);
@@ -480,5 +498,124 @@ void main() {
         );
       }
     });
+    test('every palette preserves the known-only geometry boundary', () {
+      // arrange
+      final map = FloorMap.parse(_arena);
+      final visible = computeFov(map, const Position(1, 1), fovRadius);
+      const hidden = Position(9, 0);
+      final hiddenAsWall = _game(map: map, visible: visible, explored: visible);
+      final hiddenAsFloor = _game(
+        map: _arenaWith(hidden, Tile.floor),
+        visible: visible,
+        explored: visible,
+      );
+      final withRemembered = _game(
+        map: map,
+        visible: visible,
+        explored: {...visible, const Position(9, 2)},
+      );
+      final withoutRemembered = _game(
+        map: map,
+        visible: visible,
+        explored: visible,
+      );
+
+      // act and assert
+      for (final palette in const [
+        DungeonPalette.crypt,
+        DungeonPalette.seaCave,
+        DungeonPalette.ruinedKeep,
+        DungeonPalette.lowlandRoad,
+      ]) {
+        final wallPlan = materialPlan(hiddenAsWall, palette);
+        final floorPlan = materialPlan(hiddenAsFloor, palette);
+        expect(wallPlan.cells, floorPlan.cells);
+        expect(wallPlan.masonry, floorPlan.masonry);
+        expect(_markFacts(wallPlan), _markFacts(floorPlan));
+
+        final rememberedPlan = materialPlan(withRemembered, palette);
+        final visiblePlan = materialPlan(withoutRemembered, palette);
+        for (final cell in rememberedPlan.cells) {
+          if (cell.knowledge != MaterialKnowledge.visible) continue;
+          expect(
+            rememberedPlan.markAt(cell.position),
+            visiblePlan.markAt(cell.position),
+            reason: '${palette.material} ${cell.position}',
+          );
+        }
+      }
+    });
+    test('carries palette identity and independent pattern phases', () {
+      // arrange
+      final visible = computeFov(
+        FloorMap.parse(_arena),
+        const Position(1, 1),
+        fovRadius,
+      );
+      const rememberedPosition = Position(9, 2);
+      final game = _game(
+        visible: visible,
+        explored: {...visible, rememberedPosition},
+      );
+      const palettes = [
+        DungeonPalette.crypt,
+        DungeonPalette.seaCave,
+        DungeonPalette.ruinedKeep,
+        DungeonPalette.lowlandRoad,
+      ];
+
+      // act
+      final plans = [
+        for (final palette in palettes) materialPlan(game, palette),
+      ];
+
+      // assert
+      for (var index = 0; index < palettes.length; index++) {
+        final repeated = materialPlan(game, palettes[index]);
+        expect(plans[index].palette, same(palettes[index]));
+        expect(plans[index].cells, repeated.cells);
+        expect(plans[index].masonry, repeated.masonry);
+        expect(plans[index].marks, repeated.marks);
+        expect(plans[index].heroPosition, repeated.heroPosition);
+      }
+      final visiblePosition = const Position(2, 1);
+      for (final plan in plans) {
+        expect(plan.markAt(rememberedPosition)!.pattern, 0.0);
+      }
+      expect(
+        plans.map((plan) => plan.markAt(visiblePosition)!.pattern).toSet(),
+        hasLength(4),
+      );
+      expect(_markFacts(plans.first), isNot(equals(_markFacts(plans[1]))));
+    });
+
+    test(
+      'regional material planning does not consume either gameplay stream',
+      () {
+        // arrange
+        final visible = computeFov(
+          FloorMap.parse(_arena),
+          const Position(1, 1),
+          fovRadius,
+        );
+        final game = _game(visible: visible, explored: visible);
+        final rngState = game.rng.state;
+        final lootRngState = game.lootRng.state;
+
+        // act
+        for (final palette in const [
+          DungeonPalette.crypt,
+          DungeonPalette.seaCave,
+          DungeonPalette.ruinedKeep,
+          DungeonPalette.lowlandRoad,
+        ]) {
+          materialPlan(game, palette);
+        }
+
+        // assert
+        expect(game.rng.state, rngState);
+        expect(game.lootRng.state, lootRngState);
+      },
+    );
   });
 }

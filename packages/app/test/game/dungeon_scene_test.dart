@@ -399,6 +399,7 @@ void main() {
       marks: {},
       masonry: {},
       heroPosition: hero,
+      palette: DungeonPalette.crypt,
     );
     const glyphs = [
       GlyphCell(down, '#', Colors.white, fullOpacity),

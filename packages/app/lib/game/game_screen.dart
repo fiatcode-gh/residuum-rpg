@@ -23,7 +23,9 @@ const shelfWaitKey = Key('shelf-wait');
 const controlsKey = Key('crawl-controls');
 
 class GameScreen extends StatelessWidget {
-  const GameScreen({super.key});
+  const GameScreen({required this.palette, super.key});
+
+  final DungeonPalette palette;
 
   /// The crawl, and the refusal that makes the stairs the only way out.
   ///
@@ -83,7 +85,7 @@ class GameScreen extends StatelessWidget {
                                   DungeonSceneHost(
                                     key: dungeonSceneHostKey,
                                     state: state,
-                                    palette: paletteFor(bloc.dungeon),
+                                    palette: palette,
                                     onTap: (position) => _onMapTap(
                                       context,
                                       bloc,
