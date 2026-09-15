@@ -633,9 +633,10 @@ Append-only. Supersede old decisions; do not rewrite history.
 ### Unit 6 acceptance receipt
 
 - 2026-09-15 — **Unit 6 is accepted locally** on
-  `residuum-visual-reboot-6`, with `55a226d` as its source base. It is
-  intentionally uncommitted: no commit, push, pull request, or other remote
-  action was authorized. The crawl long Pack is replaced by
+  `residuum-visual-reboot-6`, with `55a226d` as its source base. It is committed
+  locally as `89927ef` and open as
+  [PR #16](https://github.com/fiatcode-gh/residuum-rpg/pull/16); no merge or
+  other remote action is authorized. The crawl long Pack is replaced by
   `CrawlPackScreen`/shared `PackContents`; town Character is an overview that
   routes to Gear, read-only Spells, Skills, and town Pack. Core, content,
   saves, dependencies, and generated paths remain untouched.

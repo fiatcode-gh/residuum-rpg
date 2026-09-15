@@ -70,11 +70,12 @@
   SHA-256 identical (`18995c4a…`, `8909f70c…`). The AVD here is now
   `Medium_Phone` (Android 17), not `Pixel_10`, and it segfaults when launched
   from a tool shell — ask the user to start it.
-- **Unit 6 is accepted locally, uncommitted**, on
-  `residuum-visual-reboot-6` at source base `55a226d`. It replaces the crawl
-  long Pack with `CrawlPackScreen`/shared `PackContents`, and makes town
-  Character a compact route hub for Gear, read-only Spells, Skills, and Pack.
-  Its authority and task receipts are in `units/unit-6/`.
+- **Unit 6 is accepted and committed locally** as `89927ef` on
+  `residuum-visual-reboot-6` at source base `55a226d`, with
+  [PR #16](https://github.com/fiatcode-gh/residuum-rpg/pull/16) open. It
+  replaces the crawl long Pack with `CrawlPackScreen`/shared `PackContents`,
+  and makes town Character a compact route hub for Gear, read-only Spells,
+  Skills, and Pack.
 - Acceptance review returned **ACCEPT** (COR/TTC/CRF PASS; SEC skip). A bounded
   follow-up keeps the selected Pack ChoiceChip semantically enabled while its
   no-op tap preserves game/log identity, and corrects stale known-spell
