@@ -6,6 +6,7 @@ import 'package:flutter/material.dart' hide Route;
 import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/crawl_status.dart';
 import 'package:residuum_app/game/dungeon_material.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
@@ -1019,8 +1020,8 @@ void main() {
 
       // assert
       expect(find.byType(GameScreen), findsOneWidget);
-      expect(find.textContaining('The road'), findsOneWidget);
-      expect(find.textContaining('Depth'), findsNothing);
+      expect(find.text('THE ROAD'), findsOneWidget);
+      expect(find.byKey(depthPairKey), findsNothing);
       final bytes = (await tester.runAsync(
         () => _navigationMaterialBytes(
           tester,
@@ -1048,8 +1049,8 @@ void main() {
 
       // assert
       expect(find.byType(GameScreen), findsOneWidget);
-      expect(find.textContaining('The road'), findsOneWidget);
-      expect(find.textContaining('Depth'), findsNothing);
+      expect(find.text('THE ROAD'), findsOneWidget);
+      expect(find.byKey(depthPairKey), findsNothing);
       expect(app.saved!.world.journey!.to, seaCave);
       expect(app.saved!.run, isNull);
       expect(app.saved!.inside, isFalse);
@@ -1077,8 +1078,8 @@ void main() {
 
       // assert
       expect(find.byType(GameScreen), findsOneWidget);
-      expect(find.textContaining('The road'), findsOneWidget);
-      expect(find.textContaining('Depth'), findsNothing);
+      expect(find.text('THE ROAD'), findsOneWidget);
+      expect(find.byKey(depthPairKey), findsNothing);
       expect(app.saved!.world.journey!.to, ruinedKeep);
       expect(app.saved!.run, isNull);
       expect(app.saved!.inside, isFalse);
@@ -1337,7 +1338,7 @@ void main() {
         app.saved!.run!.map.toAscii(),
         startDungeonRunAt(seaCave, profile).map.toAscii(),
       );
-      expect(find.textContaining('The Sea-Cave — depth 1/'), findsOneWidget);
+      expect(find.text('THE SEA-CAVE'), findsOneWidget);
       final bytes = (await tester.runAsync(
         () => _navigationMaterialBytes(
           tester,
@@ -1365,7 +1366,7 @@ void main() {
         app.saved!.run!.map.toAscii(),
         startDungeonRunAt(ruinedKeep, profile).map.toAscii(),
       );
-      expect(find.textContaining('The Ruined Keep — depth 1/'), findsOneWidget);
+      expect(find.text('THE RUINED KEEP'), findsOneWidget);
       final bytes = (await tester.runAsync(
         () => _navigationMaterialBytes(
           tester,
@@ -1623,7 +1624,7 @@ void main() {
       expect(app.saved!.run!.depth, 1);
       expect(app.saved!.run!.visit, camp.visit + 1);
       expect(app.saved!.inside, isTrue);
-      expect(find.textContaining('The Sea-Cave — depth 1/'), findsOneWidget);
+      expect(find.text('THE SEA-CAVE'), findsOneWidget);
     });
 
     testWidgets('booting inside a sea-cave crawl lands back in the sea-cave', (
@@ -1646,7 +1647,7 @@ void main() {
       await app.pump(tester);
 
       // assert
-      expect(find.textContaining('The Sea-Cave — depth 1/'), findsOneWidget);
+      expect(find.text('THE SEA-CAVE'), findsOneWidget);
       expect(app.saved!.dungeon, seaCave);
       expect(find.text('The crawl resumes.'), findsOneWidget);
       final bytes = (await tester.runAsync(
@@ -1684,7 +1685,7 @@ void main() {
       await app.pump(tester);
 
       // assert
-      expect(find.textContaining('The Ruined Keep — depth 1/'), findsOneWidget);
+      expect(find.text('THE RUINED KEEP'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -1722,10 +1723,10 @@ void main() {
       // straight in would never reach `loadRun`, and the total the codec
       // recomputes is exactly what this test is about
       expect(delveDepth(seaCave, worldSeed, camp.visit), 6);
-      expect(find.textContaining('The Sea-Cave — depth 2/6'), findsOneWidget);
+      expect(find.text('2 / 6'), findsOneWidget);
     });
 
-    testWidgets('says the hit points, the condition and the place at once', (
+    testWidgets('shows the hit points, the condition and the place at once', (
       tester,
     ) async {
       // arrange
@@ -1743,15 +1744,12 @@ void main() {
 
       // act
       await app.pump(tester);
-      final line = tester
-          .widgetList<Text>(find.textContaining('The Sea-Cave'))
-          .single
-          .data!;
 
       // assert
-      expect(line, contains('20 / 20'));
-      expect(line, contains('Steady'));
-      expect(line, contains('The Sea-Cave — depth 1/4'));
+      expect(find.text('HP 20 / 20'), findsOneWidget);
+      expect(find.text('Steady'), findsOneWidget);
+      expect(find.text('THE SEA-CAVE'), findsOneWidget);
+      expect(find.text('1 / 4'), findsOneWidget);
       expect(delveDepth(seaCave, 909, 1), 4);
     });
   });

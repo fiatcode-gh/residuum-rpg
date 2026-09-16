@@ -68,7 +68,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.textContaining('The Crypt — depth 1/'), findsOneWidget);
+      expect(find.text('THE CRYPT'), findsOneWidget);
       expect(app.saved!.active, 'hero-1');
     });
 

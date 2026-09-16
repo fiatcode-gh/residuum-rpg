@@ -186,7 +186,7 @@ void main() {
       // assert
       expect(find.text('RESIDUUM'), findsOneWidget);
       expect(find.text('Resume the crawl (depth 2 of 5)'), findsOneWidget);
-      expect(find.textContaining('Depth'), findsNothing);
+      expect(find.byType(GameScreen), findsNothing);
     });
 
     testWidgets('a potion bought while camped is in the resumed pack', (
@@ -278,7 +278,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.textContaining('The Crypt — depth 2/'), findsOneWidget);
+      expect(find.text('THE CRYPT'), findsOneWidget);
+      expect(find.text('2 / 5'), findsOneWidget);
       expect(app.saved!.run!.hero.position, camp.hero.position);
       expect(app.saved!.run!.visit, camp.visit);
     });
@@ -352,7 +353,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.textContaining('The Crypt — depth 1/'), findsOneWidget);
+      expect(find.text('THE CRYPT'), findsOneWidget);
+      expect(find.text('1 / 5'), findsOneWidget);
       expect(app.saved!.run!.visit, camp.visit + 1);
       expect(app.saved!.run!.depth, 1);
       expect(app.saved!.inside, isTrue);
