@@ -162,6 +162,10 @@ int _hash(Position position, int salt, int extra) {
 
 double _unit01(int h) => (h & 0xFFFFFFFF) / 0xFFFFFFFF;
 
+/// A presentation-stable 0..1 draw from the material layer's own hashing.
+double materialPhase(Position position, int salt, int extra) =>
+    _unit01(_hash(position, salt, extra));
+
 /// Builds the material plan for one crawl.
 ///
 /// Only tiles in `visible ∪ explored` appear; the visible set stays
