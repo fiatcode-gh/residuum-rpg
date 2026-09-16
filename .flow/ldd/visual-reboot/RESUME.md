@@ -1,131 +1,139 @@
 # Resume Visual Reboot
 
-**Unit 8's deferred device gate is closed and Unit 9 is locally accepted as of
-2026-09-16.** This branch is ready for the user's integration decision. Read
-this file, then the final Unit 9 records at `LEDGER.md:1301-1478`; do not
-reconstruct evidence from old worker transcripts.
+**Units 1–9 are merged. Unit 10 (authored art integration) is implemented,
+locally accepted by review, and four of five device capsules are accepted as of
+2026-09-16.** Read this file, then `units/unit-10/CONTRACT.md`,
+`units/unit-10/DEVICE-CHECKPOINT.md`, then `LEDGER.md:1878-2030`.
+`units/unit-10/recon.md` is superseded on one point: the authored dungeon pass
+goes after the visible light, not in `_drawCellBase`. The external bundle at
+`external/unit-10-chatgpt-handoff/` is unvalidated evidence, already reconciled;
+do not reopen it.
 
 ## Exact state of the working tree
 
-- Branch **`residuum-visual-reboot-9`**, branched from `2b0e0a4` (the merged
-  Unit 8 head on `main`). **Nothing is committed on this branch.** No remote
-  branch exists; no push and no pull request are authorized.
-- Modified, all Unit 9 implementation: `packages/app/lib/game/game_screen.dart`
-  (916 → 750 lines), `test/widget/world_screen_test.dart`,
-  `test/widget/suspend_door_test.dart`, `test/widget/roster_session_test.dart`,
-  `test/widget/boot_wiring_test.dart`, `test/battle_characterization_test.dart`.
-- Renamed: `test/widget/hud_depth_test.dart` →
-  `test/widget/crawl_status_test.dart` (recorded as `RM` by git).
-- **Untracked and load-bearing:** `packages/app/lib/game/crawl_status.dart`. A
-  `git checkout`/`clean` would destroy the unit. Do not clean the tree.
-- Also modified/untracked: architect-owned `.flow/ldd/visual-reboot/LEDGER.md`,
-  `RESUME.md`, and `units/unit-9/`.
-- `packages/core` and `packages/content` have zero changes.
+- Branch **`residuum-visual-reboot-10`**, HEAD `4bf865c`. **Nothing is committed
+  on this branch.** No remote branch; no push or pull request authorized.
+- Modified, all Unit 10: `packages/app/lib/main.dart`,
+  `packages/app/pubspec.yaml`, `packages/app/lib/town/{town_screen,forge_screen,
+  tavern_screen}.dart`, `packages/app/lib/game/{game_screen,dungeon_material,
+  dungeon_scene_material,dungeon_scene}.dart`.
+- **Untracked and load-bearing — a `git clean` destroys the unit:**
+  `.gitattributes`, `tool/derive-visual-assets.sh`,
+  `packages/app/assets/visual/` (29 derived assets),
+  `packages/app/lib/art/{art_assets,dungeon_art}.dart`,
+  `packages/app/lib/town/illustration.dart`,
+  `packages/app/lib/game/action_icon.dart`, six new test files under
+  `packages/app/test/{art,game,widget}/`.
+- **Untracked and irreplaceable:** `art/visual-reboot/` — 31 approved masters,
+  48.1 MB, verified against `SHA256SUMS.txt`. The repository cannot regenerate
+  these. They are LFS-attributed but **not yet committed**.
+- `packages/core` and `packages/content`: zero changes.
 
 ## Fresh evidence accepted (do not re-earn)
 
-Architect-run from `packages/app` at this exact tree, 2026-09-16:
+Architect-run from `packages/app` at this tree: `dart format
+--set-exit-if-changed --output=none lib test` 112 files 0 changed;
+`flutter analyze` no issues; full `flutter test` **870 passing**.
 
-- `dart format --set-exit-if-changed --output=none lib test` — 101 files, 0 changed
-- `flutter analyze` — no issues
-- full `flutter test` — **834 passing** (826 at Unit 8's close)
+`agent://U10Acceptance` — whole-unit review, **no Critical**, all 18 criteria
+conformant, four safety invariants verified structural at source.
+`agent://U10Corrections` — its three Important findings closed, each rewritten
+proof demonstrated to fail when production is broken.
+`agent://U10Closure` — scoped closure review **PASS, zero findings**.
 
-`agent://U9AcceptanceResume` then independently reviewed the actual patch and
-untracked `crawl_status.dart` against the approved contract and plan: **PASS**,
-no Critical or Important findings, no tree mutation. Its source inspection
-confirmed fact preservation, deletion of the old formatter, no ellipsis path,
-monochrome accessibility, migrated behavioural tests, height-budget structure
-and app-only scope. The review barrier is closed; this proof remains fresh.
+Device capsules accepted, artifacts in
+`.flow/evidence/visual-reboot/unit-10-device/`:
 
-## Final acceptance
+- **A towns and rooms** — Stonebridge banded, Northgate genuinely bare, forge and
+  tavern art in both towns, nothing displaced, greyscale legible.
+- **B Crypt and boot cost** — authored art unambiguously on screen versus a
+  `4bf865c` baseline; unknown pure black; remembered flat. Architect-measured
+  patch luminance current versus baseline: 0.7613/0.7585 near hero,
+  0.6271/0.6261 far, 0.6567/0.6543 remembered — **no net luminance shift**, light
+  still owns brightness. Cold boot +104 ms (controlled 5v5) to +172 ms, spread
+  229–450 ms reported honestly.
+- **C regional cues and stairs** — all PASS except the escalation below. Stairs
+  UNKNOWN from B closed PASS.
+- **D lowland road** — criterion 9 proved the strong way: the map crop
+  (`1080x1676+0+84`) is **pixel-identical** to a `4bf865c` baseline,
+  `AE = RMSE = MAE = 0` at fuzz 0, re-verified independently by the architect
+  with `magick compare -metric AE` on the retained crops. The reason is
+  structural: neither art enum has a `lowlandRoad` entry. All full-frame
+  difference is the in-scope control row below y=1760.
 
-Unit 9's two-row crawl status passed the exact-tree format/analyze/full-suite
-gate (101 files unchanged, analyzer clean, 834 tests passing), independent
-acceptance review, and all contracted `Medium_Phone` frames. The current/base
-comparison measured the map cost at 52 px — exactly one text row. All staged
-device captures restored both `app_flutter` save slots byte-identically.
+## Device state at pause
 
-Unit 8's folded gate also passed: discovery/full/journey worlds, both regional
-delves, all three road variants and their greyscale reading, plus the user's
-physical TalkBack traversal to both below-fold dungeon nodes. The inherited
-five-control `Drink (…)` truncation appears identically at `2b0e0a4` and is not
-part of Unit 9's frozen control change.
+Capsule D finished cleanly before the pause took effect, so **nothing is in
+flight**. The device (`emulator-5554`, user-started) has the **current-tree
+APK** `50e82220…6bf3e2` installed with the app force-stopped; no baseline APK is
+left behind. No `.worktrees/` entry remains (`git worktree list` shows only the
+main worktree). `git status --porcelain` is the expected 25-entry inventory.
+Both device save slots sit at the epic baseline:
+`save.json`
+`18995c4ac55edc6dfb23b0b13b0e09cf2d79747e6028964b0187a2a4182b46d3` and
+`save-previous.json`
+`8909f70c64c633c1678b42ff90390216be2e76c29e3ff2f482219d470f8a9b11`, read from
+`app_flutter/`, never `files/`. Re-verify these before trusting any new frame.
 
-## Exact next action
+## Exact next action, in order
 
-Ask the user how to integrate the locally accepted uncommitted Unit 9 branch.
-No commit, push or pull request has been made or authorized.
+1. The user-approved **sheet re-derivation**; nothing blocks it now that no
+   capsule is building APKs from this tree. Lower the high-pass amplitude in
+   `tool/derive-visual-assets.sh` so the six material sheets keep mean ~0.50 —
+   the softLight identity that preserves the measured no-luminance-shift
+   property — while roughly halving standard deviation from today's 0.087–0.118
+   toward ~0.045–0.060. Regenerate all assets, re-run the suite, no Dart change.
+2. Re-shoot capsule C's Sea-Cave and Ruined Keep frames against the same
+   fixtures so before and after compare directly.
+3. Capsule **E** — control row at both enumerated five-control densities
+   including the bottom-floor underfoot scene, disabled `Drink`, the shelf with
+   every icon-bearing action, the open `+N` sheet, **no ellipsis anywhere**, icon
+   legibility by shape in greyscale, and the crawl viewport height delta against
+   `4bf865c` (two runs cost ~44 dp; quantify, do not re-litigate).
+4. Then the user's integration decision. Note the masters are LFS-attributed but
+   uncommitted, so the first commit must have LFS working.
 
-## What Unit 9 built
+## Open decisions and judgement calls on record
 
-The crawl's single scale-down status string became two rows in the new
-`packages/app/lib/game/crawl_status.dart`: a header (place name upper-cased
-left, battle glyph and word centre, `depth / deepest` right; `THE ROAD` with the
-depth-pair `SizedBox` **absent** on the road) and a resource row of two labelled
-monochrome meters in the `_SkillRow` grammar. The Mana cell exists only when
-`knownSpells.isNotEmpty`; `Ward n` is that cell's note only while a ward stands.
-`_line`, `_magic` and `_whereabouts` are deleted; `_condition` and `_battleWord`
-survive verbatim; `_BattleGlyph` moved. `GameScreen` now calls
-`CrawlStatus(state: state, dungeon: bloc.dungeon)` at `game_screen.dart:124`.
-
-User-locked, and not reopenable without them: the mock's red HP / blue Mana
-fills are **rejected**; its icon control chips are **deferred** to the
-post-Unit-8 art pass; the control row stays text-only.
-
-## Epic state
-
-- **Units 1–8 are merged to `main`** at `2b0e0a4`, which is in sync with
-  `origin/main`. PRs #13–#18 all MERGED.
-- **Unit 8's acceptance criterion 9 is still open** and, by the user's decision,
-  **folds into Unit 9's device pass**. Unit 8 stays formally open until it
-  passes. Its two waiting questions: whether a real screen reader reaches the
-  below-fold world-diagram nodes, and whether the Sea-Cave strata and Ruined
-  Keep fracture strokes read at phone density.
-- Unit 9 is the last unit in the locked order 1 → … → 9.
+- **Sheet re-derivation is approved** (option: quieten the sheets). Rejected:
+  accepting the weakening; raising `seaCaveStone`/`ruinedKeepMasonry` pattern
+  strength, which would reopen Unit 2/8 values.
+- **Frame-timing UNKNOWN is closed by architect decision, not evidence.** Two
+  capsules, two instruments (`gfxinfo framestats`, `SurfaceFlinger --latency`),
+  both unusable on this emulator. Closed on consistent no-visible-hitch
+  observation across 15+ launches plus the structural fact that decode happens
+  once at boot and the shader rebuilds per plan adoption. Reopenable with
+  profile-mode timeline evidence.
+- **Architect observation never escalated to a decision:** the forge and tavern
+  interiors are far brighter and warmer than the rest of the dark UI, so each is
+  a strong focal element. Text stays primary; the art is user-approved. If the
+  user ever wants them knocked back it is a re-derivation, not a code change.
 
 ## Traps that can burn the next session
 
-- **`crawl_status.dart` is untracked.** Any clean/checkout/stash loses the unit.
-- **The mock's layout was already built once and beaten by hardware.**
-  Pre-change `game_screen.dart:246-258` recorded a stretched bar plus three
-  fixed labels that overflowed a phone by 64 pixels once the dungeon was named,
-  invisible to widget tests because the default surface is wider than a phone.
-  Nothing on the new rows may ellipsise.
-- **The widget harness can now reach phone width**: `test/support/phone.dart`
-  `onAPhone` gives 411.4 x 923.4 logical pixels. But `flutter_test`'s bundled
-  font is not the device's, so glyph advances and scaled-cell legibility remain
-  device facts.
-- **The map is `Expanded` (`game_screen.dart:76`)** — new chrome never overflows
-  the crawl, it silently shrinks the play surface. Criterion 5 caps the cost at
-  one extra text row, measured on device.
-- **A mark codepoint can render as a colour emoji on device and no widget test
-  will catch it.** Unit 5 shipped `↕` (U+2195), resolved through the colour
-  emoji font; it is now `⇅` (U+21C5). U+2B65 is tofu on this target. Unit 9 adds
-  no codepoint.
+- **`art/visual-reboot/` is untracked and irreplaceable.** Never clean, checkout,
+  stash or reset the main worktree. Baseline builds go in a throwaway
+  `.worktrees/u10-baseline`, removed after use.
+- `Medium_Phone` must be **user-started**; tool-shell launch segfaults. It was
+  running at pause.
+- Both save slots are backed up and restored per capsule, from `app_flutter/`,
+  never `files/`, proved by SHA-256 under one scheme.
+- Fixtures must be **generated by real game code** (`startDungeonRunAt` + `step`)
+  and staged at `visit: 1`. A level-0 hero cannot cross the Sea-Cave or Ruined
+  Keep first floor alive; capsule C found workable seeds 12 and 47.
+- A bare `await warmUpArt()` in a widget test **hangs**; it needs
+  `tester.runAsync`.
+- The synthetic sheet in an authored-material test must be **two-tone**: a
+  uniform mid-grey sheet is softLight's identity and turns tests green for the
+  wrong reason.
+- The base-tracked test files are byte-unchanged and must stay so; if one fails,
+  the implementation is wrong.
 - Suites run per package directory; there is no root pubspec.
-- A first delve bumps `visit` to 1, so device scenes must be probed at
-  `visit: 1`, never `visit: 0`.
-- The AVD is `Medium_Phone` (Android 17); ask the user to start it. Copy BOTH
-  device save slots aside before any install and verify SHA-256 after; read
-  `app_flutter/save.json`, never `files/save.json`.
-- The approved mock is untracked evidence at
-  `.flow/evidence/visual-reboot/residuum_visual_reboot_approved_mock.png`.
 
-## Locked inherited contracts
+## Still open beyond Unit 10
 
-Section 18 baseline in `LEDGER.md:69-116` (Flame never authoritative game state;
-graphical glyphs; map-first melee; four-region rule; accessibility by shape or
-word, never hue alone) plus everything in `../m3/LEDGER.md` (save v3, band lines
-as controls, house method D113, CI/merge flow). Standing locks: no image asset,
-no `assets/` declaration, no portrait slot, no new mark codepoint; the art bible
-stays deferred to the post-Unit-8 art pass.
-
-## Still open beyond Unit 9
-
-- The post-Unit-8 art pass (portraits, bulk static art, room-background ratios,
-  the full non-dungeon icon language) has no owning unit.
-- Does old-wave m3-quests (M3Q, save v4, `../m3/LEDGER.md`) still run, and where
-  in the sequence?
-- Curated static-art generation (handoff 11.2) needs an owner and a tool outside
-  the repo; nothing in Unit 9 depends on it.
+- A controls unit for the remaining icons (`melee`, `back`) and any further
+  control-row work.
+- Portraits and room-background ratios remain unowned.
+- Does old-wave m3-quests (M3Q, save v4, `../m3/LEDGER.md`) still run, and where?
 - Deep history: `../legacy/LEDGER.md` (D1–D126) and `../m3/LEDGER.md`.
