@@ -22,13 +22,13 @@ authored dungeon pass goes after the visible light, not in `_drawCellBase`.
 
 ## Exact next action
 
-**CI was still pending at session close** — the three `gates` legs (core,
-content, app) had not reported; GitGuardian passed. Check
-`gh pr checks 20 --repo fiatcode-gh/residuum-rpg` first. If green, the merge is
-the user's decision; if red, read the failing leg before touching anything.
+**Nothing is outstanding except the user's merge decision.** CI is green on
+PR #20 at head `47a19f0`: `gates (app)`, `gates (content)`, `gates (core)` and
+GitGuardian all pass. The `app` leg ran the full suite on a checkout **without
+LFS**, independently confirming that the shipped assets build without the
+masters present.
 
-Merge, review response and any follow-up are user-owned. Nothing else in Unit 10
-is outstanding.
+Merge, review response and any follow-up are user-owned.
 
 ## Evidence on record (do not re-earn)
 

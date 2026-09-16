@@ -2154,3 +2154,11 @@ Append-only. Supersede old decisions; do not rewrite history.
   **CI is unconfirmed and the merge decision stays with the user.**
 - Worktree is clean; nothing remains uncommitted. Merge, review response and any
   follow-up remain user-owned.
+- 2026-09-16 — **CI is green on PR #20.** At head `47a19f0`: `gates (app)`
+  pass in 2m8s, `gates (content)` pass in 1m14s, `gates (core)` pass in 1m26s,
+  GitGuardian pass. The `app` leg is the meaningful one — it resolves, checks
+  lockfile drift and runs the full suite on a checkout **without LFS**, which is
+  the independent confirmation that criterion 2's no-LFS-build claim holds in a
+  clean environment rather than only on this workstation.
+- The only outstanding action is the user's merge decision. A later docs-only
+  record commit would re-run these same gates without changing app behaviour.
