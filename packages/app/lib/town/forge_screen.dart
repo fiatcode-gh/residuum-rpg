@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
 
+import '../art/art_assets.dart';
 import '../game/item_presentation.dart';
+import 'illustration.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
 
@@ -54,6 +56,11 @@ class _ForgeScreenState extends State<ForgeScreen> {
           children: [
             Purse(carried: state.gold, banked: state.bankedGold),
             Notice(state.notice),
+            const Illustration(
+              EnvironmentArt.forge,
+              height: roomIllustrationHeight,
+              key: forgeIllustrationKey,
+            ),
             const Heading('Materials'),
             MaterialRows(materials: state.materials),
             const Heading('Smelting'),
