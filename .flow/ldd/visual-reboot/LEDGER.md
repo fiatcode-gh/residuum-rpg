@@ -2136,3 +2136,21 @@ Append-only. Supersede old decisions; do not rewrite history.
   48.1 MB of LFS-attributed masters under `art/visual-reboot/`. No push, pull
   request, merge or other remote action has been performed or authorized at any
   point in this unit. Next gate is the user's integration decision.
+
+### Unit 10 integration
+
+- 2026-09-16 — **The user chose commit, push and pull request, and it is done.**
+  Six commits on `residuum-visual-reboot-10`, one per plan task plus the LDD
+  records and the masters: `d3ddebe` pipeline and catalogue, `b7fb5d8`
+  illustrations, `153d65e` authored dungeon material, `5c22e43` icons and the
+  control row, `095bfb4` records, `3f828b2` the masters.
+- **The repository's first LFS push succeeded**: 31 objects, 50 MB. The
+  committed blob for a master is a pointer (`oid sha256:0617ccb0…`,
+  `size 2247654`) and `git lfs ls-files` lists all 31, so the masters are in LFS
+  and the 1.9 MB of derived assets remain ordinary git objects.
+- **[PR #20](https://github.com/fiatcode-gh/residuum-rpg/pull/20) is open**
+  against `main`, MERGEABLE, 101 files, +7781/-236. GitGuardian passed; the
+  three `gates` legs (core, content, app) were still pending at session close —
+  **CI is unconfirmed and the merge decision stays with the user.**
+- Worktree is clean; nothing remains uncommitted. Merge, review response and any
+  follow-up remain user-owned.
