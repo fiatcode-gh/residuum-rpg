@@ -110,10 +110,11 @@ void main() {
       // act
       await _pushCrawl(tester, game);
 
-      // assert - engaged: the crossed mark and the word in the line
+      // assert - engaged: the crossed mark and the word, its own cell on the
+      // header row
       expect(find.byType(GameScreen), findsOneWidget);
       expect(find.text('✖'), findsOneWidget);
-      expect(find.textContaining('Engaged 1'), findsOneWidget);
+      expect(find.text('Engaged 1'), findsOneWidget);
       expect(find.textContaining('Watched'), findsNothing);
       expect(find.textContaining('Pack (0)'), findsOneWidget);
     });
@@ -129,7 +130,7 @@ void main() {
 
       // assert - watched: the eye mark and the word; no dock, no Engaged
       expect(find.text('◉'), findsOneWidget);
-      expect(find.textContaining('Watched 1'), findsOneWidget);
+      expect(find.text('Watched 1'), findsOneWidget);
       expect(find.textContaining('Engaged'), findsNothing);
       expect(find.byType(BattleDock), findsNothing);
     });

@@ -34,19 +34,18 @@ The epic was opened from an approved external planning handoff:
 
 ## Current state
 
-- **Units 1–7 are accepted and present on `main`.** Verified at source on
-  2026-09-15: PR #13 `650fa7c`, #14 `15e737a`, #15 `55a226d`, #16 `319d945`,
-  and #17 `f322d78` are MERGED. `main` is at `f322d78` with a clean worktree
-  in sync with `origin/main`.
-- Sea-Cave and Ruined Keep material parity remains Unit 8.
-- **Unit 8 implementation is ready as a paused handoff on
-  `residuum-visual-reboot-8`.** Tasks 01–03 focused proof remains accepted, but
-  the independent acceptance review rejected the integrated unit with four
-  findings: semantic node activation, live-component render proof, a
-  documentation-plan conflict, and universal decoration clipping. At the user's
-  instruction, record the review, commit and push this handoff, then pause
-  before corrections or repository gates. The Unit 8 AVD/device pass remains
-  deferred to the next unit session.
+- **Units 1–8 are accepted and present on `main`.** Verified at source on
+  2026-09-16: PR #13 `650fa7c`, #14 `15e737a`, #15 `55a226d`, #16 `319d945`,
+  #17 `f322d78`, and #18 `2b0e0a4` are MERGED. `main` is at `2b0e0a4` with a
+  clean worktree in sync with `origin/main`.
+- **Unit 8's acceptance criterion 9 — the `Medium_Phone` device gate — is the
+  one criterion still open**, deferred by explicit user decision and now
+  outstanding after integration. Two questions wait on it: whether a real
+  screen reader reaches the below-fold world-diagram nodes, and whether the
+  Sea-Cave strata and Ruined Keep fracture strokes read at phone density.
+- **Unit 9 (crawl HUD chrome) is open at recon.** It is the last unit in the
+  locked order and the expected trigger to reinstate greyscale device twins,
+  because labelled HP/Mana bars are where a hue-only state first appears.
 
 ## Epic status
 
@@ -59,8 +58,9 @@ The epic was opened from an approved external planning handoff:
 | Unit 4 — turn timeline + duplicate identity | Unit 3 | **merged** to `main` | final tree `dart format` 19 files/0 changed, analyzer clean, full app 765 tests; combined Unit 3 + Unit 4 colour/greyscale gate on `emulator-5554` | merged by PR #13 `650fa7c` and PR #14 `15e737a`; code `0d27a18` |
 | Unit 5 — log drawer | Unit 3 | **merged** to `main` | 797 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT WITH FINDINGS, all must-fix corrected; full criterion 12 colour + greyscale device gate on `emulator-5554` | merged by PR #15 at `55a226d`; `0bf6da1` is an ancestor; contract: `units/unit-5/CONTRACT.md` |
 | Unit 6 — character / spells / pack | Unit 3 | **merged** to `main` | 789 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT; Medium_Phone colour/greyscale device gate | merged by PR #16 at `319d945` (code `89927ef`); contract: `units/unit-6/CONTRACT.md` |
-| Unit 8 — world + theme parity | Unit 7 | **review rejected; paused after handoff** | Tasks 01–03 focused proof passes; U8-AR-1..4 need resolution; repository/device gates deferred | contract: `units/unit-8/CONTRACT.md`; plan: `units/unit-8/PLAN.md` |
-| Unit 9 — crawl HUD chrome | Unit 8 | pending | own colour/greyscale device pass | depth header, labelled HP/Mana bars, icon control chips |
+| Unit 7 — town rooms + Heroes | Unit 6 | **merged** to `main` | 816 app tests, `dart format` 99 files/0 changed, analyzer clean; integrated acceptance review ACCEPT WITH FINDINGS, must-fix and F2–F5 corrected in `cb8fcbc`; `Medium_Phone` device gate passed with both save slots verified byte-identical | merged by PR #17 at `f322d78` (code `cb8fcbc`); contract: `units/unit-7/CONTRACT.md` |
+| Unit 8 — world + theme parity | Unit 7 | **merged** to `main`; device gate open | 826 app tests, `dart format` 100 files/0 changed, analyzer clean; acceptance review rejected then closed on all four findings, scoped closure review ACCEPT WITH FINDINGS with zero must-fix; **acceptance criterion 9 device gate deferred and still outstanding** | merged by PR #18 at `2b0e0a4` (code `c85c7f9` + correction `54d6b4b`); contract: `units/unit-8/CONTRACT.md`; plan: `units/unit-8/PLAN.md` |
+| Unit 9 — crawl HUD chrome | Unit 8 | **open at recon** | own colour/greyscale device pass; twins reinstated for HP/Mana state | depth header, labelled HP/Mana bars, icon control chips |
 
 Recon locks the execution order: **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9**.
 Units 4 and 5 stay sequential so identity-correct event names land before the
@@ -124,8 +124,9 @@ log drawer; no unit reordering is needed.
   are **deferred to the post-Unit-8 art pass**, not blockers for Unit 7: the
   Unit 7 contract delivers town atmosphere as typographic and procedural
   treatment and adds no asset surface.
-- Where do the leftover crawl HUD chrome items (depth header, labelled HP/Mana
-  bars, icon control chips) land — Unit 8, or a new Unit 9?
+- The post-Unit-8 art pass (portraits, bulk static art, room-background
+  ratios, the full non-dungeon icon language) still has no owning unit and is
+  not part of Unit 9.
 - Does the old-wave m3-quests (M3Q, save v4, `../m3/LEDGER.md`) still run,
   and where in the sequence?
 
@@ -1160,3 +1161,316 @@ Append-only. Supersede old decisions; do not rewrite history.
   led to believe the unit was validated on hardware.
 - Today's journal entry for the unit is logged under `[[Residuum]]` in
   `journals/2026_09_15.md` with the device gate carried as a fresh TODO.
+
+### Unit 8 integration
+
+- 2026-09-16 — **PR #18 is MERGED.** Verified at source after `git fetch`:
+  `main` is `2b0e0a4` (`Merge pull request #18 from
+  fiatcode-gh/residuum-visual-reboot-8`), clean and in sync with `origin/main`,
+  carrying `c85c7f9` plus the correction `54d6b4b` and the docs checkpoint
+  `bb1d572`. The previous RESUME snapshot predated the merge and said to
+  integrate it; the epic status table also still called Unit 8 paused and had no
+  Unit 7 row at all. Both are corrected.
+- **Unit 8's acceptance criterion 9 remains open after integration.** It is the
+  only criterion outstanding for that unit.
+
+### Unit 9 opening
+
+- 2026-09-16 — **Unit 9 recon is complete and recorded** at
+  `units/unit-9/recon.md`, from three read-only scouts (`agent://CrawlHudScout`,
+  `agent://CrawlStateScout`, `agent://GrammarScout`) with every load-bearing
+  reference re-read by the architect. `CrawlHudScout`'s own line numbers drift by
+  roughly twenty lines and were not trusted directly.
+- **Correction to the epic's own framing: Unit 9 is a presentation unit, not a
+  missing-information unit.** `_HitPoints` (`game_screen.dart:197-329`) already
+  carries every fact handoff section 3.2 requires — dungeon name, depth/deepest,
+  HP, mana where meaningful, Ward when present — but as one
+  `FittedBox(scaleDown)` string beside a 56-pixel unlabelled bar. The gap Unit 9
+  closes is that the facts are crammed into a shrinking line and Mana has no bar.
+- **The mock's shape was already built once and beaten by hardware.**
+  `game_screen.dart:246-258` records a stretched bar plus three fixed labels that
+  fitted only until the dungeon was named, then overflowed a phone by sixty-four
+  pixels, invisible to widget tests because their surface is wider than a phone.
+  `:569-593` records two more device passes that killed ellipsised control
+  labels. This is why Unit 9 keeps scale-down discipline while adopting the
+  mock's structure.
+- **Unit 9 is app-only.** Every value the rows need is already on
+  `GameViewState` (`game_bloc.dart:328, 336, 339, 436, 495, 500, 503, 506, 575`)
+  and the node name is already reachable the way `_whereabouts` reaches it.
+  `packages/core` and `packages/content` must not change.
+- 2026-09-16 — **Locked by the user: the two-row split with text controls
+  kept.** A header row (place name left, `depth / deepest` right, battle glyph
+  and word between) plus one resource row of two labelled monochrome meters
+  replaces the single status line. **The mock's red HP and blue Mana fills are
+  rejected** — first hue-only resource state in the epic, and the author is
+  deuteranomalous. **The mock's icon control chips are deferred** to the
+  post-Unit-8 art pass: only two Material icons ship in the whole app
+  (`Icons.center_focus_strong`, `Icons.close`), neither carries game meaning,
+  the control labels carry live counts, and one label is the data-driven
+  `node!.verb`.
+- The meters reuse the grammar already shipped in `_SkillRow`
+  (`skills_screen.dart:38-60`): word label, numbers, monochrome
+  `LinearProgressIndicator` on the `rule` track. No second style module.
+- 2026-09-16 — **Locked by the user: Unit 8's criterion 9 folds into Unit 9's
+  device pass.** One `Medium_Phone` session covers both units' frames; Unit 8
+  stays formally open until it passes. Unit 8's two waiting questions — the
+  below-fold world-diagram nodes under a real screen reader, and whether the
+  Sea-Cave strata and Ruined Keep fracture strokes read at phone density — are
+  carried into Unit 9's acceptance criterion 9.
+- **Trap recorded for planning: fourteen tests across five files pin the
+  concatenated `<name> — depth <n>/<n>` string** —
+  `test/widget/world_screen_test.dart` (7), `hud_depth_test.dart` (3),
+  `suspend_door_test.dart` (2), `roster_session_test.dart` (1),
+  `boot_wiring_test.dart` (1) — and `battle_characterization_test.dart:115-148`
+  pins `Engaged n`/`Watched n` through `textContaining` on the same line.
+  `world_screen_test.dart:1752-1754` asserts one `line` contains `20 / 20`,
+  `Steady` and `The Sea-Cave — depth 1/4` together. Splitting the row breaks all
+  of them; the ones pinning composition rather than behaviour are rewritten, not
+  re-pinned to new text.
+- **The map is `Expanded` (`game_screen.dart:76`), so new chrome never
+  overflows the crawl — it silently shrinks the play surface.** The contract caps
+  the cost at one extra text row, measured on device, against the handoff's
+  map-first rule.
+- The contract is drafted at `units/unit-9/CONTRACT.md` and **awaits explicit
+  user approval**; planning and implementation are separate authorizations.
+- 2026-09-16 — **The user approved the Unit 9 contract as the WHAT.**
+  `units/unit-9/CONTRACT.md` is the governing authority for the unit. Planning
+  is dispatched to a dedicated `flow-planner`; implementation remains
+  unauthorized until the user approves the execution-grade plan.
+
+### Unit 9 planning
+
+- 2026-09-16 — **The execution-grade plan is written and architect-validated**:
+  `units/unit-9/PLAN.md` plus the single brief
+  `units/unit-9/plan-tasks/01-two-row-crawl-status.md`, by `agent://U9Planner`
+  against base `2b0e0a4`. Quality gate COR/TTC/CRF PASS, SEC SKIP (local
+  presentation over in-process state; no new trust boundary). The planner left
+  `packages/` untouched: `git status` still shows only the architect-owned
+  `LEDGER.md`, `RESUME.md` and untracked `units/unit-9/`.
+- **One task, deliberately.** `_line`'s deletion and the 25 dependent assertion
+  sites are one Red→Green cluster; any partition would ship a throwaway third
+  composition and leave `flutter test` red between halves.
+- **Architecture locked:** new `packages/app/lib/game/crawl_status.dart` owns
+  both rows, public `CrawlStatus({state, dungeon})` plus `hpMeterKey`,
+  `manaMeterKey`, `depthPairKey`; `game_screen.dart` loses 133 lines and gains
+  one call at `:124`; the file imports no `flutter_bloc` and the node id arrives
+  as a constructor input rather than a second bloc read. `_condition` and
+  `_battleWord` survive verbatim, `_BattleGlyph` moves, and `_line`, `_magic`
+  and `_whereabouts` are deleted with no formatter, fallback or compatibility
+  getter left behind.
+- **Scale boundary locked per cell, never per row**, because a `Row` of
+  `Expanded` bars cannot live inside a `FittedBox` and row-wide scaling would
+  shrink the live numbers to pay for the static proper noun. Overflow is
+  structural-impossible rather than arithmetically unlikely, and no `Text` on
+  either row sets `overflow`/`maxLines`/`softWrap`.
+- **Recon trap 3 is half superseded, verified at source.**
+  `test/support/phone.dart:9-13` gives a real 411.4 x 923.4 surface and
+  `world_screen_test.dart:1665-1689` already uses it with
+  `tester.takeException()`. Layout arithmetic and `RenderFlex` overflow are
+  widget-provable; font metrics, scaled-cell legibility and viewport height are
+  device-only. Criteria 5 and 9 stay device-only and are not proxied.
+- **The migration sweep found eleven sites beyond the recon's fourteen**, all
+  re-read by the architect: three `The road` pins
+  (`world_screen_test.dart:1022/1051/1080`), six `textContaining('Depth')`
+  negatives that go vacuous once nothing renders `Depth`
+  (`world_screen_test.dart:1023/1052/1081`, `boot_wiring_test.dart:145/161`,
+  `suspend_door_test.dart:189`), and two battle-word pins worth tightening.
+  `world_screen_test.dart:1746-1754` is named as a pure composition pin and
+  rewritten to four independent finders with the `.data` extraction deleted.
+- **The ward rule is safe at source:** `warded` is written only by
+  `SpellKind.ward` (`packages/core/lib/src/engine/step.dart:302-303`), so a
+  warded hero with no known spell is unreachable; the plan makes finding
+  otherwise an escalation rather than a layout decision.
+- Two deliberate small visual deltas the device gate will see: the crawl's local
+  `#DDE1E7` literal is retired in favour of `ink` `#E6EAF0`, and the numeric
+  grammar is unified to `HP 20 / 20` / `Mana 3 / 5` (no test pins `Mana 3/5`).
+- Residual risks accepted into implementation/device evidence: the two-meter
+  worst case scales text cells to about 0.8 (~11-px glyph); the ~18-px height
+  delta is computed from default monospace metrics; the harness font is not the
+  device's; and `RenderParagraph.getMaxIntrinsicWidth` is the one unusual
+  assertion, whose weakening must be reported rather than silently dropped.
+- The plan **awaits explicit user approval**. No branch exists; implementation
+  stays unauthorized.
+- 2026-09-16 — **The user approved the execution-grade plan.** Local
+  implementation is authorized within the approved plan envelope only;
+  publication and integration remain separately gated. The feature checkout
+  `residuum-visual-reboot-9` is branched from `2b0e0a4`, carrying the
+  architect-owned dirty LDD records forward, and task 01 is dispatched to one
+  fresh non-isolated `flow-plan-executor`.
+
+### Unit 9 task 01 receipt
+
+- 2026-09-16 — **Task 01 is landed and architect-verified** on
+  `residuum-visual-reboot-9`, uncommitted. Worker receipt:
+  `agent://U9Task01`. No seam differed from the plan, so nothing was escalated.
+- **Architect-run integrated gate from `packages/app`**, independent of the
+  worker's own run: `dart format --set-exit-if-changed --output=none lib test`
+  101 files 0 changed, `flutter analyze` no issues, full `flutter test`
+  **834 passing** (826 at Unit 8's close, plus eleven new focused tests less the
+  three the renamed `hud_depth_test.dart` carried).
+- **Scope audit clean.** `git diff --stat` touches only
+  `packages/app/lib/game/game_screen.dart` (916 → 750 lines) and six test files,
+  with `packages/app/lib/game/crawl_status.dart` untracked and new;
+  `hud_depth_test.dart` → `crawl_status_test.dart` is recorded as a rename.
+  Zero changes under `packages/core` and `packages/content`.
+- **Patch inspected at source, not merely reported.** `crawl_status.dart`
+  matches the plan: per-cell `FittedBox(scaleDown)` with no `overflow`/
+  `maxLines`/`softWrap` anywhere, the depth-pair `SizedBox` absent rather than
+  empty on the road, the Mana cell gated structurally on
+  `knownSpells.isNotEmpty`, the ward note only inside that cell, monochrome
+  `rule`/`ink` meters at `minHeight: 8`, and `ceiling`/`fraction`/`shown`
+  carried over verbatim from the deleted `_HitPoints`. The new suite is
+  behavioural: both gates have a positive and a negative case and the two
+  meters are proved to read different values through
+  `isNot(hpIndicator.value)`.
+- One deviation from the brief, harmless and reported by the worker: the
+  now-unused `package:residuum_content/content.dart` import was dropped from
+  `game_screen.dart` because `residuumWorld`/`NodeId` use moved wholly into the
+  new file; `flutter analyze` caught it. The brief's instruction to add a
+  `GameScreen` import to `suspend_door_test.dart` was a no-op — the file
+  already imported it for `doneControl`/`doneAtTheBottom`.
+- The no-squeeze `RenderParagraph`/`getMaxIntrinsicWidth` proof landed
+  unmodified; no fallback and no weakened proof were reported.
+- One integrated `flow-acceptance-reviewer` pass is dispatched
+  (`agent://U9Acceptance`). It is a dependency barrier: no device evidence
+  begins until it closes.
+- 2026-09-16 — **Integrated acceptance review PASS**:
+  `agent://U9AcceptanceResume` re-reviewed the actual uncommitted patch,
+  including untracked `packages/app/lib/game/crawl_status.dart`, against the
+  approved contract and plan. It found no Critical or Important defect and made
+  no tree mutation. The reviewer independently confirmed every status fact,
+  deletion of the old formatter/composition, monochrome meters, migrated
+  behavioural tests, height-budget structure and app-only scope. The
+  `RenderParagraph` no-squeeze check is meaningful alongside static inspection
+  and `tester.takeException()`, but device-font legibility and physical height
+  remain device-only as planned. No correction round is required; the accepted
+  integrated format/analyze/test proof remains fresh because the review was
+  read-only.
+- **The acceptance-review barrier is closed.** Before the next device/emulator
+  action, write the durable device checkpoint, ask the user to start
+  `Medium_Phone`, then dispatch the contracted evidence-verifier capsules.
+- 2026-09-16 — **Device-evidence recovery checkpoint written before any device
+  action.** HEAD is `2b0e0a49acbf76c7394335cc07a624ca6ead5937` on
+  `residuum-visual-reboot-9`, with no commit or remote branch. The dirty tree is
+  exactly the Unit 9 app patch (`game_screen.dart`, six changed tests, renamed
+  `hud_depth_test.dart` → `crawl_status_test.dart`, and untracked
+  `crawl_status.dart`) plus architect-owned `LEDGER.md`, `RESUME.md` and
+  untracked `units/unit-9/`; `core` and `content` remain unchanged. Accepted
+  evidence is the exact-tree format/analyze/full-suite gate (834 passing) and
+  the read-only acceptance-review PASS. No emulator, ADB, install, screenshot
+  or manual-device action has occurred in this controller session.
+- **Remaining device acceptance:** all Unit 9 criterion 9 frames — fresh
+  no-spell crawl; warded casting fight; critical health; bottom floor with
+  underfoot and five controls; road fight; plus Unit 8's fresh/discovery-gated
+  world, discovered world, journey, Sea-Cave and Ruined Keep delves, and each
+  regional road fight — with required greyscale twins, screen-reader reachability
+  and Sea-Cave/Keep readability answers. Before any install, both
+  `app_flutter/save.json` slots must be copied aside and SHA-256-proved restored
+  byte-identical afterward. `Medium_Phone` is not started; it must be
+  user-started because tool-shell launch segfaults. Next action: ask the user
+  to start it, then dispatch bounded evidence capsules.
+- 2026-09-16 — **Device capsule `U9-crawl-status` returned partial evidence**:
+  `agent://U9CrawlDeviceEvidence` built and installed the current debug APK on
+  user-started `Medium_Phone` (`emulator-5554`, Android 17, 1080×2400, APK
+  SHA-256 `224add…ea1a9b`). Its report and colour/greyscale artifacts are under
+  `.flow/evidence/visual-reboot/unit-9-device/`. Fresh no-spell and
+  critical/engaged scenes prove the dungeon header/depth, labelled HP, condition,
+  no-spell Mana gate, Engaged/Watched glyph language, monochrome greyscale
+  reading and no observed clipping. This verifier restored both original device
+  save slots exactly: `save.json` SHA-256 `18995c…2b46d3` MATCH and
+  `save-previous.json` SHA-256 `8909f7…f8a9b11` MATCH; the app is stopped and
+  temporary device files are removed.
+- **Residual Unit 9 evidence is explicit, not waived:** casting/warded Mana,
+  bottom-floor underfoot with five controls, road fight, their required
+  greyscale coverage and a precise same-device height comparison remain UNKNOWN.
+  The preserved save had no spellbook, and no sanctioned deterministic fixture
+  was available in that capsule. Route these to a fresh verifier using a
+  temporary valid save or safe real-app staging, with the same backup/restore
+  obligation. Unit 8's world/regional evidence remains untouched.
+- 2026-09-16 — **Device capsule `U9-residual-crawl` closed every residual Unit
+  9 status-row fact**: `agent://U9ResidualDeviceEvidence` generated
+  codec-valid temporary fixtures, installed baseline/current APKs on the same
+  `Medium_Phone`, and retained its report, frames, fixture hashes and backups in
+  `.flow/evidence/visual-reboot/unit-9-device/residual-crawl-report.txt`.
+  Colour/greyscale evidence shows Ward/Mana in an engaged casting fight, the
+  bottom-floor underfoot/five-control scene, and the road's absent depth pair.
+  The same warded fixture measured the current scene background as exactly
+  **52 px**, one status text row, shorter than `2b0e0a4` (within the contract
+  cap). Both slots were restored again with byte-for-byte SHA-256 MATCH:
+  `save.json` `18995c…2b46d3`; `save-previous.json` `8909f7…f8a9b11`.
+- **Scope disposition — inherited five-control ellipsis, no Unit 9 correction.**
+  The bottom-frame `Drink (…)` control is visibly truncated in colour and
+  greyscale, but the identical codec fixture on the same device and
+  `2b0e0a4` baseline shows the same truncation. It is not introduced by the
+  status change; invariant 6's frozen control surface is therefore preserved.
+  Unit 9's literal no-ellipsis rule applies to its two status rows, which the
+  current and baseline comparison proves complete. Record the inherited control
+  defect for a separately authorized controls unit; do not expand Unit 9.
+- **Unit 9's own device conditions are accepted.** Its folded criterion 9 still
+  cannot close the unit until fresh Unit 8 world/regional evidence answers the
+  remaining inherited frames, greyscale checks and real screen-reader question.
+- 2026-09-16 — **Device capsule `U8-world-diagram` returned accepted world
+  evidence** at `.flow/evidence/visual-reboot/unit-8-device/`: fresh world
+  shows three inert non-leaking `?` nodes; full world shows all five labelled
+  nodes, routes, costs and danger; active journey shows its road/context and
+  `Walk on`; colour/greyscale twins preserve the word/shape/value reading.
+  Selecting the Crypt displayed confirmation before spending and cancel kept
+  Day 4 with no journey. Both app save slots restored byte-identically MATCH
+  (`18995c…2b46d3` and `8909f7…f8a9b11`), and baseline Android accessibility
+  settings were restored.
+- **The real-screen-reader question remains UNKNOWN, not passed by proxy.**
+  TalkBack 17 and TTS were enabled and the service reached RESIDUUM, Heroes,
+  Enter Stonebridge and a travel-dialog title, but injected ADB input cannot
+  drive real touch-exploration/virtual focus to the below-fold graph nodes.
+  UIAutomator evidence is corroboration only. A physical user TalkBack gesture
+  is needed to answer this criterion after the regional evidence closes.
+- 2026-09-16 — **Device capsule `U8-regional-delves` accepted the delve half
+  of Unit 8 criterion 9.** The Sea-Cave's water-worn horizontal tide strata and
+  the Ruined Keep's squared ashlar/V-fracture treatment both read beyond hue in
+  colour and greyscale, with actors, stairs, grid, controls and light boundary
+  legible. The verifier also exercised a legal Sea-Cave move/pan without
+  revealing unknown geometry. Its codec-valid fixtures, frames and report are
+  under `.flow/evidence/visual-reboot/unit-8-device/`; both user save slots
+  restored byte-identically MATCH (`18995c…2b46d3`, `8909f7…f8a9b11`), and the
+  app/device staging paths are clean.
+- 2026-09-16 — **Device capsule `U8-regional-roads` accepted the road half of
+  Unit 8 criterion 9.** Lowland's neutral angled wear, Sea-Cave's tide strata
+  and Ruined Keep's ashlar/fractures are distinct beyond hue and remain so in
+  greyscale. All road fights retain `THE ROAD`, the exact edge-escape sentence,
+  no depth/stairs, and the existing Drink/Pack/Wait control set. The verifier
+  reached an outer edge, pressed Flee, and observed the resumed road finish at
+  the Crypt on Day 5. Fixtures/frames/report live under
+  `.flow/evidence/visual-reboot/unit-8-device/`; both device save slots restored
+  byte-identically MATCH (`18995c…2b46d3`, `8909f7…f8a9b11`).
+- **All automated Unit 8/9 device frames are accepted.** The only remaining
+  acceptance criterion is the deliberately non-proxied real TalkBack traversal
+  to below-fold world nodes. A fresh evidence capsule must stage the full-world
+  screen and real service, then wait for the user's physical gesture outcome
+  before it restores state.
+- 2026-09-16 — **Physical TalkBack device evidence PASS**:
+  `agent://U8TalkBackManualEvidence` staged a codec-valid fully discovered world
+  with TalkBack 17 and Google TTS active. The user physically swiped right and
+  heard both below-fold node controls exactly: `DUNGEON The Sea-Cave. NO ROAD
+  FROM HERE.` and `DUNGEON The Ruined Keep. NO ROAD FROM HERE.` The report and
+  ready/post-traversal artifacts are in
+  `.flow/evidence/visual-reboot/unit-8-device/u8-talkback-physical-report.txt`.
+  Both save slots restored byte-identically MATCH (`18995c…2b46d3`,
+  `8909f7…f8a9b11`); every changed Android accessibility/TTS/input/font setting
+  returned to its recorded baseline, TalkBack/app are stopped, and staging paths
+  are absent.
+- **Unit 8 criterion 9 is accepted and Unit 8 is formally closed.** Fresh,
+  discovered and journey world frames; Sea-Cave/Keep delves; lowland/Sea-Cave/
+  Keep road fights; required greyscale evidence; save restoration; and
+  below-fold real screen-reader reachability are all now evidenced.
+- **Unit 9 criterion 9 is consequently accepted and Unit 9 is complete.**
+  Combined evidence proves every two-row status case, its greyscale reading and
+  exact one-row height cost; Unit 8's folded frames are now closed. The only
+  inherited observation is the unchanged base/current five-control `Drink (…)`
+  truncation, deliberately outside Unit 9's frozen control scope.
+- **Final local acceptance:** the source tree is still only the approved Unit 9
+  app patch plus architect-owned LDD records; `core`/`content` remain untouched.
+  The format/analyze/full-suite proof (101 formatted files, analyzer clean, 834
+  passing) and acceptance-review PASS remain fresh because all later changes
+  were evidence/LDD records only. No commit, push, pull request or other remote
+  action has been performed or authorized. Next gate is the user's integration
+  decision.

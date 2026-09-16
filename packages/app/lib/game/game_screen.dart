@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../town/town_bloc.dart';
 import '../world/world_bloc.dart';
 import 'battle_view.dart';
+import 'crawl_status.dart';
 import 'dungeon_palette.dart';
 import 'dungeon_scene.dart';
 import 'game_bloc.dart';
@@ -121,7 +121,7 @@ class GameScreen extends StatelessWidget {
                       ),
                       if (state.isBattleOpen)
                         BattleShelf(state: state, bloc: bloc),
-                      _HitPoints(state: state),
+                      CrawlStatus(state: state, dungeon: bloc.dungeon),
                       LogPeek(key: logPeekKey, state: state, bloc: bloc),
                       _Controls(key: controlsKey, state: state),
                     ],
@@ -194,140 +194,6 @@ bool _heroOffScreen(GameViewState state, Size size) {
   return heroOffScreen(size, geometry, state.game.hero.position);
 }
 
-class _HitPoints extends StatelessWidget {
-  const _HitPoints({required this.state});
-
-  final GameViewState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final hero = state.game.hero;
-    final ceiling = state.maxHp;
-    final fraction = ceiling == 0 ? 0.0 : hero.hp / ceiling;
-    final shown = hero.hp.clamp(0, ceiling);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 56,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(
-                value: fraction.clamp(0, 1),
-                minHeight: 14,
-                backgroundColor: const Color(0xFF23262E),
-                valueColor: const AlwaysStoppedAnimation(Color(0xFFDDE1E7)),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          _BattleGlyph(state: state),
-          const SizedBox(width: 12),
-          Expanded(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                _line(shown, ceiling, fraction, context, state),
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 14,
-                  color: Color(0xFFDDE1E7),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// The whole status line as one string, so it can be scaled as one thing.
-  ///
-  /// **Four texts in a row became one, and the reason is a device pass.** The
-  /// row used to be a stretched bar and three fixed labels, which fitted while
-  /// the middle one read `Depth 3/5`. Naming the dungeon made it fifteen
-  /// characters longer, and a floor with something in sight overflowed a phone
-  /// by sixty-four pixels — the widget tests never saw it, because their surface
-  /// is wider than a phone is.
-  ///
-  /// One string inside a scale-down box shrinks instead of clipping, which keeps
-  /// every word on screen. Nothing is ellipsised: the M2 device pass already
-  /// found that a truncated label throws away exactly the part the player cannot
-  /// get anywhere else.
-  static String _line(
-    int shown,
-    int ceiling,
-    double fraction,
-    BuildContext context,
-    GameViewState state,
-  ) {
-    final battle = _battleWord(state).isEmpty ? '' : '  ${_battleWord(state)}';
-    return '$shown / $ceiling  ${_condition(fraction)}  '
-        '${_whereabouts(context, state)}$battle${_magic(state)}';
-  }
-
-  /// The battle word in the status line, or the empty string.
-  ///
-  /// Engaged names a fight the dock is holding open; watched names eyes with
-  /// no reach on the hero. The count persists for both states — the word and
-  /// the glyph beside the bar carry the difference, never a hue.
-  static String _battleWord(GameViewState state) {
-    if (state.isBattleOpen) return 'Engaged ${state.enemiesInSight}';
-    if (state.enemiesInSight > 0) return 'Watched ${state.enemiesInSight}';
-    return '';
-  }
-
-  /// The pool and the ward, as words and numbers, and only when they say
-  /// something.
-  ///
-  /// **Not a sixth control**, because the control row is full and a device pass
-  /// has twice found the sixth thing on a phone row ellipsised down to nonsense.
-  /// It joins the status line instead, which shrinks to fit rather than
-  /// truncating.
-  ///
-  /// **Silent for a hero who knows no spells**, which is every hero until they
-  /// read their first book. A pool nobody can spend is a number in the way, and
-  /// leaving it out means the line a non-casting hero reads is exactly the line
-  /// that shipped before magic did. The ward joins it only while one stands, for
-  /// the same reason and because a ward is the one piece of state a player has
-  /// to be able to see mid-fight.
-  static String _magic(GameViewState state) {
-    if (state.game.knownSpells.isEmpty) return '';
-    final ward = state.warded > 0 ? '  Ward ${state.warded}' : '';
-    return '  Mana ${state.mana}/${state.maxMana}$ward';
-  }
-
-  /// Where the hero is standing, in words and a depth.
-  ///
-  /// **The dungeon is named, because there are three of them now.** A hero
-  /// three floors down needs to know three floors down *what* — the crypt and
-  /// the keep are opposite ends of the world and a bare "Depth 3/5" reads the
-  /// same in both. A road fight keeps "The road", which is the whole of where
-  /// it is.
-  ///
-  /// **The total is the delve's own, not a constant.** A themed delve rolls how
-  /// deep it goes, so "depth 3/6" and "depth 3/5" are two different places to be
-  /// standing and the second number is the only thing that says which. It also
-  /// tells the player how much is left, which is the whole reason to print a
-  /// total at all.
-  static String _whereabouts(BuildContext context, GameViewState state) {
-    if (state.isEncounter) return 'The road';
-    final depth = 'depth ${state.depth}/${state.deepest}';
-    final node = context.read<GameBloc>().dungeon;
-    if (node == null) return 'Depth ${state.depth}/${state.deepest}';
-    return '${residuumWorld.nodeAt(node).name} — $depth';
-  }
-
-  static String _condition(double fraction) {
-    if (fraction <= 0) return 'Dead';
-    if (fraction < 0.25) return 'Critical';
-    if (fraction < 0.6) return 'Wounded';
-    return 'Steady';
-  }
-}
-
 /// The one row of controls the crawl needs, each appearing only when it can do
 /// something.
 ///
@@ -340,39 +206,6 @@ class _HitPoints extends StatelessWidget {
 /// the stairs with something underfoot that is four ways. 'Drink potion (2)'
 /// ellipsized to 'Drink poti…' there, which threw away the count — the one part
 /// of that label the player cannot get anywhere else.
-
-/// The fixed-size battle glyph cell in the status row: empty when nothing is
-/// in sight, the eye when watched, the crossed marks when engaged.
-///
-/// Shape and word carry the state — never hue — and the word repeats in the
-/// scaled line beside it, so greyscale reading has two backstops. The cell is
-/// fixed-width so the HP bar and the line keep their columns either way.
-class _BattleGlyph extends StatelessWidget {
-  const _BattleGlyph({required this.state});
-
-  final GameViewState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final glyph = state.isBattleOpen
-        ? '✖'
-        : state.enemiesInSight > 0
-        ? '◉'
-        : null;
-    return SizedBox(
-      width: 18,
-      child: Text(
-        glyph ?? '',
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 14,
-          color: Color(0xFFDDE1E7),
-        ),
-      ),
-    );
-  }
-}
 
 class _Controls extends StatelessWidget {
   const _Controls({required this.state, super.key});

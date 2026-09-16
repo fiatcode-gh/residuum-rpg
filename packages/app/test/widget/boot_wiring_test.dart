@@ -73,7 +73,7 @@ void main() {
       await app.pump(tester);
 
       // assert
-      expect(find.textContaining('The Crypt — depth 1/'), findsOneWidget);
+      expect(find.text('THE CRYPT'), findsOneWidget);
       expect(find.text('The crawl resumes.'), findsOneWidget);
       final crawl = BlocProvider.of<GameBloc>(
         tester.element(find.byType(GameScreen)),
@@ -142,7 +142,7 @@ void main() {
       expect(find.text('RESIDUUM'), findsOneWidget);
       expect(find.text('At The Crypt'), findsOneWidget);
       expect(find.textContaining('Resume the crawl'), findsOneWidget);
-      expect(find.textContaining('Depth'), findsNothing);
+      expect(find.byType(GameScreen), findsNothing);
     });
 
     testWidgets('a document without one opens on the world, at home', (
@@ -158,7 +158,7 @@ void main() {
       expect(find.text('RESIDUUM'), findsOneWidget);
       expect(find.text('At Stonebridge'), findsOneWidget);
       expect(find.text('Enter Stonebridge'), findsOneWidget);
-      expect(find.textContaining('Depth'), findsNothing);
+      expect(find.byType(GameScreen), findsNothing);
     });
   });
 }
