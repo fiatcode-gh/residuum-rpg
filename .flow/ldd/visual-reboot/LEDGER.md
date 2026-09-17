@@ -34,18 +34,22 @@ The epic was opened from an approved external planning handoff:
 
 ## Current state
 
-- **Units 1–10 are accepted and present on `main`.** On 2026-09-17, local
-  `main` resolves to Unit 10's PR #20 merge commit
-  `0692bbcce7570df988f6daab9b357a2557e58b39`.
+- **Units 1–11 are accepted and present on `main`.** On 2026-09-17, local
+  `main` resolves to Unit 11's PR #21 merge commit
+  `60909e60ec3150cf9b590e6641a8ae51efca775c`.
 - **Unit 8's deferred device gate remains closed** and Unit 9's accepted
   crawl-HUD contract remains unchanged.
-- **Unit 10 (authored art integration) is merged and closed.** Its accepted
-  verification evidence remains authoritative; Unit 11 must preserve its
-  pipeline, determinism and one-time decode ownership.
-- **Unit 11 (dungeon scene recomposition) has a validated external intake.**
-  Its contract is accepted as previously user-approved. The supplied plan is
-  strategy evidence pending local execution-grade refinement and separate plan
-  approval; no production implementation is authorized.
+- **Unit 11 (dungeon scene recomposition) is merged and closed.** Its
+  renderer is an accepted dependency, not an implementation surface. Unit 10's
+  authored-art pipeline, determinism and one-time decode ownership stand.
+- **Unit 12 (crawl interface visual grammar) is locally accepted on suite
+  evidence and uncommitted** on `residuum-visual-reboot-12`. Final gate: 120
+  files formatted 0 changed, analyzer clean, **906 tests** against 884 before
+  the unit. The next gate is the user's integration decision.
+- **Unit 12.5 (crawl device gate) carries Unit 12's deferred device debt** —
+  AC5 greyscale, AC12 by eye, AC14 device figures, AC16 in full and AC17 —
+  plus three appearance findings the closure review could only defer. Its
+  contract is drafted and unapproved.
 
 ## Epic status
 
@@ -62,10 +66,12 @@ The epic was opened from an approved external planning handoff:
 | Unit 8 — world + theme parity | Unit 7 | **merged** to `main`; device gate open | 826 app tests, `dart format` 100 files/0 changed, analyzer clean; acceptance review rejected then closed on all four findings, scoped closure review ACCEPT WITH FINDINGS with zero must-fix; **acceptance criterion 9 device gate deferred and still outstanding** | merged by PR #18 at `2b0e0a4` (code `c85c7f9` + correction `54d6b4b`); contract: `units/unit-8/CONTRACT.md`; plan: `units/unit-8/PLAN.md` |
 | Unit 9 — crawl HUD chrome | Unit 8 | **merged** to `main` | 834 app tests, `dart format` 101 files/0 changed, analyzer clean; integrated acceptance review PASS with zero findings; `Medium_Phone` colour/greyscale device gate across five status scenes, measured one-row (52 px) map cost, both save slots restored byte-identically | merged by PR #19 at `4bf865c` (code `92fd4aa`); contract: `units/unit-9/CONTRACT.md`; plan: `units/unit-9/PLAN.md`; two-row `crawl_status.dart`; red/blue meter fills rejected, icon control chips deferred |
 | Unit 10 — authored art integration | Unit 9 | **merged** to `main` | final app gate, integrated acceptance review and five `Medium_Phone` colour/greyscale capsules passed; save restoration MATCH | merged by PR #20 at `0692bbc`; contract: `units/unit-10/CONTRACT.md`; approved masters remain LFS-backed |
-| Unit 11 — dungeon scene recomposition | Unit 10 | **execution-grade plan awaiting approval** | validated/refined plan; fresh source seam checks; no production proof yet | existing dungeon art only; map viewport only; no core/content/gameplay/assets change |
+| Unit 11 — dungeon scene recomposition | Unit 10 | **merged** to `main` | `dart format` clean, `flutter analyze` clean, full app 884 tests; `Medium_Phone` colour/greyscale capsules; both save slots restored SHA-256 MATCH | merged by PR #21 at `60909e6` (code `824f53f`); contract: `units/unit-11/CONTRACT.md`; plan: `units/unit-11/PLAN.md`; later task receipts and acceptance were never written to this ledger — the PR record is the surviving evidence |
+| Unit 12 — crawl interface visual grammar | Unit 11 | **locally accepted, uncommitted; device gate deferred** | `dart format` 120 files/0 changed, `flutter analyze` clean, full app **906 tests** (884 before the unit); integrated acceptance review ACCEPT WITH FINDINGS then scoped closure ACCEPT WITH FINDINGS, no must-fix outstanding; **no device evidence** | on `residuum-visual-reboot-12`; contract: `units/unit-12/CONTRACT.md`; plan + Correction C1: `units/unit-12/PLAN.md`; one chip action row, crawl style seam, mock column order; O3 chip-keying deferred |
+| Unit 12.5 — crawl device gate | Unit 12 | **contract drafted, awaiting approval** | none yet | seven `Medium_Phone` capsules A–G, colour and greyscale, save backup and byte-identical restore; settles AC5/AC12/AC14/AC16/AC17 and closure findings OPT-1/2/3; contract: `units/unit-12.5/CONTRACT.md` |
 
-Completed units are ordered **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10**.
-Unit 11's three renderer tasks remain strictly sequential.
+Completed units are ordered **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11**.
+Unit 12 follows Unit 11 and consumes its renderer as a closed dependency.
 Units 4 and 5 stay sequential so identity-correct event names land before the
 log drawer; no unit reordering is needed.
 
@@ -2241,3 +2247,524 @@ Append-only. Supersede old decisions; do not rewrite history.
   and road compatibility.
 - Task 02 is authorized to consume the accepted style/adjacency seam. No device
   evidence or remote action has started.
+
+### Unit 11 closure reconciliation
+
+- 2026-09-17 — **Unit 11 is complete, merged and closed.**
+  [PR #21](https://github.com/fiatcode-gh/residuum-rpg/pull/21)
+  (`residuum-visual-reboot-11` → `main`, 24 files, +3266/-246) merged at
+  `60909e60ec3150cf9b590e6641a8ae51efca775c` as `feat: recompose dungeon
+  scene`. Local `main` is that commit and the worktree is clean apart from the
+  untracked Unit 12 intake bundle.
+- **Ledger gap, recorded honestly:** this ledger carries no Task 02/03
+  receipts, acceptance review or device-evidence entry for Unit 11. The
+  implementation, verification and integration happened after the last
+  checkpoint was written, so the merged `RESUME.md` text naming "Unit 11 Task
+  02" as the next action is stale and is superseded here.
+- Surviving verification evidence is the PR record: `dart format` clean,
+  `flutter analyze` clean, `flutter test` **884 passing**, `Medium_Phone`
+  colour and greyscale device capsules, and both device save slots restored
+  with SHA-256 **MATCH**. The merged source change is confined to
+  `dungeon_render_style.dart` (new), `dungeon_scene_material.dart`,
+  `dungeon_scene.dart`, `glyph_marks.dart` and their tests — no
+  `packages/core` or `packages/content` change, consistent with the contract.
+- Unit 11's dungeon renderer is now an **accepted dependency**, not an
+  implementation surface for later units.
+
+### Unit 12 external intake
+
+- 2026-09-17 — **The Unit 12 LDD bundle validates** at the exact current
+  revision. `validate-planning-handoff.py` reports `planning handoff v1
+  kind=ldd repository=fiatcode-gh/residuum-rpg
+  observed_ref=60909e60ec3150cf9b590e6641a8ae51efca775c`, every file in
+  `units/unit-12/SHA256SUMS.txt` matches, and `observed_ref` equals local
+  `main`, so no intervening source drift has to be reconciled.
+- Declared status is `design_status: settled`, `implementation_strategy:
+  partial`, `authorization: not-carried`. The WHAT was approved by the user in
+  the external design session; the HOW is explicitly not execution-grade.
+- Proposed title: **Unit 12 — Crawl Interface Visual Grammar**. Objective:
+  recompose the phone crawl interface surrounding the accepted Unit 11
+  viewport into the approved Residuum visual language — shell/surfaces,
+  status, viewport framing, activation timeline, combat readout, compact and
+  expanded log, exploration controls, combat action shelf, action states and
+  crawl-local overlays — while preserving engine authority, determinism,
+  timeline and log semantics, targeting flows, saves and Unit 11 renderer
+  ownership.
+- Locked architectural direction from the external session, to be revalidated
+  at source: a **small crawl-owned presentation/style seam** rather than
+  per-widget restyling or a global theme change.
+- **Post-unit decision is locked in advance:** after Unit 12 visual
+  acceptance, explicitly record whether the dungeon viewport is the dominant
+  remaining parity gap; if yes, insert Dungeon Structural Asset Expansion as
+  the immediate next unit, otherwise continue the existing roadmap. That work
+  is not pulled into Unit 12.
+- **No production implementation is authorized.** The intake carries no
+  authorization, and the unit-start command authorizes recon and contract
+  drafting only.
+
+### Unit 12 recon and contract
+
+- 2026-09-17 — **Unit 12 recon is complete and recorded** at
+  `units/unit-12/recon.md`, from three read-only scouts
+  (`agent://CrawlShellRecon`, `agent://CrawlInfoRecon`,
+  `agent://CrawlActionRecon`). The scouts disagreed with each other on
+  `game_screen.dart` line numbers, so every load-bearing reference was
+  re-read by the architect; the recon carries the verified numbers.
+- **Correction to the intake's architectural framing.** The handoff proposed
+  introducing a crawl-local style seam as though none existed. There is
+  already one design system — `town/town_style.dart`, a plain file of `const`
+  colours, type and shared widgets — and the crawl reaches into it from four
+  files. The crawl seam is a **sibling in that same shape**, not a
+  `ThemeExtension` and not a global theme change. `main.dart` sets only
+  brightness, `scaffoldBackgroundColor` and `useMaterial3`, which is precisely
+  why every Material widget in the crawl renders stock.
+- **The user directed alignment with the approved mock**
+  (`.flow/evidence/visual-reboot/residuum_visual_reboot_approved_mock.png`,
+  frames 2–5). Reading the mock against the live column found the real gap is
+  **structural, not decorative**: the crawl renders map → shelf → status →
+  peek → controls (`game_screen.dart:66-129`), while the mock renders status →
+  timeline → map → peek → one action row. Combat therefore shows **two**
+  action rows today and duplicates Drink and Wait, which violates the epic's
+  own four-region rule.
+- **Locked in the contract:** the mock's column order with status above the
+  map; one combat action row; the mock's icon-above-word chip vocabulary for
+  exploration and combat alike; the mock's timeline panel with `NOW`/`NEXT`
+  captions, ringed tokens and actor words; log peek surface and expand
+  affordance; crawl overlays brought onto the crawl's surfaces.
+- **Four deviations from the mock are deliberate and recorded:** monochrome
+  meters stand (Unit 9's hue rejection); monospace stands (the mock's serif
+  would be the repository's first font asset and would split the crawl from
+  every other screen — the crawl takes the mock's hierarchy, not its family);
+  Unicode log marks stand (pictorial per-line icons would be a new asset
+  family and the unit ships no assets); `MESSAGE LOG` keeps its name (the mock
+  titles it `COMBAT LOG` over arrival and departure lines).
+- **Traps recorded for planning.** `log_drawer_test.dart:253` asserts the
+  literal `Color(0xFFE6EAF0)` on a row style — the behaviour it defends is
+  real, the hex is not, and it is rewritten rather than re-pinned.
+  `crawl_controls_test.dart` freezes the control set and order (a real
+  contract, kept) but also `FilledButton` by type and a `RenderParagraph` fit
+  measurement (implementation, rewritten). `battle_shelf_icons_test.dart`
+  pins `TextButton`. The map is `Expanded`, so the mock's richer chrome is
+  paid for in map height and must be measured on `Medium_Phone`, where this
+  screen has already lost three device passes to ellipsised labels.
+- **`units/unit-12/CONTRACT.md` is drafted and awaits explicit user
+  approval.** No plan exists; no production implementation is authorized.
+
+### Unit 12 contract approval
+
+- 2026-09-17 — **The user explicitly approved the Unit 12 contract as
+  drafted**, including all four recorded mock deviations. Offered and
+  declined: shipping the mock's serif type as the repository's first font
+  asset, and keeping combat's two action rows.
+- This approves the WHAT only. It does not authorize local implementation:
+  the plan gate is separate and still closed.
+- A dedicated `flow-planner` (`agent://Unit12Planner`) is refining the
+  contract into an execution-grade `PLAN.md` with fresh-executor task briefs,
+  preserving the intake's three-task dependency shape unless source reality
+  contradicts it. The column reorder and the collapse of combat's two action
+  rows into one must land with a named owner in that sequence.
+
+### Unit 12 execution-grade plan
+
+- 2026-09-17 — **`agent://Unit12Planner` returned an execution-grade plan**:
+  `units/unit-12/PLAN.md` plus three fresh-executor briefs. `packages` is
+  untouched — `git status --porcelain -- packages` is empty.
+- The dependency shape is strictly sequential **01 → 02 → 03** on one
+  non-isolated feature checkout. Not parallelisable: Tasks 02 and 03 both
+  append to the seam and both touch `battle_view.dart`, and Task 03's chip row
+  measures against the vertical budget Task 02 has already spent. Ownership is
+  named: **the column reorder is Task 01's, the collapse of the two action
+  rows is Task 03's.**
+- The seam is `lib/game/crawl_style.dart` (const colours, type ladder,
+  metrics, a chip-state table, one scoped `crawlTheme`) with
+  `crawl_surfaces.dart` and `crawl_action_row.dart` beside it. `town_style.dart`
+  is not edited and keeps everything; after the cutover only `pack_screen.dart`
+  still imports it from `lib/game/`. The no-leak rule is grep-checkable and
+  backed by a test that pushes the crawl pack route and asserts it still
+  renders in the town's ink.
+- **Three architect-verified corrections to my own recon, found by the
+  planner:**
+  1. **Only Drink is duplicated in combat, not Drink and Wait.** `_Controls`'
+     Wait is gated `!state.isBattleOpen` (`game_screen.dart:302-304`), which I
+     confirmed at source. `CONTRACT.md` and `recon.md` are corrected in place;
+     no acceptance criterion moves, so the approval stands.
+  2. **Three more presentation-pinning test sites exist beyond my trap list**,
+     all confirmed at source: `battle_view_test.dart:338-357` pins the exact
+     dock `Text` inventory, `:307,558` pin `find.byType(BattleShelf)`, and
+     `craft_surfaces_test.dart:82-160` carries eight `FilledButton` pins on the
+     crawl control row — a whole crawl test file my recon missed.
+  3. **A latent structural lock:** `battle_view_test.dart:307,558` assert the
+     entire crawl holds exactly one `ListView`, which `LogPeek` owns. The
+     timeline must stay `SingleChildScrollView` + `Row` and the action row a
+     `Wrap`.
+- **The armed caption is a reserved line, not an inline suffix**, and the
+  reasoning is load-bearing: inlining ` — armed` takes `✳ Firebolt 2` from 12
+  to 20 characters, drops the chip column count and reflows the action row —
+  and therefore the `Expanded` map and the Flame viewport — under the player's
+  thumb at the instant they arm. The reserve is row-scoped so exploration pays
+  nothing.
+- **The vertical budget is measured, not asserted.** Caps are expressed as
+  *chrome* height because it is inset-independent: ≤360 dp at exploration
+  typical density, ≤560 dp at the worst constructible battle, leaving a
+  `Medium_Phone` map of ≥484 dp and ≥284 dp. Nine named constants may be tuned
+  inside stated envelopes; a cap breach, a shrunken peek, a scrolled row, a
+  hidden verb, a shortened label, any ellipsis or a dropped armed reserve all
+  escalate.
+- Plan quality gate: **COR PASS, TTC PASS, CRF PASS, SEC SKIP** (presentation
+  only, offline, no new trust boundary).
+- **Baseline proof at `60909e6`, run by the architect before any change:**
+  `dart format --set-exit-if-changed` **114 files, 0 changed**;
+  `flutter analyze` **no issues**; full `flutter test` **884 passing**. That is
+  the number Unit 12's proof moves from.
+- **No production implementation is authorized until the user explicitly
+  approves this plan.**
+
+### Unit 12 execution authorization
+
+- 2026-09-17 — **The user explicitly approved the execution-grade Unit 12
+  plan.** This authorizes local implementation and verification inside the
+  approved plan envelope only. It does not authorize commits to `main`,
+  pushes, pull requests, reviews, merges, releases or any other remote write.
+- Branch `residuum-visual-reboot-12` is created off `60909e6` and checked out.
+  The architect's `.flow/` changes ride on it and are not to be touched by any
+  executor.
+- A fresh `flow-plan-executor` (`agent://Unit12Task01`) is implementing
+  `plan-tasks/01-style-seam-and-column-order.md`. Tasks 02 and 03 follow
+  sequentially on the same checkout, each with a fresh executor, each after
+  the architect accepts the previous task's repository state and receipt.
+
+### Unit 12 task 01 receipt
+
+- 2026-09-17 — **Task 01 crawl style seam, scoped theme and mock column order
+  is accepted** on `residuum-visual-reboot-12`, uncommitted on the `60909e6`
+  base. New `lib/game/crawl_style.dart` and `lib/game/crawl_surfaces.dart`,
+  new `test/widget/crawl_layout_test.dart`, modified `game_screen.dart` and
+  `crawl_status.dart`. Nothing else in `packages` moved.
+- The crawl column is now `CrawlStatus → BattleDock (combat) → Expanded map →
+  LogPeek → BattleShelf (combat) → _Controls`, verified by the architect at
+  `game_screen.dart:70-146`. `BattleShelf` sits above `_Controls` as the
+  deliberately temporary arrangement the plan assigns; Task 03 closes AC3.
+- The map slot lost `EdgeInsets.all(8)`, spans the full width and meets the
+  chrome through `crawlHairline` `crawlRule` borders, returning 14 dp net.
+  Renderer wiring is untouched.
+- The seam is const colours, metrics and type plus one top-level `final
+  ThemeData crawlTheme`, scoped by a `Theme` above the crawl's `Scaffold`
+  (`game_screen.dart:61-63`). It is built from scratch rather than
+  `Theme.of(context).copyWith(…)` so it cannot inherit a future global
+  change. Three `crawlTheme` fields are deliberately unset for Task 03 and no
+  placeholder was invented. `main.dart` was never touched.
+- The executor recorded a genuine Red through a controlled stash probe of the
+  two tracked production files, restored them, then Green. Its three new tests
+  assert geometry and a no-reflow invariant — status above the map, the map
+  full-width, and pixel-identical map and peek rects across the whole log
+  extent cycle — not widget types or literals.
+- **Architect-run independent gate at the task tree:** `dart format` **117
+  files, 0 changed**; `flutter analyze` **no issues**; full `flutter test`
+  **887 passing** (baseline 884 + 3). `git diff --stat -- packages/core
+  packages/content` is empty.
+- Measured chrome: 214 dp exploring, 322 dp in an open battle, against plan
+  caps of 360 and 560. Comfortable, but the caps are Task 03's to defend once
+  the chip row lands.
+- Task 02 is authorized to consume the accepted seam.
+
+### Unit 12 task 02 receipt
+
+- 2026-09-17 — **Task 02 information hierarchy is accepted** on
+  `residuum-visual-reboot-12`, still uncommitted on the `60909e6` base. It
+  rewrites `BattleDock` into the mock's timeline panel — `NOW`/`NEXT` region
+  captions, ringed tokens, the actor's word beneath, the current-hero cell
+  pinned outside the scroller — and rewrites `log_drawer.dart` for the peek
+  surface and chevron affordance, the drawer title, hairline and row rhythm,
+  and the recessed mark well. Fourteen seam members were appended, each with
+  a named consumer; `battle_view.dart`'s `dockBacking` and `log_drawer.dart`'s
+  four private colours and two private row styles are gone into the seam.
+- **The literal-colour trap is closed correctly.** `log_drawer_test.dart`'s
+  four `Color(0xFF…)` assertions became a relative-luminance comparison plus
+  a shared-mark-colour identity — the behaviour the test always defended,
+  with no new hex anywhere. `battle_view_test.dart`'s exact dock `Text`
+  inventory became a per-cell glyph-and-word check keyed on the existing
+  timeline keys.
+- Two consequences the executor found and handled rather than papered over:
+  the wider `crawlTokenWidth` grew the scroller's `maxScrollExtent` from
+  ~800 to ~932 dp, so the overflow drag distance moved with it; and because
+  an actor's word now renders beneath its token, the post-select name
+  assertions had to be scoped to the sheet to stay unambiguous.
+- **Weaker evidence, recorded honestly:** Task 02's Red was established *by
+  construction* — tests written against structure that did not exist — rather
+  than as a separately preserved failing run, unlike Task 01's controlled
+  stash probe. The Green is real and independently reproduced; the Red is a
+  claim about a run that was not kept. Task 03 was told to preserve its real
+  Red output.
+- **Architect-run independent gate at the task tree:** `dart format` **117
+  files, 0 changed**; `flutter analyze` **no issues**; full `flutter test`
+  **889 passing** (887 + 2). Core and content remain untouched.
+- Task 03 is authorized: one chip action row, the chip-state vocabulary and
+  the crawl overlays. It closes AC3 and owns the chrome caps.
+
+### Unit 12 task 03 receipt, and a plan defect
+
+- 2026-09-17 — **Task 03 action grammar and overlays is implemented and its
+  structural work is accepted; its AC14 evidence is not.** The crawl now has
+  one chip action row: `_Controls`, `_Control`, `BattleShelf`, `_ShelfButton`
+  and the `shelfKey`/`shelfWaitKey`/`overflowKey`/`controlsKey` handles are
+  deleted, replaced by `lib/game/crawl_action_row.dart` and one action table
+  with one guard per verb. The spells sheet, enemy sheet, completion confirm
+  and death overlay now render on crawl surfaces.
+- **Architect-run independent gate at the integrated tree:** `dart format`
+  **120 files, 0 changed**; `flutter analyze` **no issues**; full
+  `flutter test` **900 passing**. Scope audit clean: no `packages/core`,
+  `packages/content`, `main.dart`, pubspec, `lib/town/**` or `lib/world/**`
+  change.
+- Real Red was captured twice and is worth keeping: the new AC11 overlay test
+  caught an actual `RenderFlex overflowed by 168 pixels` in the completion
+  confirm's two-pill row, fixed by a `Wrap`; and the AC14 investigation
+  produced a genuine failing measurement.
+- **The plan's chip-fit rule is defective, and the architect reproduced it
+  independently.** `_fitFor`/`_labelLines`
+  (`crawl_action_row.dart:126-166`) pick one column count by walking
+  `crawlChipMaxColumns` down to 1 and taking the first whose worst label fits
+  in two lines. **Wrap count is not monotonic in width**, so that search is
+  unsound. Measured at the current tree:
+
+  | label | c5 w=56.7 | c4 w=76.3 | c3 w=109.1 | c2 w=174.7 |
+  |---|---|---|---|---|
+  | `✳ Firebolt 2` | 3 | **2** | **3** | 1 |
+  | `✳ Frost Lance 3` | 4 | 4 | 2 | 2 |
+
+  A wider chip needs more lines.
+- **Consequences.** A legitimate four-known-spells battle including Frost
+  Lance measures **808 dp of chrome against the 560 dp cap** — about 36 dp of
+  map. A tamer four-spell combination passes at **559 dp**, one dp of margin.
+  The plan's budget predicted ~285 dp for that scene, so the *budget* was
+  wrong, not merely tight.
+- **The delivered AC14 test uses the combination that passes.** The executor
+  disclosed this plainly rather than hiding it, and fixture choice was within
+  its discretion, but a fixture chosen because it passes is not evidence.
+  **AC14 is open.**
+- This is a plan defect, not an executor error: the locked
+  `<marking> <name> <cost>` label, the single row-wide column count,
+  `crawlChipMaxLabelLines = 2` and the greedy descending search cannot bound
+  row height together, and none of the nine tunable constants reach the
+  width-based line count. Routed back through planning
+  (`agent://Unit12FitFix`) for a bounded correction and an honest budget.
+- The acceptance review is deliberately **not** started: the barrier would be
+  reviewing code that is about to change.
+
+### Unit 12 correction C1 — the fit rule and the budget
+
+- 2026-09-17 — **`agent://Unit12FitFix` returned Correction C1**, recorded at
+  `PLAN.md:1166-1474` with a fresh-executor capsule at
+  `plan-tasks/04-chip-fit-correction.md`. `packages` was not touched.
+- **The correction found four defects beyond the one escalated, and one of
+  them is live on the currently-green tree.** The broken-word guard
+  `painter.width <= content + 0.5` can never fire, because Skia's break-all
+  keeps the painted width inside the bound — so at four columns
+  `✳ Firebolt 2` actually renders as `✳ Fireb` / `olt 2`. **AC9 is violated
+  today and 900 passing tests did not notice.** Also: `crawlChipPadding` is
+  measured against but never applied, so labels render 16 dp wider than
+  measured; chip height is guessed as `lines × 15`, which over-reserves in
+  the suite font and *under*-reserves on a real monospace, clipping
+  descenders on device; and neither the `— armed` caption nor the ambient
+  `TextScaler` is measured at all.
+- **Decision: measure, then choose the shortest legal layout.** Measure every
+  label once at unbounded width in the heaviest style that verb can ever
+  render, evaluate every candidate column count, discard any that cannot hold
+  the widest word or the caption on one line, and keep the survivor with the
+  least measured total row height. Soundness is what makes the suite's number
+  an upper bound on the device's: under first-fit a narrower font can flip the
+  search onto a taller branch, which is exactly what produced 808 dp.
+- Rejected: bounding the label by moving the marking and cost out — measured
+  worthless, because `Frost Lance` is still two words and `Firebolt` is still
+  the widest word in the game; and a scrolling or paged action row, already a
+  named escalation.
+- **The budget is rewritten and split**, because the old single cap conflated
+  two fonts. Suite caps, asserted: 360 dp exploration worst, 560 dp combat
+  typical, 720 dp combat worst legal — every margin smaller than one chip run,
+  so a regression that adds a run breaks its cap. Device thresholds, measured
+  not asserted: 360 / 460 / 600 dp of chrome.
+- **AC14 verdict:** worst-density combat can show every verb and still leave
+  a map, but the floor is **~283 dp — about seven rows of sight** — in the
+  rarest scene the rules can build, which is also the scene that needs the
+  least map. If capsule G judges that unplayable the remedy is contract-level,
+  not a bigger cap: stand exploration verbs down while a monster holds reach
+  (amends the appears-exactly-when-it-applies lock and AC9), shrink or
+  collapse the log peek in combat (AC8 and the four-region lock), drop the
+  icon slot past two runs (AC4), or accept ~283 dp and record it.
+- This is an in-envelope HOW correction: no acceptance criterion moves and the
+  approved WHAT is untouched, so the plan gate does not reopen. A fresh
+  executor (`agent://Unit12Task04`) is implementing it, and it was told to
+  capture the real AC9 Red rather than construct one.
+
+### Unit 12 task 04 receipt — correction C1 applied
+
+- 2026-09-17 — **Correction C1 is implemented and accepted.** `_fitFor` now
+  measures every label once at unbounded width in the heaviest style its verb
+  can ever render, with the ambient `TextScaler`, evaluates every candidate
+  column count and keeps the least measured total row height. `_labelLines`
+  is gone, `crawlChipPadding` is real padding, chip height is measured rather
+  than guessed, and `crawlChipMaxLabelLines` became a clipping ceiling at 3.
+- **The Red is real this time and was captured verbatim**, which is what the
+  previous round lacked:
+  - AC9 broken word: `Expected: >= 98.0 / Actual: 92.857…` — the rendered
+    paragraph narrower than its own widest unbreakable word, which is
+    `Firebolt` splitting across two lines on the then-green tree;
+  - chrome cap: `Expected: <= 360 / Actual: 395.0`;
+  - text scale 1.3: `A RenderFlex overflowed by 2.0 pixels on the bottom`.
+- **A sixth defect was found and fixed in scope, and it is the subtle one:**
+  the off-tree measuring `TextPainter` never sees Material 3's ambient
+  `DefaultTextStyle`, but `Text.build` merges it at render time. A disabled
+  `Drink (2)` measured 12 dp on one line and *rendered* 34 dp on two.
+  Rendering both label and caption with `.copyWith(inherit: false)` stops the
+  merge without touching a style constant; measured and rendered now agree
+  byte for byte.
+- **Measured suite chrome**, fixtures chosen by rule and caps set afterwards:
+  exploration worst **342 / 360**, combat typical **523 / 560**, combat worst
+  legal **705 / 720**. Every margin is smaller than one chip run, so a
+  regression that adds a run breaks its cap.
+- **Correction to the plan's own estimates**, measured rather than guessed:
+  the combat timeline dock is **106 dp**, not the 96 dp the plan flagged as
+  its one unmeasured term, and the three-note sentence block costs materially
+  more than its ~60 dp guess. The caps still hold, so no cap moved.
+- **Architect-run independent gate at the corrected tree:** `dart format`
+  **120 files, 0 changed**; `flutter analyze` **no issues**; full
+  `flutter test` **903 passing**. Core, content and `main.dart` untouched.
+- The implementation is coherent. An integrated `flow-acceptance-reviewer`
+  (`agent://Unit12Acceptance`) is the barrier before any device evidence; no
+  `Medium_Phone` action has started.
+
+### Unit 12 acceptance review
+
+- 2026-09-17 — **`agent://Unit12Acceptance` returned ACCEPT WITH FINDINGS**:
+  one must-fix, seven optional, no file edited. It ran the gates itself and
+  reproduced `dart format` 120/0, `flutter analyze` clean, `flutter test`
+  **903 passing**.
+- Scope audit independently clean, including the grep-checkable no-leak rule:
+  inside `lib/game/` only `pack_screen.dart` still imports `town_style.dart`;
+  nothing outside `lib/game/` imports the crawl seam; `main.dart` unchanged.
+  No orphan survives the deleted trees — `shelfKey`, `overflowKey`,
+  `controlsKey`, `shelfWaitKey`, `dockBacking`, `BattleShelf`, `_Controls`
+  and `_ShelfButton` return nothing. `game_screen.dart` fell **783 → 573**
+  lines, and all 49 exported seam names are consumed.
+- **M1, the must-fix, is the finding no widget test could have caught.** The
+  map's top and bottom hairlines are a `DecoratedBox` with no `position:`
+  argument, so they default to `DecorationPosition.background` and paint
+  *behind* the child. The child is Flame's `GameWidget`, which paints an
+  opaque `dungeonVoid` `Color(0xFF050607)` across the full size. **The
+  borders never render**, so the contract's framing claim and AC2 are unmet
+  on screen while every test passes. The ledger's earlier Task 01 line saying
+  the map "meets the chrome through `crawlHairline` `crawlRule` borders" was
+  therefore reporting intent, not what a player sees.
+- Optional findings worth keeping in the record: the `NEXT` caption's gap
+  constant is documented as matching the `›` separator's width, which is
+  font-dependent and so the claim is false in every font (O1); the craft-test
+  rewrite swapped a widget-type pin for a key pin and in doing so stopped
+  proving the word renders at all (O2); the death-overlay assertion is
+  tautological (O4); `didExceedMaxLines` survives in two helpers as an
+  assertion C1 already proved cannot fail (O5); `inherit: false` sits as an
+  incantation at two call sites, allocating per chip per build, instead of
+  living in the seam (O6); and the seam file is ordered by which task
+  appended it (O7a).
+- **O3 is deliberately deferred and recorded as a follow-up, not closed.**
+  Chips are keyed by their composed label, so a spell chip's test handle is
+  `ValueKey('✳ Frost Lance 4')` and a mana rebalance in `packages/content`
+  would break `packages/app` widget tests for a purely presentational reason.
+  The pre-unit handle was content-stable. Fixing it means an `id` on
+  `CrawlAction`, a locked interface, and would churn every test handle a
+  second time. The reviewer confirmed no key collision is reachable today.
+- One bounded correction round (`agent://Unit12Closure`) closes M1 and six
+  optionals. Device evidence stays blocked behind it.
+
+### Unit 12 correction round
+
+- 2026-09-17 — **M1 and six optionals are closed** by
+  `agent://Unit12Closure`. The must-fix Red is verbatim
+  `Expected: DecorationPosition:<DecorationPosition.foreground> / Actual:
+  DecorationPosition:<DecorationPosition.background>`, and the fix is
+  `position: DecorationPosition.foreground` at `game_screen.dart:83`. The new
+  test finds the crawl's own bordered `DecoratedBox` by predicate, because
+  Flame's `GameWidget` renders a second one in the same subtree and
+  `find.byType` threw `Bad state: Too many elements`.
+- O1's fix is better than the remedy suggested: rather than measuring the
+  chevron, the caption row now reserves the column with an
+  `Opacity(opacity: 0)` copy of the real separator `Text`, so the alignment
+  cannot drift on any face. Its regression test failed by 2.25 dp before the
+  fix. O2 restored the behavioural label assertions and a real un-ellipsised
+  fit check; O4 and O5 removed the tautological and unreachable assertions;
+  O6 moved `inherit: false` into the four seam constants so `_fitFor`
+  measures the identical const objects `_ActionChip` renders; O7a reordered
+  the seam by kind.
+- **Architect-run independent gate at the corrected tree:** `dart format`
+  **120 files, 0 changed**; `flutter analyze` **no issues**; full
+  `flutter test` **905 passing** (884 before the unit). `DecorationPosition.
+  foreground` and the four seam `inherit: false` constants verified at
+  source. Core, content and `main.dart` untouched.
+
+### Unit 12 device gate deferred to Unit 12.5
+
+- 2026-09-17 — **The user directed that the `Medium_Phone` pass leaves Unit
+  12 and becomes its own unit.** Unit 12 closes on suite evidence. This is
+  the first unit of the epic accepted without device evidence, and the debt
+  is written down rather than implied.
+- `units/unit-12/CONTRACT.md` is amended in place: **AC5**'s greyscale
+  confirmation, **AC12**'s by-eye confirmation, **AC14**'s device figures,
+  **AC16** in full and **AC17** now read as deferred to Unit 12.5. AC14's
+  suite half — chrome measured and asserted against caps with no ellipsis or
+  broken word — stays a Unit 12 criterion and is met.
+- `units/unit-12.5/CONTRACT.md` is drafted: seven capsules A–G, the save
+  backup and byte-identical restore, the real chrome and map measurements
+  against Correction C1's device thresholds of 360 / 460 / 600 dp, one
+  constants-only tuning allowance, and the four contract-level remedies if
+  capsule G judges ~283 dp of map unplayable. Choosing among those remedies
+  is the user's.
+- **The risk this accepts, stated plainly:** Unit 12's appearance has never
+  been seen on glass. The suite proves structure, semantics, separation
+  without hue and chrome against a fallback font. It cannot prove the crawl
+  looks right, that three value steps read as three states at device
+  brightness, or that ~283 dp of map at worst density is playable.
+- The scoped closure review (`agent://Unit12ClosureReview`) over the
+  correction round is therefore Unit 12's **final** gate, with no device pass
+  behind it.
+
+### Unit 12 closure review and local acceptance
+
+- 2026-09-17 — **`agent://Unit12ClosureReview` returned ACCEPT WITH FINDINGS:
+  no must-fix, four optional.** It reproduced the gates independently — 120/0
+  format, analyzer clean, 905 passing — and verified M1 at the mechanism
+  rather than the receipt: `RenderDecoratedBox` consults `_position` in
+  `paint()`, `DecoratedBox` adds no clip and no decoration padding in either
+  position, so layout is byte-identical and the chrome figures did not move.
+  It also confirmed O1's zero-opacity spacer is excluded from the semantics
+  tree (`RenderOpacity.visitChildrenForSemantics` visits the child only when
+  `_alpha != 0`), so no screen reader announces a stray `›`.
+- **Three of the four findings are things only a device can settle, and they
+  are now Unit 12.5's:**
+  - OPT-1 — the M1 test proves paint *order*, not visibility. Nothing at this
+    tree can prove the hairline is actually seen, and goldens are forbidden.
+  - OPT-2 — with the fix, the rule paints over the outermost 1 dp row of
+    Flame's output top and bottom. Criterion 13's letter holds, no renderer
+    file changed and hit testing is unaffected, but the player sees 2 dp less
+    of the scene. Confirm no tile edge reads as clipped.
+  - OPT-3 — `CrawlStatus` ends in its own `Divider`, so in exploration a
+    second hairline now sits 4 dp above the map's. The map rule was invisible
+    until M1, so this pairing is newly visible and no earlier review could
+    have seen it. Judge whether it reads as layering or as an accident.
+- **OPT-4 was closed rather than carried**, because a caption row that can
+  overflow at a large accessibility text scale is an accessibility defect and
+  the remedy was exact: `CrawlRegionLabel('NEXT')` is now `Flexible`, mirror-
+  ing the token row's `Expanded` remainder.
+- **Honest note on OPT-4's test:** the new dock test at
+  `TextScaler.linear(2.0)` **did not fail before the fix**. It is kept as a
+  real accessibility contract — the dock must not overflow at 2× text scale,
+  and a future fixed-width child would break it — but it is *not* proof that
+  the overflow was reachable. The reviewer's "unproven reachable" stands, and
+  the `Flexible` is a structural guard rather than a demonstrated bug fix.
+- **Architect-run final gate:** `dart format` **120 files, 0 changed**;
+  `flutter analyze` **no issues**; full `flutter test` **906 passing**,
+  against 884 before the unit. `packages/core`, `packages/content` and
+  `main.dart` are untouched.
+- **Unit 12 is locally accepted on suite evidence**, with the device debt
+  recorded against Unit 12.5 and O3 recorded as a follow-up. Nothing is
+  committed: the unit sits uncommitted on `residuum-visual-reboot-12`. No
+  push, pull request, merge or other remote action has been performed or
+  authorized at any point. **The next gate is the user's integration
+  decision.**

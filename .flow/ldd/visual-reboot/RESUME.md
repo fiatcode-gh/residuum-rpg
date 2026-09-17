@@ -1,42 +1,78 @@
 # Resume Visual Reboot
 
-**Units 1–10 are merged to `main`. Unit 11 Task 01 is accepted; Task 02 is the
-next action.**
+**Units 1–11 are merged to `main`. Unit 12 is locally accepted on suite
+evidence and uncommitted. Unit 12.5 carries its device debt.**
 
 ## Exact state
 
-- Local `main` is Unit 10's PR #20 merge commit
-  `0692bbcce7570df988f6daab9b357a2557e58b39`. The Unit 10 acceptance evidence
-  remains current; no application source changed after it.
-- The Unit 11 external LDD bundle under `units/unit-11/` validates at that
-  revision and every file in `SHA256SUMS.txt` matches. It is untracked
-  architect state; no Unit 11 production change exists.
-- Unit 11's contract is accepted as the prior user-approved WHAT: existing
-  dungeon art only, map viewport only, recomposed wall/value/light/material/
-  decoration/glyph presentation, with no topology, knowledge, interaction,
-  RNG, core/content, save, asset-master or crawl-UI change.
-- The execution-grade plan is explicitly user-approved for local implementation
-  and verification within its accepted envelope. Remote publication or
-  integration is not authorized.
+- Base is `main` at `60909e60ec3150cf9b590e6641a8ae51efca775c` (Unit 11's
+  PR #21 merge). Unit 12 sits **uncommitted** on `residuum-visual-reboot-12`:
+  5 modified and 6 untracked paths under `packages/app`, plus the architect's
+  `.flow/` records.
+- **Architect-run final gate:** `dart format` 120 files / 0 changed,
+  `flutter analyze` clean, full `flutter test` **906 passing**, against 884
+  before the unit. `packages/core`, `packages/content` and `main.dart` are
+  untouched.
+- Reviews: integrated acceptance ACCEPT WITH FINDINGS (one must-fix, closed),
+  then scoped closure ACCEPT WITH FINDINGS (no must-fix). Nothing outstanding
+  that code can close.
+- **No device evidence exists.** By the user's decision of 2026-09-17 the
+  `Medium_Phone` pass is Unit 12.5's, not this unit's.
+- Nothing remote has happened or been authorized: no commit, push, pull
+  request, review or merge.
 
 ## Exact next action
 
-Dispatch a fresh `flow-plan-executor` for Task 02 on the existing
-`residuum-visual-reboot-11` checkout. It consumes Task 01's accepted
-style/adjacency seam and implements only authored material scale plus
-deterministic decoration.
+Ask the user for the **integration decision** on Unit 12: commit and open a
+pull request, commit and hold, or keep it uncommitted until Unit 12.5's device
+pass. If they choose to integrate before 12.5, say plainly that the crawl will
+merge having never been seen on glass.
+
+Then Unit 12.5: present `units/unit-12.5/CONTRACT.md` for approval, and on
+approval run its capsules through bounded `flow-evidence-verifier` sessions
+after writing the device checkpoint.
+
+## Carried debt
+
+- **Unit 12.5 owns** Unit 12's AC5 greyscale, AC12 by eye, AC14 device
+  figures, AC16 in full and AC17, plus three closure findings a device must
+  settle: the hairline is proved by paint *order* only and never seen
+  (OPT-1); the rule now paints over the outermost 1 dp row of Flame's output
+  top and bottom (OPT-2); and a second hairline from `CrawlStatus`'s own
+  `Divider` now sits 4 dp above the map's, newly visible because the map's
+  rule was invisible until the must-fix (OPT-3).
+- **O3, a follow-up, not a defect:** chips are keyed by their composed label,
+  so a spell chip's test handle is `ValueKey('✳ Frost Lance 4')` and a mana
+  rebalance in `packages/content` would break `packages/app` widget tests for
+  a presentational reason. Fixing it means an `id` on `CrawlAction` — a
+  locked interface — and a second churn of every test handle. No collision is
+  reachable today.
+- **The number to watch on device:** worst legal combat is modelled at ~561 dp
+  of chrome leaving **~283 dp of map**, about seven rows of sight. If capsule
+  G judges that unplayable the remedy is contract-level, not a bigger cap, and
+  the four options are recorded in `PLAN.md` Correction C1.
 
 ## Carry-forward locks
 
-- Authored art changes appearance only: never topology, knowledge, interaction
-  or game-state meaning. `MaterialPlan` and `GlyphCell` remain authoritative.
-- Do not inspect unknown cells, light remembered terrain, consume gameplay RNG,
-  move image decoding into a hot path or modify `packages/core` /
-  `packages/content`.
-- Keep the accepted masters under `art/visual-reboot/` read-only. The
-  per-file mean in `tool/derive-visual-assets.sh` is load-bearing for
-  soft-light neutrality.
-- `Medium_Phone` must be user-started. Before any install, back up both device
-  save slots under `app_flutter/` and restore them byte-identically afterward.
+- The crawl seam is a sibling of `town/town_style.dart` in shape — never a
+  global `MaterialApp` theme change, never an application-wide design system.
+- Four-region rule: map = space, timeline = time, log = causality, action row
+  = verbs, no concern duplicated. Combat has one action row now; keep it.
+- No state by hue alone; every surface reads in greyscale. Monochrome meters
+  stand. Armed reads by border, fill value, type weight and the word, with the
+  word on its own reserved line so arming cannot reflow the map.
+- The map is `Expanded`: chrome is paid for in map height.
+- `ActionIconImage` stays an untinted `Image.asset`; the Unit 10 masters are
+  multitone.
+- The chip fit rule measures and then picks the shortest legal layout. Wrap
+  count is **not** monotonic in width — a first-fit search there is unsound
+  and produced an 808 dp row once already.
+- Chip and caption styles carry `inherit: false` in the seam. Without it
+  `Text.build` merges Material 3's ambient `DefaultTextStyle` and renders
+  taller than `_fitFor` measured.
+- Tests that pin presentation implementation are rewritten to the behaviour
+  they defend, never re-pinned to new literals.
+- `Medium_Phone` must be user-started. Back up both device save slots under
+  `app_flutter/` before any install and restore them byte-identically.
 - Run formatter, analyzer and tests from `packages/app`; there is no root
   pubspec.
