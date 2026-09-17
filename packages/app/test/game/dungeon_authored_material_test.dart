@@ -8,6 +8,7 @@ import 'package:residuum_app/art/art_assets.dart';
 import 'package:residuum_app/art/dungeon_art.dart';
 import 'package:residuum_app/game/dungeon_material.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
+import 'package:residuum_app/game/dungeon_render_style.dart';
 import 'package:residuum_app/game/dungeon_scene_material.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
 import 'package:residuum_core/core.dart';
@@ -186,6 +187,108 @@ Future<ui.Image> _overlayImage(int size) {
   return done.future;
 }
 
+/// An asymmetric L-shaped overlay with a transparent remainder. Each
+/// quarter-turn/mirror combination therefore produces an observable signature.
+Future<ui.Image> _asymmetricOverlayImage(int size) {
+  final pixels = Uint8List(size * size * 4);
+  for (var y = 0; y < size; y++) {
+    for (var x = 0; x < size; x++) {
+      final inL =
+          (x < size ~/ 5 && y < size * 3 ~/ 4) ||
+          (x < size * 3 ~/ 5 && y < size ~/ 5);
+      if (inL) {
+        final index = (y * size + x) * 4;
+        pixels[index] = pixels[index + 1] = pixels[index + 2] = 0xFF;
+        pixels[index + 3] = 0xFF;
+      }
+    }
+  }
+  final done = Completer<ui.Image>();
+  ui.decodeImageFromPixels(
+    pixels,
+    size,
+    size,
+    ui.PixelFormat.rgba8888,
+    done.complete,
+  );
+  return done.future;
+}
+
+DungeonPalette _cryptWithSalt(int themeSalt) => DungeonPalette(
+  wall: DungeonPalette.crypt.wall,
+  floor: DungeonPalette.crypt.floor,
+  stairs: DungeonPalette.crypt.stairs,
+  themeSalt: themeSalt,
+  material: DungeonPalette.crypt.material,
+  rememberedStone: DungeonPalette.crypt.rememberedStone,
+  visibleStone: DungeonPalette.crypt.visibleStone,
+  edgeInk: DungeonPalette.crypt.edgeInk,
+  detailInk: DungeonPalette.crypt.detailInk,
+  lightInk: DungeonPalette.crypt.lightInk,
+  maxLightLift: DungeonPalette.crypt.maxLightLift,
+  maxTintMix: DungeonPalette.crypt.maxTintMix,
+);
+
+String _overlaySignature(
+  ByteData base,
+  ByteData rendered,
+  ui.Rect destination,
+) {
+  const samples = 12;
+  final signature = StringBuffer();
+  for (var y = 0; y < samples; y++) {
+    for (var x = 0; x < samples; x++) {
+      final sampleX =
+          (destination.left + (x + 0.5) / samples * destination.width).round();
+      final sampleY =
+          (destination.top + (y + 0.5) / samples * destination.height).round();
+      final delta =
+          _pixel(rendered, sampleX, sampleY).computeLuminance() -
+          _pixel(base, sampleX, sampleY).computeLuminance();
+      signature.write(delta > 0.01 ? '#' : '.');
+    }
+  }
+  return signature.toString();
+}
+
+MaterialPlan _crackedWallPlan(DungeonPalette palette) {
+  const wall = Position(1, 1);
+  const open = Position(1, 2);
+  return MaterialPlan(
+    cells: const [
+      MaterialCell(
+        position: wall,
+        kind: MaterialTileKind.wall,
+        knowledge: MaterialKnowledge.visible,
+      ),
+      MaterialCell(
+        position: open,
+        kind: MaterialTileKind.floor,
+        knowledge: MaterialKnowledge.visible,
+      ),
+    ],
+    marks: {
+      wall: const MaterialMark(
+        grit: 0,
+        speck: false,
+        crack: 0.5,
+        edge: 0,
+        pattern: 0,
+      ),
+      open: const MaterialMark(
+        grit: 0,
+        speck: false,
+        crack: 0,
+        edge: 0,
+        pattern: 0,
+      ),
+    },
+    masonry: const {},
+    heroPosition: wall,
+    palette: palette,
+  );
+}
+
 /// A loaded overlay that paints nothing: fully transparent everywhere.
 /// Loading it still counts as "an overlay is loaded" — the fact the
 /// procedural crack ternary gates on — while never itself being visible, so
@@ -254,6 +357,69 @@ void main() {
         DungeonPalette.crypt.rememberedStone,
       );
     });
+
+    test(
+      'remembered wall with a known-open neighbor stays strictly base-only',
+      () async {
+        // arrange
+        const remembered = Position(3, 1);
+        const knownOpen = Position(3, 2);
+        const detail = MaterialMark(
+          grit: 1,
+          speck: true,
+          crack: 1,
+          edge: 1,
+          pattern: 1,
+        );
+        const quiet = MaterialMark(
+          grit: 0,
+          speck: false,
+          crack: 0,
+          edge: 0,
+          pattern: 0,
+        );
+        final plan = MaterialPlan(
+          cells: const [
+            MaterialCell(
+              position: remembered,
+              kind: MaterialTileKind.wall,
+              knowledge: MaterialKnowledge.remembered,
+            ),
+            MaterialCell(
+              position: knownOpen,
+              kind: MaterialTileKind.floor,
+              knowledge: MaterialKnowledge.visible,
+            ),
+          ],
+          marks: {remembered: detail, knownOpen: quiet},
+          masonry: const {},
+          heroPosition: knownOpen,
+          palette: DungeonPalette.crypt,
+        );
+        final art = DungeonArt(
+          surfaces: {
+            MaterialArt.cryptFloor: await _twoTone(4),
+            MaterialArt.cryptWall: await _twoTone(4),
+          },
+          overlays: const {},
+        );
+
+        // act
+        final rgba = await _renderBytes(plan, art: art);
+
+        // assert — the open neighbor deliberately exposes a wall face, while
+        // every remembered-wall pixel must remain the flat remembered value.
+        for (var x = _at(3); x < _at(4); x++) {
+          for (var y = _at(1); y < _at(2); y++) {
+            expect(
+              _pixel(rgba, x, y),
+              DungeonPalette.crypt.rememberedStone,
+              reason: 'remembered wall detail leaked at ($x, $y)',
+            );
+          }
+        }
+      },
+    );
 
     test('unknown stays void under authored art', () async {
       // arrange
@@ -394,8 +560,13 @@ void main() {
               kind: MaterialTileKind.wall,
               knowledge: MaterialKnowledge.visible,
             ),
+            MaterialCell(
+              position: Position(1, 2),
+              kind: MaterialTileKind.floor,
+              knowledge: MaterialKnowledge.visible,
+            ),
           ],
-          marks: {position: mark},
+          marks: {position: mark, const Position(1, 2): flatMark},
           masonry: const {},
           heroPosition: position,
           palette: DungeonPalette.crypt,
@@ -431,6 +602,128 @@ void main() {
         expect(_pixel(noArt, 54, 51), isNot(_pixel(flatFill, 54, 51)));
         expect(_pixel(transparentOverlay, 54, 51), _pixel(flatFill, 54, 51));
         expect(_pixel(opaqueOverlay, 54, 51), isNot(_pixel(flatFill, 54, 51)));
+      },
+    );
+
+    test(
+      'renders all eight authored overlay rotation and mirror variants',
+      () async {
+        // arrange — vary only the presentation salt to find every allowed
+        // transform for the same known-open wall anchor.
+        const wall = Position(1, 1);
+        const wallMark = MaterialMark(
+          grit: 0,
+          speck: false,
+          crack: 0.5,
+          edge: 0,
+          pattern: 0,
+        );
+        const neighbours = KnownMaterialNeighbours(
+          north: null,
+          east: null,
+          south: MaterialTileKind.floor,
+          west: null,
+        );
+        const faces = DungeonWallFaces(
+          north: false,
+          east: false,
+          south: true,
+          west: false,
+        );
+        final salts = <(int, bool), int>{};
+        for (var salt = 0; salt < 100000 && salts.length < 8; salt++) {
+          final palette = _cryptWithSalt(salt);
+          final placement = decorationPlacement(
+            cell: const MaterialCell(
+              position: wall,
+              kind: MaterialTileKind.wall,
+              knowledge: MaterialKnowledge.visible,
+            ),
+            mark: wallMark,
+            candidate: OverlayKind.crackB,
+            palette: palette,
+            neighbours: neighbours,
+            faces: faces,
+          );
+          if (placement.draw) {
+            salts.putIfAbsent((
+              placement.quarterTurns,
+              placement.mirrorX,
+            ), () => salt);
+          }
+        }
+        expect(salts, hasLength(8));
+
+        final overlay = await _asymmetricOverlayImage(16);
+        final transparent = await _transparentOverlayImage(16);
+        addTearDown(overlay.dispose);
+        addTearDown(transparent.dispose);
+        final signatures = <String>[];
+
+        // act and assert
+        for (final salt in salts.values) {
+          final palette = _cryptWithSalt(salt);
+          final plan = _crackedWallPlan(palette);
+          final base = await _renderBytes(
+            plan,
+            art: DungeonArt(
+              surfaces: const {},
+              overlays: {TerrainOverlayArt.cryptCrackB: transparent},
+            ),
+          );
+          final rendered = await _renderBytes(
+            plan,
+            art: DungeonArt(
+              surfaces: const {},
+              overlays: {TerrainOverlayArt.cryptCrackB: overlay},
+            ),
+          );
+          final placement = decorationPlacement(
+            cell: const MaterialCell(
+              position: wall,
+              kind: MaterialTileKind.wall,
+              knowledge: MaterialKnowledge.visible,
+            ),
+            mark: wallMark,
+            candidate: OverlayKind.crackB,
+            palette: palette,
+            neighbours: neighbours,
+            faces: faces,
+          );
+          final destination = ui.Rect.fromLTWH(
+            _at(1) + placement.destination.left * cameraCellSize,
+            _at(1) + placement.destination.top * cameraCellSize,
+            placement.destination.width * cameraCellSize,
+            placement.destination.height * cameraCellSize,
+          );
+          final signature = _overlaySignature(base, rendered, destination);
+          expect(
+            signature.contains('#'),
+            isTrue,
+            reason: 'transform $placement rendered no authored pixels',
+          );
+          signatures.add(signature);
+          final outsideCellDifferences = <List<int>>[];
+          for (var x = 0; x < 12 * 36; x++) {
+            for (var y = 0; y < 5 * 36; y++) {
+              final insideCell =
+                  x >= _at(1) && x < _at(2) && y >= _at(1) && y < _at(2);
+              if (!insideCell && _pixel(base, x, y) != _pixel(rendered, x, y)) {
+                outsideCellDifferences.add([x, y]);
+              }
+            }
+          }
+          expect(
+            outsideCellDifferences,
+            isEmpty,
+            reason: 'transform $placement escaped its owning cell',
+          );
+        }
+        expect(
+          signatures.toSet(),
+          hasLength(8),
+          reason: 'authored transform signatures were not orientation-distinct',
+        );
       },
     );
 
@@ -491,8 +784,23 @@ void main() {
             kind: MaterialTileKind.wall,
             knowledge: MaterialKnowledge.visible,
           ),
+          MaterialCell(
+            position: Position(1, 2),
+            kind: MaterialTileKind.floor,
+            knowledge: MaterialKnowledge.visible,
+          ),
         ],
-        marks: {position: mark},
+        marks: {
+          position: mark,
+          const Position(1, 2): const MaterialMark(
+            grit: 0,
+            speck: false,
+            crack: 0,
+            edge: 0,
+            pattern: 0,
+          ),
+        },
+
         masonry: const {},
         heroPosition: position,
         palette: DungeonPalette.crypt,
@@ -505,6 +813,12 @@ void main() {
       // act
       final withArt = await _renderBytes(plan, art: art);
       final withoutArt = await _renderBytes(plan);
+      final interiorDifferences = [
+        for (var x = _at(1) + 1; x < _at(2); x++)
+          for (var y = _at(1) + 1; y < _at(2); y++)
+            if (_pixel(withArt, x, y) != _pixel(withoutArt, x, y)) [x, y],
+      ];
+      expect(interiorDifferences, isNotEmpty);
 
       // assert
       for (final sample in [

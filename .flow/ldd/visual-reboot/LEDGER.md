@@ -34,19 +34,18 @@ The epic was opened from an approved external planning handoff:
 
 ## Current state
 
-- **Units 1–9 are accepted and present on `main`.** Verified at source on
-  2026-09-16: PR #13 `650fa7c`, #14 `15e737a`, #15 `55a226d`, #16 `319d945`,
-  #17 `f322d78`, #18 `2b0e0a4` and #19 `4bf865c` are MERGED. `main` is at
-  `4bf865c` (Unit 9 code `92fd4aa`, `feat: rebuild crawl status`), in sync with
-  `origin/main`.
-- **Unit 8 is formally closed.** Its deferred criterion 9 device gate passed,
-  including the user's physical TalkBack traversal to both below-fold
-  world-diagram nodes and the Sea-Cave/Ruined Keep phone-density readings.
-- **Unit 9 is complete and merged**, closing the locked order 1 → … → 9.
-- **Unit 10 (authored art integration) is open at intake.** An external
-  ChatGPT LDD bundle proposing it is under `units/unit-10/`, and 31 approved
-  PNG assets are untracked at `packages/app/assets/visual/`. Neither carries
-  local authorization; the unit contract is not yet approved.
+- **Units 1–10 are accepted and present on `main`.** On 2026-09-17, local
+  `main` resolves to Unit 10's PR #20 merge commit
+  `0692bbcce7570df988f6daab9b357a2557e58b39`.
+- **Unit 8's deferred device gate remains closed** and Unit 9's accepted
+  crawl-HUD contract remains unchanged.
+- **Unit 10 (authored art integration) is merged and closed.** Its accepted
+  verification evidence remains authoritative; Unit 11 must preserve its
+  pipeline, determinism and one-time decode ownership.
+- **Unit 11 (dungeon scene recomposition) has a validated external intake.**
+  Its contract is accepted as previously user-approved. The supplied plan is
+  strategy evidence pending local execution-grade refinement and separate plan
+  approval; no production implementation is authorized.
 
 ## Epic status
 
@@ -62,9 +61,11 @@ The epic was opened from an approved external planning handoff:
 | Unit 7 — town rooms + Heroes | Unit 6 | **merged** to `main` | 816 app tests, `dart format` 99 files/0 changed, analyzer clean; integrated acceptance review ACCEPT WITH FINDINGS, must-fix and F2–F5 corrected in `cb8fcbc`; `Medium_Phone` device gate passed with both save slots verified byte-identical | merged by PR #17 at `f322d78` (code `cb8fcbc`); contract: `units/unit-7/CONTRACT.md` |
 | Unit 8 — world + theme parity | Unit 7 | **merged** to `main`; device gate open | 826 app tests, `dart format` 100 files/0 changed, analyzer clean; acceptance review rejected then closed on all four findings, scoped closure review ACCEPT WITH FINDINGS with zero must-fix; **acceptance criterion 9 device gate deferred and still outstanding** | merged by PR #18 at `2b0e0a4` (code `c85c7f9` + correction `54d6b4b`); contract: `units/unit-8/CONTRACT.md`; plan: `units/unit-8/PLAN.md` |
 | Unit 9 — crawl HUD chrome | Unit 8 | **merged** to `main` | 834 app tests, `dart format` 101 files/0 changed, analyzer clean; integrated acceptance review PASS with zero findings; `Medium_Phone` colour/greyscale device gate across five status scenes, measured one-row (52 px) map cost, both save slots restored byte-identically | merged by PR #19 at `4bf865c` (code `92fd4aa`); contract: `units/unit-9/CONTRACT.md`; plan: `units/unit-9/PLAN.md`; two-row `crawl_status.dart`; red/blue meter fills rejected, icon control chips deferred |
-| Unit 10 — authored art integration | Unit 9 | **open at intake** | not yet contracted | external bundle `units/unit-10/` (evidence only); assets `packages/app/assets/visual/` |
+| Unit 10 — authored art integration | Unit 9 | **merged** to `main` | final app gate, integrated acceptance review and five `Medium_Phone` colour/greyscale capsules passed; save restoration MATCH | merged by PR #20 at `0692bbc`; contract: `units/unit-10/CONTRACT.md`; approved masters remain LFS-backed |
+| Unit 11 — dungeon scene recomposition | Unit 10 | **execution-grade plan awaiting approval** | validated/refined plan; fresh source seam checks; no production proof yet | existing dungeon art only; map viewport only; no core/content/gameplay/assets change |
 
-Recon locks the execution order: **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9**.
+Completed units are ordered **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10**.
+Unit 11's three renderer tasks remain strictly sequential.
 Units 4 and 5 stay sequential so identity-correct event names land before the
 log drawer; no unit reordering is needed.
 
@@ -2162,3 +2163,81 @@ Append-only. Supersede old decisions; do not rewrite history.
   clean environment rather than only on this workstation.
 - The only outstanding action is the user's merge decision. A later docs-only
   record commit would re-run these same gates without changing app behaviour.
+
+### Unit 10 merge correction and Unit 11 intake
+
+- 2026-09-17 — **Unit 10 is merged and closed.** Local `main` is
+  `0692bbcce7570df988f6daab9b357a2557e58b39`, the merge commit for PR #20.
+  This supersedes the earlier open-PR language in this ledger and `RESUME.md`;
+  the accepted Unit 10 evidence is unchanged.
+- 2026-09-17 — **Unit 11's external LDD intake validates** at that exact
+  revision: `validate-planning-handoff.py` reports
+  `kind=ldd repository=fiatcode-gh/residuum-rpg`, and every artifact recorded
+  in `units/unit-11/SHA256SUMS.txt` matches. The manifest was normalized to the
+  v1 schema before validation; its authorisation remains `not-carried`.
+- The contract at `units/unit-11/CONTRACT.md` is accepted as the validated
+  record of the prior user-approved WHAT: recomposition of the dungeon map
+  viewport using only existing approved dungeon art, while preserving
+  topology, knowledge, interaction, deterministic presentation and the Unit 10
+  decode boundary. No source under `packages/core` or `packages/content` is in
+  scope.
+- Fresh source inspection at `0692bbc` confirms the handoff's consequential
+  seams: `MaterialComponent` owns the material canvas; prepared `_WallFaces`
+  and `visibleSurfaceMask` exist; authored material is world-space mirrored
+  soft-light; glyphs currently use `cameraCellSize` as their base font size;
+  the road has no authored image surface.
+- The supplied `PLAN.md` preserves the correct three-task dependency shape,
+  surfaces, invariants and proof strategy, but its briefs omit explicit
+  executor-discretion/escalation boundaries and compact completion receipts.
+  It is not yet accepted as execution-grade. A native `flow-planner` must
+  refine only those gaps before the separate user plan-approval gate.
+
+### Unit 11 execution-grade plan
+
+- 2026-09-17 — A native `flow-planner` refined the validated external strategy
+  at the unchanged `0692bbc` source base. `PLAN.md` and all three fresh-executor
+  briefs now define exact starting conditions, cross-task render interfaces,
+  locked decisions, bounded executor discretion, Red/Green/package proof,
+  escalation conditions and completion receipts.
+- The dependency shape remains strict and sequential: structural light/wall
+  mass, then authored material/decoration, then semantic glyph composition.
+  The only shared seams are established by Task 01 and consumed without
+  duplication by Task 02; Task 03 remains in glyph ownership.
+- Plan quality gate: **COR PASS**, **TTC PASS**, **CRF PASS**, **SEC SKIP**
+  (offline presentation work introduces no trust boundary). Independent source
+  checks confirm the named `stoneLitColor`, material-surface, overlay,
+  presentation-salt and glyph-bound seams, plus the existing
+  `material_sampling_test.dart` test home.
+- Residual risk is intentionally device-bounded: Flame font metrics and final
+  art balance require the planned `Medium_Phone` colour/greyscale capsules and
+  at most one constants-only tuning pass. Any asset expansion, second tuning
+  pass or semantic/interface change escalates.
+- The refined planning artifacts now match `SHA256SUMS.txt`. **No production
+  implementation is authorized until the user explicitly approves this plan.**
+
+### Unit 11 execution authorization
+
+- 2026-09-17 — **The user explicitly approved the execution-grade Unit 11
+  plan.** This authorizes local implementation and verification within the
+  accepted plan envelope only. It does not authorize commits, pushes, pull
+  requests, reviews, merges, releases or other remote writes.
+- Next action: create/use the non-main `residuum-visual-reboot-11` feature
+  checkout at `0692bbc`, then dispatch one fresh `flow-plan-executor` for
+  `plan-tasks/01-structural-light-and-wall-mass.md`.
+
+### Unit 11 task 01 receipt
+
+- 2026-09-17 — **Task 01 structural light and wall mass is accepted** on
+  `residuum-visual-reboot-11`, dirty on the `0692bbc` base. It adds the pure
+  surface-treatment and known-neighbour/face seams, separate cached
+  floor/wall light passes and prepared wall boundary treatment in
+  `dungeon_scene_material.dart`; no core/content, gameplay, asset or decode
+  surface changed.
+- The executor recorded the required Red (exit 1: missing treatment API and
+  old equal-distance wall response), then focused Green, format, analyzer and
+  full app suite green (876 tests). Controller independently reran the focused
+  three-suite proof: **31 tests passed**. The patch directly proves darker
+  equal-distance walls, known-only face truth, remembered-unlit, unknown-void
+  and road compatibility.
+- Task 02 is authorized to consume the accepted style/adjacency seam. No device
+  evidence or remote action has started.

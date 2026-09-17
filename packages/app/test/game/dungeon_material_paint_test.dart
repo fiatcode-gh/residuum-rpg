@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:residuum_app/game/dungeon_material.dart';
+import 'package:residuum_app/art/art_assets.dart';
+import 'package:residuum_app/game/dungeon_render_style.dart';
 import 'package:residuum_app/game/dungeon_scene_material.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
@@ -345,8 +347,16 @@ void main() {
     test('lift stone value before hue as light grows', () {
       // arrange
 
-      final dim = stoneLitColor(DungeonPalette.crypt, 0.2);
-      final bright = stoneLitColor(DungeonPalette.crypt, 0.8);
+      final dim = stoneLitColor(
+        DungeonPalette.crypt,
+        dungeonSurfaceTreatment(DungeonPalette.crypt, MaterialSurface.floor),
+        0.2,
+      );
+      final bright = stoneLitColor(
+        DungeonPalette.crypt,
+        dungeonSurfaceTreatment(DungeonPalette.crypt, MaterialSurface.floor),
+        0.8,
+      );
 
       // act
       final dimHsl = HSLColor.fromColor(dim);
@@ -357,6 +367,73 @@ void main() {
       // assert — value-first: the luminance step dominates any warmth step
       expect(valueGain, greaterThan(saturationGain));
     });
+    test(
+      'renders walls darker than equal-distance floors in every dungeon',
+      () async {
+        const floorPosition = Position(2, 1);
+        const wallPosition = Position(1, 2);
+        const mark = MaterialMark(
+          grit: 0,
+          speck: false,
+          crack: 0,
+          edge: 0,
+          pattern: 0,
+        );
+
+        for (final palette in const [
+          DungeonPalette.crypt,
+          DungeonPalette.seaCave,
+          DungeonPalette.ruinedKeep,
+        ]) {
+          final plan = MaterialPlan(
+            cells: const [
+              MaterialCell(
+                position: Position(1, 1),
+                kind: MaterialTileKind.floor,
+                knowledge: MaterialKnowledge.visible,
+              ),
+              MaterialCell(
+                position: floorPosition,
+                kind: MaterialTileKind.floor,
+                knowledge: MaterialKnowledge.visible,
+              ),
+              MaterialCell(
+                position: wallPosition,
+                kind: MaterialTileKind.wall,
+                knowledge: MaterialKnowledge.visible,
+              ),
+            ],
+            marks: {
+              Position(1, 1): mark,
+              floorPosition: mark,
+              wallPosition: mark,
+            },
+            masonry: const {},
+            heroPosition: const Position(1, 1),
+            palette: palette,
+          );
+          final rgba = await _renderBytes(plan);
+
+          final floor = _pixel(
+            rgba,
+            _at(floorPosition.x + 0.5),
+            _at(floorPosition.y + 0.5),
+          );
+          final wall = _pixel(
+            rgba,
+            _at(wallPosition.x + 0.5),
+            _at(wallPosition.y + 0.5),
+          );
+
+          expect(
+            wall.computeLuminance(),
+            lessThan(floor.computeLuminance()),
+            reason: '${palette.material}',
+          );
+        }
+      },
+    );
+
     test('draw wall structure only on exposed known faces', () async {
       // arrange — two known walls share one internal face. The exterior faces
       // must remain structural, while their shared tile boundary must not
@@ -397,11 +474,11 @@ void main() {
         heroPosition: left,
         palette: DungeonPalette.crypt,
       );
-      final coveredWestPlan = MaterialPlan(
+      final exposedWestPlan = MaterialPlan(
         cells: [
           MaterialCell(
             position: coveredWest,
-            kind: MaterialTileKind.wall,
+            kind: MaterialTileKind.floor,
             knowledge: MaterialKnowledge.visible,
           ),
           ...plan.cells,
@@ -420,17 +497,12 @@ void main() {
         heroPosition: plan.heroPosition,
         palette: DungeonPalette.crypt,
       );
-      final image = await _renderMaterial(MaterialComponent(plan));
+      final image = await _renderMaterial(MaterialComponent(exposedWestPlan));
       addTearDown(image.dispose);
       final rgba = await _rgba(image);
-      final coveredWestImage = await _renderMaterial(
-        MaterialComponent(coveredWestPlan),
-      );
-      addTearDown(coveredWestImage.dispose);
-      final coveredWestRgba = await _rgba(coveredWestImage);
       final faceY = _at(1.5);
       // act
-      final outerFace = _pixel(rgba, _at(1), faceY);
+      final outerFace = _pixel(rgba, _at(1) + 1, faceY);
       final wallInterior = _pixel(rgba, _at(1) + 4, faceY);
 
       // assert — the internal boundary must continue the local gradient,
@@ -451,11 +523,6 @@ void main() {
         );
       }
       expect(outerFace, isNot(wallInterior));
-      expect(
-        outerFace,
-        isNot(_pixel(coveredWestRgba, _at(1), faceY)),
-        reason: 'the exposed west face needs a structural stroke beyond the same radial light',
-      );
     });
 
     test('keep exposed wall strokes out of adjacent unknown pixels', () async {
@@ -704,7 +771,7 @@ void main() {
       expect(stairsPaint.speck, isFalse);
     });
 
-    test('reduce remembered detail without erasing the geometry', () {
+    test('keep remembered terrain strictly base-only', () {
       // arrange
       final map = FloorMap.parse(_arena);
       final visible = computeFov(map, const Position(1, 1), fovRadius);
@@ -712,23 +779,19 @@ void main() {
       final plan = _plan(
         _game(visible: visible, explored: {...visible, remembered}, map: map),
       );
-      final rememberedFloor = plan.cellAt(remembered)!;
 
       // act
-      final paint = _paint(plan, rememberedFloor);
-      final visibleFloorPaint = _paint(
-        plan,
-        plan.cellAt(const Position(2, 1))!,
-      );
+      final paint = _paint(plan, plan.cellAt(remembered)!);
 
-      // assert — the remembered floor keeps a faint grit trace (the geometry
-      // survives) but its detail is a fraction of the visible response, and
-      // it carries none of the structural ornament
-      expect(paint.gritStrength, greaterThan(0.0));
-      expect(paint.gritStrength, lessThan(visibleFloorPaint.gritStrength));
+      // assert — remembered geometry is a flat base value. No procedural
+      // detail, structural edge or authored layer may survive the fog.
+      expect(paint.fill, DungeonPalette.crypt.rememberedStone);
+      expect(paint.edge, 0.0);
+      expect(paint.gritStrength, 0.0);
+      expect(paint.pattern, SurfacePattern.none);
+      expect(paint.patternStrength, 0.0);
       expect(paint.crackStrength, 0.0);
       expect(paint.speck, isFalse);
-      expect(paint.fill, DungeonPalette.crypt.rememberedStone);
     });
 
     test('keep the same marks across two identical plans', () {
@@ -931,7 +994,8 @@ void main() {
           final base = await _renderBytes(
             _singleCellPlan(
               palette: row.palette,
-              kind: MaterialTileKind.stairsDown,
+              kind: row.kind,
+              pattern: 0.75,
             ),
           );
           final differences = [
@@ -1042,8 +1106,12 @@ void main() {
         DungeonPalette.ruinedKeep,
         DungeonPalette.lowlandRoad,
       ]) {
-        final dim = stoneLitColor(palette, 0.2);
-        final bright = stoneLitColor(palette, 0.8);
+        final treatment = dungeonSurfaceTreatment(
+          palette,
+          MaterialSurface.floor,
+        );
+        final dim = stoneLitColor(palette, treatment, 0.2);
+        final bright = stoneLitColor(palette, treatment, 0.8);
         final dimHsl = HSLColor.fromColor(dim);
         final brightHsl = HSLColor.fromColor(bright);
 
@@ -1059,7 +1127,7 @@ void main() {
         );
         expect(
           _value(palette.visibleStone),
-          lessThan(_value(stoneLitColor(palette, 1))),
+          lessThan(_value(stoneLitColor(palette, treatment, 1))),
         );
       }
     });

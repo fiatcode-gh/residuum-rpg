@@ -57,18 +57,21 @@ Future<ui.Image> _twoTone(int size) {
 /// sampled from [sheet].
 Future<ByteData> _renderAuthoredFloor(
   DungeonPalette palette,
-  ui.Image sheet,
-) async {
+  ui.Image sheet, {
+  List<MaterialCell> extraCells = const [],
+}) async {
   const position = Position(1, 1);
+  final cells = [
+    const MaterialCell(
+      position: position,
+      kind: MaterialTileKind.floor,
+      knowledge: MaterialKnowledge.visible,
+    ),
+    ...extraCells,
+  ];
   final plan = MaterialPlan(
-    cells: const [
-      MaterialCell(
-        position: position,
-        kind: MaterialTileKind.floor,
-        knowledge: MaterialKnowledge.visible,
-      ),
-    ],
-    marks: {position: _flatMark},
+    cells: cells,
+    marks: {for (final cell in cells) cell.position: _flatMark},
     masonry: const {},
     heroPosition: position,
     palette: palette,
@@ -204,5 +207,28 @@ void main() {
         isNot(_authoredPixel(baseline, position)),
       );
     });
+    test(
+      'world-space samples do not depend on adjacent cell membership',
+      () async {
+        final sheet = await _twoTone(4);
+        const adjacent = MaterialCell(
+          position: Position(2, 1),
+          kind: MaterialTileKind.floor,
+          knowledge: MaterialKnowledge.visible,
+        );
+
+        final alone = await _renderAuthoredFloor(DungeonPalette.crypt, sheet);
+        final withAdjacent = await _renderAuthoredFloor(
+          DungeonPalette.crypt,
+          sheet,
+          extraCells: [adjacent],
+        );
+
+        expect(
+          _authoredPixel(withAdjacent, const Position(1, 1)),
+          _authoredPixel(alone, const Position(1, 1)),
+        );
+      },
+    );
   });
 }

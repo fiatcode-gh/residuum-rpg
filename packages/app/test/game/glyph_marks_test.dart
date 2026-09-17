@@ -35,6 +35,64 @@ void main() {
         expect(treatment.scale, greaterThan(0.0));
       }
     });
+    test('uses the locked relative hierarchy and nominal cell envelope', () {
+      const hero = GlyphCell(
+        Position(1, 1),
+        '@',
+        Color(0xFFFFFFFF),
+        1.0,
+        layer: GlyphLayer.hero,
+      );
+      const monster = GlyphCell(
+        Position(1, 2),
+        'g',
+        Color(0xFFD9A227),
+        1.0,
+        layer: GlyphLayer.monster,
+      );
+      const stairs = GlyphCell(
+        Position(1, 3),
+        '>',
+        Color(0xFFE8ECF2),
+        1.0,
+        layer: GlyphLayer.terrain,
+      );
+      const node = GlyphCell(
+        Position(1, 4),
+        'v',
+        Color(0xFFD9A227),
+        1.0,
+        layer: GlyphLayer.node,
+      );
+      const litter = GlyphCell(
+        Position(1, 5),
+        '!',
+        Color(0xFF7FC8B8),
+        1.0,
+        layer: GlyphLayer.litter,
+      );
+
+      final heroScale = glyphMarkTreatment(hero).scale;
+      final monsterScale = glyphMarkTreatment(monster).scale;
+      final stairsScale = glyphMarkTreatment(
+        stairs,
+        semanticTerrain: true,
+      ).scale;
+      final nodeScale = glyphMarkTreatment(node).scale;
+      final litterScale = glyphMarkTreatment(litter).scale;
+
+      expect(glyphBaseFontScale, 0.73);
+      expect(heroScale, 1.08);
+      expect(monsterScale, 1.04);
+      expect(stairsScale, 1.02);
+      expect(nodeScale, 1.0);
+      expect(litterScale, 0.94);
+      expect(glyphBaseFontScale * heroScale, lessThan(1.0));
+      expect(glyphBaseFontScale * monsterScale, lessThan(1.0));
+      expect(glyphBaseFontScale * stairsScale, lessThan(1.0));
+      expect(glyphBaseFontScale * nodeScale, lessThan(1.0));
+      expect(glyphBaseFontScale * litterScale, lessThan(1.0));
+    });
 
     test('give the hero the strongest presence in the hierarchy', () {
       // arrange
