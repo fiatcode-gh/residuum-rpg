@@ -2768,3 +2768,18 @@ Append-only. Supersede old decisions; do not rewrite history.
   push, pull request, merge or other remote action has been performed or
   authorized at any point. **The next gate is the user's integration
   decision.**
+
+### Unit 12 local commit
+
+- 2026-09-17 — **The user chose a local commit, and it is done.** Two
+  commits on `residuum-visual-reboot-12`: `259322b` `feat: give the crawl one
+  visual grammar` for the whole `packages/app` change, and `a34e11e`
+  `docs: record unit twelve` for the contract, recon, plan with Correction
+  C1, the four task briefs and these ledger entries. The worktree is clean.
+- The plan suggested three commits split by task. One was taken instead: the
+  four tasks and two correction rounds layered in a single uncommitted tree
+  and could not be separated after the fact without rewriting work.
+- **Nothing remote has happened or been authorized.** No push, no pull
+  request, no merge. The branch exists only on this workstation.
+- The next gates are the user's: whether Unit 12 is published before Unit
+  12.5's device pass, and whether Unit 12.5's contract is approved.

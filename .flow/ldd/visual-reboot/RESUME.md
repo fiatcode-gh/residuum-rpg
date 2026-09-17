@@ -1,14 +1,14 @@
 # Resume Visual Reboot
 
-**Units 1–11 are merged to `main`. Unit 12 is locally accepted on suite
-evidence and uncommitted. Unit 12.5 carries its device debt.**
+**Units 1–11 are merged to `main`. Unit 12 is locally accepted and committed
+on its branch, unpublished. Unit 12.5 carries its device debt.**
 
 ## Exact state
 
 - Base is `main` at `60909e60ec3150cf9b590e6641a8ae51efca775c` (Unit 11's
-  PR #21 merge). Unit 12 sits **uncommitted** on `residuum-visual-reboot-12`:
-  5 modified and 6 untracked paths under `packages/app`, plus the architect's
-  `.flow/` records.
+  PR #21 merge). Unit 12 is committed on `residuum-visual-reboot-12` as
+  `259322b` (the `packages/app` change) and `a34e11e` (the LDD records).
+  The worktree is clean.
 - **Architect-run final gate:** `dart format` 120 files / 0 changed,
   `flutter analyze` clean, full `flutter test` **906 passing**, against 884
   before the unit. `packages/core`, `packages/content` and `main.dart` are
@@ -18,15 +18,16 @@ evidence and uncommitted. Unit 12.5 carries its device debt.**
   that code can close.
 - **No device evidence exists.** By the user's decision of 2026-09-17 the
   `Medium_Phone` pass is Unit 12.5's, not this unit's.
-- Nothing remote has happened or been authorized: no commit, push, pull
-  request, review or merge.
+- **Nothing remote has happened or been authorized.** The commits are local;
+  no push, pull request, review or merge. The branch exists only on this
+  workstation.
 
 ## Exact next action
 
-Ask the user for the **integration decision** on Unit 12: commit and open a
-pull request, commit and hold, or keep it uncommitted until Unit 12.5's device
-pass. If they choose to integrate before 12.5, say plainly that the crawl will
-merge having never been seen on glass.
+Ask the user for the **publication decision** on Unit 12: push and open a
+pull request now, or hold the branch until Unit 12.5's device pass. If they
+publish before 12.5, say plainly that the crawl would merge having never been
+seen on glass.
 
 Then Unit 12.5: present `units/unit-12.5/CONTRACT.md` for approval, and on
 approval run its capsules through bounded `flow-evidence-verifier` sessions
