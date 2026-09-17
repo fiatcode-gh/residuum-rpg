@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
 
+import '../art/art_assets.dart';
 import '../town/town_bloc.dart';
 import '../world/world_bloc.dart';
+import 'action_icon.dart';
 import 'battle_view.dart';
 import 'crawl_status.dart';
 import 'dungeon_palette.dart';
@@ -262,40 +264,37 @@ class _Controls extends StatelessWidget {
                 ),
               ),
             ),
-          Row(
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            alignment: WrapAlignment.center,
             children: [
               if (state.canPickUp)
-                Expanded(
-                  child: _Control(
-                    label: 'Pick up',
-                    onPressed: () => bloc.add(const PickUpPressed()),
-                  ),
+                _Control(
+                  label: 'Pick up',
+                  onPressed: () => bloc.add(const PickUpPressed()),
                 ),
               if (state.canGather)
-                Expanded(
-                  child: _Control(
-                    label: node!.verb,
-                    onPressed: () => bloc.add(const GatherPressed()),
-                  ),
+                _Control(
+                  label: node!.verb,
+                  onPressed: () => bloc.add(const GatherPressed()),
                 ),
               if (potion != null)
-                Expanded(
-                  child: _Control(
-                    label: 'Drink (${state.potionCount})',
-                    onPressed: state.game.isGameOver
-                        ? null
-                        : () => bloc.add(const QuickDrinkPressed()),
-                  ),
+                _Control(
+                  label: 'Drink (${state.potionCount})',
+                  icon: ActionIcon.potion,
+                  onPressed: state.game.isGameOver
+                      ? null
+                      : () => bloc.add(const QuickDrinkPressed()),
                 ),
-              Expanded(
-                child: _Control(
-                  label: 'Pack (${state.game.inventory.length})',
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => BlocProvider.value(
-                        value: bloc,
-                        child: const CrawlPackScreen(),
-                      ),
+              _Control(
+                label: 'Pack (${state.game.inventory.length})',
+                icon: ActionIcon.pack,
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => BlocProvider.value(
+                      value: bloc,
+                      child: const CrawlPackScreen(),
                     ),
                   ),
                 ),
@@ -303,51 +302,42 @@ class _Controls extends StatelessWidget {
               if (state.isEncounter &&
                   !state.isRoadClear &&
                   !state.isBattleOpen)
-                Expanded(
-                  child: _Control(
-                    label: 'Wait',
-                    onPressed: () =>
-                        context.read<GameBloc>().add(const WaitPressed()),
-                  ),
+                _Control(
+                  label: 'Wait',
+                  icon: ActionIcon.wait,
+                  onPressed: () =>
+                      context.read<GameBloc>().add(const WaitPressed()),
                 ),
               if (state.canFlee)
-                Expanded(
-                  child: _Control(
-                    label: 'Flee',
-                    onPressed: () =>
-                        context.read<GameBloc>().add(const FleePressed()),
-                  ),
+                _Control(
+                  label: 'Flee',
+                  onPressed: () =>
+                      context.read<GameBloc>().add(const FleePressed()),
                 ),
               if (state.isRoadClear)
-                Expanded(
-                  child: _Control(
-                    label: 'Move on',
-                    onPressed: () =>
-                        leaveEncounter(context, state, EncounterEnding.cleared),
-                  ),
+                _Control(
+                  label: 'Move on',
+                  onPressed: () =>
+                      leaveEncounter(context, state, EncounterEnding.cleared),
                 ),
               if (state.canAscend)
-                Expanded(
-                  child: _Control(
-                    label: 'Ascend <',
-                    onPressed: () => bloc.add(const AscendPressed()),
-                  ),
+                _Control(
+                  label: 'Ascend <',
+                  icon: ActionIcon.ascend,
+                  onPressed: () => bloc.add(const AscendPressed()),
                 ),
               if (state.canDescend)
-                Expanded(
-                  child: _Control(
-                    label: 'Descend >',
-                    onPressed: () => bloc.add(const DescendPressed()),
-                  ),
+                _Control(
+                  label: 'Descend >',
+                  icon: ActionIcon.descend,
+                  onPressed: () => bloc.add(const DescendPressed()),
                 ),
               if (state.canLeave)
-                Expanded(
-                  child: _Control(
-                    label: ending ? doneControl : 'Leave',
-                    onPressed: () => ending
-                        ? _confirmCompletion(context, state)
-                        : suspendDungeon(context, state),
-                  ),
+                _Control(
+                  label: ending ? doneControl : 'Leave',
+                  onPressed: () => ending
+                      ? _confirmCompletion(context, state)
+                      : suspendDungeon(context, state),
                 ),
             ],
           ),
@@ -496,24 +486,38 @@ void leaveEncounter(
 }
 
 class _Control extends StatelessWidget {
-  const _Control({required this.label, required this.onPressed});
+  const _Control({required this.label, required this.onPressed, this.icon});
 
   final String label;
   final VoidCallback? onPressed;
+  final ActionIcon? icon;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 3),
-    child: FilledButton(
-      onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-      ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    enabled: onPressed != null,
+    label: label,
+    onTap: onPressed,
+    child: ExcludeSemantics(
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+          minimumSize: const Size(0, 40),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              ActionIconImage(icon!),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            ),
+          ],
+        ),
       ),
     ),
   );
@@ -591,6 +595,7 @@ class BattleShelf extends StatelessWidget {
 
   Widget _shelfButton(Spell spell) {
     final armed = state.armedSpellId == spell.id;
+    final icon = ActionIcon.forSpell(spell.id);
     return TextButton(
       key: Key('shelf-spell-${spell.id}'),
       onPressed: () => _onSpell(spell),
@@ -598,16 +603,26 @@ class BattleShelf extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8),
         side: armed ? const BorderSide(color: ink) : null,
       ),
-      child: Text(
-        armed
-            ? '${spell.school.schoolMarking} ${spell.name} '
-                  '${spell.manaCost} — armed'
-            : '${spell.school.schoolMarking} ${spell.name} ${spell.manaCost}',
-        style: const TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 12,
-          color: ink,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            ActionIconImage(icon),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            armed
+                ? '${spell.school.schoolMarking} ${spell.name} '
+                      '${spell.manaCost} — armed'
+                : '${spell.school.schoolMarking} ${spell.name} '
+                      '${spell.manaCost}',
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 12,
+              color: ink,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -666,6 +681,7 @@ class BattleShelf extends StatelessWidget {
           if (potion != null)
             _ShelfButton(
               label: 'Drink (${state.potionCount})',
+              icon: ActionIcon.potion,
               onPressed: state.game.isGameOver
                   ? null
                   : () => bloc.add(const QuickDrinkPressed()),
@@ -675,11 +691,13 @@ class BattleShelf extends StatelessWidget {
             _ShelfButton(
               key: overflowKey,
               label: '+$overflowCount',
+              icon: ActionIcon.more,
               onPressed: () => _openOverflow(context),
             ),
           _ShelfButton(
             key: shelfWaitKey,
             label: 'Wait',
+            icon: ActionIcon.wait,
             onPressed: () => bloc.add(const WaitPressed()),
           ),
         ],
@@ -690,10 +708,16 @@ class BattleShelf extends StatelessWidget {
 
 /// One wide shelf button: a word, tappable, in the dock's ink.
 class _ShelfButton extends StatelessWidget {
-  const _ShelfButton({required this.label, required this.onPressed, super.key});
+  const _ShelfButton({
+    required this.label,
+    required this.onPressed,
+    this.icon,
+    super.key,
+  });
 
   final String label;
   final VoidCallback? onPressed;
+  final ActionIcon? icon;
 
   @override
   Widget build(BuildContext context) => TextButton(
@@ -701,9 +725,19 @@ class _ShelfButton extends StatelessWidget {
     style: TextButton.styleFrom(
       padding: const EdgeInsets.symmetric(horizontal: 8),
     ),
-    child: Text(
-      label,
-      style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: ink),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (icon != null) ...[ActionIconImage(icon!), const SizedBox(width: 6)],
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 12,
+            color: ink,
+          ),
+        ),
+      ],
     ),
   );
 }

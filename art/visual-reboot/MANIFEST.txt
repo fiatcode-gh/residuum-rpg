@@ -1,0 +1,56 @@
+Residuum Visual Assets — Wave 1 + Wave 2 Production Bundle
+
+This bundle includes the original approved Wave 1 assets plus the approved Wave 2 assets.
+Wave 2 decorative overlays and UI icons in this bundle are the individually generated versions,
+not the earlier grouped/cropped intermediates.
+
+WAVE 1 — APPROVED
+Environments:
+- ENV-001_stonebridge.png
+- ENV-002_forge.png
+- ENV-003_tavern.png
+
+Crypt dungeon:
+- DNG-001_crypt_floor_base.png
+- DNG-002_crypt_wall_base.png
+- DNG-003_crypt_crack_overlay_a.png
+- DNG-004_crypt_crack_overlay_b.png
+- DNG-005_crypt_rubble_small.png
+- DNG-006_crypt_rubble_medium.png
+
+WAVE 2 — APPROVED
+Sea-Cave dungeon:
+- DNG-SC-001_sea_cave_floor_material_source.png
+- DNG-SC-002_sea_cave_wall_material_source.png
+- DNG-SC-003_sea_cave_crack_overlay_a.png
+- DNG-SC-004_sea_cave_crack_overlay_b.png
+- DNG-SC-005_sea_cave_rubble_small.png
+- DNG-SC-006_sea_cave_rubble_medium.png
+
+Ruined Keep dungeon:
+- DNG-RK-001_ruined_keep_floor_material_source.png
+- DNG-RK-002_ruined_keep_wall_material_source.png
+- DNG-RK-003_ruined_keep_fracture_overlay_a.png
+- DNG-RK-004_ruined_keep_fracture_overlay_b.png
+- DNG-RK-005_ruined_keep_rubble_small.png
+- DNG-RK-006_ruined_keep_rubble_medium.png
+
+UI P0 icons:
+- UI-P0-001_potion.png
+- UI-P0-002_pack.png
+- UI-P0-003_wait.png
+- UI-P0-004_ascend.png
+- UI-P0-005_descend.png
+- UI-P0-006_melee.png
+- UI-P0-007_firebolt.png
+- UI-P0-008_mend.png
+- UI-P0-009_more.png
+- UI-P0-010_back.png
+
+TECHNICAL NOTES
+- PNG format throughout.
+- Decorative crack/fracture/rubble assets are standalone individual files with transparent backgrounds.
+- UI icons are standalone individual files with transparent backgrounds and multitone coloration.
+- Material sources are not guaranteed seamless; they are source materials for runtime sampling/cropping.
+- Stairs as world semantics remain procedural/vector in implementation; ascend/descend here are UI action icons.
+- Final SVG / Flutter-path vectorization of UI icons is a downstream implementation task.

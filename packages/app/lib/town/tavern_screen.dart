@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import '../art/art_assets.dart';
 import '../world/world_bloc.dart';
+import 'illustration.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
 
@@ -28,6 +30,11 @@ class TavernScreen extends StatelessWidget {
           children: [
             Purse(carried: town.gold, banked: town.bankedGold),
             Notice(town.notice ?? world.notice),
+            const Illustration(
+              EnvironmentArt.tavern,
+              height: roomIllustrationHeight,
+              key: tavernIllustrationKey,
+            ),
             const Heading('What they are saying'),
             if (offered == null)
               const NothingHere(

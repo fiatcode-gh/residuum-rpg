@@ -34,18 +34,19 @@ The epic was opened from an approved external planning handoff:
 
 ## Current state
 
-- **Units 1–8 are accepted and present on `main`.** Verified at source on
+- **Units 1–9 are accepted and present on `main`.** Verified at source on
   2026-09-16: PR #13 `650fa7c`, #14 `15e737a`, #15 `55a226d`, #16 `319d945`,
-  #17 `f322d78`, and #18 `2b0e0a4` are MERGED. `main` is at `2b0e0a4` with a
-  clean worktree in sync with `origin/main`.
-- **Unit 8's acceptance criterion 9 — the `Medium_Phone` device gate — is the
-  one criterion still open**, deferred by explicit user decision and now
-  outstanding after integration. Two questions wait on it: whether a real
-  screen reader reaches the below-fold world-diagram nodes, and whether the
-  Sea-Cave strata and Ruined Keep fracture strokes read at phone density.
-- **Unit 9 (crawl HUD chrome) is open at recon.** It is the last unit in the
-  locked order and the expected trigger to reinstate greyscale device twins,
-  because labelled HP/Mana bars are where a hue-only state first appears.
+  #17 `f322d78`, #18 `2b0e0a4` and #19 `4bf865c` are MERGED. `main` is at
+  `4bf865c` (Unit 9 code `92fd4aa`, `feat: rebuild crawl status`), in sync with
+  `origin/main`.
+- **Unit 8 is formally closed.** Its deferred criterion 9 device gate passed,
+  including the user's physical TalkBack traversal to both below-fold
+  world-diagram nodes and the Sea-Cave/Ruined Keep phone-density readings.
+- **Unit 9 is complete and merged**, closing the locked order 1 → … → 9.
+- **Unit 10 (authored art integration) is open at intake.** An external
+  ChatGPT LDD bundle proposing it is under `units/unit-10/`, and 31 approved
+  PNG assets are untracked at `packages/app/assets/visual/`. Neither carries
+  local authorization; the unit contract is not yet approved.
 
 ## Epic status
 
@@ -60,7 +61,8 @@ The epic was opened from an approved external planning handoff:
 | Unit 6 — character / spells / pack | Unit 3 | **merged** to `main` | 789 app tests, `dart format` 0 changed, analyzer clean; integrated acceptance review ACCEPT; Medium_Phone colour/greyscale device gate | merged by PR #16 at `319d945` (code `89927ef`); contract: `units/unit-6/CONTRACT.md` |
 | Unit 7 — town rooms + Heroes | Unit 6 | **merged** to `main` | 816 app tests, `dart format` 99 files/0 changed, analyzer clean; integrated acceptance review ACCEPT WITH FINDINGS, must-fix and F2–F5 corrected in `cb8fcbc`; `Medium_Phone` device gate passed with both save slots verified byte-identical | merged by PR #17 at `f322d78` (code `cb8fcbc`); contract: `units/unit-7/CONTRACT.md` |
 | Unit 8 — world + theme parity | Unit 7 | **merged** to `main`; device gate open | 826 app tests, `dart format` 100 files/0 changed, analyzer clean; acceptance review rejected then closed on all four findings, scoped closure review ACCEPT WITH FINDINGS with zero must-fix; **acceptance criterion 9 device gate deferred and still outstanding** | merged by PR #18 at `2b0e0a4` (code `c85c7f9` + correction `54d6b4b`); contract: `units/unit-8/CONTRACT.md`; plan: `units/unit-8/PLAN.md` |
-| Unit 9 — crawl HUD chrome | Unit 8 | **open at recon** | own colour/greyscale device pass; twins reinstated for HP/Mana state | depth header, labelled HP/Mana bars, icon control chips |
+| Unit 9 — crawl HUD chrome | Unit 8 | **merged** to `main` | 834 app tests, `dart format` 101 files/0 changed, analyzer clean; integrated acceptance review PASS with zero findings; `Medium_Phone` colour/greyscale device gate across five status scenes, measured one-row (52 px) map cost, both save slots restored byte-identically | merged by PR #19 at `4bf865c` (code `92fd4aa`); contract: `units/unit-9/CONTRACT.md`; plan: `units/unit-9/PLAN.md`; two-row `crawl_status.dart`; red/blue meter fills rejected, icon control chips deferred |
+| Unit 10 — authored art integration | Unit 9 | **open at intake** | not yet contracted | external bundle `units/unit-10/` (evidence only); assets `packages/app/assets/visual/` |
 
 Recon locks the execution order: **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9**.
 Units 4 and 5 stay sequential so identity-correct event names land before the
@@ -1474,3 +1476,689 @@ Append-only. Supersede old decisions; do not rewrite history.
   were evidence/LDD records only. No commit, push, pull request or other remote
   action has been performed or authorized. Next gate is the user's integration
   decision.
+
+### Unit 9 integration
+
+- 2026-09-16 — **Unit 9 is merged.** The user integrated the accepted branch;
+  PR #19 merged at `4bf865c` with code `92fd4aa`. `main` is in sync with
+  `origin/main` and the worktree carries no app changes. The locked order
+  1 → … → 9 is complete.
+
+### Unit 10 intake — authored art integration
+
+- 2026-09-16 — **An external ChatGPT LDD bundle proposing Unit 10 arrived**
+  together with 31 approved authored PNG assets. Both are evidence; neither
+  carries authorization.
+- **The bundle fails the shipped planning-handoff validator** (`exit 2`): its
+  `artifacts` paths are repository-root-relative where schema v1 requires
+  bundle-root-relative paths. It was **not repaired**. It is reconciled here as
+  unvalidated external evidence, and its internal cross-references
+  (`proposed-units/unit-10.md`, `asset-inventory.md`) do not match its own
+  filenames either. `design_status` and `implementation_strategy` are both
+  `partial`; no execution-grade plan was supplied.
+- **Freshness is confirmed at source.** The bundle's `observed_ref` `92fd4aa`
+  is an ancestor of `main`, and `git diff 92fd4aa..HEAD -- packages/` is empty,
+  so every source claim it made was checked against an unchanged app tree.
+- **Restructuring, authorized by the user in-session.** Authored masters moved
+  `packages/app/assets/visual/` → `art/visual-reboot/`: they are 1254 x 1254
+  production masters, and leaving them there would have pointed the app's first
+  `assets:` declaration at 48.1 MB of source art with bundle provenance text
+  mixed into a runtime asset root. The external bundle moved
+  `units/unit-10/` → `external/unit-10-chatgpt-handoff/`, matching the
+  `external/unit-2-chatgpt-handoff/` precedent; `units/unit-10/` now holds only
+  architect-owned records. Nothing under `packages/` was touched. All 31 PNGs
+  plus `MANIFEST.txt` re-verified byte-identical to `SHA256SUMS.txt` after the
+  move (the checksum file's `wave1/`/`wave2/` prefixes are flattened by the
+  extraction; suffix matching is unambiguous).
+- **Recon is recorded at `units/unit-10/recon.md`** from three bounded scouts
+  plus architect verification. The bundle's three renderer claims and its town
+  and control claims are confirmed, with four corrections that change scope:
+  1. **Size is a contract constraint.** One master decodes to 6.0 MB; the set is
+     ~186 MB resident and 48.1 MB on disk. Shipped assets must be derived.
+     Environment masters are square, so every placement crops deliberately.
+  2. **There are two towns.** Only Stonebridge has authored environment art, and
+     no town gate exists in any screen today.
+  3. **Forge and Tavern exist in both towns**, so ungated room art appears in
+     Northgate.
+  4. **The crawl control row is not a safe icon seam.** Equal `Expanded` cells
+     already ellipsise `Drink (…)` at five controls; an icon makes it strictly
+     worse. The battle shelf is a `Wrap` and is the one safe icon surface.
+     Melee is a map tap and back is the platform `AppBar` affordance across
+     fourteen files, so both assets stay unused.
+- **The draft contract is written** at `units/unit-10/CONTRACT.md` with three
+  decisions requested at the approval gate: whether the masters are tracked in
+  git; whether the crawl control row stays out of Unit 10; and whether room
+  illustrations appear in Northgate. Implementation stays unauthorized until the
+  contract is approved and an execution-grade plan is approved after it.
+- 2026-09-16 — **The user approved the Unit 10 contract** and resolved all
+  three decisions, amending scope in the process:
+  - **D1 — Git LFS.** `art/visual-reboot/**/*.png` is tracked through a new root
+    `.gitattributes`; `git-lfs 3.7.1` is installed and `origin` is GitHub. The
+    derived shipped assets stay ordinary git objects so a checkout without LFS
+    still builds. This is the repository's first LFS configuration.
+  - **D2 — the crawl control row is in scope.** Unit 10 re-lays-out the row so
+    icon-plus-label fits without ellipsis at 411.4 dp, retiring the inherited
+    device-proved `Drink (…)` truncation. The control set stays frozen: no
+    control is added, removed, renamed, reordered or rewired. This reopens a
+    geometry frozen since Unit 3 by the user's explicit decision, and pulls the
+    `pack`/`ascend`/`descend` icons into the unit.
+  - **D3 — room art is room-typed.** Forge and Tavern illustrations appear in
+    both towns; only the Stonebridge environment is gated on
+    `TownViewState.town == stonebridge`.
+- Approval authorizes **execution-grade planning only**. One dedicated
+  `flow-planner` is dispatched to own plan recon and writing; Main owns plan
+  acceptance. No production-writing worker may run until the plan is separately
+  approved, and publication stays separately gated after that.
+
+### Unit 10 planning
+
+- 2026-09-16 — **The execution-grade plan is written and architect-validated**:
+  `units/unit-10/PLAN.md` (1321 lines) plus four briefs under
+  `units/unit-10/plan-tasks/`, by `agent://U10Planner`. Dependency shape is
+  strictly sequential 01 → 02 → 03 → 04, then Main's integrated gate, then one
+  `flow-acceptance-reviewer` barrier, then five device capsules.
+- **The planner left the tree untouched**: `git status` shows only the
+  architect-owned LDD records, the untracked `art/` masters and no `tool/` or
+  `packages/app/assets/`; derivation experiments went to `/tmp/u10`.
+- **Architect rechecks at source, not taken on report:**
+  - The plan **corrects `recon.md`'s renderer seam, and the correction is
+    right**. `MaterialComponent.render` (`dungeon_scene_material.dart:278-286`)
+    fills every cell base, then `_drawVisibleLight` clips an opaque
+    `stoneLitColor(1) → stoneLitColor(0)` gradient to the visible mask and fills
+    the bounds, so a visible cell's base is already overpainted. The authored
+    pass therefore belongs **after** the light, not in `_drawCellBase`. Recon's
+    seam claim is superseded.
+  - The five-control worst density is closed at source: `gatherNodesOn`
+    (`gathering.dart:129-135`) draws only from `Tile.floor` that is not the hero
+    spawn, so a gather node and a flight of stairs cannot share a tile, and
+    `canAscend`/`canDescend`/`canLeave` (`game_screen.dart:329-346`) contribute
+    one control between them.
+  - CI checks out without LFS (`.github/workflows/ci.yml:18`, plain
+    `actions/checkout@v4`), so the masters arriving as pointers is harmless and
+    criterion 2's no-LFS-build claim is structurally sound: nothing in the build
+    reads `art/`, and the shipped assets are ordinary git objects.
+- **Locked decisions of consequence:** one root LFS pattern for
+  `art/visual-reboot/**/*.png`; a repo-root `tool/derive-visual-assets.sh`
+  producing ~2.3 MB of shipped assets (environments cropped to 2.5:1 JPEG,
+  576² high-passed greyscale material sheets re-centred on mean ~0.50, 144²
+  overlays, 72² icons); one `lib/art/art_assets.dart` catalogue as the only
+  file holding an asset path; a world-space mirror-tiled `ui.ImageShader` field
+  rather than per-cell crops, which keeps Unit 2's continuous material and makes
+  the non-seamless masters seam-free by construction; `BlendMode.softLight`
+  against mid-grey sheets so the authored layer adds texture with **no net
+  luminance shift**, leaving the light gradient owning brightness and the
+  palette owning hue; overlays gated on the existing `MaterialMark` values so
+  density and determinism are inherited; and an optional const-defaulted `art`
+  parameter on `MaterialComponent` that leaves every existing pixel assertion
+  valid. **Zero existing test files change.**
+- **Residual risks accepted into device evidence:** the control row reaches two
+  runs (~44 dp of map) at five controls; boot decodes ~14.7 MB before the first
+  frame; multitone icons render untinted on the light M3 container; regional cue
+  survival under added texture; `overlayOpacity` 0.55 and the eight-cell mirror
+  period are device-tunable within stated bounds. Each has a named bounded
+  correction, and reducing an accepted regional cue stays an escalation.
+- The plan **awaits explicit user approval**. No branch exists; implementation
+  stays unauthorized.
+- 2026-09-16 — **The user approved the execution-grade plan as written**,
+  explicitly accepting its two named tradeoffs: the control row reaching two
+  runs (~44 dp of map) at five controls, and the ~14.7 MB boot decode before the
+  first frame. Local implementation is authorized within the approved plan
+  envelope only; publication and integration remain separately gated.
+- The feature checkout **`residuum-visual-reboot-10`** is branched from
+  `4bf865c`, carrying the architect-owned dirty LDD records and the untracked
+  `art/` masters forward, and task 01 is dispatched to one fresh non-isolated
+  `flow-plan-executor` (`agent://U10Task01`).
+
+### Unit 10 task 01 receipt
+
+- 2026-09-16 — **Task 01 (asset pipeline and catalogue) is landed and
+  architect-verified** on `residuum-visual-reboot-10`, uncommitted. Worker
+  receipt: `agent://U10Task01`. Nothing was escalated; the brief matched source
+  everywhere.
+- **Worker proof**: RED observed twice (undefined catalogue names, then 3/8
+  failing on missing assets/declaration), then `dart format` clean on the four
+  touched files, `flutter analyze` clean, full `flutter test` **842 passing**
+  (834 at Unit 9's close plus exactly eight new focused tests), `pubspec.lock`
+  untouched.
+- **Architect rechecks at source**: 29 derived assets in three directories
+  totalling 2.2 MB; all 31 masters still present under `art/`; `.gitattributes`
+  carries exactly `art/visual-reboot/**/*.png filter=lfs diff=lfs merge=lfs
+  -text`; `pubspec.yaml` declares the three shipped directories; `main.dart:27`
+  calls `await warmUpArt()` **before** `runApp` and outside `guardedBoot`;
+  `assets/visual` appears in `lib/` only inside `art_assets.dart`; the icon set
+  is exactly the eight legal icons with **no `melee` and no `back`**.
+- Worker-measured facts worth keeping: the six material-sheet means are
+  0.49909-0.50544, all inside the 0.48-0.52 band the softLight design depends
+  on; two script runs produced byte-identical SHA-256 sets, so derivation is
+  idempotent; `git check-attr` confirms the masters filter through LFS while the
+  shipped assets are `unspecified`.
+- **Known gap carried to the device gate:** warm-up decodes six material sheets
+  and twelve overlays and precaches three environment JPEGs synchronously before
+  `runApp`, and no wall-clock cost was measured. Capsule B must time cold boot
+  against `4bf865c`.
+- Task 02 (environment illustrations) is dispatched to a fresh
+  `flow-plan-executor` (`agent://U10Task02`).
+- 2026-09-16 — **Task 02 escalated one plan defect and the architect authorized
+  a bounded in-plan correction.** The plan's `Illustration.build` recipe omitted
+  `excludeFromSemantics: true` from its `Image.asset(...)`, while the brief's
+  test 6 asserts no `Semantics` descendant exists in the widget tree. Verified
+  at source in the Flutter 3.47.2 SDK: `image.dart:1427-1433` wraps the result
+  in `Semantics(container: semanticLabel != null, image: true, label: … ?? '')`
+  whenever `!excludeFromSemantics`, so the assertion could never pass and the
+  recipe was building an `image: true` node solely for the outer
+  `ExcludeSemantics` to suppress. For art the contract calls decorative, not
+  building the node is the correct behaviour, so the one-line flag was
+  authorized and the test was left exactly as specified. Height, fit, radius,
+  `errorBuilder`, the outer `ExcludeSemantics` and all three insertion points
+  stay locked.
+
+### Unit 10 task 02 receipt
+
+- 2026-09-16 — **Task 02 (environment illustrations) is landed and
+  architect-verified**, uncommitted. Worker receipt: `agent://U10Task02`. RED
+  was observed on all six new tests before the production edits.
+- **Worker proof**: focused five-file run 52/52, `dart format` clean,
+  `flutter analyze` clean, full `flutter test` **848 passing** — 842 plus
+  exactly six — with zero regressions.
+- **Architect rechecks at source**: `lib/town/illustration.dart` has
+  `ExcludeSemantics` outermost, `BoxFit.cover`, radius 2,
+  `errorBuilder → SizedBox.expand()` and the authorized
+  `excludeFromSemantics: true`; `town_screen.dart:86-91` gates the Stonebridge
+  illustration with a structural `if (state.town == stonebridge)` — **the widget
+  is absent for Northgate, not rendered falsy** — sitting between `Notice` and
+  the `Spacer`; forge and tavern insert ungated at their first-`Heading` seam
+  per D3. `git diff --stat -- packages/app/test` is empty, so **no existing test
+  file was touched**, and the three load-bearing layout suites stay green.
+- Measured at `onAPhone`: town illustration box exactly 140.0 dp, room boxes
+  exactly 120.0 dp, asserted exactly rather than approximately.
+- **Carried to the device gate:** whether 140/120 dp and the 2.5:1 crop
+  composition read on hardware is unverified beyond the widget harness.
+  TalkBack silence is now structural — no `Semantics` widget is built at all.
+- Task 03 (authored dungeon materials) is dispatched to a fresh
+  `flow-plan-executor` (`agent://U10Task03`), carrying the architect's source
+  correction that the authored pass goes after the light, not in
+  `_drawCellBase`.
+
+### Unit 10 task 03 receipt
+
+- 2026-09-16 — **Task 03 (authored dungeon materials) is landed and
+  architect-verified**, uncommitted. Worker receipt: `agent://U10Task03`. RED was
+  observed as missing-symbol compile failures in both new test files. Nothing
+  was escalated.
+- **Worker proof**: twelve new tests 12/12, the three existing dungeon suites
+  52/52 unchanged, `dart format` 5 files 0 changed, `flutter analyze` clean,
+  full `flutter test` **860 passing** — 848 plus exactly twelve — zero
+  regressions, zero skips.
+- **Architect rechecks at source**: `render()` is now bases →
+  `_drawVisibleLight` → `_drawAuthoredMaterial` → decorations, so the authored
+  pass sits **after** the light exactly as the plan's correction required;
+  `_drawAuthoredMaterial` makes two clip-and-fill calls and nothing else; the
+  `ui.ImageShader` with `TileMode.mirror` on both axes is built inside
+  `_rebuildRenderPlan`, once per adoption, never per frame; the paint carries
+  `BlendMode.softLight`; `materialPhase` is a thin wrapper over the existing
+  `_unit01(_hash(...))` and **no `Random` is reachable anywhere in either
+  file**; `MaterialComponent`'s `art` is an optional named parameter with a
+  const default. `git diff --name-only -- packages/app/test` is empty, so the
+  three pixel-level suites (1067, 621 and 860 lines) are genuinely unedited —
+  which is the real proof that no authoritative fact moved.
+- Criterion coverage worth keeping: remembered-flat and unknown-void re-proved
+  **with art loaded**; road byte-equality with a fully populated `DungeonArt`
+  versus `DungeonArt.none()`; determinism by byte-equality across renders and
+  across a plan rebuilt from the same `GameState`; and no-double-exposure by a
+  near-cell-brighter-than-far-cell check under a mean-0.502 two-tone sheet, so
+  the radial light still owns brightness.
+- Task 04 (icons and the crawl control row) is dispatched to a fresh
+  `flow-plan-executor` (`agent://U10Task04`).
+
+### Unit 10 task 04 receipt and the integrated gate
+
+- 2026-09-16 — **Task 04 (icons and the crawl control row) is landed and
+  architect-verified**, uncommitted. Worker receipt: `agent://U10Task04`. RED was
+  observed for the right reason: the no-squeeze loop caught the squeezed
+  paragraph on the road scene at **rendered 63.99 dp against intrinsic
+  84.70 dp** before any production edit.
+- **One narrowing, reported rather than hidden.** The brief's illustrative
+  no-squeeze snippet scoped the `RenderParagraph` loop to the whole
+  `controlsKey` column, which produced a false failure on the bottom-floor
+  ending scene: the pre-existing `doneAtTheBottom` sentence row legitimately
+  wraps to two lines at phone width, and a wrapped paragraph's laid-out width is
+  necessarily below its unconstrained intrinsic width. The executor scoped the
+  loop to the control row's own `Wrap`, which is the plan's stated intent. The
+  sentence row is untouched by this unit — `git diff` shows zero hits for
+  `doneAtTheBottom`.
+- **Architect rechecks at source**: the diff converts `Row`/`Expanded` to
+  `Wrap(spacing: 6, runSpacing: 4, alignment: center)` with every label, gate
+  and dispatch preserved verbatim; icons appear on exactly `Drink`, `Pack`,
+  `Wait`, `Ascend <` and `Descend >`; **no `maxLines`, `overflow:` or
+  `softWrap` survives anywhere in `game_screen.dart`** — the inherited ellipsis
+  defect is gone at the source, not merely hidden.
+- Measured at `onAPhone`: the two five-control scenes take two runs (167.0 dp
+  and 129.0 dp of chrome, the first including the pre-existing two-line
+  sentence row) and the three-control stairs-down scene stays one run at
+  56.0 dp — the approved D2 consequence, to be measured against `4bf865c` on
+  device.
+- **Main's integrated gate, run by the architect at this exact tree**:
+  `dart format --set-exit-if-changed --output=none lib test` → **111 files, 0
+  changed**; `flutter analyze` → **no issues**; full `flutter test` from
+  `packages/app` → **869 passing** (834 at Unit 9's close plus exactly the 35
+  planned new tests), zero regressions. `git status -- packages/core
+  packages/content` is **empty**; `git diff --stat -- packages/app` is 9 files,
+  346 insertions, 105 deletions, plus the untracked art, catalogue, illustration,
+  action-icon, asset and tooling additions.
+- One integrated `flow-acceptance-reviewer` pass is dispatched
+  (`agent://U10Acceptance`). It is a **dependency barrier**: no device evidence
+  begins until it closes.
+
+### Unit 10 acceptance review
+
+- 2026-09-16 — **Integrated acceptance review returned CHANGES with no Critical
+  finding**: `agent://U10Acceptance` reviewed the whole uncommitted unit,
+  including every untracked file, and made no tree mutation. It verified at
+  source — not by trusting the new tests — that the four safety invariants hold
+  **structurally**: unknown positions have no `MaterialCell` and so cannot enter
+  any mask or paint; remembered cells are overlay-free on three independent
+  grounds; `_drawVisibleLight` is byte-unchanged with the authored pass additive
+  under its own clip; and no `Random`, `DateTime` or `.now(` exists anywhere in
+  the new presentation code. It independently confirmed the base-tracked test
+  files are byte-unchanged (55 tracked at base, zero modified, zero deleted),
+  `core`/`content` empty, the LFS attributes both ways, and that the derive
+  script skips the melee and back masters.
+- **All three Important findings are on the verification side, and the architect
+  accepted every one:**
+  - **I1 — the unit's activation point has no proof and cannot fail loudly.**
+    `warmUpArt` swallows every failure, and nothing in the 869-test suite calls
+    it; the suite in fact pins the opposite, because the const
+    `DungeonArt.none()` default is what keeps the untouched dungeon suites
+    valid. Total activation failure would be indistinguishable from success and
+    would have spent the entire five-capsule device gate proving the procedural
+    renderer.
+  - **I2 — the replace-not-add rule was named by a test that additive drawing
+    would satisfy identically** (`isNot` on single pixels). Production is
+    correct; the invariant was unguarded.
+  - **I3 — the per-region phase test re-implemented `_texturePhase` in its own
+    body and never called it**, so criterion 7's per-region claim had no test
+    that could fail for the right reason.
+- Minor findings accepted: `ActionIconImage` needs `excludeFromSemantics: true`
+  and a dartdoc that stops claiming the opposite of what it does (the shelf has
+  no outer `ExcludeSemantics`, so icon buttons currently merge an unlabelled
+  `isImage` annotation); a comment sits in a function body; the 18 codecs are
+  never disposed and warm-up awaits serially, which inflates the very cold-boot
+  number capsule B must measure; two tests pin structure rather than behaviour;
+  two import lists are unsorted.
+- **Architect decisions on the open calls:** take the optional hardening —
+  `WidgetsFlutterBinding.ensureInitialized()` as `main()`'s first line, one line
+  beyond the plan envelope, because it removes an unfalsifiable binding question
+  and also hardens the inherited `guardedBoot` path; and **replace** I3's test
+  with a rendering assertion rather than deleting it. `warmUpArt` keeps its
+  never-throw behaviour by design.
+- One batched correction round is dispatched to a fresh `flow-plan-executor`
+  (`agent://U10Corrections`). The device barrier stays closed until it lands and
+  the affected proof is refreshed.
+
+### Unit 10 correction round
+
+- 2026-09-16 — **All eight findings are closed** by `agent://U10Corrections`,
+  uncommitted, with nothing escalated.
+- **Each rewritten proof was demonstrated to fail, not merely to pass.** The
+  worker broke production temporarily and reverted: removing the `warmUpArt()`
+  call fails I1's new test with `Expected: not null, Actual: <null>,
+  cryptFloor`; making the crack ternary additive fails I2; hardcoding
+  `_texturePhase`'s salts fails I3. **Architect-verified restoration at source**:
+  `dungeon_scene_material.dart:545` again reads
+  `crackGate && overlayImage == null`, and `_texturePhase` again derives both
+  axes from `palette.themeSalt ^ 0x6666 / ^ 0x7777`.
+- **A hard fact about the activation point, discovered by the correction:** a
+  bare `await warmUpArt()` in a widget test **hangs indefinitely** — the
+  `AssetImage.resolve` listener inside `_precache` needs the real-async bridge,
+  so the test must use `tester.runAsync`. Anyone testing warm-up later must know
+  this.
+- **I3 landed stronger than the architect specified, correctly.** A literal
+  crypt-versus-Sea-Cave comparison would pass even with `_texturePhase`
+  hardcoded to zero, because those palettes differ in colour independently of
+  phase. The worker instead varies **only `themeSalt`** between two otherwise
+  byte-identical palettes with one shared synthetic sheet, which isolates the
+  phase input.
+- **I4's semantics assertion is now behavioural, and proved so both ways:**
+  setting `excludeFromSemantics: false` does **not** fail the new test — correct,
+  because the real accessibility tree stays silent under the outer
+  `ExcludeSemantics` — while removing that `ExcludeSemantics` does fail it with
+  a real `SemanticsNode(flags: [isImage])`. The old widget-type assertion had it
+  backwards.
+- Also landed: `excludeFromSemantics: true` and an honest dartdoc on
+  `ActionIconImage`; `WidgetsFlutterBinding.ensureInitialized()` as `main()`'s
+  first line; the body comment deleted; `ui.Codec` disposed in a `finally` after
+  `getNextFrame()`; warm-up's 18 decodes and 3 precaches batched through
+  `Future.wait`; the incidental 29-count dropped; imports sorted.
+- **Architect's refreshed integrated gate at this exact tree**: `dart format`
+  **112 files, 0 changed**; `flutter analyze` **no issues**; full
+  `flutter test` **870 passing** — 869 plus the one new activation test, with
+  I2/I3 being 1:1 replacements. `git diff --name-only 4bf865c --
+  packages/app/test` is **empty**, so no base-tracked test file was modified by
+  the round either.
+- **The device-evidence recovery checkpoint is written** at
+  `units/unit-10/DEVICE-CHECKPOINT.md`: exact tree, untracked load-bearing and
+  irreplaceable paths, accepted fresh evidence, device state, the save
+  backup/restore obligation, and the five remaining capsules A-E with what each
+  must judge. No device, emulator, ADB, install or screenshot action has
+  occurred.
+- One scoped closure review is dispatched (`agent://U10Closure`) over the
+  correction round only. The device gate opens when it passes.
+- 2026-09-16 — **Scoped closure review PASS, zero findings**:
+  `agent://U10Closure` reviewed the correction round read-only and judged all
+  three rewritten proofs genuinely falsifiable, tracing each discriminator
+  itself rather than accepting the worker's account. It confirmed I2's probe
+  pixel is live and actually covered by the opaque overlay (cell (1,1) spans
+  y 36-72, the opaque half covers 36-54, the sample is y 51), and that
+  `themeSalt` reaches the render through exactly one path, so I3 fails if the
+  phase is dead. It verified the tracked diff moved by exactly **+1 line** — the
+  `ensureInitialized` call — and that `dungeon_scene_material.dart` is unchanged
+  at 189/11, so the round left no net line in the renderer. It read both probe
+  sites at source itself. `warm_up_test.dart` and the deliberate
+  unloaded-process pin were run in one invocation and both passed, closing the
+  global-state race empirically.
+- Judgments worth keeping: `tester.runAsync` is the documented bridge rather
+  than a workaround, and `_precache` is correct in production (listener assigned
+  before `addListener`, self-removing on both paths, completer guarded,
+  `onError` supplied); M3's disposal is byte-for-byte Flutter's own
+  `decodeImageFromList` shape, `Future.wait` preserves input order so the index
+  mapping stays exact, and `_warmedUp = true` still precedes the first await.
+- **The one-line hardening was load-bearing, not decoration.** The reviewer's
+  `[INFERENCE]`, from reading `asset_bundle.dart:324-330`: `rootBundle.load`
+  dereferences `ServicesBinding.instance`, so with `warmUpArt()` awaited before
+  `runApp` and no binding initialized, **every decode would have thrown, been
+  swallowed, and left `dungeonArt` permanently on `none()`** — exactly the silent
+  total-activation failure I1 was raised against. The unit would have shipped
+  rendering byte-identically to `4bf865c`, and the five-capsule device gate
+  would have proved the procedural renderer. `warm_up_test.dart` now catches any
+  regression of it.
+- **The acceptance barrier is closed and the device gate is open.** `adb
+  devices` shows no device attached: `Medium_Phone` is not started and the user
+  has been asked to start it. Next action is capsule A once it is up.
+
+### Unit 10 device evidence
+
+- 2026-09-16 — **Capsule `U10-A-towns-and-rooms` is accepted.**
+  `agent://U10CapsuleA` built and installed the current-tree debug APK
+  (SHA-256 `ccd474e5…ea8c171`) on user-started `emulator-5554` (Android 17,
+  1080x2400) and captured eight colour/greyscale pairs under
+  `.flow/evidence/visual-reboot/unit-10-device/`.
+- **The architect inspected the frames, not just the report.** Stonebridge
+  carries its band between Materials and the doors, and the 2.5:1 crop lands —
+  cathedral, rooftops and bridge all present. Northgate is **genuinely bare**:
+  no band, no substitute, no reused art. The forge's fire and anvil and the
+  tavern's hearth and bar both land. Every fact still reads: place name, descent
+  sentence, Health, Carried, Banked, Materials rows, door labels and purposes,
+  the forge's `2 ore makes 1 ingot` / `That takes 2 ore` / `Temper` refusal
+  wording, and the tavern's `Ask 15`. The greyscale twin of the town frame is
+  fully legible, art included.
+- Criteria **3, 4** and the town/room clause of **16/17** pass. Criterion 5 is
+  **not observable from a screenshot** — correctly flagged rather than claimed —
+  and is already proved by the corrected semantics-tree test.
+- **Architect observation for the user, not a defect:** the forge and tavern
+  interiors are considerably brighter and warmer than anything else in the app's
+  near-monochrome dark UI, so each is a strong focal element on its screen. All
+  text stays primary and legible, and the art is user-approved, so this is a
+  taste call rather than a contract violation.
+- **Process note, disclosed by the verifier rather than hidden:** a failed `cd`
+  briefly left three stray fixture files at the repository root and a mistaken
+  redirect emptied a disposable post-`pm clear` device save. Both were detected
+  and cleaned inside the session, the backed-up originals were never touched,
+  and the architect confirmed the repository root is clean and `git status`
+  matches the checkpoint inventory exactly. Save restoration is MATCH on both
+  slots against the epic's recorded Unit 8/9 baseline hashes.
+- Capsule B (`U10-B-crypt-and-boot-cost`) is dispatched
+  (`agent://U10CapsuleB`), with a baseline `4bf865c` build authorized in a
+  throwaway `.worktrees/u10-baseline` worktree so the dirty main worktree is
+  never touched.
+- 2026-09-16 — **Capsule `U10-B-crypt-and-boot-cost` is accepted.**
+  `agent://U10CapsuleB` built the current tree (APK `50e82220…6bf3e2`) and a
+  clean `4bf865c` baseline (`85bf9e2c…fc17304`) in the authorized throwaway
+  worktree, now removed, with the main worktree's `git status` fingerprint
+  identical before and after. Fixtures were generated by real game code
+  (`startDungeonRunAt` + `step`), not hand-typed.
+- **Authored art is unambiguously reaching the screen.** The architect compared
+  the current and baseline frames of the identical staged scene: baseline is
+  flat tonal fill, current is full masonry stone with rubble clumps. This
+  **refutes the reviewer's predicted swallowed-decode failure mode**
+  observationally, and `ensureInitialized` is confirmed present in the current
+  tree and absent at baseline.
+- **The architect's own eyeball concern was wrong, and measurement corrected
+  it.** The textured frame *looks* brighter, so the softLight layer was
+  suspected of lifting luminance and flattening the local-light gradient.
+  ImageMagick patch means on both frames say otherwise: near the hero
+  **0.7613 current versus 0.7585 baseline**, far edge **0.6271 versus 0.6261**,
+  remembered corridor **0.6567 versus 0.6543** — identical within 0.003 across a
+  0.13 gradient. The authored layer contributes **no net luminance shift** and
+  the radial light still owns brightness, exactly as the softLight-against-
+  mean-0.50 design claimed. The perceived difference is texture, not exposure.
+- Unknown cells are **pure black** in the unknown-edge frame with no hint of
+  geometry; remembered cells stay flat and untextured because the authored mask
+  is visible-only; `@` and `r` glyphs and the potion and pack icons stay legible
+  above texture, in greyscale too.
+- **Cold boot cost, measured** by `am start -W` TotalTime after force-stop:
+  controlled 5-versus-5 on an identical save gives current **1581 ms** mean
+  (1363-1751) against baseline **1477 ms** (1387-1616), **+104 ms**; the wider
+  10-versus-7 set gives +172 ms. Direction is consistent with the added
+  synchronous warm-up, and the verifier reported that per-run spread
+  (229-450 ms) rivals the gap rather than averaging it away. Accepted: the
+  approved boot precache costs roughly a tenth of a second.
+- **Two items honestly returned as UNKNOWN rather than upgraded**: stairs
+  legibility (the fixtures never reached a stairwell) and the scene-entry and
+  panning hitch (no reliable frame-timing tool was used). Both are routed into
+  capsule C with an explicit method rather than being waived.
+- Capsule C (`U10-C-regional-cues-and-stairs`) is dispatched
+  (`agent://U10CapsuleC`). Its central question is the one measurement cannot
+  answer: whether the Sea-Cave's tide strata and the Ruined Keep's ashlar
+  fractures still read under authored texture, in colour and in greyscale.
+- 2026-09-16 — **Capsule `U10-C-regional-cues-and-stairs` returned one real
+  escalation.** `agent://U10CapsuleC` staged ten codec-valid `visit: 1` fixtures
+  from real game code — after a 40-seed survivability scan, because a level-0
+  hero cannot cross either dungeon's first floor alive — and captured 20 PNGs
+  including magnified crops. Both save slots MATCH; no baseline worktree was
+  needed; the main worktree fingerprint is unchanged.
+- Passing in C: ashlar block grid; region distinguishability; wall edges and
+  light falloff; unknown-unpainted and remembered-flat; every glyph, badge and
+  HUD item legible above texture even in the busiest combat frames. **Capsule
+  B's stairs UNKNOWN is closed PASS** on a Sea-Cave stairwell frame.
+- **The escalation, confirmed by the architect at the frames:** the Sea-Cave
+  tide-strata dashes and the Ruined Keep V-fracture chevrons are present in the
+  correct ink and survive magnification and greyscale, but the authored bitmap's
+  own busy natural texture **subordinates them at ordinary viewing distance**.
+  The architect adds a sharper point the verifier did not make: in colour the
+  strongest remaining region signal is **hue** — Sea-Cave teal against Keep tan —
+  which is precisely the carrier the accessibility lock forbids. In greyscale the
+  regions still separate, but by the bitmaps' texture character (mottled rock
+  versus blocky ashlar) rather than by the cues Unit 2 and Unit 8 established
+  and a device gate already accepted. Criterion 13 is therefore met on
+  *presence* but weakened on *reading*.
+- **The user decided: quieten the sheets.** Re-derive the six material sheets
+  with lower high-pass amplitude so the procedural cues resurface through a
+  subtler texture, then re-shoot capsule C. No Dart change; the alternatives —
+  accepting the weakening, or raising `seaCaveStone`/`ruinedKeepMasonry` pattern
+  strength and reopening Unit 2/8 values — were both rejected.
+- **The frame-timing UNKNOWN is closed by architect decision, not by evidence
+  upgrade.** Two capsules, two instruments (`gfxinfo framestats` and
+  `SurfaceFlinger --latency`), both unusable in this emulator. It is closed on
+  the consistent no-visible-hitch observation across 15+ launches plus the
+  structural fact that decoding happens once at boot (measured at +104 ms) and
+  the shader is rebuilt per plan adoption, never per frame. Criterion 17 asks
+  for no **obvious** hitch, which an eye can judge. Recorded as an explicit
+  judgement call so a later session can reopen it with profile-mode timeline
+  evidence if it wants.
+- Capsule D (`U10-D-lowland-road`) is dispatched (`agent://U10CapsuleD`) and
+  must finish before the re-derivation starts: it builds and compares APKs from
+  this tree, so changing the shipped sheets mid-capsule would destroy its
+  artifact identity.
+- 2026-09-16 — **Session paused by the user with capsule D in flight.** It was
+  deliberately **not cancelled**: cancelling mid-capsule would have skipped its
+  save-slot restore obligation and could have left a baseline APK installed, a
+  `.worktrees/u10-baseline` worktree behind, or the device saves unrestored.
+  `RESUME.md` carries the exact five-step reconciliation the next session must
+  perform before any new work — read its report, check `git worktree list`,
+  check `git status`, verify both device save hashes against the epic baseline,
+  and confirm which APK is installed.
+- State at pause: implementation complete and uncommitted, format/analyze/870
+  tests green, whole-unit review PASS after one correction round, closure review
+  PASS, capsules A/B/C accepted, D in flight, the approved sheet re-derivation
+  and a capsule C re-shoot queued behind it, then capsule E, then the user's
+  integration decision. No commit, push, pull request or other remote action has
+  been performed or authorized at any point in this unit.
+- 2026-09-16 — **Capsule `U10-D-lowland-road` is accepted, and it landed before
+  the pause took effect.** `agent://U10CapsuleD` staged a codec-valid `visit: 1`
+  journey fixture with real game code (`startDungeonRunAt` + `endRun`, then
+  `beginTravel`/`travelOneDay`; world seed 10, Stonebridge-Crypt route, danger
+  15, day-1 `DangerMet`) and captured the road fight on the current APK
+  (`50e82220…6bf3e2`) and a fresh `4bf865c` baseline (`85bf9e2c…c17304`) from the
+  identical pushed fixture.
+- **Criterion 9 is proved the strong way: the map crop is pixel-identical.**
+  `AE = 0`, `RMSE = 0`, `MAE = 0` at fuzz 0 over `1080x1676+0+84`, confirmed on a
+  raw RGBA dump, in colour and greyscale. **The architect re-ran the comparison
+  independently**: `magick compare -metric AE` on the two retained map crops
+  returns `0`. The ~99.3% of full-frame difference sits below y=1760 — this
+  unit's own in-scope control row.
+- The verifier attached the reason rather than only the measurement: neither
+  art enum has a `lowlandRoad` entry, so `surfaceFor` returns null and
+  `_drawAuthoredMaterial` paints nothing for the road. `THE ROAD` with no depth
+  pair, the exact edge-escape sentence, and the frozen Drink/Pack/Wait control
+  set all confirmed on device.
+- Restore MATCH on both slots; baseline worktree removed; main worktree status
+  is the expected 25-entry inventory. **The device is left with the
+  current-tree APK installed and the app force-stopped** — recorded because a
+  stale baseline APK would have made every later frame misleading.
+- **Four of five capsules are accepted (A, B, C, D).** Remaining before the
+  integration decision: the approved sheet re-derivation, a capsule C re-shoot
+  against the same fixtures, and capsule E.
+- 2026-09-16 — **The approved sheet re-derivation is landed and
+  architect-verified.** `agent://U10Rederive` replaced the fixed
+  `-function polynomial "1.6,-0.3"` re-centring in `tool/derive-visual-assets.sh`
+  with a **per-sheet normalization**: measure the high-passed intermediate's
+  standard deviation, set `gain = 0.05 / measured` and
+  `bias = 0.5 - 0.5 * gain`, so the mean stays pinned at 0.50 by construction
+  exactly as the old constant pair did. The six pre-gain spreads ranged
+  0.0545-0.1031, so no single fixed gain could have landed all six in band —
+  per-sheet solving was the right shape, not six hand-tuned constants.
+- **Architect-measured result, independent of the worker's report** — every
+  sheet now sits at std **0.0500 ± 0.0001** with mean within 0.0031 of 0.50:
+  `crypt_floor` 0.0872 → 0.0500, `crypt_wall` 0.0980 → 0.0500,
+  `sea_cave_floor` 0.1182 → 0.0500, `sea_cave_wall` 0.1395 → 0.0501,
+  `ruined_keep_floor` 0.1422 → 0.0500, `ruined_keep_wall` 0.1650 → 0.0500.
+  Dimensions, greyscale character and the no-alpha property are unchanged.
+- The two busiest sheets before this change were the Ruined Keep and Sea-Cave
+  walls, and they are exactly the regions whose cues capsule C reported
+  subordinated, while the quietest belonged to the Crypt, whose palette has no
+  procedural pattern to compete with. That correspondence is why the fix targets
+  amplitude rather than the cues themselves.
+- Idempotence survives: two consecutive script runs produce byte-identical
+  SHA-256 sets across all 29 assets, with the gain measured from the freshly
+  computed intermediate rather than from a shipped asset, so a second run cannot
+  drift. The other 23 assets are byte-unchanged, the 31 masters are intact, no
+  Dart file was touched, and the suite still reads **870 passing** with format
+  and analyze clean.
+- The capsule C re-shoot (`U10-C2-regional-cues-after-requiet`) is dispatched
+  (`agent://U10CapsuleCRedo`) on the user-restarted AVD, reusing capsule C's own
+  seed-12 and seed-47 fixtures and framing so before and after compare directly.
+  It is told to report a cure worse than the disease — washed-out flat material —
+  as a finding in its own right.
+- 2026-09-16 — **Re-shoot `U10-C2-regional-cues-after-requiet` is accepted;
+  criterion 13 is resolved.** `agent://U10CapsuleCRedo` rebuilt and installed
+  from the re-derived tree (APK `3d07c528…d2ea5d`, confirmed different from the
+  pre-re-derivation `50e82220…6bf3e2`, so the quieter sheets are genuinely in
+  the build), reused all eight capsule C fixtures verbatim with SHA-256
+  verification on every push, and wrote 25 new files under `-c2` and
+  `-old-comparison` names so capsule C's originals sit untouched beside them.
+- **The architect compared the paired magnified greyscale crops directly.** In
+  the Sea-Cave the horizontal strata dashes now stand out as a regular banded
+  rhythm against calm mottled rock; in the old crop the same dashes fight heavy
+  blotchy noise. In the Ruined Keep the ashlar corner brackets read as a row
+  rhythm and a V-chevron is plainly visible where before it was buried. The
+  material still reads as stone in both regions — the cure did not flatten it,
+  which was the named failure mode.
+- The verifier's two quantifications agree and add the useful detail that **the
+  pattern strokes' own on-screen signal is unchanged**: the improvement came
+  entirely from quieter competing bitmap noise, not from a stroke retune. That
+  is exactly the outcome the user's choice was supposed to produce, and it
+  leaves the accepted Unit 2/8 pattern values untouched.
+- Both save slots MATCH; the main worktree fingerprint is unchanged; prior
+  evidence is intact.
+- Capsule E (`U10-E-control-row-and-shelf`) is dispatched
+  (`agent://U10CapsuleE`) — the last outstanding capsule. It must prove no label
+  or count ellipsises anywhere at five controls, that every icon reads by shape
+  in greyscale, and it must quantify the approved two-run height cost against a
+  `4bf865c` baseline.
+- 2026-09-16 — **Capsule `U10-E-control-row-and-shelf` is accepted, and it
+  produced the unit's most satisfying piece of evidence.** Staged on the same
+  bottom-floor scene, the **`4bf865c` baseline reproduced the inherited defect
+  live** — `Drink (…)` visibly ellipsised — while the current tree renders
+  `Pick up` | `Drink (1)` | `Pack (6)` | `Ascend <` | `Finish` complete across
+  two centred runs. The architect confirmed both frames directly. That is
+  criterion 11 proved by before-and-after on hardware, not by assertion.
+- Greyscale control-row zoom: every icon reads by shape — bottle, backpack,
+  stairs-with-arrow — beside its full word and live count. Disabled `Drink`
+  reads darker and flatter than the enabled `Pack` beside it in colour **and**
+  greyscale, so no state depends on hue. On the shelf, word, count, mana cost,
+  school marking and the `— armed` word all survive beside icons, armed still
+  reads by border plus word, and the overflow sheet lists all six known spells.
+- **Height cost, measured rather than argued:** map viewport 1565 physical px at
+  baseline versus 1429 on the current tree — 136 px, **51.8 dp** at 2.625x. That
+  is the whole cost of this unit's control change (icons plus `Wrap` plus the
+  second run), slightly above the plan's ~44 dp second-run estimate and in the
+  same order. Accepted as the approved D2 trade.
+- Useful correction to the plan's own framing: the two-run wrap is
+  **scene-dependent, not a property of "five controls"** — the road's
+  five-control combination fits on a single run because its labels are shorter.
+  The plan's arithmetic assumed the stairs-scene label set.
+- Observations, neither a defect: the `mend` icon is the busiest of the eight
+  but still legible by shape; a level-0 hero cannot survive to Crypt depth five,
+  which shaped fixture staging.
+- Both slots MATCH; baseline worktree removed; `git status` fingerprint
+  unchanged; the current-tree APK was reinstalled after the baseline comparison
+  so the device is not left on baseline.
+
+### Unit 10 final local acceptance
+
+- 2026-09-16 — **Unit 10 is complete and locally accepted.** All five device
+  capsules (A, B, C with its C2 re-shoot, D, E) are accepted, closing criteria
+  16 and 17, and criteria 1-15 were closed by implementation, the integrated
+  acceptance review, the correction round and the scoped closure review.
+- **Architect-run final gate at the final tree**, after the sheet
+  re-derivation: `dart format --set-exit-if-changed --output=none lib test`
+  **112 files, 0 changed**; `flutter analyze` **no issues**; full
+  `flutter test` **870 passing**. `packages/core` and `packages/content` are
+  unchanged. Device evidence remains fresh: the only change since the C2 and E
+  captures is this ledger record.
+- Criterion 5 (decorative art silent to screen readers) is the one criterion
+  proved only by test rather than on device, deliberately: it is not observable
+  in a screenshot, and the corrected semantics-tree assertion covers it.
+  Criterion 17's hitch clause rests on an explicit architect judgement call
+  after two instruments failed on this emulator, recorded above.
+- **Nothing is committed.** The unit sits uncommitted on
+  `residuum-visual-reboot-10`, including untracked load-bearing source and the
+  48.1 MB of LFS-attributed masters under `art/visual-reboot/`. No push, pull
+  request, merge or other remote action has been performed or authorized at any
+  point in this unit. Next gate is the user's integration decision.
+
+### Unit 10 integration
+
+- 2026-09-16 — **The user chose commit, push and pull request, and it is done.**
+  Six commits on `residuum-visual-reboot-10`, one per plan task plus the LDD
+  records and the masters: `d3ddebe` pipeline and catalogue, `b7fb5d8`
+  illustrations, `153d65e` authored dungeon material, `5c22e43` icons and the
+  control row, `095bfb4` records, `3f828b2` the masters.
+- **The repository's first LFS push succeeded**: 31 objects, 50 MB. The
+  committed blob for a master is a pointer (`oid sha256:0617ccb0…`,
+  `size 2247654`) and `git lfs ls-files` lists all 31, so the masters are in LFS
+  and the 1.9 MB of derived assets remain ordinary git objects.
+- **[PR #20](https://github.com/fiatcode-gh/residuum-rpg/pull/20) is open**
+  against `main`, MERGEABLE, 101 files, +7781/-236. GitGuardian passed; the
+  three `gates` legs (core, content, app) were still pending at session close —
+  **CI is unconfirmed and the merge decision stays with the user.**
+- Worktree is clean; nothing remains uncommitted. Merge, review response and any
+  follow-up remain user-owned.
+- 2026-09-16 — **CI is green on PR #20.** At head `47a19f0`: `gates (app)`
+  pass in 2m8s, `gates (content)` pass in 1m14s, `gates (core)` pass in 1m26s,
+  GitGuardian pass. The `app` leg is the meaningful one — it resolves, checks
+  lockfile drift and runs the full suite on a checkout **without LFS**, which is
+  the independent confirmation that criterion 2's no-LFS-build claim holds in a
+  clean environment rather than only on this workstation.
+- The only outstanding action is the user's merge decision. A later docs-only
+  record commit would re-run these same gates without changing app behaviour.

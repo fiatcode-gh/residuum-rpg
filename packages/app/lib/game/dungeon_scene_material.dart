@@ -1,7 +1,11 @@
-import 'package:flame/components.dart';
+import 'dart:ui' as ui;
+
+import 'package:flame/components.dart' hide Matrix4;
 import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 
+import '../art/art_assets.dart';
+import '../art/dungeon_art.dart';
 import 'dungeon_material.dart';
 import 'dungeon_palette.dart';
 import 'glyph_plan.dart';
@@ -110,6 +114,36 @@ Path visibleMaterialMask(MaterialPlan plan) {
   return mask;
 }
 
+/// The visible-only clip for one authored material surface.
+///
+/// Floors, both flights of stairs and unknown space are decided exactly as
+/// [visibleMaterialMask] decides them: unknown cells are absent from the
+/// plan, and remembered cells are absent from this mask.
+Path visibleSurfaceMask(MaterialPlan plan, MaterialSurface surface) {
+  final accepted = switch (surface) {
+    MaterialSurface.floor => const {
+      MaterialTileKind.floor,
+      MaterialTileKind.stairsDown,
+      MaterialTileKind.stairsUp,
+    },
+    MaterialSurface.wall => const {MaterialTileKind.wall},
+  };
+  final mask = Path();
+  for (final cell in plan.cells) {
+    if (cell.knowledge != MaterialKnowledge.visible) continue;
+    if (!accepted.contains(cell.kind)) continue;
+    mask.addRect(
+      Rect.fromLTWH(
+        cell.position.x * cameraCellSize,
+        cell.position.y * cameraCellSize,
+        cameraCellSize,
+        cameraCellSize,
+      ),
+    );
+  }
+  return mask;
+}
+
 /// Decides one known tile's material paint.
 ///
 /// Remembered geometry paints flat, dark, and unlit — one value for the whole
@@ -198,6 +232,53 @@ MaterialCellPaint materialCellPaint(
   );
 }
 
+/// World-space period of the authored material's mirror-tiled window, in
+/// world units — 576 source px at `scale(0.5)`.
+const double _texturePeriod = 288;
+
+/// The world-space offset one region's authored field is sampled from.
+///
+/// A pure function of the palette's [DungeonPalette.themeSalt] and the
+/// surface: every floor of a region therefore shares one continuous field.
+/// [MaterialPlan] carries no floor identity to vary it by, and inventing one
+/// would change a projection this layer may not touch.
+Offset _texturePhase(DungeonPalette palette, MaterialSurface surface) => Offset(
+  materialPhase(
+        const Position(0, 0),
+        palette.themeSalt ^ 0x6666,
+        surface.index,
+      ) *
+      _texturePeriod,
+  materialPhase(
+        const Position(0, 0),
+        palette.themeSalt ^ 0x7777,
+        surface.index,
+      ) *
+      _texturePeriod,
+);
+
+/// Overlay art is drawn at partial opacity: the rubble masters measure 0.23
+/// and 0.41 alpha coverage, which at full strength would read as objects
+/// rather than surface debris.
+const double _overlayOpacity = 0.55;
+
+/// One authored surface's whole-layer clip-and-fill, built once per plan
+/// adoption.
+///
+/// Nothing here is recomputed per frame: rendering only ever clips to [mask]
+/// and fills [bounds] with [paint].
+class _AuthoredSurfacePass {
+  const _AuthoredSurfacePass({
+    required this.mask,
+    required this.bounds,
+    required this.paint,
+  });
+
+  final Path mask;
+  final Rect bounds;
+  final Paint paint;
+}
+
 /// Draws the continuous stone material for one crawl.
 ///
 /// One canvas component for the whole layer rather than a component per
@@ -205,15 +286,20 @@ MaterialCellPaint materialCellPaint(
 /// decisions, and unknown space is simply never painted — the component only
 /// ever iterates the plan's known cells.
 class MaterialComponent extends PositionComponent {
-  MaterialComponent(MaterialPlan initialPlan)
-    : plan = initialPlan,
-      super(
-        position: Vector2.zero(),
-        size: Vector2.all(1),
-        priority: GlyphLayer.terrain.index,
-      ) {
+  MaterialComponent(
+    MaterialPlan initialPlan, {
+    this.art = const DungeonArt.none(),
+  }) : plan = initialPlan,
+       super(
+         position: Vector2.zero(),
+         size: Vector2.all(1),
+         priority: GlyphLayer.terrain.index,
+       ) {
     _rebuildRenderPlan();
   }
+
+  /// The authored art this component paints with, or none.
+  final DungeonArt art;
 
   /// The material plan currently painted.
   ///
@@ -226,6 +312,8 @@ class MaterialComponent extends PositionComponent {
   late Rect _visibleLightBounds;
   late Paint _visibleLight;
   late List<_PreparedMaterialCell> _cells;
+  _AuthoredSurfacePass? _authoredFloor;
+  _AuthoredSurfacePass? _authoredWall;
 
   /// Adopts a new plan, replacing the painted one.
   ///
@@ -256,6 +344,7 @@ class MaterialComponent extends PositionComponent {
           patternPhase: plan.markAt(cell.position)!.pattern,
           rect: _cellRect(cell),
           faces: _wallFaces(cell, knownWalls),
+          art: art,
         ),
     ];
     _visibleMask = visibleMaterialMask(plan);
@@ -272,6 +361,33 @@ class MaterialComponent extends PositionComponent {
           stoneLitColor(plan.palette, 0),
         ],
       ).createShader(Rect.fromCircle(center: heroCenter, radius: radius));
+    _authoredFloor = _authoredSurfacePass(MaterialSurface.floor);
+    _authoredWall = _authoredSurfacePass(MaterialSurface.wall);
+  }
+
+  _AuthoredSurfacePass? _authoredSurfacePass(MaterialSurface surface) {
+    final image = art.surfaceFor(plan.palette.material, surface);
+    if (image == null) return null;
+    final mask = visibleSurfaceMask(plan, surface);
+    final bounds = mask.getBounds();
+    if (bounds.isEmpty) return null;
+    final phase = _texturePhase(plan.palette, surface);
+    return _AuthoredSurfacePass(
+      mask: mask,
+      bounds: bounds,
+      paint: Paint()
+        ..blendMode = BlendMode.softLight
+        ..filterQuality = FilterQuality.medium
+        ..shader = ui.ImageShader(
+          image,
+          TileMode.mirror,
+          TileMode.mirror,
+          (Matrix4.identity()
+                ..translateByDouble(phase.dx, phase.dy, 0, 1)
+                ..scaleByDouble(0.5, 0.5, 0.5, 1))
+              .storage,
+        ),
+    );
   }
 
   @override
@@ -281,6 +397,7 @@ class MaterialComponent extends PositionComponent {
       _drawCellBase(canvas, cell);
     }
     _drawVisibleLight(canvas);
+    _drawAuthoredMaterial(canvas);
     for (final cell in _cells) {
       _drawCellDecoration(canvas, cell);
     }
@@ -299,11 +416,33 @@ class MaterialComponent extends PositionComponent {
       ..restore();
   }
 
+  void _drawAuthoredMaterial(Canvas canvas) {
+    _drawAuthoredSurface(canvas, _authoredFloor);
+    _drawAuthoredSurface(canvas, _authoredWall);
+  }
+
+  void _drawAuthoredSurface(Canvas canvas, _AuthoredSurfacePass? pass) {
+    if (pass == null) return;
+    canvas
+      ..save()
+      ..clipPath(pass.mask)
+      ..drawRect(pass.bounds, pass.paint)
+      ..restore();
+  }
+
   void _drawCellDecoration(Canvas canvas, _PreparedMaterialCell cell) {
     if (!cell.hasDecoration) return;
     canvas
       ..save()
       ..clipRect(cell.rect);
+    if (cell.overlayImage != null) {
+      canvas.drawImageRect(
+        cell.overlayImage!,
+        cell.overlaySrc!,
+        cell.rect,
+        cell.overlayPaint!,
+      );
+    }
     if (cell.gritPaint != null) {
       canvas.drawRect(cell.gritRect!, cell.gritPaint!);
     }
@@ -346,6 +485,9 @@ class _PreparedMaterialCell {
     required this.rect,
     required this.basePaint,
     required this.hasDecoration,
+    required this.overlayImage,
+    required this.overlaySrc,
+    required this.overlayPaint,
     required this.gritRect,
     required this.gritPaint,
     required this.patternPath,
@@ -366,6 +508,7 @@ class _PreparedMaterialCell {
     required double patternPhase,
     required Rect rect,
     required _WallFaces faces,
+    required DungeonArt art,
   }) {
     final gritAlpha = (paint.gritStrength * mark.grit).clamp(0.0, 1.0);
     final h = mark.grit.hashCode;
@@ -377,7 +520,29 @@ class _PreparedMaterialCell {
             1.2,
             1.2,
           );
-    final crackPath = paint.crackStrength > 0 && mark.crack > 0
+    final crackGate = paint.crackStrength > 0 && mark.crack > 0;
+    final speckGate = paint.speck && mark.speck;
+    ui.Image? overlayImage;
+    if (crackGate) {
+      overlayImage = art.overlayFor(
+        palette.material,
+        mark.crack >= 0.3 ? OverlayKind.crackB : OverlayKind.crackA,
+      );
+    } else if (speckGate) {
+      overlayImage = art.overlayFor(
+        palette.material,
+        mark.grit >= 0.2 ? OverlayKind.rubbleMedium : OverlayKind.rubbleSmall,
+      );
+    }
+    final overlaySrc = overlayImage == null
+        ? null
+        : Rect.fromLTWH(
+            0,
+            0,
+            overlayImage.width.toDouble(),
+            overlayImage.height.toDouble(),
+          );
+    final crackPath = crackGate && overlayImage == null
         ? _crackPath(rect, palette.material)
         : null;
     final patternPath = _patternPath(
@@ -414,14 +579,24 @@ class _PreparedMaterialCell {
     final rounded = palette.material == RegionMaterial.seaCaveStone;
     final hasGrit = gritRect != null;
     final hasPattern = patternPath != null;
-    final speck = paint.speck && mark.speck;
+    final speck = speckGate && overlayImage == null;
     final hasCrack = crackPath != null;
     final hasEdge = !edgePath.getBounds().isEmpty;
-    final hasDecoration = hasGrit || hasPattern || speck || hasCrack || hasEdge;
+    final hasOverlay = overlayImage != null;
+    final hasDecoration =
+        hasGrit || hasPattern || speck || hasCrack || hasEdge || hasOverlay;
     return _PreparedMaterialCell._(
       rect: rect,
       basePaint: Paint()..color = paint.fill,
       hasDecoration: hasDecoration,
+      overlayImage: overlayImage,
+      overlaySrc: overlaySrc,
+      overlayPaint: overlayImage == null
+          ? null
+          : (Paint()
+              ..color = const Color(0xFFFFFFFF)
+                  .withValues(alpha: _overlayOpacity)
+              ..filterQuality = FilterQuality.medium),
       gritRect: gritRect,
       gritPaint: gritRect == null
           ? null
@@ -468,6 +643,9 @@ class _PreparedMaterialCell {
   final Rect rect;
   final Paint basePaint;
   final bool hasDecoration;
+  final ui.Image? overlayImage;
+  final Rect? overlaySrc;
+  final Paint? overlayPaint;
   final Rect? gritRect;
   final Paint? gritPaint;
   final Path? patternPath;

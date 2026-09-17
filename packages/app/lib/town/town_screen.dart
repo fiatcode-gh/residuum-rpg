@@ -3,11 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import '../art/art_assets.dart';
 import '../world/world_bloc.dart';
 import 'alchemist_screen.dart';
 import 'bank_screen.dart';
 import 'forge_screen.dart';
 import 'character_screen.dart';
+import 'illustration.dart';
 import 'inn_screen.dart';
 import 'merchant_screen.dart';
 import 'tavern_screen.dart';
@@ -81,6 +83,12 @@ class TownScreen extends StatelessWidget {
                       const Heading('Materials'),
                       MaterialRows(materials: state.materials),
                       Notice(state.notice),
+                      if (state.town == stonebridge)
+                        const Illustration(
+                          EnvironmentArt.stonebridge,
+                          height: townIllustrationHeight,
+                          key: townIllustrationKey,
+                        ),
                       const Spacer(),
                       _Door(
                         key: const Key('town-door-merchant'),

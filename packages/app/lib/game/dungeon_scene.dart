@@ -5,6 +5,7 @@ import 'package:flame/text.dart';
 import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 
+import '../art/dungeon_art.dart';
 import 'dungeon_material.dart';
 import 'dungeon_palette.dart';
 import 'dungeon_scene_material.dart';
@@ -309,7 +310,7 @@ class _DungeonScene extends FlameGame
   void _synchronizeMaterial() {
     final material = _snapshot.material;
     if (_material == null) {
-      _material = MaterialComponent(material);
+      _material = MaterialComponent(material, art: dungeonArt);
       world.add(_material!);
     } else {
       _material!.adopt(material);

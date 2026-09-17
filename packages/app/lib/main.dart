@@ -9,6 +9,7 @@ import 'game/game_bloc.dart';
 import 'game/log_line.dart';
 import 'game/game_screen.dart';
 import 'game/dungeon_palette.dart';
+import 'art/dungeon_art.dart';
 
 import 'save/autosaver.dart';
 import 'save/boot.dart';
@@ -22,7 +23,9 @@ import 'world/world_bloc.dart';
 import 'world/world_screen.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   final store = SaveStore(IoSaveFiles());
+  await warmUpArt();
   runApp(await guardedBoot(store, rollWorldSeed: rollWorldSeedFromClock));
 }
 
