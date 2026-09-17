@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/crawl_action_row.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
@@ -78,15 +79,26 @@ Future<GameBloc> _openBattle(WidgetTester tester, GameState game) async {
   return bloc;
 }
 
-/// A [label] on the shelf itself — never the crawl controls underneath it,
-/// which carry their own quick-drink button with the same word.
+/// A [label] on the action row itself — never a crawl overlay, which could
+/// carry the same word in a different surface.
 Finder _shelfText(String label) =>
-    find.descendant(of: find.byKey(shelfKey), matching: find.text(label));
+    find.descendant(of: find.byKey(actionRowKey), matching: find.text(label));
 
+/// The chip carrying [label], scoped to the action row so a same-worded
+/// surface elsewhere never satisfies this finder by accident.
 Finder _shelfButton(String label) => find.descendant(
-  of: find.byKey(shelfKey),
-  matching: find.widgetWithText(TextButton, label),
+  of: find.byKey(actionRowKey),
+  matching: find.byKey(ValueKey(label)),
 );
+
+/// The rendered border a chip's [Material] currently carries — read from the
+/// widget the crawl actually painted, never a hex literal.
+BorderSide _borderOf(WidgetTester tester, Finder chip) {
+  final material = tester.widget<Material>(
+    find.descendant(of: chip, matching: find.byType(Material)),
+  );
+  return (material.shape! as RoundedRectangleBorder).side;
+}
 
 void main() {
   group('the icon language on the battle shelf', () {
@@ -129,7 +141,7 @@ void main() {
       }
 
       // assert - frost lance has no exact asset and stays text-only
-      final frostLance = find.byKey(const Key('shelf-spell-frost-lance'));
+      final frostLance = find.byKey(const ValueKey('✳ Frost Lance 4'));
       expect(frostLance, findsOneWidget);
       expect(
         find.descendant(of: frostLance, matching: find.byType(Image)),
@@ -141,21 +153,22 @@ void main() {
       // arrange
       final game = _battleGame(knownSpells: const {'firebolt'});
       await _openBattle(tester, game);
-      final firebolt = find.byKey(const Key('shelf-spell-firebolt'));
+      final firebolt = find.byKey(const ValueKey('✳ Firebolt 2'));
+      final wait = find.byKey(const ValueKey('Wait'));
+      final unarmedBorder = _borderOf(tester, wait);
 
       // act
       await tester.tap(firebolt);
       await tester.pumpAndSettle();
 
-      // assert - the word carries the suffix, the border resolves, and the
-      // icon is still there
-      expect(find.text('✳ Firebolt 2 — armed'), findsOneWidget);
-      final side = tester
-          .widget<TextButton>(firebolt)
-          .style
-          ?.side
-          ?.resolve(<WidgetState>{});
-      expect(side, isNotNull);
+      // assert - the word gains its own armed line, the border is heavier
+      // than an unarmed sibling's, and the icon is still there
+      expect(find.text('✳ Firebolt 2'), findsOneWidget);
+      expect(find.text('— armed'), findsOneWidget);
+      expect(
+        _borderOf(tester, firebolt).width,
+        greaterThan(unarmedBorder.width),
+      );
       expect(
         find.descendant(of: firebolt, matching: find.byType(Image)),
         findsOneWidget,
@@ -172,7 +185,7 @@ void main() {
       await _openBattle(tester, game);
 
       // act
-      await tester.tap(find.byKey(overflowKey));
+      await tester.tap(find.byKey(const ValueKey('+1')));
       await tester.pumpAndSettle();
 
       // assert - not even the two spells with an exact asset carry an icon

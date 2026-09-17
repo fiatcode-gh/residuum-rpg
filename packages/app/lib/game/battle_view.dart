@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 
-import '../town/town_style.dart';
+import 'crawl_style.dart';
+import 'crawl_surfaces.dart';
 import 'game_bloc.dart';
 import 'activation_timeline.dart';
 import 'actor_presentation.dart';
@@ -12,8 +13,6 @@ import 'actor_presentation.dart';
 /// The dock remains a view over the map rather than a second board. Its only
 /// interactive surface is timeline inspection, which cannot dispatch a game
 /// action or alter the simulation.
-const Color dockBacking = Color(0xB30E1015);
-
 class BattleDock extends StatelessWidget {
   const BattleDock({
     super.key,
@@ -27,46 +26,117 @@ class BattleDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final queue = state.activationQueue;
-    return Container(
-      key: const Key('dock-backing'),
-      color: dockBacking,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (
-                var queueIndex = 0;
-                queueIndex < queue.length;
-                queueIndex++
-              ) ...[
-                if (queueIndex > 0)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 4),
-                    child: Text(
-                      '›',
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 18,
-                        color: dim,
-                      ),
-                    ),
+    final hasRemainder = queue.length > 1;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: crawlGutter,
+        vertical: crawlRhythm,
+      ),
+      child: CrawlPanel(
+        key: const Key('dock-backing'),
+        padding: const EdgeInsets.all(crawlPanelPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const SizedBox(
+                  width: crawlTokenWidth,
+                  child: Center(child: CrawlRegionLabel('NOW')),
+                ),
+                if (hasRemainder) ...[
+                  // Same glyph and style as the separator in the token row
+                  // below, invisible here — this is what keeps the gap
+                  // exactly as wide as the chevron actually renders, on
+                  // every face, rather than a guessed constant.
+                  const Opacity(
+                    opacity: 0,
+                    child: Text('›', style: crawlChevron),
                   ),
+                  Flexible(child: CrawlRegionLabel('NEXT')),
+                ],
+              ],
+            ),
+            const SizedBox(height: crawlRhythm),
+            Row(
+              children: [
                 _TimelineToken(
-                  token: queue[queueIndex],
-                  queueIndex: queueIndex,
+                  token: queue[0],
+                  queueIndex: 0,
                   state: state,
                   onActorSelected: onActorSelected,
                 ),
+                if (hasRemainder) const Text('›', style: crawlChevron),
+                if (hasRemainder)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (
+                            var queueIndex = 1;
+                            queueIndex < queue.length;
+                            queueIndex++
+                          ) ...[
+                            if (queueIndex > 1)
+                              const Text('›', style: crawlChevron),
+                            _TimelineToken(
+                              token: queue[queueIndex],
+                              queueIndex: queueIndex,
+                              state: state,
+                              onActorSelected: onActorSelected,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
               ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+/// One timeline cell: a ringed glyph over the actor's word, both fitted
+/// rather than ellipsised so no label can silently truncate.
+class _TimelineCell extends StatelessWidget {
+  const _TimelineCell({required this.glyph, required this.word, super.key});
+
+  final String glyph;
+  final String word;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: crawlTokenWidth,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: crawlTokenCell,
+          height: crawlTokenCell,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: crawlRaised,
+            border: Border.all(color: crawlRule, width: crawlHairline),
+          ),
+          child: Text(glyph, style: crawlGlyph),
+        ),
+        SizedBox(
+          width: crawlTokenWidth,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(word, style: crawlTokenWord),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _TimelineToken extends StatelessWidget {
@@ -89,16 +159,13 @@ class _TimelineToken extends StatelessWidget {
         label: hero.isCurrent
             ? 'You, current activation'
             : 'You, next activation',
-        child: Container(
+        excludeSemantics: true,
+        child: _TimelineCell(
           key: Key(
             hero.isCurrent ? 'timeline-current-hero' : 'timeline-next-hero',
           ),
-          constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
-          alignment: Alignment.center,
-          child: const Text(
-            '@ YOU',
-            style: TextStyle(fontFamily: 'monospace', fontSize: 13, color: ink),
-          ),
+          glyph: '@',
+          word: 'You',
         ),
       );
     }
@@ -109,21 +176,13 @@ class _TimelineToken extends StatelessWidget {
     return Semantics(
       button: true,
       label: presentation.displayName,
+      excludeSemantics: true,
       child: InkWell(
         key: Key('timeline-actor-${actor.id}-$queueIndex'),
         onTap: () => onActorSelected(actor),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            presentation.glyphLabel,
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 18,
-              color: ink,
-            ),
-          ),
+        child: _TimelineCell(
+          glyph: presentation.glyphLabel,
+          word: presentation.displayName,
         ),
       ),
     );
@@ -140,57 +199,30 @@ void showEnemyInfo(
   Actor monster,
   ActorPresentation presentation,
 ) {
-  showModalBottomSheet<void>(
-    context: context,
-    builder: (sheetContext) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    presentation.glyphLabel,
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 18,
-                      color: ink,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      presentation.displayName,
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 13,
-                        color: ink,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              _EnemyInfoLine('Wounds ${monster.hp} / ${monster.maxHp}'),
-              _EnemyInfoLine('${monster.attackMin}–${monster.attackMax}'),
-              _EnemyInfoLine(
-                monster.reach > 1
-                    ? 'strikes at range ${monster.reach}'
-                    : 'strikes adjacent',
-              ),
-              _EnemyInfoLine('Speed ${monster.speed}'),
-              for (final type in monster.resists)
-                _EnemyInfoLine('Resists ${type.word}'),
-              for (final type in monster.vulnerableTo)
-                _EnemyInfoLine('Burns at ${type.word}'),
-            ],
-          ),
-        ),
+  showCrawlSheet<void>(
+    context,
+    children: (sheetContext) => [
+      Row(
+        children: [
+          Text(presentation.glyphLabel, style: crawlGlyph),
+          const SizedBox(width: 10),
+          Expanded(child: Text(presentation.displayName, style: crawlLine)),
+        ],
       ),
-    ),
+      const SizedBox(height: 8),
+      _EnemyInfoLine('Wounds ${monster.hp} / ${monster.maxHp}'),
+      _EnemyInfoLine('${monster.attackMin}–${monster.attackMax}'),
+      _EnemyInfoLine(
+        monster.reach > 1
+            ? 'strikes at range ${monster.reach}'
+            : 'strikes adjacent',
+      ),
+      _EnemyInfoLine('Speed ${monster.speed}'),
+      for (final type in monster.resists)
+        _EnemyInfoLine('Resists ${type.word}'),
+      for (final type in monster.vulnerableTo)
+        _EnemyInfoLine('Burns at ${type.word}'),
+    ],
   );
 }
 
@@ -203,9 +235,6 @@ class _EnemyInfoLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 2),
-    child: Text(
-      text,
-      style: const TextStyle(fontFamily: 'monospace', fontSize: 13, color: ink),
-    ),
+    child: Text(text, style: crawlLine),
   );
 }

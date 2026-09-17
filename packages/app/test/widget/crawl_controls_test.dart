@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/crawl_action_row.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
@@ -162,62 +163,71 @@ Future<GameBloc> _openCrawl(WidgetTester tester, GameState game) async {
   return bloc;
 }
 
-/// Unit 9's no-squeeze proof, scoped to the button row itself: every `Text`
-/// inside the control [Wrap] is laid out at its intrinsic width, so a
-/// squeezed or ellipsised paragraph fails the comparison. Scoped narrower
-/// than [controlsKey] on purpose — the conditional sentence rows above the
-/// row (`doneAtTheBottom`, `Underfoot:`, `Here:`) are untouched by this unit
-/// and wrap onto a second line by design; that is not the defect this loop
-/// is proving against.
+/// Unit 12's no-squeeze proof, scoped to the chip row itself: every chip
+/// label `RenderParagraph` under [actionRowKey] fits without exceeding its
+/// line cap, and never runs narrower than the longest unbreakable word it
+/// carries. Scoped narrower than [actionRowKey] on purpose — the conditional
+/// sentence rows above the row (`doneAtTheBottom`, `Underfoot:`, `Here:`) are
+/// untouched by this unit and wrap onto a second line by design; that is not
+/// the defect this loop is proving against.
+///
+/// The `didExceedMaxLines` check below is a degenerate-path tripwire, not
+/// the clipping proof — `_fitFor`'s own candidate search already discards
+/// every column count that would exceed `crawlChipMaxLabelLines`, so it
+/// cannot fail on any candidate the search accepts. It only guards the one
+/// path that search does not cover: the no-legal-candidate fallback, which
+/// lays out at the full available width with no line-count check of its
+/// own. The real no-squeeze proof is the intrinsic-width check after it.
 void _expectNoSqueeze(WidgetTester tester) {
   final paragraphs = tester.renderObjectList<RenderParagraph>(
     find.descendant(
       of: find.descendant(
-        of: find.byKey(controlsKey),
+        of: find.byKey(actionRowKey),
         matching: find.byType(Wrap),
       ),
       matching: find.byType(Text),
     ),
   );
   for (final paragraph in paragraphs) {
+    expect(paragraph.didExceedMaxLines, isFalse);
     expect(
       paragraph.size.width + 0.5,
-      greaterThanOrEqualTo(paragraph.getMaxIntrinsicWidth(double.infinity)),
+      greaterThanOrEqualTo(paragraph.getMinIntrinsicWidth(double.infinity)),
     );
   }
 }
 
-Finder _button(String label) => find.widgetWithText(FilledButton, label);
+Finder _chip(String label) => find.byKey(ValueKey(label));
 
 void _expectIcon(String label) {
-  final button = _button(label);
-  expect(button, findsOneWidget, reason: label);
+  final chip = _chip(label);
+  expect(chip, findsOneWidget, reason: label);
   expect(
-    find.descendant(of: button, matching: find.byType(Image)),
+    find.descendant(of: chip, matching: find.byType(Image)),
     findsOneWidget,
     reason: label,
   );
 }
 
 void _expectNoIcon(String label) {
-  final button = _button(label);
-  expect(button, findsOneWidget, reason: label);
+  final chip = _chip(label);
+  expect(chip, findsOneWidget, reason: label);
   expect(
-    find.descendant(of: button, matching: find.byType(Image)),
+    find.descendant(of: chip, matching: find.byType(Image)),
     findsNothing,
     reason: label,
   );
 }
 
-/// The label of every `FilledButton` under [controlsKey], in the order the
-/// row lays them out (ascending top, then ascending left).
+/// The label of every chip under [actionRowKey], in the order the row lays
+/// them out (ascending top, then ascending left).
 List<String> _controlOrder(WidgetTester tester) {
   final labels = tester
       .widgetList<Text>(
         find.descendant(
           of: find.descendant(
-            of: find.byKey(controlsKey),
-            matching: find.byType(FilledButton),
+            of: find.byKey(actionRowKey),
+            matching: find.byType(Wrap),
           ),
           matching: find.byType(Text),
         ),
@@ -225,7 +235,7 @@ List<String> _controlOrder(WidgetTester tester) {
       .map((text) => text.data!)
       .toList();
   final positioned = [
-    for (final label in labels) (label, tester.getTopLeft(_button(label))),
+    for (final label in labels) (label, tester.getTopLeft(_chip(label))),
   ];
   positioned.sort((one, other) {
     final byDy = one.$2.dy.compareTo(other.$2.dy);
@@ -311,6 +321,7 @@ void main() {
 
       // assert
       _expectIcon('Descend >');
+      _expectNoSqueeze(tester);
     });
 
     testWidgets('an icon-bearing control announces itself', (tester) async {
@@ -339,30 +350,33 @@ void main() {
       await _openCrawl(tester, game);
 
       // assert - the word and the icon are unchanged, only the tap is gone
-      final drink = _button('Drink (2)');
+      final drink = _chip('Drink (2)');
       expect(drink, findsOneWidget);
-      expect(tester.widget<FilledButton>(drink).onPressed, isNull);
+      final inkWell = tester.widget<InkWell>(
+        find.descendant(of: drink, matching: find.byType(InkWell)),
+      );
+      expect(inkWell.onTap, isNull);
       expect(
         find.descendant(of: drink, matching: find.byType(Image)),
         findsOneWidget,
       );
       expect(
         find.descendant(
-          of: find.byKey(controlsKey),
+          of: find.byKey(actionRowKey),
           matching: find.textContaining('Underfoot:'),
         ),
         findsNothing,
       );
       expect(
         find.descendant(
-          of: find.byKey(controlsKey),
+          of: find.byKey(actionRowKey),
           matching: find.textContaining('Here:'),
         ),
         findsNothing,
       );
       expect(
         find.descendant(
-          of: find.byKey(controlsKey),
+          of: find.byKey(actionRowKey),
           matching: find.text(doneAtTheBottom),
         ),
         findsNothing,

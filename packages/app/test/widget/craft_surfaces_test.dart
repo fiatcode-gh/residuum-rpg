@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/crawl_action_row.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
@@ -67,6 +69,48 @@ Future<GameBloc> _openCrawl(WidgetTester tester, GameState game) async {
   return bloc;
 }
 
+/// Proves a chip labelled [label] is on the action row and that the row
+/// actually renders the word — a bare [ValueKey] match alone would also
+/// pass for a chip whose label rendered empty.
+void _expectChipLabel(String label) {
+  expect(find.byKey(ValueKey(label)), findsOneWidget);
+  expect(
+    find.descendant(of: find.byKey(actionRowKey), matching: find.text(label)),
+    findsOneWidget,
+  );
+}
+
+/// Unit 12's no-squeeze proof, scoped to the chip row itself: every chip
+/// label `RenderParagraph` under [actionRowKey] fits without exceeding its
+/// line cap, and never runs narrower than the longest unbreakable word it
+/// carries. Mirrors `crawl_controls_test.dart`'s `_expectNoSqueeze`.
+///
+/// The `didExceedMaxLines` check below is a degenerate-path tripwire, not
+/// the clipping proof — `_fitFor`'s own candidate search already discards
+/// every column count that would exceed `crawlChipMaxLabelLines`, so it
+/// cannot fail on any candidate the search accepts. It only guards the one
+/// path that search does not cover: the no-legal-candidate fallback, which
+/// lays out at the full available width with no line-count check of its
+/// own. The real no-squeeze proof is the intrinsic-width check after it.
+void _expectNoSqueeze(WidgetTester tester) {
+  final paragraphs = tester.renderObjectList<RenderParagraph>(
+    find.descendant(
+      of: find.descendant(
+        of: find.byKey(actionRowKey),
+        matching: find.byType(Wrap),
+      ),
+      matching: find.byType(Text),
+    ),
+  );
+  for (final paragraph in paragraphs) {
+    expect(paragraph.didExceedMaxLines, isFalse);
+    expect(
+      paragraph.size.width + 0.5,
+      greaterThanOrEqualTo(paragraph.getMinIntrinsicWidth(double.infinity)),
+    );
+  }
+}
+
 void main() {
   group('the control on a node', () {
     testWidgets('is not offered anywhere else on the floor', (tester) async {
@@ -79,8 +123,8 @@ void main() {
       // assert - a control that is always there is a control a player taps by
       // mistake, and the rules charge nothing for it precisely because the
       // screen was not supposed to offer it
-      expect(find.widgetWithText(FilledButton, 'Mine'), findsNothing);
-      expect(find.widgetWithText(FilledButton, 'Gather'), findsNothing);
+      expect(find.byKey(const ValueKey('Mine')), findsNothing);
+      expect(find.byKey(const ValueKey('Gather')), findsNothing);
       addTearDown(bloc.close);
     });
 
@@ -92,7 +136,7 @@ void main() {
       final bloc = await _openCrawl(tester, game);
 
       // assert
-      expect(find.widgetWithText(FilledButton, 'Mine'), findsOneWidget);
+      _expectChipLabel('Mine');
       addTearDown(bloc.close);
     });
 
@@ -104,7 +148,7 @@ void main() {
       final bloc = await _openCrawl(tester, game);
 
       // assert - you mine a seam and you pick a plant
-      expect(find.widgetWithText(FilledButton, 'Gather'), findsOneWidget);
+      _expectChipLabel('Gather');
       addTearDown(bloc.close);
     });
 
@@ -129,11 +173,11 @@ void main() {
       final bloc = await _openCrawl(tester, game);
 
       // act
-      await tester.tap(find.widgetWithText(FilledButton, 'Mine'));
+      await tester.tap(find.byKey(const ValueKey('Mine')));
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.widgetWithText(FilledButton, 'Mine'), findsNothing);
+      expect(find.byKey(const ValueKey('Mine')), findsNothing);
       expect(bloc.state.game.materials, {MaterialId.ore: 1});
       addTearDown(bloc.close);
     });
@@ -156,8 +200,9 @@ void main() {
 
       // assert - both controls fit, and neither is ellipsised into nonsense;
       // 'Mine' is four letters for exactly this reason
-      expect(find.widgetWithText(FilledButton, 'Pick up'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Mine'), findsOneWidget);
+      _expectChipLabel('Pick up');
+      _expectChipLabel('Mine');
+      _expectNoSqueeze(tester);
       expect(tester.takeException(), isNull);
       addTearDown(bloc.close);
     });

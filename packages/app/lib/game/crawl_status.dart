@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import 'crawl_style.dart';
 import 'game_bloc.dart';
-import '../town/town_style.dart';
 
 const hpMeterKey = Key('hp-meter');
 const manaMeterKey = Key('mana-meter');
@@ -21,13 +21,21 @@ class CrawlStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+    padding: const EdgeInsets.symmetric(
+      horizontal: crawlGutter,
+      vertical: crawlRhythm,
+    ),
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         _HeaderRow(state: state, dungeon: dungeon),
-        const SizedBox(height: 4),
+        const SizedBox(height: crawlRhythm),
         _ResourceRow(state: state),
+        const Divider(
+          height: crawlHairline,
+          thickness: crawlHairline,
+          color: crawlRule,
+        ),
       ],
     ),
   );
@@ -46,13 +54,13 @@ class _HeaderRow extends StatelessWidget {
         child: FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text(_placeName(state, dungeon), style: mono),
+          child: Text(_placeName(state, dungeon), style: crawlPlace),
         ),
       ),
       const SizedBox(width: 8),
       _BattleGlyph(state: state),
       const SizedBox(width: 4),
-      Text(_battleWord(state), style: mono),
+      Text(_battleWord(state), style: crawlBody),
       const SizedBox(width: 8),
       if (!state.isEncounter)
         SizedBox(
@@ -61,7 +69,7 @@ class _HeaderRow extends StatelessWidget {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
-            child: Text('${state.depth} / ${state.deepest}', style: mono),
+            child: Text('${state.depth} / ${state.deepest}', style: crawlBody),
           ),
         ),
     ],
@@ -131,7 +139,7 @@ class _Meter extends StatelessWidget {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text('$label $value / $ceiling', style: mono),
+            child: Text('$label $value / $ceiling', style: crawlBody),
           ),
         ),
         const SizedBox(width: 6),
@@ -142,8 +150,8 @@ class _Meter extends StatelessWidget {
             child: LinearProgressIndicator(
               value: fill,
               minHeight: 8,
-              backgroundColor: rule,
-              valueColor: const AlwaysStoppedAnimation(ink),
+              backgroundColor: crawlRule,
+              valueColor: const AlwaysStoppedAnimation(crawlInk),
             ),
           ),
         ),
@@ -153,7 +161,7 @@ class _Meter extends StatelessWidget {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
-            child: Text(note, style: mono),
+            child: Text(note, style: crawlBody),
           ),
         ),
       ],
@@ -181,7 +189,7 @@ class _BattleGlyph extends StatelessWidget {
         : null;
     return SizedBox(
       width: 18,
-      child: Text(glyph ?? '', textAlign: TextAlign.center, style: mono),
+      child: Text(glyph ?? '', textAlign: TextAlign.center, style: crawlBody),
     );
   }
 }

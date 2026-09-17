@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'crawl_style.dart';
+import 'crawl_surfaces.dart';
 import 'game_bloc.dart';
 import 'log_line.dart';
 
@@ -9,23 +11,7 @@ const logDrawerKey = Key('log-drawer');
 const logCloseKey = Key('log-close');
 const logUnreadKey = Key('log-unread');
 
-const Color _logBacking = Color(0xFF15181F);
-const Color _logNewest = Color(0xFFE6EAF0);
-const Color _logOlder = Color(0xFF8A919E);
-const Color _logHandle = Color(0xFF8A919E);
-
-const TextStyle _newestRowStyle = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 13,
-  color: _logNewest,
-);
-const TextStyle _olderRowStyle = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 13,
-  color: _logOlder,
-);
-
-TextStyle _rowStyle(bool newest) => newest ? _newestRowStyle : _olderRowStyle;
+TextStyle _rowStyle(bool newest) => newest ? crawlLine : crawlLineOlder;
 
 /// The centred drag handle pill the mock draws atop both the peek and the
 /// drawer: the one shape that says "there is more here" without a word.
@@ -38,7 +24,7 @@ class _HandlePill extends StatelessWidget {
       width: 32,
       height: 4,
       decoration: BoxDecoration(
-        color: _logHandle,
+        color: crawlDim,
         borderRadius: BorderRadius.circular(2),
       ),
     ),
@@ -47,7 +33,8 @@ class _HandlePill extends StatelessWidget {
 
 /// The fixed compact strip above the crawl's action controls: the last few
 /// lines of the message log, newest last, the same value-only contrast the
-/// log has always used. The whole strip is the handle that opens the drawer.
+/// log has always used. The whole strip is the handle that opens the drawer;
+/// its trailing chevron is the mock's explicit expand affordance.
 class LogPeek extends StatelessWidget {
   const LogPeek({required this.state, required this.bloc, super.key});
 
@@ -64,35 +51,46 @@ class LogPeek extends StatelessWidget {
       onTap: state.game.isGameOver
           ? null
           : () => bloc.add(const LogDrawerHandlePulled()),
-      child: Container(
-        height: 104,
+      child: SizedBox(
+        height: crawlLogPeekHeight,
         width: double.infinity,
-        color: _logBacking,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Column(
-          children: [
-            const SizedBox(height: 12, child: _HandlePill()),
-            Expanded(
-              child: ListView.builder(
-                reverse: true,
-                itemCount: state.log.length,
-                itemBuilder: (context, index) => Text(
-                  state.log[state.log.length - 1 - index].sentence,
-                  style: _rowStyle(index == 0),
-                ),
-              ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: crawlGutter,
+            vertical: crawlRhythm,
+          ),
+          child: CrawlPanel(
+            padding: const EdgeInsets.symmetric(
+              horizontal: crawlPanelPadding,
+              vertical: crawlRhythm,
             ),
-          ],
+            child: Row(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    reverse: true,
+                    itemCount: state.log.length,
+                    itemBuilder: (context, index) => Text(
+                      state.log[state.log.length - 1 - index].sentence,
+                      style: _rowStyle(index == 0),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: crawlRhythm),
+                const Text('›', style: crawlChevron),
+              ],
+            ),
+          ),
         ),
       ),
     ),
   );
 }
 
-/// One line of the expanded log: its category glyph in a leading column and
-/// its sentence, both in the row's own colour so hue never carries the
-/// category. The category word is exposed to accessibility and nowhere else,
-/// which is what keeps the mark from doubling as a second sighted-only cue.
+/// One line of the expanded log: its category glyph in an inset well and its
+/// sentence, both in the row's own colour so hue never carries the category.
+/// The category word is exposed to accessibility and nowhere else, which is
+/// what keeps the mark from doubling as a second sighted-only cue.
 class _LogRow extends StatelessWidget {
   const _LogRow({required this.line, required this.newest});
 
@@ -105,12 +103,33 @@ class _LogRow extends StatelessWidget {
     return Semantics(
       label: '${line.category.word}. ${line.sentence}',
       child: ExcludeSemantics(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(width: 20, child: Text(line.category.mark, style: style)),
-            Expanded(child: Text(line.sentence, style: style)),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: crawlLogRowRhythm),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: crawlMarkColumn,
+                child: Center(
+                  child: Container(
+                    width: crawlMarkWell,
+                    height: crawlMarkWell,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: crawlRecessed,
+                      border: Border.all(
+                        color: crawlRule,
+                        width: crawlHairline,
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(line.category.mark, style: style),
+                  ),
+                ),
+              ),
+              Expanded(child: Text(line.sentence, style: style)),
+            ],
+          ),
         ),
       ),
     );
@@ -194,7 +213,7 @@ class _LogDrawerState extends State<LogDrawer> {
           ? 1.0
           : 0.45,
       child: ColoredBox(
-        color: _logBacking,
+        color: crawlPanel,
         child: Column(
           children: [
             Semantics(
@@ -211,33 +230,33 @@ class _LogDrawerState extends State<LogDrawer> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: crawlGutter),
               child: Row(
                 children: [
-                  const Text(
-                    'MESSAGE LOG',
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 13,
-                      color: _logNewest,
-                    ),
-                  ),
+                  const Text('MESSAGE LOG', style: crawlPanelTitle),
                   const Spacer(),
-                  IconButton(
+                  CrawlPill(
                     key: logCloseKey,
-                    icon: const Icon(Icons.close),
-                    tooltip: 'Close the message log',
+                    label: 'Close the message log',
+                    icon: Icons.close,
                     onPressed: () => widget.bloc.add(const LogDrawerClosed()),
                   ),
                 ],
               ),
+            ),
+            Container(
+              height: crawlHairline,
+              margin: const EdgeInsets.symmetric(horizontal: crawlGutter),
+              color: crawlRule,
             ),
             Expanded(
               child: Stack(
                 children: [
                   ListView.builder(
                     controller: _controller,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: crawlGutter,
+                    ),
                     itemCount: widget.state.log.length,
                     itemBuilder: (context, index) => _LogRow(
                       line: widget.state.log[index],
@@ -248,13 +267,13 @@ class _LogDrawerState extends State<LogDrawer> {
                     Positioned(
                       right: 12,
                       bottom: 12,
-                      child: FilledButton(
+                      child: CrawlPill(
                         key: logUnreadKey,
+                        label: '↓ ${widget.state.logUnread} new',
                         onPressed: () {
                           widget.bloc.add(const LogFollowResumed());
                           _jumpToNewest();
                         },
-                        child: Text('↓ ${widget.state.logUnread} new'),
                       ),
                     ),
                 ],
