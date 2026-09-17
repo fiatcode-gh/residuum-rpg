@@ -355,7 +355,7 @@ class _GlyphComponent extends PositionComponent {
   /// the hero reads against the stone at a glance. Shape, not hue: the halo
   /// is the cell's own ink at a whisper of alpha.
   CircleComponent get _halo => CircleComponent(
-    radius: cameraCellSize * 0.42,
+    radius: cameraCellSize * 0.32,
     position: Vector2.all(cameraCellSize / 2),
     anchor: Anchor.center,
     paint: Paint()
@@ -399,7 +399,7 @@ class _GlyphComponent extends PositionComponent {
   static TextPaint _textPaint(GlyphCell cell) => TextPaint(
     style: TextStyle(
       color: cell.ink.withValues(alpha: cell.opacity),
-      fontSize: cameraCellSize,
+      fontSize: cameraCellSize * glyphBaseFontScale,
       fontFamily: 'monospace',
       height: 1,
     ),
@@ -408,7 +408,7 @@ class _GlyphComponent extends PositionComponent {
   static TextPaint _badgePaint(GlyphCell cell) => TextPaint(
     style: TextStyle(
       color: cell.ink.withValues(alpha: cell.opacity),
-      fontSize: cameraCellSize * 0.42,
+      fontSize: cameraCellSize * 0.30,
       fontFamily: 'monospace',
       height: 1,
     ),

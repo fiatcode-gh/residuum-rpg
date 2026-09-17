@@ -772,6 +772,101 @@ void main() {
     expect(panned.pan, const Offset(12, -8));
   });
 
+  testWidgets('keeps glyph text, halo, badge and outlines inside their cells', (
+    tester,
+  ) async {
+    Rect childBounds(PositionComponent child) {
+      final width = child.size.x * child.scale.x;
+      final height = child.size.y * child.scale.y;
+      return Rect.fromLTWH(
+        child.position.x - width * child.anchor.x,
+        child.position.y - height * child.anchor.y,
+        width,
+        height,
+      );
+    }
+
+    Future<void> pumpScene(GameViewState state) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SizedBox(
+            width: 360,
+            height: 360,
+            child: DungeonSceneHost(
+              state: state,
+              palette: DungeonPalette.crypt,
+              onTap: (_) {},
+              onPan: (_) {},
+              onLongPress: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    PositionComponent glyphAt(
+      World world,
+      GlyphLayer layer,
+      Position position,
+    ) => world.children.whereType<PositionComponent>().singleWhere(
+      (component) =>
+          component.priority == layer.index &&
+          component.position ==
+              Vector2(position.x * cameraCellSize, position.y * cameraCellSize),
+    );
+
+    Future<void> expectContained(PositionComponent glyph) async {
+      expect(glyph.size, Vector2.all(cameraCellSize));
+      for (final child in glyph.children.whereType<PositionComponent>()) {
+        final bounds = childBounds(child);
+        expect(bounds.left, greaterThan(0));
+        expect(bounds.top, greaterThan(0));
+        expect(bounds.right, lessThan(cameraCellSize));
+        expect(bounds.bottom, lessThan(cameraCellSize));
+      }
+    }
+
+    await pumpScene(
+      _viewState(
+        armedSpellId: 'firebolt',
+        selectedActorId: 'ghoul-1',
+        monsters: [
+          _ghoulAt(const Position(1, 2)),
+          _ghoulAt(const Position(2, 2), id: 'ghoul-2'),
+        ],
+      ),
+    );
+    final world = tester
+        .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+        .game!
+        .world;
+    final hero = glyphAt(world, GlyphLayer.hero, const Position(1, 1));
+    final monster = glyphAt(world, GlyphLayer.monster, const Position(1, 2));
+    await expectContained(hero);
+    await expectContained(monster);
+    expect(hero.children.whereType<CircleComponent>(), hasLength(1));
+    expect(
+      hero.children.whereType<CircleComponent>().single.radius,
+      closeTo(cameraCellSize * 0.32, 0.0001),
+    );
+    expect(monster.children.whereType<RectangleComponent>(), hasLength(1));
+    expect(monster.children.whereType<CircleComponent>(), hasLength(1));
+    expect(monster.children.whereType<TextComponent>(), hasLength(2));
+
+    await pumpScene(_stairsViewState());
+    final stairsWorld = tester
+        .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+        .game!
+        .world;
+    final stairs = glyphAt(
+      stairsWorld,
+      GlyphLayer.terrain,
+      const Position(3, 2),
+    );
+    await expectContained(stairs);
+  });
+
   testWidgets(
     'retained actor component synchronizes badge and both outline shapes',
     (tester) async {
@@ -815,6 +910,27 @@ void main() {
           );
 
       final retained = actorComponent();
+      Rect badgeBounds() {
+        final badge = retained.children.whereType<TextComponent>().last;
+        final width = badge.size.x * badge.scale.x;
+        final height = badge.size.y * badge.scale.y;
+        return Rect.fromLTWH(
+          badge.position.x - width * badge.anchor.x,
+          badge.position.y - height * badge.anchor.y,
+          width,
+          height,
+        );
+      }
+
+      void expectBadgeContained() {
+        final bounds = badgeBounds();
+        expect(bounds.left, greaterThan(0));
+        expect(bounds.top, greaterThan(0));
+        expect(bounds.right, lessThan(cameraCellSize));
+        expect(bounds.bottom, lessThan(cameraCellSize));
+      }
+
+      expectBadgeContained();
       expect(
         retained.children.whereType<TextComponent>().map((child) => child.text),
         ['g', '¹'],
@@ -829,6 +945,7 @@ void main() {
       await pumpScene(selected);
       expect(actorComponent(), same(retained));
       expect(retained.children.whereType<CircleComponent>(), hasLength(1));
+      expectBadgeContained();
 
       final targeted = GameViewState(
         game: initial.game,
@@ -841,6 +958,7 @@ void main() {
       expect(actorComponent(), same(retained));
       expect(retained.children.whereType<CircleComponent>(), hasLength(1));
       expect(retained.children.whereType<RectangleComponent>(), hasLength(1));
+      expectBadgeContained();
 
       final cleared = GameViewState(
         game: initial.game,
@@ -851,6 +969,7 @@ void main() {
       expect(actorComponent(), same(retained));
       expect(retained.children.whereType<CircleComponent>(), isEmpty);
       expect(retained.children.whereType<RectangleComponent>(), isEmpty);
+      expectBadgeContained();
       expect(
         retained.children.whereType<TextComponent>().map((child) => child.text),
         ['g', '¹'],

@@ -1,0 +1,21 @@
+{
+  "flow_handoff": 1,
+  "kind": "ldd",
+  "source": "chatgpt",
+  "repository": "fiatcode-gh/residuum-rpg",
+  "observed_ref": "0692bbcce7570df988f6daab9b357a2557e58b39",
+  "epic": "visual-reboot",
+  "design_status": "settled",
+  "implementation_strategy": "settled",
+  "authorization": "not-carried",
+  "artifacts": [
+    "HANDOFF.md",
+    "CONTRACT.md",
+    "recon.md",
+    "PLAN.md",
+    "plan-tasks/01-structural-light-and-wall-mass.md",
+    "plan-tasks/02-material-scale-and-decoration.md",
+    "plan-tasks/03-semantic-glyph-composition.md",
+    "LEDGER-DELTA.md"
+  ]
+}

@@ -1,5 +1,8 @@
 import 'glyph_plan.dart';
 
+/// Base font size as a fraction of the owning camera cell.
+const double glyphBaseFontScale = 0.73;
+
 /// Which shape carries a target or selection fact around an actor glyph.
 enum GlyphOutlineShape { square, circle }
 
@@ -57,11 +60,11 @@ GlyphMarkTreatment glyphMarkTreatment(
 
   return GlyphMarkTreatment(
     scale: switch (cell.layer) {
-      GlyphLayer.hero => 1.16,
-      GlyphLayer.monster => 1.08,
-      GlyphLayer.terrain => 1.04,
+      GlyphLayer.hero => 1.08,
+      GlyphLayer.monster => 1.04,
+      GlyphLayer.terrain => 1.02,
       GlyphLayer.node => 1.0,
-      GlyphLayer.litter => 0.92,
+      GlyphLayer.litter => 0.94,
     },
     halo: cell.layer == GlyphLayer.hero,
     targetOutline: cell.marked ? GlyphOutlineShape.square : null,
