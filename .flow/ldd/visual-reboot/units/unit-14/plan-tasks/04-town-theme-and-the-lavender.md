@@ -242,10 +242,30 @@ Color fillOf(WidgetTester tester, Finder control) => tester
     .color!;
 ```
 
-For each row below, in a real pumped screen, assert three things: the rendered
-fill or foreground **equals** the token named; it is **not** the `m3` colour
-named; and its luminance differs from the surface behind it by a ratio
-≥ 1.5 : 1, so the control is still a control in greyscale.
+For each row below, in a real pumped screen, assert **two things and only two**:
+the rendered fill or foreground **equals** the token named, and it is **not**
+the `m3` colour named.
+
+**There is no third, fill-versus-surface contrast assertion — architect
+amendment A6, 2026-09-18.** An earlier version of this brief asked each row to
+prove its fill's luminance differed from its surface by ≥ 1.5 : 1. **It is
+struck, not retuned.** The arithmetic against this ladder:
+
+| pair | WCAG `(L+0.05)/(l+0.05)` | plain `Lmax/Lmin` |
+|---|---:|---:|
+| `raised` vs `ground` | 1.153 : 1 | 2.643 : 1 |
+| `raised` vs `panel` | 1.076 : 1 | **1.491 : 1** |
+| `recessed` vs `panel` | 1.038 : 1 | 1.313 : 1 |
+
+Rows 1, 3, 4, 5 and 7 all sit on `panel`, so the threshold fails under either
+reading, and the only way to make it pass is to lower it — which turns the
+assertion into decoration. **If you find yourself tuning a contrast threshold
+in this test, stop: the assertion does not belong here.** This value ladder is
+deliberately low-contrast and a control's boundary comes from its 1 dp `rule`
+border, not from its fill. The two assertions above are host-independent,
+cannot be satisfied by accident and cannot be satisfied by tuning a number, and
+they carry all of AC4's content. See `../PLAN.md` §"Why there is no third,
+fill-versus-surface contrast assertion (A6)".
 
 | # | control, and how to reach it | token | must not equal |
 |---|---|---|---|
@@ -265,8 +285,10 @@ Add, in the same file:
 
 - **the selected chip still carries its checkmark** — `pack-filter-all`
   selected renders a check, because `armedFill` against `raised` is only a
-  1.6 : 1 value step and shape is what carries selection in greyscale. The
-  filter chip's own form is U15's gap 8.1 and is not improved here;
+  1.163 : 1 WCAG (1.763 : 1 plain) value step and shape is what carries
+  selection in greyscale. The filter chip's own form is U15's gap 8.1 and is
+  not improved here, and **that weak step is not a defect to fix with a
+  threshold** (A6);
 - **a disabled control reads dimmer than an enabled one** — the Forge's `Smelt`
   at a pending count of zero has a rendered fill of lower luminance than at a
   pending count of one, and its label's rendered colour is dimmer. This is the
@@ -275,8 +297,9 @@ Add, in the same file:
 
 **Expected Red:** for all eight rows the "must not equal" assertion fails,
 because every one of them renders the M3 default today, and the "equals the
-token" assertion fails because the tokens are not applied. Record the observed
-failure for rows 1–4 verbatim.
+token" assertion fails because the tokens are not applied. Those two are the
+whole of it — there is no third to fail, and no row's Red depends on a ratio.
+Record the observed failure for rows 1–4 verbatim.
 
 ### Run
 
@@ -347,9 +370,12 @@ Expected: the first four return nothing; the fifth returns `tokens.dart`,
   keep their warning without the word;
 - `TownRoom`, `TownScreen` and `CrawlPackScreen` each wrap their `Scaffold` in
   `Theme(data: residuumTheme, …)`; both roster dialogs wrap their own;
-- every control in the eight-row table renders its token and not the M3
-  default, proved by `material_palette_test.dart`, with the four named cases in
-  their own named groups;
+- every control in the eight-row table renders its token and is not the M3
+  default — **two assertions per row, and no third**, proved by
+  `material_palette_test.dart`, with the four named cases in their own named
+  groups;
+- **no contrast or luminance-ratio threshold appears anywhere in
+  `material_palette_test.dart`** (A6);
 - the selected filter chip still renders a checkmark; a disabled `Commit` still
   reads dimmer than an enabled one;
 - no stock control was replaced by a custom one, and the diff proves it;
@@ -362,7 +388,12 @@ Expected: the first four return nothing; the fifth returns `tokens.dart`,
   `../PLAN.md`'s dp gate;
 - any need to replace a stock control with a custom one, or to change a row's
   anatomy, a control's geometry, a chip's shape or a padding — all U15's;
-- any need to edit `inn_screen.dart`, or any file in the do-not-edit list;
+- any need to edit `inn_screen.dart` — its two authorised rows are Task 05's —
+  or any file in the do-not-edit list;
+- **any temptation to add a contrast or luminance-ratio assertion, or to
+  restore the one A6 struck.** If a control's boundary seems to need proving,
+  say so and stop: the answer is the 1 dp `rule` border, and it is a device
+  judgement, not a threshold;
 - an un-owned town file turning out to hold an inline `TextStyle` or colour
   literal;
 - a test in the must-stay-green list whose rewrite would change **what it
@@ -374,6 +405,7 @@ Expected: the first four return nothing; the fifth returns `tokens.dart`,
 
 Report: the observed Red for the four named cases; every control in the
 eight-row table with its rendered token and the `m3` colour it no longer
-equals; the five audit greps; which import prefix was used for the token
-collision; any type-envelope tuning and its reason; the must-stay-green list's
-result; and the three package gates.
+equals; **an explicit statement that no contrast threshold was added** (A6);
+the five audit greps; which import prefix was used for the token collision; any
+type-envelope tuning and its reason; the must-stay-green list's result; and the
+three package gates.

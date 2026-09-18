@@ -327,11 +327,28 @@ the rendered fill of `Begin fresh` from the `Material` the `FilledButton`
 builds:
 
 - the fill equals `raised`;
-- the fill is **not** `m3.colorScheme.primary`;
-- the fill's luminance differs from `ground`'s by a ratio ≥ 1.5 : 1.
+- the fill is **not** `m3.colorScheme.primary`.
 
 Computing the reference live means no lavender hex is ever written down and a
 framework palette change cannot make the test lie.
+
+**Two assertions, not three — architect amendment A6, 2026-09-18.** An earlier
+version of this brief asked for a third: that the fill's luminance differ from
+`ground`'s by a ratio ≥ 1.5 : 1. **It is struck.** This task's own execution
+found it unsatisfiable under the WCAG reading (`raised` `#1B1F27` on `ground`
+`#0E1014` is 1.153 : 1, because the `+0.05` flare dominates at these
+luminances) and cleared 1.5 only by switching to a plain `Lmax/Lmin` reading
+(2.643 : 1). That switch works on this one screen and fails everywhere else —
+a `raised` control on `panel` is 1.491 : 1 plain — so Task 04 would have
+inherited a threshold whose only remedy is lowering itself.
+
+**Do not add a fill-versus-surface contrast assertion, and do not restore the
+one that was here.** This value ladder is deliberately low-contrast; a
+control's boundary comes from its 1 dp `rule` border. The two assertions above
+are host-independent, cannot be satisfied by accident and cannot be satisfied
+by tuning a number, and they carry all of AC4's content. See `../PLAN.md`
+§"Why there is no third, fill-versus-surface contrast assertion (A6)" for the
+full arithmetic.
 
 **Expected Red: the fill equals `m3.colorScheme.primary`.**
 

@@ -1,7 +1,8 @@
 # Unit 14 — Type, Palette and Surface Authority: Execution Plan
 
 Status: **execution-grade; approved by the architect 2026-09-18 with five
-amendments (A1–A5, recorded below). Planning only.** The Unit 14 contract is
+amendments A1–A5, plus A6 ruled during Task 01 execution (all recorded
+below). Planning only.** The Unit 14 contract is
 approved (2026-09-18, monospace retired outright). The user must separately
 approve this plan before any production execution.
 
@@ -35,7 +36,7 @@ test host**.
 Nine facts from recon refine or contradict the contract. None is worked around
 silently; each is either settled below as a locked decision or named as an
 escalation. **The architect ruled on five of them on 2026-09-18** — see
-"Architect amendments A1–A5" immediately after F9.
+§"Architect amendments A1–A6" immediately after F9.
 
 ### F1 — There are sixty `fontFamily: 'monospace'` literals, not "roughly fifty", plus four prose mentions
 
@@ -302,28 +303,62 @@ everything inside the crawl's existing `crawlTheme`.
 
 ---
 
-## Architect amendments A1–A5, 2026-09-18
+## Architect amendments A1–A6
 
-The plan was accepted with five rulings. Each is folded into the section it
-governs; this is the index.
+A1–A5 were ruled on 2026-09-18 when the plan was accepted. **A6 was ruled
+during Task 01**, after that task's evidence exposed a defect in this plan's
+own AC4 specification. Each is folded into the section it governs; this is the
+index.
 
 | # | ruling | where it lands |
 |---|---|---|
-| A1 | **One `residuumTheme` at six roots is accepted** — settled by the architect, no longer an interpretation awaiting a ruling. The two-line reversal note is kept for the record | "The theme decision, settled" below |
+| A1 | **One `residuumTheme` at six roots is accepted** — settled by the architect, no longer an interpretation awaiting a ruling. The two-line reversal note is kept for the record | §"The theme decision, settled" |
 | A2 | **Change no mark, in either package.** The twelve uncovered marks are a recorded pre-existing platform-fallback set with the Task 01 coverage test as their proof; U16 retires them; escalate only on device tofu or a 600 dp breach | F3 |
 | A3 | **`inn_screen.dart:45-46` is authorised** and the contract's boundary is widened by those two lines. All six padded-column sites convert in Task 05; residual R6 is closed | F7, Task 05, Residual risks |
 | A4 | **The alias strategy is transitional, not the end state.** Aliases stay through Tasks 01–07 because they are what makes seven compiling steps possible, but a maintainer six months out must not have to work out whether `ink`, `crawlInk` and the shared token are one value. **New Task 08**: a mechanical rename leaf that deletes every alias which only re-names a shared token, keeps every declaration that names a seam concept the shared module does not have, and repoints all consumers through the language server | new §"Task 08", the execution graph, the ownership matrix, the slice table, AC3's closure, R4 |
 | A5 | **Base revision is `5ac1a49`** throughout; the contract already records it | the header |
+| A6 | **AC4's fill-versus-surface luminance-ratio assertion is struck, not retuned.** This plan asked each control family to prove its rendered fill differed from its surface by ≥ 1.5 : 1. It is unsatisfiable against this deliberately low-contrast ladder under either reading, and the obvious executor response — lowering the threshold until it passes — would turn the assertion into decoration. AC4's spec is now the two assertions that carry its content. A control's boundary comes from its 1 dp `rule` border, not from fill-against-surface contrast | §"Why there is no third…" with the arithmetic, the Task 01 and Task 04 proof specs, the AC4 and AC8 coverage rows, the TTC gate, R5, briefs 01 and 04 |
 
-The planner's one objection to A4 — which is an ordering consequence, not a
-disagreement — is recorded under Task 08: **A4 moves AC3's closure from Task 07
-to Task 08**, because Task 07's closing audit greps `Color(0x` and `TextStyle(`
-in exactly the two files Task 08 then rewrites. Task 07's audit stands for AC2;
-Task 08 re-runs the two greps that its own diff invalidates. A4 also makes
-residual R4's dartdoc correction **required in Task 08** rather than
-recommended at Gate B, because the rename erases the prefix
-(`town.panel`) through which that test currently expresses the premise its
-dartdoc claims.
+### Two planner objections, both ordering consequences rather than disagreements
+
+**On A4:** it moves AC3's closure from Task 07 to Task 08, because Task 07's
+closing audit greps `Color(0x` and `TextStyle(` in exactly the two files Task 08
+then rewrites. Task 07's audit stands for AC2; Task 08 re-runs the two greps
+that its own diff invalidates. A4 also makes residual R4's dartdoc correction
+**required in Task 08** rather than recommended at Gate B, because the rename
+erases the prefix (`town.panel`) through which that test currently expresses the
+premise its dartdoc claims.
+
+**On A6 — the ratio audit the architect asked for.** Every luminance claim in
+the plan was re-checked against the ladder by the same arithmetic. Result: one
+strike, one correction, one label.
+
+| claim | reading | verdict |
+|---|---|---|
+| AC4's fill vs surface ≥ 1.5 : 1 (briefs 01 and 04) | either | **STRUCK.** 1.076 : 1 WCAG / 1.491 : 1 plain for a `raised` control on `panel`. Unsatisfiable |
+| the meter's each-fill vs `rule` track ≥ 4.5 : 1 (brief 03) | WCAG | **SOUND, kept, now labelled.** Measured 5.587 : 1 and 5.500 : 1 — 24% of headroom. The ladder's problem does not reach it, because this is a bright accent (`L` 0.382 / 0.375) against a dark track (`L` 0.027), not one dark ladder step against another |
+| the meter's `\|ΔL\| < 0.02` between the two fills (brief 03) | difference, not contrast | **SOUND, untouched.** Measured 0.0067. It is a *sameness* claim — neither meter may read as fuller than the other at equal fraction — and the architect explicitly excluded it from A6 |
+| the chip-state fill ladder (`crawl_action_row_test.dart:442-471`, existing) | strict ordering | **SOUND.** `lessThan` comparisons, no ratio, no threshold to negotiate |
+| the newest-vs-older log sentence (`log_drawer_test.dart:256-260`, existing) | strict ordering | **SOUND.** `greaterThan`, no ratio |
+| a disabled control reads dimmer than an enabled one (brief 04) | strict ordering | **SOUND.** No ratio; it is the assertion that catches the stock-control label rule being broken |
+| R5's descriptive "`armedFill` against `raised` is 1.6 : 1" | unlabelled, and wrong | **CORRECTED** to 1.163 : 1 WCAG / 1.763 : 1 plain. It was descriptive prose in a residual, never an assertion, but after A6 every ratio in this plan carries its reading |
+
+**The standing rule A6 leaves behind:** every luminance claim against this
+ladder must be a strict ordering or an accent-against-ladder contrast, and must
+state which reading it uses. A fill-versus-surface ratio between two adjacent
+ladder values is not provable and must not be reintroduced in U15 through U21.
+
+### Suite size after Task 01 — parameterisation, not coverage
+
+The `packages/app` suite reports **1053 tests against 907 before Task 01**. That
+delta of 146 is **parameterisation, not 146 new behaviours**: seventeen type
+roles × five invariants (`inherit`, `fontFamily`, `height`, `color`,
+`fontFeatures`) is 85, and the per-mark glyph-coverage sweep supplies the rest,
+one case per mark the application draws. Task 01 added **four** behavioural
+groups: face resolution, glyph coverage, role invariants, boot-screen palette.
+Recorded here so a later session reading the ledger does not mistake the count
+for coverage growth, and so nobody tries to "keep the number up" in a later
+unit.
 
 ---
 
@@ -1231,6 +1266,12 @@ another rendered value**, never a hex or a size literal.
    `ThemeData(brightness: Brightness.dark, useMaterial3: true).colorScheme.primary`
    — computed live from a bare `ThemeData` inside the test, so the assertion
    never hardcodes lavender and survives a framework palette change.
+   **Two assertions, not three: A6 struck the fill-versus-surface luminance
+   ratio here, where it originated.** Task 01's executor found it unsatisfiable
+   under the WCAG reading (1.153 : 1 for `raised` on `ground`), adopted a plain
+   `Lmax/Lmin` reading that cleared 1.5 for this one screen, and reported it —
+   which is what exposed the defect before Task 04 inherited it. See
+   §"Why there is no third, fill-versus-surface contrast assertion (A6)".
    **Expected Red: the fill equals the M3 default.**
 
 Must stay green: `test/widget/boot_failure_screen_test.dart` (string-only, so it
@@ -1273,10 +1314,17 @@ on a type-metric change, and each firing is a real defect, not a test problem.
 ### Task 03 — new `test/style/resource_meter_test.dart`, and `crawl_status_test.dart`
 
 1. **The meter's greyscale reading loses nothing.**
-   `|L(meterHealthFill) − L(meterManaFill)| < 0.02`, and each fill's contrast
-   against `rule` is ≥ 4.5 : 1. That is the accessibility contract stated as
-   arithmetic: the two meters are indistinguishable from each other in
-   greyscale, and both are clearly distinguishable from their track.
+   `|L(meterHealthFill) − L(meterManaFill)| < 0.02`, and each fill's **WCAG**
+   contrast `(L+0.05)/(l+0.05)` against `rule` is ≥ 4.5 : 1 — measured 5.587 : 1
+   and 5.500 : 1, so the threshold has real headroom rather than sitting on the
+   edge. That is the accessibility contract stated as arithmetic: the two
+   meters are indistinguishable from each other in greyscale, and both are
+   clearly distinguishable from their track.
+   **This threshold survives A6 and the ladder's problem does not reach it**,
+   because a meter fill is a bright accent (`L` 0.382 and 0.375) against a dark
+   track (`L` 0.027), not one dark ladder step against another. A6 struck a
+   *contrast* claim between two adjacent ladder values; this is a contrast
+   claim between an accent and the ladder, and it clears by 24%.
    **Expected Red: the constants do not exist.**
 2. **Hue is reinforcement.** For a meter at a given value, the rendered text
    contains the label word, the value and the ceiling, and the rendered
@@ -1301,7 +1349,8 @@ the 8/6/6 flexes are unchanged.
 
 **This is AC4's test, and it is the unit's most important new one.**
 
-For each of F9's ten control families, in a real pumped screen:
+For each of F9's ten control families, in a real pumped screen, **two
+assertions — and deliberately only two**:
 
 1. the rendered fill (or foreground, for a text control) equals the token the
    theme specifies — read from the `Material` the control builds, or from the
@@ -1312,9 +1361,43 @@ For each of F9's ten control families, in a real pumped screen:
    `surface` for the dialog, `primary` for the input's focused border and
    cursor. The reference `ThemeData` is built inside the test, so no lavender
    hex is ever written down and a framework palette change cannot make the test
-   lie;
-3. the rendered fill's luminance differs from the surface behind it by a
-   ratio ≥ 1.5 : 1, so the control is still a control in greyscale.
+   lie.
+
+#### Why there is no third, fill-versus-surface contrast assertion (A6)
+
+An earlier draft of this plan asked each family to assert that its rendered
+fill's luminance differed from its surface by a ratio ≥ 1.5 : 1. **That
+assertion was struck by architect ruling on 2026-09-18, after Task 01 found it
+unsatisfiable.** The arithmetic, verified independently three times — by the
+Task 01 executor, by the architect, and by this planner:
+
+| pair | WCAG `(L+0.05)/(l+0.05)` | plain `Lmax/Lmin` |
+|---|---:|---:|
+| `raised` `#1B1F27` vs `ground` `#0E1014` | 1.153 : 1 | 2.643 : 1 |
+| `raised` `#1B1F27` vs `panel` `#15181F` | 1.076 : 1 | **1.491 : 1** |
+| `recessed` `#11141A` vs `panel` `#15181F` | 1.038 : 1 | 1.313 : 1 |
+| `armedFill` `#262B35` vs `raised` `#1B1F27` | 1.163 : 1 | 1.763 : 1 |
+
+Under the WCAG reading the whole ladder caps near 1.15 : 1 whatever the fill
+is, because the `+0.05` flare dominates at these luminances. Under the plain
+reading the boot screen clears 1.5 (`raised` on `ground`, 2.643) but **every
+control seated on `panel` does not** — 1.491 for `raised`, 1.313 for
+`recessed`. Several of the ten families sit on `panel`, so Task 04 would have
+hit it, and the obvious executor response is to lower the threshold until it
+passes. That turns the assertion into decoration and teaches U15 through U21
+that thresholds are negotiable.
+
+**It is also wrong about the design.** This value ladder is deliberately
+low-contrast. A control's boundary comes from its 1 dp `rule` border — the
+ladder's one genuinely separated step, 1.308 : 1 WCAG and 2.997 : 1 plain
+against `panel` — not from fill-against-surface contrast. Assertions 1 and 2
+carry all of AC4's content: they are host-independent, cannot be satisfied by
+accident, and cannot be satisfied by tuning a number. A third that can only be
+satisfied by lowering itself adds nothing.
+
+**Do not reintroduce a fill-versus-surface contrast threshold against this
+ladder in any later unit.** If a control's boundary ever needs proving, prove
+the border, not the fill.
 
 The four named cases are covered explicitly and by name: character navigation
 (`character-route-gear|spells|skills|pack`), the pack filter chips
@@ -1325,11 +1408,12 @@ The four named cases are covered explicitly and by name: character navigation
 
 **Expected Red: assertion 2 fails for all ten, because every one of them renders
 the M3 default today.** Assertion 1 fails because the tokens are not applied.
+Those two are the whole of it — there is no third to fail.
 
 Added: the selected `ChoiceChip` still renders its checkmark — the non-hue cue
 that carries selection, because `selectedColor: armedFill` against
-`backgroundColor: raised` is only a 1.6 : 1 value step and the filter chip's own
-form belongs to U15 (gap 8.1).
+`backgroundColor: raised` is only a 1.163 : 1 WCAG (1.763 : 1 plain) value step
+and the filter chip's own form belongs to U15 (gap 8.1).
 
 Must stay green, and these are why the theme-not-replace decision matters:
 `character_screen_test.dart:218` (`widget<FilledButton>`),
@@ -1591,7 +1675,7 @@ criterion is left to be noticed at the end.
 | 5 — `MaterialApp.theme` restyles no stock control; each screen root opts in | Tasks 01, 02, 04, 06 | the six opt-in sites, enumerated and diffable; `main.dart`'s two `MaterialApp.theme` arguments provably still bare; the Gate B diff audit | B |
 | 6 — one meter serves crawl, character and town; hue is reinforcement, proved by a greyscale render | Tasks 03 and 05 | `resource_meter_test.dart` groups 1–4; the three consumers' key-addressed assertions in `crawl_status_test.dart`, `character_screen_test.dart`, `town_shell_test.dart` | B, and capsules B, H, I |
 | 7 — **dp budget re-measured at three densities; worst legal combat under 600 dp**; figures in the ledger; wrap change stated | Task 02, re-confirmed at Gate A | `crawl_action_row_test.dart`'s three re-derived caps with measured figures; the Ahem-era/Spectral-era pair per density; the device figures from capsules H, I, J | A, C |
-| 8 — every screen reads in greyscale, including the new meter hues | every task | `resource_meter_test.dart` group 1 as arithmetic; `material_palette_test.dart`'s ≥ 1.5 : 1 surface separation; `crawl_action_row_test.dart:442-471`'s chip-state luminance ladder; `log_drawer_test.dart:256-260`'s relative contrast | C, capsules A–M in greyscale |
+| 8 — every screen reads in greyscale, including the new meter hues | every task | `resource_meter_test.dart` group 1 as arithmetic (`\|ΔL\| < 0.02` between the fills; each fill ≥ 4.5 : 1 WCAG against its track); `crawl_action_row_test.dart:442-471`'s chip-state luminance ladder, which is a strict ordering and carries no ratio; `log_drawer_test.dart:256-260`'s relative contrast. **No fill-versus-surface ratio anywhere — A6 struck it as unsatisfiable against this ladder.** The greyscale *reading* is a device judgement, not a suite one | C, capsules A–M in greyscale |
 | 9 — broken tests rewritten to behaviour, not re-pinned; the unit lists which and what each now defends | Tasks 02, 05, 06 | three rewrite sites only: `crawl_action_row_test.dart`'s three caps (numbers, not behaviour), `town_shell_test.dart:179-196` and `character_screen_test.dart:83-140` (padded strings → the facts they defended), plus at most three padded rows in `world_screen_test.dart`. Each task receipt states before, after and what it now defends; the list is assembled at Gate B | B |
 | 10 — `dart format`, `flutter analyze`, full `flutter test` pass from `packages/app` | every task, integrated at Gate B | the three package gates per task, rerun on the integrated tree | B |
 | 11 — device evidence in colour and greyscale, with the three inherited duties | Gate C | the thirteen capsules A–M; capsule J carries U13.1's hardware confirmation, G and F carry the world map's and the roster's first baselines, and both save slots are hashed before install and restored from the backups | C |
@@ -1649,7 +1733,12 @@ Commit wording is discretionary; task boundaries are not.
   device capsule. AC4 becomes a real failing-then-passing test that computes the
   M3 default live rather than pinning lavender, and covers all ten control
   families including the four named cases. AC6's greyscale claim becomes
-  arithmetic — `|ΔL| < 0.02` between the two fills, ≥ 4.5 : 1 against the track.
+  arithmetic — `|ΔL| < 0.02` between the two fills, ≥ 4.5 : 1 WCAG against the
+  track, both with headroom. A6 then struck AC4's fill-versus-surface ratio as
+  unsatisfiable against this ladder and recorded the arithmetic so no later
+  unit reintroduces it; every surviving luminance claim in the plan is either a
+  strict ordering or an accent-against-ladder contrast, and each is now labelled
+  with its reading.
   AC7's two surfaces are measured by the same method and their agreement is
   itself the evidence that F4 closed. The four test rewrites are named with the
   behaviour each must assert, and the one whose *reason* would have changed
@@ -1714,8 +1803,10 @@ Settled only by the `Medium_Phone` pass:
   the unit where a test's stated purpose changes, and it is now closed by
   instruction rather than left to a reviewer.
 - **R5 — the selected filter chip's value step is weak.** `armedFill` against
-  `raised` is 1.6 : 1, and selection is carried by the checkmark. That is the
-  same cue as today, and the filter chip's own form is U15's gap 8.1. Capsule C.
+  `raised` is only 1.163 : 1 WCAG (1.763 : 1 plain), and selection is carried by
+  the checkmark. That is the same cue as today, and the filter chip's own form
+  is U15's gap 8.1. **Not a defect to fix with a threshold** — see A6.
+  Capsule C.
 - **R6 — CLOSED by architect amendment A3.** `inn_screen.dart:45-46` was
   outside the contract's Boundaries; the architect widened the boundary by
   those two lines on 2026-09-18, so all eleven padded-label rows convert in
@@ -1745,12 +1836,19 @@ Settled only by the `Medium_Phone` pass:
 ## Authorization
 
 The contract is approved and **the architect accepted this plan on 2026-09-18
-with amendments A1–A5**, all of which are folded in above. Architect acceptance
-of a plan is not implementation authorization: **this plan does not authorize
-production implementation until the user separately approves it.**
+with amendments A1–A5**; **A6 was ruled during Task 01 execution** and is
+folded in above. Architect acceptance of a plan is not implementation
+authorization, and the user's plan approval — obtained before Task 01 — governs
+the envelope A1–A6 keep materially unchanged: no acceptance criterion moved, no
+scope widened beyond A3's two authorised lines, and A6 removed an assertion
+rather than adding work.
 
-Four items A1–A3 settled need no further ruling and are recorded as locked:
-one `residuumTheme` at six roots; no mark changes in either package; the
-`inn_screen.dart:45-46` boundary widening; and the base revision `5ac1a49`.
-A4's Task 08 is specified above and briefed at
-`plan-tasks/08-rename-leaf.md`.
+A1–A3 and A5 are settled and need no further ruling: one `residuumTheme` at six
+roots; no mark changes in either package; the `inn_screen.dart:45-46` boundary
+widening; and the base revision `5ac1a49`. A4's Task 08 is specified above and
+briefed at `plan-tasks/08-rename-leaf.md`. A6 is specified at
+§"Why there is no third, fill-versus-surface contrast assertion (A6)" and
+carries a standing rule for every later unit.
+
+**Execution state, 2026-09-18: Task 01 accepted.** Tasks 02–08 are unstarted
+and their briefs are current against this amended plan.

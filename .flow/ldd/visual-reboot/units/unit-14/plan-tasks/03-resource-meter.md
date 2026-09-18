@@ -203,10 +203,26 @@ contrast(meterHealthFill, rule) >= 4.5
 contrast(meterManaFill,   rule) >= 4.5
 ```
 
-with `contrast(a, b) = (max(La, Lb) + 0.05) / (min(La, Lb) + 0.05)`. This is
-the accessibility contract stated as numbers a later unit cannot accidentally
-violate: the two fills are indistinguishable from each other in greyscale, and
-both are clearly distinguishable from their own track.
+with `contrast(a, b) = (max(La, Lb) + 0.05) / (min(La, Lb) + 0.05)` — the
+**WCAG** reading, named explicitly because this plan now carries exactly one
+surviving contrast threshold and it must not be confused with the one
+architect amendment A6 struck. This is the accessibility contract stated as
+numbers a later unit cannot accidentally violate: the two fills are
+indistinguishable from each other in greyscale, and both are clearly
+distinguishable from their own track.
+
+**Both thresholds have real headroom — verify, do not tune.** Measured:
+`|ΔL| = 0.0067` against a 0.02 ceiling, and 5.587 : 1 and 5.500 : 1 against a
+4.5 : 1 floor. If either misses, a hue value was mistyped; **fix the value, not
+the threshold.**
+
+**Why A6 does not reach this group.** A6 struck AC4's fill-versus-surface ratio
+because the value ladder's adjacent steps cannot clear any useful threshold
+(`raised` on `panel` is 1.076 : 1 WCAG). This is a different claim: a bright
+accent (`L` 0.382 and 0.375) against a dark track (`L` 0.027), which clears
+4.5 : 1 by 24%. And the `|ΔL|` assertion is a *sameness* claim, not a contrast
+claim at all — neither meter may read as fuller than the other at equal
+fraction. Both stand.
 
 **Expected Red: the constants do not exist** — the test does not compile.
 
