@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
 
 import '../art/art_assets.dart';
+import '../style/tokens.dart';
 import '../town/town_bloc.dart';
 import '../world/world_bloc.dart';
 import 'battle_view.dart';
@@ -54,7 +55,7 @@ class GameScreen extends StatelessWidget {
       listener: (context, state) =>
           leaveEncounter(context, state, EncounterEnding.fled),
       child: Theme(
-        data: crawlTheme,
+        data: residuumTheme,
         child: Scaffold(
           body: SafeArea(
             child: BlocBuilder<GameBloc, GameViewState>(

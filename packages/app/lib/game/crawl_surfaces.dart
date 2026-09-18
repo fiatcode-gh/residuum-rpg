@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../style/tokens.dart';
 import 'crawl_style.dart';
 
 /// One tappable crawl surface for every affordance that is not an action
@@ -102,7 +103,7 @@ class CrawlRegionLabel extends StatelessWidget {
 
 /// Opens a crawl-themed modal bottom sheet: the crawl's own [CrawlPanel]
 /// surface, scrollable, over [showModalBottomSheet]'s own top-rounded shape
-/// and scrim, both already set on [crawlTheme].
+/// and scrim, both already set on [residuumTheme].
 ///
 /// The explicit [Theme] wrap is deliberate: it removes any dependence on
 /// Flutter's `InheritedTheme` capture for root-navigator routes, so the
@@ -113,7 +114,7 @@ Future<T?> showCrawlSheet<T>(
 }) => showModalBottomSheet<T>(
   context: context,
   builder: (sheetContext) => Theme(
-    data: crawlTheme,
+    data: residuumTheme,
     child: SafeArea(
       child: CrawlPanel(
         padding: const EdgeInsets.all(crawlGutter + crawlRhythm),
@@ -141,9 +142,8 @@ Future<bool> showCrawlConfirm(
 }) async {
   final confirmed = await showDialog<bool>(
     context: context,
-    barrierColor: crawlScrim,
     builder: (dialogContext) => Theme(
-      data: crawlTheme,
+      data: residuumTheme,
       child: Dialog(
         child: Padding(
           padding: const EdgeInsets.all(crawlGutter + crawlRhythm),

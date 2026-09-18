@@ -226,7 +226,7 @@ void showEnemyInfo(
   );
 }
 
-/// One line of the enemy sheet, monospace and dim.
+/// One line of the enemy sheet, in the text face and dim.
 class _EnemyInfoLine extends StatelessWidget {
   const _EnemyInfoLine(this.text);
 
