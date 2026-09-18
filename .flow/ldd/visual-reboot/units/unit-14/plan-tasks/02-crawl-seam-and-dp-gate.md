@@ -17,7 +17,7 @@ All commands run from `packages/app`.
 
 - Task 01's repository state is accepted: `lib/style/tokens.dart` exists and
   exports the two families, the ten ladder colours, the five rhythm values, the
-  seventeen roles and `residuumTheme`; `assets/fonts/` holds three font files
+  eighteen roles and `residuumTheme`; `assets/fonts/` holds three font files
   and two `OFL.txt`; `pubspec.yaml` declares both families;
   `test/flutter_test_config.dart` registers them; `main.dart` is migrated;
   `test/style/type_authority_test.dart` is green;
@@ -45,6 +45,9 @@ unchanged. This task does not touch the meter (Task 03), the town, the world, or
 ## Owned files
 
 - `packages/app/lib/game/crawl_style.dart`;
+- `packages/app/lib/style/tokens.dart` — **`textGlyphDim` only** (A7);
+- `packages/app/test/style/type_authority_test.dart` — the role list becomes
+  eighteen (A7);
 - `packages/app/lib/game/game_screen.dart`;
 - `packages/app/lib/game/crawl_surfaces.dart`;
 - `packages/app/lib/game/battle_view.dart` — the dartdoc at `:229` only;
@@ -112,7 +115,7 @@ this task does not move one of them.
 | `crawlLineOlder` (13/dim) | `textLineDim` |
 | `crawlGlyph` (18) | `textGlyph` |
 | `crawlTokenWord` (11/dim) | `textDetail` |
-| `crawlChevron` (18/dim) | `textGlyph.copyWith(color: dim)` |
+| `crawlChevron` (18/dim) | `textGlyphDim` |
 | `crawlChipLabel` (12/w500) | `textLabel` |
 | `crawlChipLabelDisabled` (12/w400/dim) | `textLabelDim` |
 | `crawlChipLabelArmed` (12/w600) | `textLabelStrong` |
@@ -120,9 +123,41 @@ this task does not move one of them.
 | `crawlDetail` (11/dim) | `textDetail` |
 | `crawlHeadline` (28) | `textHeadline` |
 
-`crawlChevron` is the only one needing `copyWith`, and it varies **colour
-only** — the plan's standing rule. It must be a `final`, not a `const`, because
-`copyWith` is not const-evaluable; that is fine and allocates once.
+**Every one of the sixteen is a `const` alias.** `crawlChevron` included:
+`const TextStyle crawlChevron = textGlyphDim;`
+
+### Correction to this plan — architect amendment A7, ruled during this task
+
+An earlier version of this brief made `crawlChevron` a **`final`** equal to
+`textGlyph.copyWith(color: dim)`, on the reasoning that it varied colour only
+and allocated once. **That was unsound and the app package does not compile
+with it.** `copyWith` is not const-evaluable, and every consumer sits in a
+`const` context:
+
+| site | context |
+|---|---|
+| `battle_view.dart:55` | inside the `const Opacity(opacity: 0, …)` at `:53` |
+| `battle_view.dart:70` | `const Text('›', style: crawlChevron)` |
+| `battle_view.dart:84` | `const Text('›', style: crawlChevron)` |
+| **`log_drawer.dart:80`** | `const Text('›', style: crawlChevron)` — **the earlier brief never named this site and it sits in this brief's own do-not-edit list** |
+
+Four sites, not three. The architect refused the executor's proposal to drop
+`const` at all four: that would cost canonicalisation on four widgets in the
+timeline row, which rebuilds on every state change, and would require an edit
+inside a fenced file — all to preserve an expression style nothing else in the
+design uses.
+
+**The ruling:** `tokens.dart` gains `textGlyphDim` as an eighteenth role — a
+`const` literal identical to `textGlyph` with `color: dim`, immediately after
+it, exactly as `textLine`/`textLineDim` and `textLabel`/`textLabelDim` already
+pair. `crawlChevron` becomes a `const` alias of it. `battle_view.dart` and
+`log_drawer.dart` keep every `const` they have, and `log_drawer.dart` stays
+un-edited.
+
+**Task 01 is already accepted, so adding `textGlyphDim` to `tokens.dart` is
+this task's one permitted edit outside its own owned files.** Add the role,
+nothing else; `type_authority_test.dart`'s role list becomes eighteen and its
+invariant sweep picks the new role up. Record both edits in the receipt.
 
 `crawlLineOlder` and `crawlBodyDim` both alias `textLineDim`, and `crawlDetail`
 and `crawlTokenWord` both alias `textDetail`. That is correct: the old scale had
@@ -160,7 +195,9 @@ U15's chip vocabulary and they already read from the aliased names.
 The dartdoc reads "One line of the enemy sheet, monospace and dim." Reword so
 the word does not survive — "One line of the enemy sheet, in the text face and
 dim" — and change nothing else in the file. The three `Text('›', style:
-crawlChevron)` sites at `:55`, `:70`, `:84` are carried by the alias.
+crawlChevron)` sites at `:55`, `:70`, `:84` are carried by the `const` alias
+and keep their `const`, as does `log_drawer.dart:80` — which is why A7's
+`textGlyphDim` matters and why `log_drawer.dart` still needs no edit.
 
 ### The three chrome caps
 
@@ -186,8 +223,8 @@ Yours without asking:
 
 - the declaration order inside `crawl_style.dart`, and whether the alias block
   keeps the file's current grouping or is regrouped;
-- whether `crawlChevron` is a `final` beside the `const`s or lives at the end
-  of the type block;
+- the wording of `textGlyphDim`'s own declaration formatting, so long as it is
+  a `const` literal identical to `textGlyph` but for its colour;
 - the exact wording of the reworded `inherit: false` and `crawl_surfaces.dart`
   dartdocs, so long as each keeps its reason;
 - the `reason:` strings on the three re-derived caps, so long as each
@@ -195,8 +232,11 @@ Yours without asking:
 - which of the tuning constants in `../PLAN.md`'s envelope table to reach for
   first if a `takeException` fires, and by how much inside the envelope.
 
-Not yours: which name aliases which role, the deletion of `crawlTheme`, any
-chip metric constant, the fit algorithm, the three scenes, `_chromeHeight`,
+Not yours: which name aliases which role, **`crawlChevron` being a `const`
+alias of `textGlyphDim` rather than a `copyWith` or a `final`** (A7 — the
+package does not compile otherwise), dropping `const` at any consumer site,
+editing `log_drawer.dart`, the deletion of `crawlTheme`, any chip metric
+constant, the fit algorithm, the three scenes, `_chromeHeight`,
 `_expectLegalRow` or `_expectRunCapacity`.
 
 ## Red proof

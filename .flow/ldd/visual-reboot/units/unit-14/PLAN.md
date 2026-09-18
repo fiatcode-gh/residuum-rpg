@@ -303,7 +303,7 @@ everything inside the crawl's existing `crawlTheme`.
 
 ---
 
-## Architect amendments A1–A6
+## Architect amendments A1–A7, and one open A8 candidate
 
 A1–A5 were ruled on 2026-09-18 when the plan was accepted. **A6 was ruled
 during Task 01**, after that task's evidence exposed a defect in this plan's
@@ -318,6 +318,7 @@ index.
 | A4 | **The alias strategy is transitional, not the end state.** Aliases stay through Tasks 01–07 because they are what makes seven compiling steps possible, but a maintainer six months out must not have to work out whether `ink`, `crawlInk` and the shared token are one value. **New Task 08**: a mechanical rename leaf that deletes every alias which only re-names a shared token, keeps every declaration that names a seam concept the shared module does not have, and repoints all consumers through the language server | new §"Task 08", the execution graph, the ownership matrix, the slice table, AC3's closure, R4 |
 | A5 | **Base revision is `5ac1a49`** throughout; the contract already records it | the header |
 | A6 | **AC4's fill-versus-surface luminance-ratio assertion is struck, not retuned.** This plan asked each control family to prove its rendered fill differed from its surface by ≥ 1.5 : 1. It is unsatisfiable against this deliberately low-contrast ladder under either reading, and the obvious executor response — lowering the threshold until it passes — would turn the assertion into decoration. AC4's spec is now the two assertions that carry its content. A control's boundary comes from its 1 dp `rule` border, not from fill-against-surface contrast | §"Why there is no third…" with the arithmetic, the Task 01 and Task 04 proof specs, the AC4 and AC8 coverage rows, the TTC gate, R5, briefs 01 and 04 |
+| A7 | **`crawlChevron` becomes a `const` alias of a new eighteenth role, `textGlyphDim`.** This plan made it `final crawlChevron = textGlyph.copyWith(color: dim)`. `copyWith` is not const-evaluable, and **all four of its consumers sit in `const` contexts** — `battle_view.dart:55` (inside a `const Opacity`), `:70`, `:84`, and `log_drawer.dart:80`, which this plan's Task 02 brief never named and which sits in that brief's do-not-edit list. **The app package does not compile with a `final` there**, so this was not a style question. `tokens.dart` already pairs every dim sibling as a separate `const` literal; the `copyWith` was the odd one out. Ruled during Task 02's execution | the type-role table, the `copyWith` rule, Task 01's spec and brief, briefs 02 and 08, the AC coverage rows, every role count |
 
 ### Two planner objections, both ordering consequences rather than disagreements
 
@@ -353,12 +354,55 @@ ladder values is not provable and must not be reintroduced in U15 through U21.
 The `packages/app` suite reports **1053 tests against 907 before Task 01**. That
 delta of 146 is **parameterisation, not 146 new behaviours**: seventeen type
 roles × five invariants (`inherit`, `fontFamily`, `height`, `color`,
-`fontFeatures`) is 85, and the per-mark glyph-coverage sweep supplies the rest,
-one case per mark the application draws. Task 01 added **four** behavioural
-groups: face resolution, glyph coverage, role invariants, boot-screen palette.
-Recorded here so a later session reading the ledger does not mistake the count
-for coverage growth, and so nobody tries to "keep the number up" in a later
-unit.
+`fontFeatures`) is 85 — eighteen roles after A7, so 90 — and the per-mark
+glyph-coverage sweep supplies the rest, one case per mark the application
+draws. Task 01 added **four** behavioural groups: face resolution, glyph
+coverage, role invariants, boot-screen palette. Recorded here so a later
+session reading the ledger does not mistake the count for coverage growth, and
+so nobody tries to "keep the number up" in a later unit. A7 raises the count by
+five more for the same reason.
+
+### A8 candidate — the same defect, live in Task 06
+
+**Unresolved. Flagged by the planner during the A7 amendment, not yet ruled.**
+An executor must not walk into this; brief 06 carries a blocking note.
+
+A7's root cause is not `crawlChevron`. It is this plan's "colour may be varied
+at a call site through `copyWith`" rule, which is unsound wherever the consumer
+is `const`. **The rule has exactly one surviving consumer, and it is in
+Task 06.** Brief 06 mandates:
+
+| site | mandated | const context | breaks? |
+|---|---|---|---|
+| `world_route_diagram.dart:108-112` `'ON THIS ROAD'` | `textMicro.copyWith(color: ink)` | **`const Text(...)`** | **yes — will not compile** |
+| `world_route_diagram.dart:96-106` `'n DAY(S)'` | `textMicro.copyWith(color: ink)` | `Text` non-const, `style: const TextStyle` | compiles, but allocates per build in a diagram that rebuilds on every world state change |
+| `world_route_diagram.dart:204-213` node name | `textDetail.copyWith(color: ink)` | `Text` non-const, `style: const TextStyle` | same |
+
+Recommended fix, which is A7's own logic applied consistently and which would
+retire the unsound rule outright rather than leaving a third instance to be
+found at Gate B:
+
+1. `tokens.dart` gains two more `const` siblings so the ink/dim pairing is
+   uniform across every role that needs both colours. The cheapest shape that
+   matches the existing `textLine`/`textLineDim` convention is to make **ink
+   the primary and `Dim` the sibling** for these two rungs:
+   `textDetail` 11 ink + `textDetailDim` 11 dim, and `textMicro` 9 ink +
+   `textMicroDim` 9 dim — twenty roles total;
+2. the crawl's `crawlDetail` and `crawlTokenWord` then alias `textDetailDim`;
+   the diagram's three dim labels alias `textMicroDim`; its two ink labels and
+   the node name take the primaries. **Zero `copyWith` anywhere in the
+   application, and every token consumer stays `const`.**
+3. **strike the colour-only-`copyWith` rule from the plan entirely.** After
+   step 2 it has no consumers, and leaving it written down is what produced two
+   defects.
+
+Cost if ruled: two `const` declarations in `tokens.dart` (Task 01 is already
+accepted, so this lands as a small amendment to Task 06 or as a two-line
+addition in whichever task reaches it first), three alias lines, and brief 06's
+mapping table. No behaviour changes and no acceptance criterion moves.
+
+**Until it is ruled, brief 06 must not be executed.** Tasks 02–05 and 07–08 are
+unaffected: none of them varies a colour at a call site.
 
 ---
 
@@ -669,7 +713,7 @@ name and value; the alias strategy resolves that by making `town_style.dart`'s
 characters, ≈ 14 × 0.47 em × 13 px ≈ 86 dp, plus a 10 dp gap. The town's
 existing `markColumn = 28` stays town-owned and unchanged.
 
-**The type roles.** Task 01. Seventeen roles replace the sixty-four inline and
+**The type roles.** Task 01. Eighteen roles replace the sixty-four inline and
 seam-declared styles.
 
 Invariants every role satisfies, and a property test asserts (Task 01):
@@ -721,14 +765,26 @@ small grey letterspaced caps.
 | `textLabelStrong` | 13 | 600 | ink | 1.20 | `crawl_style.dart:115-121` `crawlChipLabelArmed` (12/w600) |
 | `textCaption` | 11 | 600 | ink | 1.20 | `crawl_style.dart:122-128` `crawlCaption` (11/w600) |
 | `textDetail` | 11 | 400 | dim | 1.30 | `crawl_style.dart:129-133` `crawlDetail` (11); `crawl_style.dart:85-89` `crawlTokenWord` (11); `world_route_diagram.dart:206-210` node name (11, ink) |
-| `textGlyph` | 18 | 400 | ink | 1.00 | `crawl_style.dart:80-84` `crawlGlyph` (18); `crawl_style.dart:90-94` `crawlChevron` (18, dim) |
+| `textGlyph` | 18 | 400 | ink | 1.00 | `crawl_style.dart:80-84` `crawlGlyph` (18) |
+| `textGlyphDim` | 18 | 400 | dim | 1.00 | `crawl_style.dart:90-94` `crawlChevron` (18, dim) — the timeline separator at `battle_view.dart:55,70,84` and the log peek's expand mark at `log_drawer.dart:80` |
 | `textMicro` | 9 | 400 | dim | 1.15 | `world_route_diagram.dart:99-103,109-111,115-119,198-202,216-220` (9 and 10 px, ink and dim) |
 
-**Colour is the only property a consumer may vary**, through
-`copyWith(color: …)`. Size, weight, family, height, tracking and features are
-never varied at a call site. That rule is what keeps seventeen roles from
-becoming forty, and it is why `crawlChevron` is `textGlyph.copyWith(color: dim)`
-and the world diagram's ink labels are `textMicro.copyWith(color: ink)`.
+`textGlyphDim` is the **eighteenth** role, added by architect amendment A7
+during Task 02's execution. It is a `const` literal identical to `textGlyph`
+with `color: dim`, placed immediately after it, exactly as
+`textLine`/`textLineDim` and `textLabel`/`textLabelDim` already pair. The
+reason is a compiler fact, not a preference — see A7 in the amendment index.
+
+**Colour may be varied at a call site only through a `const` sibling role, and
+`copyWith` is prohibited in a token consumer.** Size, weight, family, height,
+tracking and features are never varied at all. An earlier version of this rule
+permitted `copyWith(color: …)` at a call site; **A7 struck that**, because
+`copyWith` is not const-evaluable and every consumer of a dim variant in this
+application sits in a `const` context. Where a role needs a second colour, the
+token module gains a `const` sibling and the consumer aliases it.
+
+**One instance of the struck rule is still written into this plan and is an
+open defect** — see §"A8 candidate — the same defect, live in Task 06" below.
 
 **The size ladder becomes 9, 11, 13, 14, 15, 18, 20, 22, 26** — nine rungs
 replacing the current eleven (9, 10, 11, 12, 13, 14, 15, 18, 20, 22, 28). 10 and
@@ -1600,7 +1656,7 @@ Then one independent acceptance review:
   behaviour, not padding or literals; no padded or tautological test was added;
   the expected Red was observed and recorded per task.
 - **CRF** — one token module, one shared widgets file, one theme, six opt-in
-  sites; the two seams are aliases with no literal left; seventeen roles with
+  sites; the two seams are aliases with no literal left; eighteen roles with
   named consumers and no declared-but-unused member at any handoff; the colour-
   only-`copyWith` rule held everywhere.
 - **SEC — SKIP.** Presentation-only, offline, no new input, file, network or
@@ -1749,7 +1805,7 @@ Commit wording is discretionary; task boundaries are not.
 - **CRF — PASS.** Eight sequential slices, each with its own Red→Green cluster
   (Task 08's is behaviour-neutral by design) and a compiling handoff whose
   focused tests pass. One token module, one shared widgets file, one theme, six
-  explicit opt-in sites, seventeen roles each with named consumers. The alias
+  explicit opt-in sites, eighteen roles each with named consumers. The alias
   strategy is what keeps nine production files at zero edits and twenty-six
   existing widget-type finders valid through Tasks 01–07; **architect amendment
   A4 then retires it in Task 08**, so the end state is one name per value plus

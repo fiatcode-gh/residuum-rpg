@@ -131,7 +131,7 @@ Task 03's and a declared-but-unused member is not a valid handoff.
 **The spacing rhythm and the hairline** — `gutter` 12, `rhythm` 4, `radius` 6,
 `hairline` 1, `tapTarget` 44. **Do not declare `labelColumn`** — Task 05's.
 
-**The seventeen type roles** — exactly the two tables in `../PLAN.md`
+**The eighteen type roles** — exactly the two tables in `../PLAN.md`
 ("Display roles" and "Text roles"), with every size, tracking, weight, colour
 and height as given. Every role, without exception, carries:
 
@@ -308,7 +308,7 @@ it is green on first run. Its value is the day someone changes a font file.
 
 ### 3. Every exported role satisfies the invariants
 
-Over a list of all seventeen roles: `inherit` is `false`, `fontFamily` is
+Over a list of all eighteen roles: `inherit` is `false`, `fontFamily` is
 `textFace` or `displayFace`, `height` is non-null, `color` is non-null, and
 `fontFeatures` contains `tabularFigures` for text roles and both
 `liningFigures` and `tabularFigures` for display roles.
@@ -406,7 +406,7 @@ suite failure lands in a screen no later task owns, stop and report.
 - `pubspec.yaml` declares both families with exactly the three assets and the
   weights 400 / 600 / 500; `pubspec.lock` unchanged;
 - `lib/style/tokens.dart` exports the two families, the ten ladder colours, the
-  five rhythm values, the seventeen roles and `residuumTheme`, and declares
+  five rhythm values, the eighteen roles and `residuumTheme`, and declares
   **nothing** that this task does not consume — no `meterHealthFill`, no
   `meterManaFill`, no `labelColumn`;
 - `test/flutter_test_config.dart` and `test/support/fonts.dart` register both

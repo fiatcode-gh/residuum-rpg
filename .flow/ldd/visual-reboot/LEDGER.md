@@ -3440,3 +3440,69 @@ cannot make the test lie.
 **No implementation had begun at approval time.** Plan approval authorizes
 local execution inside this plan's envelope only; publication remains its own
 gate.
+
+### U14 Task 01 accepted — the faces, the token module, and A6
+
+- `b8d934b` — `feat: give the application two authored typefaces and one token
+  module`. The three font files md5-verified against the table in the brief,
+  both `OFL.txt` committed beside them, `lib/style/tokens.dart` with two
+  families, ten ladder colours, five rhythm values, seventeen type roles and
+  `residuumTheme`, `test/flutter_test_config.dart` plus `test/support/fonts.dart`
+  for the test-host `FontLoader`, and `main.dart`'s boot failure screen as the
+  first consumer with `monoLike` deleted.
+- **Architect-run gate on the accepted tree:** `dart format` 125 files / 0
+  changed, `flutter analyze` no issues, full `flutter test` **1053 passing**.
+  The jump from Unit 12's 907 is **parameterisation, not coverage growth** —
+  seventeen roles times five invariants plus the per-mark cmap sweep, all in
+  Task 01's one new test file. Recorded so no later session reads 1053 as 146
+  new behaviours.
+- The token module was inspected at source: dartdoc only, no comments in
+  bodies, an explicit `height` on every role with the 1.522 em reason
+  documented at the declaration, and `error: ink` reasoned rather than left at
+  M3's stock red because this design may not carry a state by hue alone.
+
+**Two executor discretion calls, both accepted.**
+
+- The brief's width-based glyph-coverage proxy was **empirically wrong**:
+  several genuinely covered Spectral glyphs — the digits, `§ − < > × –` —
+  share Spectral's own `.notdef` advance of exactly 0.500 em, so "width equals
+  font size therefore absent" is undecidable. Replaced with a direct cmap
+  parser (format 4 and 12) reading the committed font bytes inside the test,
+  which is also how PLAN.md's F3 established the absent set originally. The
+  twelve absent marks were confirmed exactly, against both faces, with no
+  thirteenth.
+- The faces-resolve proof is a host-agnostic inequality: a `TextPainter` over
+  ten `i`s is strictly narrower than one over ten `M`s. Under Ahem they are
+  exactly equal, which is the captured Red — `Expected: a value less than
+  <130.0> / Actual: <130.0>`. That single assertion is what stops the suite
+  silently reverting to Ahem metrics in any later task.
+
+**A6, a plan defect ruled during execution rather than at acceptance.** The
+executor found AC4's third assertion — a control's rendered fill differing
+from its surface by 1.5:1 — unsatisfiable under WCAG and cleared it only by
+switching to a plain `Lmax/Lmin` reading. The architect recomputed
+independently and struck the assertion instead:
+
+- `raised` `#1B1F27` against `ground` `#0E1014`: **1.153:1** WCAG, 2.643:1 plain.
+- `raised` against `panel` `#15181F`: 1.076:1 WCAG, **1.491:1 plain** — below
+  the threshold on *both* readings, and several of Task 04's ten control
+  families sit on `panel`. The spec would have failed there, and the obvious
+  executor response is to lower the number until it passes.
+- The assertion also misreads the design: this ladder is deliberately
+  low-contrast and a control's boundary is its 1 dp `rule` border, which is
+  the one genuinely separated step at 1.308:1 WCAG / 2.997:1 plain against
+  panel. AC4 keeps the two assertions that cannot pass by accident — the fill
+  equals its named token, and it is not the corresponding colour of a
+  `ThemeData(brightness: dark, useMaterial3: true)` built live inside the test.
+- Every other luminance claim in the plan was audited. The meter's 5.5:1
+  against its rule track **stands** — it is a bright accent against a dark
+  track, not one dark ladder step against another, measured 5.587:1 and
+  5.500:1 with 24% headroom. The meter's `|ΔL| < 0.02` is a sameness claim,
+  not a contrast claim, and is sound. Four existing claims are strict
+  orderings and carry no threshold. R5's descriptive "1.6:1" was simply wrong
+  and is corrected to 1.163:1 WCAG / 1.763:1 plain.
+- **Standing rule now in the plan:** every luminance claim against this ladder
+  must be a strict ordering or an accent-against-ladder contrast, and must
+  state which reading it uses. A fill-versus-surface ratio between two
+  adjacent ladder values is not provable and must not be reintroduced in U15
+  through U21. Recorded as `a09efc2`.

@@ -24,7 +24,7 @@ All commands run from `packages/app`.
 ## Starting condition
 
 - Tasks 01–03 are accepted: `lib/style/tokens.dart` holds the ladder, the
-  rhythm, the seventeen roles, `residuumTheme` and the two meter hues;
+  rhythm, the eighteen roles, `residuumTheme` and the two meter hues;
   `lib/style/surfaces.dart` holds `ResourceMeter`; `crawl_style.dart` is
   aliases only and `crawlTheme` is gone;
 - `town_style.dart:9-12` still declares four `Color` literals and `:14-49,67-72`
