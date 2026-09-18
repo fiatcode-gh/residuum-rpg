@@ -44,6 +44,11 @@ restyle — each screen root opts in.
 map and the roster**, which have no baseline anywhere in this epic and get
 their first one here; the crawl's dp budget re-measured, because type metrics
 move chrome height.
+**Inherited duty** U14's capsule list must include the **ceiling-density
+crawl**. U13.1's AC7 was amended on 2026-09-18 to drop its own emulator pass,
+because that fix lands at the game's own render call and is proved headlessly
+there; its confirmation on real hardware is owed here instead. If U14's
+device pass shows the dock covered at the ceiling, U13.1 reopens.
 
 ## U15 — Row, control and chip grammar
 

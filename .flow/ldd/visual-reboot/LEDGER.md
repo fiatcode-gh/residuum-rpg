@@ -3159,3 +3159,129 @@ Unit 13's decisions, not implementation. Every unit still needs its own
 contract approval, and where it carries consequential HOW, its own plan
 approval. Nothing remote is authorized; push, pull request and merge remain
 separate gates — the lesson Unit 12 paid for.
+
+## Unit 13.1 — the map bleed, closed
+
+Contract: `units/unit-13.1/CONTRACT.md`, approved 2026-09-18. First in the
+recut roadmap, ahead of U14, because U18 rewrites this viewport's lighting and
+U21 re-measures this seam.
+
+### Root cause — Flame's default viewport does not honour its own size
+
+- **`MaxViewport.clip()` is an explicit no-op.**
+  `flame-1.38.2/lib/src/camera/viewports/max_viewport.dart:26` is `void
+  clip(Canvas canvas) {}`, and the class dartdoc says so outright: "This
+  viewport does not perform any clipping." `GameRenderBox.paint`
+  (`game_render_box.dart:146-151`) calls `game.render(canvas)` with no clip of
+  its own. The viewport's reported size positions the camera and is never
+  enforced as a paint boundary. Verified at source by the architect, not
+  taken from the worker's report.
+- `_DungeonScene`'s world always holds every tile in the floor's
+  `visible ∪ explored` set — `dungeon_material.dart:171`'s own documented
+  invariant — which is routinely taller than the box the crawl's `Column`
+  gives the map. Every such tile painted wherever the camera transformed it,
+  inside the box or not.
+- Nothing downstream caught it. `GameRenderBox` is `sizedByParent` with
+  `computeDryLayout` returning `constraints.biggest`, so it always reports the
+  correct box size no matter what it paints;
+  `RenderStack._hasVisualOverflow` is set only from a `Positioned` child's
+  geometry, and the map `Stack` at `game_screen.dart:99` has exactly one
+  non-positioned child, so the `Stack`'s default `Clip.hardEdge` never
+  installed a clip layer.
+
+### Two architect leads, one confirmed and one killed
+
+- Lead 1 (the `RenderStack` clip never trips) was **right about why nothing
+  intercepted the leak and wrong about the cause.**
+- Lead 2 (a stale canvas size, suspiciously near `BattleDock`'s height) is
+  **ruled out by direct measurement**: at the reproduction the `Expanded`
+  box, `game.canvasSize`, `camera.viewport.size` and `game.size` agree to
+  float32 precision. No size was ever stale. The failing layer is paint, not
+  layout.
+
+### The contract's trap did not apply, and the record should say why
+
+The contract forbade reaching for a `ClipRect` first, on the theory that a
+clip could hide overflow while the camera kept showing rows the box did not
+own. **That failure mode was impossible here:** the camera window already
+equalled the box exactly, so no candidate fix could cost the player a row.
+The trap was still the right instruction — it is what forced the diagnosis
+that proved the trap moot.
+
+### The fix — clip inside the scene, not around it
+
+The user chose a clipping viewport over a widget-level `ClipRect`, on the
+architect's recommendation. `_ClippedMaxViewport`
+(`dungeon_scene.dart:187-213`) overrides exactly three members — `clip`,
+`containsLocalPoint`, `onViewportResize` — mirroring `FixedSizeViewport`
+while inheriting `MaxViewport`'s canvas-size tracking untouched.
+`_DungeonScene` passes it a `CameraComponent` at `:222`. Thirty lines.
+
+Why not the `ClipRect`, which the diagnosing worker preferred as cheapest:
+
+- it leaves the game still painting outside its box and relies on an outer
+  clip that a later recomposition — U18 and U21 both touch this seam — can
+  silently drop;
+- it adds a Flutter compositing layer per frame where the viewport fix adds
+  one `canvas.clipRect` inside the existing pass;
+- **it would have invalidated the unit's own proof.** The regression test
+  calls `game.render(canvas)` directly, so a widget-tree clip would leave it
+  failing forever. The fix and the proof must sit at the same layer. The
+  worker also overstated the viewport option's cost as "reimplement
+  `onGameResize`"; subclassing inherits it.
+
+`containsLocalPoint` was tightened to the viewport rect because
+`viewport.dart:114-118` documents it as one contract with `clip`. It is a
+non-event for input: the widget box equals the viewport, so a point outside
+could never arrive.
+
+### Verification
+
+- **Proof**: `packages/app/test/widget/dungeon_scene_bleed_test.dart` builds
+  the density (dock mounted, action row wrapped past one run, floor taller
+  than any viewport this chrome leaves), renders the live game onto a
+  sentinel-filled canvas 200 dp larger on each side, and asserts the pixel
+  one dp beyond each edge stays sentinel.
+- **Red proved independently by the architect**, not accepted on report: a
+  throwaway `git worktree` at `9c2d66e` with the test copied in fails at the
+  `abovePixel` assertion, `dungeon_scene_bleed_test.dart:250`. The same test
+  passes on the fixed tree. The worktree was removed afterwards.
+- **Architect-run gate on the fixed tree**: `dart format` 121 files / 0
+  changed, `flutter analyze` no issues, full `flutter test` **907 passing** —
+  one more than Unit 12's 906, which is this unit's own test.
+- Hit-testing after the `containsLocalPoint` change: `dungeon_scene_test.dart`
+  13/13, including the tap/pan/long-press projection tests. Map-rect
+  assertions in `crawl_layout_test.dart`, `crawl_action_row_test.dart` and
+  `log_drawer_test.dart` 27/27.
+- **Row count unchanged**, as predicted: `mapRect` and `canvasSize` identical
+  before and after. The fix adds a paint-time clip and touches nothing that
+  feeds the row-count formula. The ledger's 7.93 rows of sight stands.
+- **A measurement trap worth carrying:** the worker's synthetic
+  worst-legal-battle scene wraps the same 11 chips into **4** runs where the
+  device's font fits **3**, giving 208.43 dp of map / 5.79 rows against the
+  device's 285.33 dp / 7.93. `flutter_test`'s font fallback measures chip text
+  differently from the device. Widget-test dp figures are not device dp
+  figures; never copy one into the ledger as the other.
+
+### AC7 amended — no emulator pass for this unit
+
+The user dropped AC7's dedicated device capsule. The fix lands at the game's
+own render call, which is exactly the layer the headless pixel proof
+observes, so an emulator pass with its save backup-and-restore ritual would
+buy one screenshot and nothing else. **Confirmation on real hardware is owed
+at U14's device gate**, whose capsule list now carries the ceiling-density
+crawl as an inherited duty (`units/unit-13/ROADMAP.md`, U14). If that pass
+shows the dock covered at the ceiling, U13.1 reopens.
+
+No separate acceptance-reviewer pass was spent: the change is thirty lines at
+one named seam, root-caused at source by the architect independently, proved
+red-then-green by the architect independently, and gated across the full
+suite. The residual risk it carries is the device confirmation above, which is
+scheduled rather than assumed.
+
+### Commit
+
+`e8bcf29` — `fix: clip the dungeon scene to its own viewport`, on
+`residuum-visual-reboot-13`. Not pushed. Production diff is
+`dungeon_scene.dart` +30/-1 plus the new test; nothing in `packages/core` or
+`packages/content` moved.

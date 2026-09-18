@@ -1,18 +1,19 @@
 # Resume Visual Reboot
 
-**Units 1–12 are merged to `main`, Unit 12.5's device gate is closed, and
-Unit 13 — the visual parity re-baseline — is complete and accepted. The recut
-roadmap is approved as ordered: U13.1, then U14 through U21. Nothing is
-implemented yet and no unit has implementation authority.**
+**Units 1–12 are merged to `main`, Unit 12.5's device gate is closed, Unit 13
+— the visual parity re-baseline — is complete and accepted, and Unit 13.1,
+the map bleed, is fixed and closed. The recut roadmap is approved as ordered.
+U14 is next and has no implementation authority yet.**
 
 ## Exact state
 
 - `main` is `907a4a83e7c592d4f6dd0c55e6f30c3b1b8bc49b`, the PR #22 merge
   (2026-09-18T08:49:20Z). The earlier record that PR #22 was open and
   unmerged is superseded.
-- Unit 13's records are committed on branch **`residuum-visual-reboot-13`**
-  off `907a4a8`, as a `docs:` commit. Unit 13 changed `.flow/` only — no
-  production file, no production asset. Nothing is pushed.
+- Branch **`residuum-visual-reboot-13`** off `907a4a8` carries two commits:
+  `9c2d66e` `docs:` (Unit 13's records, `.flow/` only) and `e8bcf29` `fix:`
+  (Unit 13.1 — `dungeon_scene.dart` +30/-1 plus its new test). Nothing is
+  pushed; there is no pull request.
 - Unit 13's canonical records are in `units/unit-13/`: `CONTRACT.md`,
   `recon.md`, `PARITY-AUDIT.md`, `PARITY-MATRIX.md`, `VISUAL-SYSTEM.md`,
   `ROADMAP.md`. The external ChatGPT bundle it came from sits beside them and
@@ -25,16 +26,44 @@ implemented yet and no unit has implementation authority.**
 
 ## Exact next action
 
-**Open U13.1, the map-bleed defect.** It is first in the approved order.
-Draft its contract, present the completed WHAT for approval, and only then
-work — under `flow-debugging`, because it needs root-cause diagnosis rather
-than a patch. Do not reach for a `ClipRect` first (see Carried debt).
+**Open U14 — Type, palette and surface authority.** Draft its contract from
+`units/unit-13/VISUAL-SYSTEM.md` sections 1–4 and 9, present the completed
+WHAT for approval, then dispatch `flow-planner` for the execution-grade plan,
+then get plan approval, then execute. It is the largest unit in the epic and
+every later one consumes its tokens.
 
-Then U14: contract, approval, `flow-planner`, plan approval, execution.
+Three things U14 inherits and must not lose:
 
-The roadmap approval authorizes the roadmap's shape and Unit 13's decisions.
-It is **not** implementation authority for any unit, and nothing remote is
-authorized. Push and pull request are each their own gate.
+- **The ceiling-density crawl belongs in its device capsule list.** U13.1's
+  AC7 was amended to drop its own emulator pass; its confirmation on hardware
+  is owed here. If the dock is covered at the ceiling, U13.1 reopens.
+- **The world map and the roster owe their first device shot**, colour and
+  greyscale. They are the epic's only unevidenced surfaces.
+- **The crawl's dp budget must be re-measured**, because type metrics move
+  chrome height and the 600 dp ceiling is the real constraint.
+
+Nothing remote is authorized. Push and pull request are each their own gate.
+
+## Unit 13.1, closed 2026-09-18
+
+Root cause: Flame's default `MaxViewport.clip()` is an explicit no-op
+(`flame-1.38.2/.../max_viewport.dart:26`) and `GameRenderBox` never clips on
+its behalf, so the viewport's reported size only ever positioned the camera
+while the world's whole `visible ∪ explored` tile set painted straight
+through onto the chrome above. Fixed by `_ClippedMaxViewport`
+(`dungeon_scene.dart:187-213`), which adds the clip `MaxViewport` omits and
+inherits its size tracking. The contract's `ClipRect` trap turned out moot —
+the camera window already equalled its box — but it is what forced the
+diagnosis that proved it moot.
+
+Proved red at `9c2d66e` in a throwaway worktree and green on the fixed tree;
+architect gate `dart format` 121/0, `flutter analyze` clean, full suite
+**907 passing**. Visible row count unchanged; 7.93 rows of sight stands.
+
+**Carry this measurement trap:** `flutter_test`'s font fallback wraps the same
+11 chips into 4 runs where the device fits 3, giving 208.43 dp / 5.79 rows
+against the device's 285.33 dp / 7.93. Widget-test dp figures are not device
+dp figures. Never copy one into the ledger as the other.
 
 ## Settled by the user, 2026-09-18
 
@@ -65,23 +94,13 @@ authorized. Push and pull request are each their own gate.
 | U19 Dungeon structure and props | 2, 3 | CODE + ASSET | U18 |
 | U20 Actor representation | 2, 3, 4 | CODE + ASSET | U18 |
 | U21 Combat chrome density | 2–5 | CODE | U14, U15 |
-| U13.1 map bleed (defect) | 2, 3 | CODE | **runs first** |
+| U13.1 map bleed (defect) | 2, 3 | CODE | **done** — `e8bcf29` |
 
 ## Carried debt
 
-- **The map-bleed defect**, still open and now scheduled as U13.1. At
-  worst-legal-battle density the Flame canvas paints ~144 px (~55 dp) above
-  its own top hairline and, being a later sibling in the `Column` than
-  `BattleDock`, covers the dock opaquely; both ring tokens are cut in half and
-  the actor words are hidden, so Unit 12's AC6 fails visually at the ceiling
-  while its logic passes. `game_screen.dart` lines 80–136 wrap the map in a
-  `Stack` with no `ClipRect`. Evidence:
-  `.flow/evidence/visual-reboot/unit-12.5-device/u125-g-battledock-bleed-color.png`.
-  - **Do not reach for a `ClipRect` first.** If the viewport renders more rows
-    than its box owns, a clip hides the overflow while the camera keeps
-    showing rows the box does not own, which silently invalidates the
-    7.93-rows-of-sight figure. Diagnose why the canvas exceeds its
-    constraints.
+- **The map-bleed defect is fixed** (U13.1, `e8bcf29`) and carries exactly one
+  open obligation: hardware confirmation at U14's device gate. Until that
+  pass, the fix is proved headlessly and on no real screen.
 - **Save-read defect candidate, unproven and out of the epic.** The app
   reported *"your last save could not be read; an older one was restored"*
   for a post-death autosave whose bytes were readable — the codec refused the
