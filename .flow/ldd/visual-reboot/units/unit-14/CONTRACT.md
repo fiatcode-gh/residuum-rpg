@@ -3,8 +3,8 @@
 Status: **approved 2026-09-18, with monospace retired outright.** Awaiting an
 execution-grade plan and its own separate plan approval before any code.
 Type: parity implementation. First of the recut roadmap's visual units.
-Base: `residuum-visual-reboot-13` at `03e8c0c` (U13.1 closed) off `main`
-`907a4a8`
+Base: `residuum-visual-reboot-13` at `5ac1a49` (U13.1 closed at `03e8c0c`;
+`5ac1a49` is the docs-only approval commit on top, no production seam moved)
 Visual reference: all ten frames of
 `.flow/evidence/visual-reboot/residuum_visual_reboot_approved_mock.png`
 Authority for appearance: `units/unit-13/VISUAL-SYSTEM.md` sections 1–4 and 9
@@ -101,6 +101,16 @@ May change: `packages/app/pubspec.yaml`, a new `packages/app/lib/style/`,
 `town/character_screen.dart`, `town/town_screen.dart`, and every file above
 that declares a font family inline — for the font family and token
 substitution only. Tests that break on the change.
+
+**Widened 2026-09-18, twice, on planner findings:**
+
+- `town/inn_screen.dart:45-46`, its two space-padded label columns. The file
+  declares no font family so the list above did not reach it, but six padded
+  columns across the town only ever aligned in monospace and leaving one
+  screen drifting while five are fixed is worse than either extreme.
+- `.github/workflows/ci.yml` and the repository `AGENTS.md`, for the guard
+  that keeps `'monospace'` from returning in U15 through U21. A source-text
+  assertion belongs in CI, not in the suite.
 
 May not change: row anatomy, control or chip geometry, the chip fit rule's
 algorithm (U15); any icon or art asset (U16); illustration placement or the

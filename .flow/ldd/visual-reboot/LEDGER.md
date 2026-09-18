@@ -3322,3 +3322,121 @@ scheduled rather than assumed.
   execution-grade plan and its task briefs, matching Unit 12's plan as the
   local standard. **No implementation is authorized**: the plan returns for its
   own separate approval before any production-writing worker.
+
+### Unit 14 plan approved 2026-09-18
+
+`flow-planner` (`agent://Unit14Planner`) returned an execution-grade
+`units/unit-14/PLAN.md` (1509 lines) plus seven task briefs (3841 lines
+total), at `5ac1a49` with a clean tree and no mutation outside
+`units/unit-14/`. The user approved it with corrections.
+
+**Three planner findings that would have derailed execution.** All were found
+before any code was written, which is what the planning stage is for.
+
+- **F4, the one that would have sunk it.** `flutter test` always passes
+  `--use-test-fonts` **and** `--disable-asset-fonts` to `flutter_tester`
+  (`flutter_tools/lib/src/test/flutter_tester_device.dart:119-120`, verified
+  at source by the architect, not taken on report). Ahem's advance and line
+  box are exactly 1.000 em — that is the whole of U13.1's 208.43-versus-285.33
+  dp divergence, because `'monospace'` is unregistered in the test host. **So
+  bundling the faces does not close the divergence on its own:** pubspec fonts
+  never reach that host. The plan ships `test/flutter_test_config.dart` plus a
+  `FontLoader` as a locked, non-optional decision. The contract asked the
+  executor to confirm rather than assume; the answer was no.
+- **F5.** Spectral's own `hhea` line box is 1.5220 em against EB Garamond's
+  1.3050 and the device monospace's ~1.32. Inherited, that is +15% on every
+  text row and puts worst legal combat near **668 dp against the 600 dp
+  ceiling**. Every one of the seventeen type roles therefore carries an
+  explicit `height`; that single decision is what holds the budget. The scale
+  goes *up* 1 px at the small rungs — Spectral's x-height is 0.450 em against
+  monospace's 0.528 — and rows still get shorter.
+- **F3.** The faces are missing exactly twelve of the app's marks, derived by
+  scanning all three packages rather than from the contract's hand list.
+  Roboto, the artifact-cache fallback, lacks all twelve too, so they already
+  render from platform fallback today and will continue to. No regression, and
+  no `fontFamilyFallback` is declared precisely so that chain is left alone.
+
+**Verified rather than assumed:** tabular figures were read out of the font
+binaries. Spectral's GSUB carries `tnum`/`lnum`/`onum`/`pnum`/`zero` and its
+default digits are already uniform-width and lining; EB Garamond carries
+`tnum` but defaults to oldstyle, so display roles also carry
+`liningFigures()`. No font-driven fallback to a fixed-width slot is needed —
+the slots this unit adds exist for the padded-string reason instead.
+
+**Shape.** Eight sequential tasks, none parallelisable, each ending on a
+compiling tree: 01 faces and token module → 02 crawl seam and dp
+re-measurement → 03 resource meter → 04 town theme and the lavender → 05
+numeric alignment and town meters → 06 world seam and route diagram → 07 map
+glyph sweep and guard → 08 the rename leaf → Gate A (dp re-confirmation on the
+final tree) → Gate B (integrated acceptance) → Gate C (thirteen device
+capsules). Seven of the eight go to fresh `flow-plan-executor` sessions on one
+non-isolated Unit 14 checkout, one writer at a time; Main owns the three gates.
+
+**AC4 became a better test than the contract asked for.** Ten unthemed stock
+control families, not the four the audit named — one explicit `colorScheme`
+catches the eleventh nobody enumerated. For each family the test reads the
+*rendered* fill and foreground from the `Material` the control builds, never a
+constructor argument, and asserts it is not the corresponding colour of a
+`ThemeData(brightness: dark, useMaterial3: true)` built **live inside the
+test**, so no lavender hex is ever written down and a framework palette change
+cannot make the test lie.
+
+### The five decisions settled at approval
+
+1. **Plan approved** with the corrections below.
+2. **The alias strategy is transitional, not the end state** — the architect
+   overruled the planner here. Aliases are the right migration mechanism and
+   stay through tasks 01–07, because they are what makes seven compiling steps
+   possible instead of one forty-file commit. But three names per colour is
+   not an end state to hand the seven units that follow: a maintainer should
+   not have to work out whether `ink`, `crawlInk` and the shared token are the
+   same value. **Task 08** is a mechanical `lsp`-driven rename leaf that
+   deletes every alias which only re-names a shared token and keeps every
+   declaration that names a seam concept the shared module lacks — the chip
+   state ladder, `crawlLogPeekHeight`, `crawlMarkColumn` and their kin. The
+   decidable rule: if deleting the name and inlining the token loses no
+   meaning, delete it. Acceptance is that `crawl_style.dart` and
+   `town_style.dart` declare no `Color` at all, with the full suite green and
+   no test edited except by the rename itself — a test needing a real edit
+   means the rename was not mechanical and the executor escalates.
+3. **One `residuumTheme` at six roots**, not three named siblings. Once the
+   ladder and the roles are shared, three sibling `ThemeData` values would
+   differ in no field whatsoever — that is the duplication this unit exists to
+   delete. The lock's intent survives verbatim: `MaterialApp.theme` restyles
+   nothing and every screen root opts in. Reversal cost is two lines, recorded.
+4. **No mark changes in `core` or `content`.** Seven of the twelve uncovered
+   marks are const markings in `packages/core` — the Epic and Legendary stars,
+   the ingot bar, the herb, the three spell-school sigils — which this unit's
+   boundaries forbid touching, and the contract simultaneously mandated a
+   glyph-coverage check. Resolved: the twelve are a recorded pre-existing
+   platform-fallback set proved by an automated coverage test; U16 retires them
+   with the log pictograms and spell medallions. Escalate only on device tofu
+   or a 600 dp breach. One bounded risk is named: `✳ ✚ ⛒` sit inside crawl
+   chip labels that `_fitFor` measures, so their host-dependent advance is a
+   real threat to the widget-test/device agreement claim.
+5. **`inn_screen.dart:45-46` authorised**, closing R6 rather than carrying it.
+   Six space-padded label columns across the town only ever aligned in
+   monospace; five were in boundary and the Inn's two were not, because that
+   file declares no font family. Leaving one screen drifting while five are
+   fixed is worse than either extreme. The contract's boundary was widened by
+   those two lines, and separately for `.github/workflows/ci.yml` and
+   `AGENTS.md`, which carry the guard that keeps `'monospace'` from returning
+   in U15 through U21 — a source-text assertion belongs in CI, not the suite.
+
+### Two contract corrections the planner made, both accepted
+
+- **The monospace census is sixty literals across eleven files, not "roughly
+  fifty"**, plus four dartdoc prose mentions the contract's own grep would
+  miss — `battle_view.dart:229`, `town_style.dart:29` and `:203`,
+  `main.dart:144`. Two of those are the device-metric dartdocs the contract's
+  Traps section protects, so each rewrite must keep its warning while losing
+  the word.
+- **The HP meter is warm amber `#D99A3D`, not the mock's red**, a deliberate
+  deviation recorded so no executor "corrects" it: section 2 reserves hot red
+  for mortal danger and the armed reticle. Mana is `#7FA8D9`. The two fills sit
+  0.0067 apart in lightness, so neither reads as fuller in greyscale, and each
+  is 5.5:1 above the track.
+
+**No implementation had begun at approval time.** Plan approval authorizes
+local execution inside this plan's envelope only; publication remains its own
+gate.

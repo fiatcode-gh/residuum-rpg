@@ -2,19 +2,20 @@
 
 **Units 1–12 are merged to `main`, Unit 12.5's device gate is closed, Unit 13
 is complete and accepted, and Unit 13.1 — the map bleed — is fixed and closed.
-U14's contract is approved with monospace retired outright; its
-execution-grade plan is being written by `flow-planner` and returns for its
-own approval before any code.**
+U14's contract is approved with monospace retired outright, and U14's
+execution-grade plan is written, amended and approved. Nothing is implemented.
+The user paused here deliberately, intending to resume in the same session.**
 
 ## Exact state
 
 - `main` is `907a4a83e7c592d4f6dd0c55e6f30c3b1b8bc49b`, the PR #22 merge
   (2026-09-18T08:49:20Z). The earlier record that PR #22 was open and
   unmerged is superseded.
-- Branch **`residuum-visual-reboot-13`** off `907a4a8` carries two commits:
-  `9c2d66e` `docs:` (Unit 13's records, `.flow/` only) and `e8bcf29` `fix:`
-  (Unit 13.1 — `dungeon_scene.dart` +30/-1 plus its new test). Nothing is
-  pushed; there is no pull request.
+- Branch **`residuum-visual-reboot-13`** off `907a4a8` carries `9c2d66e`
+  `docs:` (Unit 13's records), `e8bcf29` `fix:` (Unit 13.1 —
+  `dungeon_scene.dart` +30/-1 plus its new test), `5ac1a49` `docs:` (U14's
+  contract approval) and the U14 plan commit. Nothing is pushed; there is no
+  pull request.
 - Unit 13's canonical records are in `units/unit-13/`: `CONTRACT.md`,
   `recon.md`, `PARITY-AUDIT.md`, `PARITY-MATRIX.md`, `VISUAL-SYSTEM.md`,
   `ROADMAP.md`. The external ChatGPT bundle it came from sits beside them and
@@ -25,25 +26,86 @@ own approval before any code.**
   "drafted, awaiting explicit user approval") and Unit 12.5's checkpoint tail
   (a mid-pass forward pointer for a closed unit).
 
-## Exact next action
+## Exact next action — paused by the user, resume here
 
-**Consume `Unit14Planner`'s receipt, inspect `units/unit-14/PLAN.md`, and
-present the plan for approval** — its dependency shape, locked decisions,
-proof strategy and residual risks. Only then may a `flow-plan-executor`
-touch production code. Contract approval is not implementation authority.
+**Dispatch one fresh `flow-plan-executor` on
+`units/unit-14/plan-tasks/01-faces-and-token-module.md`.** Hand it the
+artifact path, not pasted content. Then 02 through 08 in strict order, one
+fresh executor each, one writer at a time, non-isolated on this same
+checkout. No architect decision is open; the plan is approved and amended.
+
+After 08: **Gate A** (dp re-confirmation on the final tree), **Gate B**
+(integrated gates, diff audit, acceptance review), **Gate C** (the
+`Medium_Phone` pass, thirteen capsules). Main owns all three.
 
 Three duties U14 inherits and must not lose:
 
-- **The ceiling-density crawl belongs in its device capsule list.** U13.1's
-  AC7 was amended to drop its own emulator pass; its confirmation on hardware
-  is owed here. If the dock is covered at the ceiling, U13.1 reopens.
-- **The world map and the roster owe their first device shot**, colour and
-  greyscale. They are the epic's only unevidenced surfaces.
-- **The crawl's dp budget must be re-measured**, because type metrics move
-  chrome height. Worst legal combat over 600 dp is a stop-and-escalate, not
-  an executor's call.
+- **Capsule J is the ceiling-density crawl**, carrying U13.1's hardware
+  confirmation. If the `BattleDock` is covered there, U13.1 reopens.
+- **Capsules F and G are the world map's and the roster's first visual
+  baselines** in this epic.
+- **The dp budget is re-measured** at three densities. Worst legal combat over
+  600 dp on device is a stop-and-escalate, not an executor's call and not a
+  tuning target — every remedy belongs to U15 or a contract amendment.
 
 Nothing remote is authorized. Push and pull request are each their own gate.
+
+## U14's plan, in the ten facts a resume needs
+
+Full text: `units/unit-14/PLAN.md` (1756 lines) plus eight briefs in
+`plan-tasks/` (4440 lines total). Do not re-read it to resume; read the brief
+for the task you are dispatching.
+
+1. **Graph:** 01 faces and token module → 02 crawl seam and dp re-measurement
+   → 03 resource meter → 04 town theme and the lavender → 05 numeric
+   alignment and town meters → 06 world seam and route diagram → 07 map glyph
+   sweep and guard → 08 the rename leaf → Gate A → Gate B → Gate C. **Nothing
+   is parallelisable**; 02–08 all consume Task 01's `tokens.dart`, and Task 01
+   changes the measured metrics of every widget test at once.
+2. **`flutter test` passes `--use-test-fonts` AND `--disable-asset-fonts`**
+   (`flutter_tools/lib/src/test/flutter_tester_device.dart:119-120`, verified
+   at source). Ahem is 1.000 em in both advance and line box — that is the
+   whole of U13.1's dp divergence. **Bundling the faces does not close it:**
+   Task 01 ships `test/flutter_test_config.dart` plus a `FontLoader`, and that
+   is not optional.
+3. **Spectral's line box is 1.5220 em.** Inherited, that is +15% per text row
+   and ~668 dp of worst-legal chrome against a 600 dp ceiling. **Every one of
+   the seventeen roles carries an explicit `height`** — that single decision
+   holds the budget.
+4. **Fonts:** `Spectral-Regular.ttf`, `Spectral-SemiBold.ttf`,
+   `EBGaramond-Variable.ttf` from `google/fonts` with both `OFL.txt`, 1.39 MB.
+   Spectral 400 + 600; EB Garamond one variable instance at wght 500,
+   requested three ways, degrading to 400.
+5. **Tabular figures verified in the binaries.** Spectral's digits are
+   already uniform-width and lining; EB Garamond carries `tnum` but defaults
+   to oldstyle, so display roles also carry `liningFigures()`.
+6. **One `residuumTheme` at six roots** — not three siblings; three would
+   differ in no field. `MaterialApp.theme` restyles nothing; every root opts
+   in. Reversal cost is two lines.
+7. **Ten unthemed stock control families, not four.** AC4's test reads the
+   *rendered* fill from the `Material` each control builds and asserts it is
+   not the corresponding colour of a `ThemeData(brightness: dark,
+   useMaterial3: true)` built live inside the test, so no lavender hex is ever
+   written down.
+8. **Meter hues:** health `#D99A3D` warm amber — deliberately not the mock's
+   red, which section 2 reserves for mortal danger and the armed reticle —
+   and mana `#7FA8D9`. The two sit 0.0067 apart in lightness so neither reads
+   as fuller in greyscale.
+9. **Aliases are transitional.** Tasks 02 and 04 alias the seams to keep the
+   cutover compiling; **Task 08 deletes the 34 that only re-name a token** and
+   keeps the seam vocabulary that says something of its own — the chip state
+   ladder, `crawlChevron` (which looks like an alias and is not: it is a
+   hoisted `copyWith` so no build allocates), the 14 crawl metrics,
+   `markColumn`. Task 08 closes AC3, not Task 07. It is **rename-then-delete,
+   not an `lsp` rename** — the target name already exists — and the language
+   server repoints identifiers but not imports, so `flutter analyze` is the
+   worklist and analyze-clean is the completion signal.
+10. **Twelve marks are uncovered by both faces** — seven of them const
+    markings in `packages/core`, which stays untouched. They already render
+    from platform fallback today, so nothing regresses; U16 retires them.
+    `✳ ✚ ⛒` sit inside crawl chip labels that `_fitFor` measures, so their
+    host-dependent advance is the one real threat to the widget-test versus
+    device agreement claim.
 
 ## Unit 13.1, closed 2026-09-18
 
