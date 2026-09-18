@@ -6,19 +6,35 @@ derived from the approved mock and from what the source actually is
 
 ## 1. Typography
 
-The monospace-only identity is **superseded**. It was a legitimate early
-choice — it gave the roguelike a terminal honesty — but the approved mock
-does not use it for anything except numbers, and every frame in the audit
-pays for that gap twice: the type is wrong and the density is wrong, because
-monospace at a legible size eats horizontal room that serif does not.
+The monospace-only identity is **superseded**, and as of 2026-09-18 monospace
+is **retired outright**. It was a legitimate early choice — it gave the
+roguelike a terminal honesty — but the approved mock does not use it
+anywhere, not even for numbers: `14/20`, `3 / 5`, `Strength 8` and `r¹` are
+all set in the mock's own serif. Every frame in the audit paid for the gap
+twice, because monospace at a legible size eats horizontal room that serif
+does not, and the epic's whole chrome budget is horizontal and vertical room.
 
-Three roles:
+Two roles, and only two:
 
 | Role | Used for | Mock evidence |
 |---|---|---|
 | **Display** | place names, screen titles, taglines, section captions — letterspaced roman capitals | `STONEBRIDGE`, `THE FORGE`, `CHARACTER`, `COMBAT LOG`, `GOOD COMPANY LASTS LONGER.` |
-| **Text** | row titles, purposes, prose, log sentences, chip labels — a serif with a tall x-height and real small sizes | `Leave Town` / `Venture into the depths.`, every log line, every item and spell row |
-| **Mechanical** | numbers, meters, ordinals, stat columns, seeds, prices — monospace, retained deliberately so columns align | `14/20`, `3 / 5`, `Strength 8`, `r¹` |
+| **Text** | everything else: row titles, purposes, prose, log sentences, chip labels, numbers, meters, ordinals, stat columns, prices, map glyphs | `Leave Town` / `Venture into the depths.`, `14/20`, `Strength 8`, `r¹`, every log line |
+
+**Alignment is a layout problem, not a font problem.** The fear that retiring
+monospace breaks numeric columns is already answered by the source: the town
+solved column drift with a fixed-width slot, `markColumn = 28`
+(`town_style.dart:31`), precisely because "the markings are not all one cell
+wide in the device's monospace font" — monospace never aligned them. Where
+digits must not jitter between frames, the answer is the text face's
+**tabular figures** (`FontFeature.tabularFigures()`) and, failing that, a
+fixed-width slot. A proportional face with tabular figures aligns numbers
+better than the platform's arbitrary monospace ever did.
+
+Retiring monospace also takes the dungeon's map glyphs — the hero, every
+monster, every stair — off whatever face Android happens to supply
+(`dungeon_scene.dart:432`, `:441`). Each glyph is centred in its own cell by
+`Anchor.center`, so nothing about the grid depended on uniform advance width.
 
 Font assets are therefore **required**, and two faces is the whole budget. A
 libre face is preferred over a commissioned one: this is an unbudgeted
@@ -38,8 +54,13 @@ display.** Every density failure in the audit lives at 12–13 px, which is
 where a decorative face breaks; Spectral holds that size and EB Garamond's
 letterspaced caps carry the display register.
 
-Monospace stays for the mechanical role, so no glyph coverage is lost for
-ordinals and marks.
+**Glyph coverage is the one thing to verify before relying on this.** The
+text face must carry every mark the app already draws: the log categories
+`← → † ◎ ⇅ ✕ ■ ▲ ◆ §`, the item marks `‡ ▲ ▼ ·`, the superscript ordinals
+`⁰`–`⁹`, the stepper's `−`, the world's `?`, the stair glyphs `< >`, and the
+battle glyphs `✖ ◉`. Any mark the face lacks needs a decision — a substitute
+mark, or an authored pictogram in U16 — and must not be discovered by a
+tofu box on device.
 
 ## 2. Colour and value
 
@@ -158,7 +179,9 @@ Behaviour and accessibility, unchanged:
 
 ## 8. Superseded
 
-- **Monospace-only identity** — superseded by section 1.
+- **Monospace-only identity** — superseded by section 1, and as of
+  2026-09-18 monospace is retired outright rather than kept for a mechanical
+  role.
 - **Colour avoidance** — superseded by section 2. The lock was never "avoid
   colour".
 - **Material-derived geometry and stock controls** — superseded by section 4.
@@ -188,6 +211,12 @@ Behaviour and accessibility, unchanged:
 ## 9. Settled by the user, 2026-09-18
 
 - **Fonts**: Spectral text, EB Garamond display. Section 1.
+- **Monospace is retired entirely, 2026-09-18.** The mechanical role is
+  gone; the mock uses no monospace anywhere, including for numbers, so
+  neither does the app. The standing instruction is parity with the mock,
+  not a compromise with the old identity. Numeric alignment is carried by
+  tabular figures and fixed-width slots — the town already aligned its
+  columns that way and explicitly not by the font (`town_style.dart:31`).
 - **Shared token module plus sibling themes**: approved. Section 8.
 - **Frame 4's three intermediate cells are a mock flourish.** No range or
   path feedback is implied and none will be built. The map marks the legal

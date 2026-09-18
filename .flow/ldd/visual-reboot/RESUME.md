@@ -1,9 +1,10 @@
 # Resume Visual Reboot
 
 **Units 1–12 are merged to `main`, Unit 12.5's device gate is closed, Unit 13
-— the visual parity re-baseline — is complete and accepted, and Unit 13.1,
-the map bleed, is fixed and closed. The recut roadmap is approved as ordered.
-U14 is next and has no implementation authority yet.**
+is complete and accepted, and Unit 13.1 — the map bleed — is fixed and closed.
+U14's contract is approved with monospace retired outright; its
+execution-grade plan is being written by `flow-planner` and returns for its
+own approval before any code.**
 
 ## Exact state
 
@@ -26,13 +27,12 @@ U14 is next and has no implementation authority yet.**
 
 ## Exact next action
 
-**Open U14 — Type, palette and surface authority.** Draft its contract from
-`units/unit-13/VISUAL-SYSTEM.md` sections 1–4 and 9, present the completed
-WHAT for approval, then dispatch `flow-planner` for the execution-grade plan,
-then get plan approval, then execute. It is the largest unit in the epic and
-every later one consumes its tokens.
+**Consume `Unit14Planner`'s receipt, inspect `units/unit-14/PLAN.md`, and
+present the plan for approval** — its dependency shape, locked decisions,
+proof strategy and residual risks. Only then may a `flow-plan-executor`
+touch production code. Contract approval is not implementation authority.
 
-Three things U14 inherits and must not lose:
+Three duties U14 inherits and must not lose:
 
 - **The ceiling-density crawl belongs in its device capsule list.** U13.1's
   AC7 was amended to drop its own emulator pass; its confirmation on hardware
@@ -40,7 +40,8 @@ Three things U14 inherits and must not lose:
 - **The world map and the roster owe their first device shot**, colour and
   greyscale. They are the epic's only unevidenced surfaces.
 - **The crawl's dp budget must be re-measured**, because type metrics move
-  chrome height and the 600 dp ceiling is the real constraint.
+  chrome height. Worst legal combat over 600 dp is a stop-and-escalate, not
+  an executor's call.
 
 Nothing remote is authorized. Push and pull request are each their own gate.
 

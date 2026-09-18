@@ -51,7 +51,7 @@ One row per frame area. Gap IDs refer to `PARITY-AUDIT.md`. Evidence is in
 
 | System concern | Evidence across frames | Current rule | Settled rule | Status |
 |---|---|---|---|---|
-| Typography | every frame | `fontFamily: 'monospace'` only, in two duplicate seams | Three roles: a display roman for titles/captions, a serif text face for names and prose, monospace retained **only** for numeric and mechanical columns | settled, pending font choice |
+| Typography | every frame | `fontFamily: 'monospace'` only, in two duplicate seams | Two roles only: a display roman for titles/captions and a serif text face for everything else. **Monospace retired entirely 2026-09-18** — the mock uses none, including for numbers. Numeric alignment comes from tabular figures and fixed-width slots | settled; Spectral text, EB Garamond display |
 | Colour / value | 2, 3, 4, 6 | one ink, one dim, four surface values, no hue anywhere | Hue permitted as **redundant reinforcement** on resources and target marks; never the sole carrier; no red-versus-green pair anywhere | settled |
 | Frames / surfaces | 1, 6, 7, 8, 9, 10 | `Divider(rule)` separation; two flat panel fills | Inset framed row is the default list unit: panel fill, 1 dp rule border, 6 dp radius | settled |
 | Ornament | all | none | None beyond hairlines and medallion rings. The mock has no ornament either; it reads rich because of art and type, not decoration | settled |

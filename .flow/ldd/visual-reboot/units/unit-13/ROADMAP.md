@@ -27,9 +27,11 @@ gate**.
 
 **Frames** all ten. **Ownership** CODE + ASSET.
 
-Two authored font faces land; the three type roles from `VISUAL-SYSTEM.md`
-section 1 replace `fontFamily: 'monospace'` everywhere except numeric and
-mechanical columns. The two duplicate palettes in `crawl_style.dart` and
+Two authored font faces land and the two type roles from `VISUAL-SYSTEM.md`
+section 1 replace `fontFamily: 'monospace'` **everywhere** — monospace is
+retired outright, including for numbers, because the mock uses none. Numeric
+alignment comes from tabular figures and the fixed-width slots the town
+already uses. The two duplicate palettes in `crawl_style.dart` and
 `town_style.dart` collapse into one shared token module, and the town and
 world screens get a sibling theme so no stock Material control renders
 unthemed. The HP/Mana meter pair becomes one component used by the crawl

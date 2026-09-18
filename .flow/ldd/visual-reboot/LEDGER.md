@@ -3285,3 +3285,40 @@ scheduled rather than assumed.
 `residuum-visual-reboot-13`. Not pushed. Production diff is
 `dungeon_scene.dart` +30/-1 plus the new test; nothing in `packages/core` or
 `packages/content` moved.
+
+## Unit 14 — Type, palette and surface authority: contract approved
+
+- 2026-09-18 — **The user approved `units/unit-14/CONTRACT.md`** and, in the
+  same breath, **retired monospace outright**: "drop monospace rule and pursue
+  visual parity with the mock ups".
+- The contract as drafted kept a third, mechanical type role — monospace for
+  numbers, meters, ordinals, stat columns and map glyphs. That is gone. The
+  mock uses no monospace anywhere, not even for `14/20` or `Strength 8`, and
+  the standing instruction is parity with the approved frames rather than a
+  compromise with the old terminal identity. `'monospace'` must appear nowhere
+  in `packages/app/lib` when the unit closes.
+- **The alignment objection is answered by the source, not by faith.** The
+  town already aligns its marking columns with a fixed-width slot,
+  `markColumn = 28` (`town_style.dart:31`), and that constant's own dartdoc
+  says why: "the markings are not all one cell wide in the device's monospace
+  font". Monospace never aligned them. Numeric alignment comes from the text
+  face's tabular figures plus fixed-width slots, and the plan must **verify**
+  the shipped faces carry `tnum` rather than assume it.
+- Retiring monospace also takes the dungeon's map glyphs off whatever face
+  Android supplies (`dungeon_scene.dart:432`, `:441`). Each glyph is centred in
+  its own cell by `Anchor.center`, so nothing about the grid ever depended on a
+  uniform advance width. It should additionally close U13.1's
+  widget-test-versus-device metric divergence, because a bundled face resolves
+  identically in both hosts — which the plan must have the executor confirm.
+- **Glyph coverage becomes a pre-cutover check**, recorded in the contract: the
+  text face must carry the log categories, the item marks, the superscript
+  ordinals, the stepper's minus, the world's `?`, the stair glyphs and the
+  battle glyphs. A missing mark needs a decision now, not a tofu box on a
+  device screenshot later.
+- `units/unit-13/VISUAL-SYSTEM.md` sections 1, 8 and 9,
+  `PARITY-MATRIX.md`'s typography row and `ROADMAP.md`'s U14 entry were all
+  amended to match. The three-role table is now two roles.
+- **`flow-planner` dispatched** (`agent://Unit14Planner`) to own the
+  execution-grade plan and its task briefs, matching Unit 12's plan as the
+  local standard. **No implementation is authorized**: the plan returns for its
+  own separate approval before any production-writing worker.
