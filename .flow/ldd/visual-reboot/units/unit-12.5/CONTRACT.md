@@ -1,6 +1,9 @@
 # Unit 12.5 — Crawl Device Gate
 
-Status: **drafted, awaiting explicit user approval**
+Status: **approved 2026-09-18 and closed the same day.** All eight acceptance
+criteria are met; the one defect the pass found is carried by the user's
+decision rather than corrected here. Result in `LEDGER.md` under "Unit 12.5 —
+the crawl device gate, closed" and in `DEVICE-CHECKPOINT.md`.
 Depends on: Unit 12, accepted on suite evidence
 Visual reference: `.flow/evidence/visual-reboot/residuum_visual_reboot_approved_mock.png`, frames 2–5
 

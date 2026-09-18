@@ -2783,3 +2783,134 @@ Append-only. Supersede old decisions; do not rewrite history.
   request, no merge. The branch exists only on this workstation.
 - The next gates are the user's: whether Unit 12 is published before Unit
   12.5's device pass, and whether Unit 12.5's contract is approved.
+
+### Unit 12.5 — the crawl device gate, closed
+
+- 2026-09-18 — **The contract was approved as drafted** and the pass ran on
+  `residuum-visual-reboot-12` at `8314beb`, on a user-started `Medium_Phone`
+  (`emulator-5554`, 1080x2400 at density 420, so 411.4 x 914.3 dp and 2.625
+  device pixels per dp). Seven capsules plus a setup capsule, each a bounded
+  `flow-evidence-verifier` session with its own manifest; the architect
+  inspected the artifacts and re-verified every consequential figure.
+- **The three dp gates all pass, measured rather than modelled:**
+
+  | scene | chrome | threshold | map | rows of sight |
+  |---|---|---|---|---|
+  | exploration, worst | **331.1 dp** | 360 | 535.2 dp | ~14.9 |
+  | combat, typical | **438.1 dp** | 460 | 428.2 dp | ~11.9 |
+  | combat, worst legal | **580.95 dp** | 600 | 285.3 dp | ~7.93 |
+
+  Correction C1's model said ~418 dp and ~561 dp for the two combat rows. The
+  device came in **~20 dp worse on both**, the same direction each time, and
+  the remaining margin at the ceiling is 19.05 dp — under one chip run. The
+  map figure, by contrast, landed almost exactly on the model's ~283 dp.
+- **The eleven-chip ceiling is real and it renders.** `Drink (10)` ·
+  `Firebolt 2` · `Frost Lance 4` · `Mend 3` · `+3` · `Wait` · `Pick up` ·
+  `Gather` · `Pack (19)` · `Ascend <` · `Finish`, in three runs, greatest
+  label line count 2, no word split, no ellipsis, no label touching its
+  border, **no verb hidden**. The engine refused no part of the fixture.
+  Main derived that row from the guards at source before the capsule ran, and
+  the device matched the derivation exactly.
+- **Correction C1's four contract-level remedies are not needed.** ~7.93 rows
+  of sight, about four tiles each way, reads as a playable dungeon: hero and
+  monster glyphs legible, room shape clear, and the stairs question moot
+  because the hero is standing on them.
+- **Unit 12's deferred criteria are settled:**
+  - **AC5 — PASS.** Available reads against disabled without hue, and the
+    disabled state was reached where it is the *only* place it exists: the
+    death overlay, where `Drink` is the one chip the crawl can disable. The
+    cues are label weight and value (w400 mid-grey against w500/600
+    near-white) and icon opacity (0.45 against full). The seam's
+    fill/border cues compress under the death scrim, so weight and opacity
+    are what actually carry it — and they do, in colour and greyscale alike.
+  - **AC12 — PASS.** Town, world, character, spells, roster and both pack
+    routes show **no crawl-seam leakage**, verified by eye and by grepping
+    `packages/app/lib/town/` and `packages/app/lib/world/` for every
+    crawl-owned token: zero matches. The only crossing is the intended one —
+    `CrawlPackScreen` importing the town's own `panel`/`ink`/`mono`/`Heading`.
+    Baselines come from units 6, 7, 8 and 10, so the per-screen diffs measure
+    build age and progression rather than Unit 12; the leakage result is the
+    load-bearing claim and it is baseline-independent. Roster has no baseline
+    in the epic and is PASS on internal consistency, UNKNOWN against history.
+  - **AC14 — PASS on device**, per the table above.
+  - **AC16 — met in full.** Every capsule captured colour and a greyscale
+    twin; the architect verified each twin is a pixel-exact
+    `-colorspace Gray` conversion of its own colour frame.
+  - **AC11 — PASS on all four surfaces.** The spells overflow sheet
+    (284.19 dp) and enemy info sheet (159.24 dp) are `CrawlPanel` surfaces in
+    a `crawlTheme` sheet; the completion confirm (330.29 x 248.76 dp) draws a
+    1 dp `crawlRule` border stock Material does not and stacks `CrawlPill`
+    actions; the death overlay is a full-bleed `crawlScrim` with a
+    `crawlHeadline` and one pill. None is stock Material. The enemy inspect
+    cost no turn, and the completion confirm was dismissed without completing
+    the delve — both proved by byte-identical before/after frames.
+  - **AC8 — PASS.** Peek 104.0 dp (its coded height), half 389.71 dp, full
+    866.29 dp, the `peek → half → full → peek` cycle walked and returned, and
+    follow/unread exercised for real: scrolling broke follow, an appended line
+    raised a true `↓ 2 new`, and tapping it returned to the newest entry.
+    Eight of ten category marks appeared through genuine play.
+  - **AC6 — logic PASS, presentation FAIL at the ceiling.** The queue
+    truncates silently at the first unseen actor with no placeholder, but see
+    the defect below: at maximum density the actor words are covered.
+- **AC17 — recorded. The dungeon viewport is *not* the dominant remaining
+  parity gap; the map's own framing is.** With the crawl on glass, the
+  viewport's content reads: the crypt's stonework, the lit radius, the hero
+  and monster glyphs and the decoration icons all carry. What fails at the
+  ceiling is the *boundary* of that viewport, not its output. Dungeon
+  Structural Asset Expansion therefore does **not** become the immediate next
+  unit; the map-bleed defect below outranks it.
+- **Defect found on device, and carried rather than fixed — the user's
+  decision of 2026-09-18.** At worst-legal-battle density the dungeon map's
+  Flame canvas is not clipped to its `Expanded` box: it paints ~144 px
+  (~55 dp) above its own top hairline and, being a later sibling in the
+  `Column` than `BattleDock`, paints opaquely over the dock. Both ring tokens
+  are cut in half and the actor words `You` and `the wight¹` are entirely
+  hidden. Two captures three seconds apart are byte-identical, so it is a
+  settled render. `game_screen.dart` lines 80–136 wrap the map in a
+  foreground-decorated box and a `Stack` with **no `ClipRect`**.
+  - The architect recommended diagnosing and fixing it inside Unit 12.5
+    before any merge. **The user chose to merge Unit 12 as-is** and fix the
+    bleed later. The risk accepted, stated plainly: in the rarest fight the
+    game can produce — bottom floor, eleven live verbs, full pack, every
+    spell known — the activation timeline cannot be read.
+  - **A `ClipRect` is the obvious patch and may be the wrong one.** If the
+    Flame viewport is rendering more rows than its box owns, a clip hides the
+    overflow while leaving the camera showing a viewport the box does not
+    own, which would quietly invalidate the 7.93-rows-of-sight figure. The
+    fix wants root-cause diagnosis, not a cosmetic clip.
+  - Evidence: `.flow/evidence/visual-reboot/unit-12.5-device/`
+    `u125-g-battledock-bleed-color.png` and `-grey.png`, plus
+    `u125-g-ceiling-color.png` and the capsule receipt.
+- **Second defect candidate, out of this unit's scope.** On one cold launch
+  the app itself reported *"your last save could not be read; an older one
+  was restored"* and stepped down a slot. The refused file was the previous
+  capsule's own post-death autosave, whose hash matched what that capsule
+  recorded, so the file was byte-readable and the **codec** refused it.
+  `decodeSave` refuses a document whole rather than repairing it, and
+  `SaveStore.load` steps down by design, so the fallback worked as written —
+  but why a post-death save was refused is unknown. The bytes were overwritten
+  by later real play and the capsule reported that plainly instead of
+  reconstructing them. Unit 12.5's non-goals exclude the save schema, so this
+  is recorded for its own contract and a reproduction under `flow-debugging`:
+  stage a hero at 1 HP, die, then feed the resulting `save.json` to
+  `decodeSave` directly. If it is real, a player who dies loses a slot.
+- **Both save slots restored and verified byte-identically**, twice: once at
+  the user's pause after capsule B, and once after capsule G.
+  `save.json` `18995c4c…b46d3` MATCH, `save-previous.json` `8909f70c…a9b11`
+  MATCH, SHA-256 both times. `save-previous.json` had drifted during the
+  capsules' real play because the app's own save rotation moves current to
+  previous — which is exactly why both slots were backed up before the
+  install and why restoration reads from the backups, never from the device.
+- **Tooling trap recorded for the epic:** this workstation's ImageMagick
+  returns an anomalous `compare -metric AE` on some content — ~2.3e7 on a
+  1.2e6-pixel crop, about 19x the total pixel count — while returning a
+  correct 0 on identical inputs. Both behaviours were reproduced by the
+  architect. Pixel counts in this unit come from a difference/threshold/mean
+  route instead.
+- **Device-path trap recorded:** the live save is `app_flutter/save.json`,
+  not `files/app_flutter/save.json`. One capsule mis-staged to the wrong path
+  and caught it because the launched scene was a leftover rather than the
+  fixture; every later capsule hash-checked the copy on device before launch.
+- **Architect-run gate on the merge tree:** `dart format` 120 files / 0
+  changed, `flutter analyze` no issues. Unit 12.5 wrote no production code, so
+  Unit 12's suite evidence stands unchanged on the same tree.
