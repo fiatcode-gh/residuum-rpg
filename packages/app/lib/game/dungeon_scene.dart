@@ -1,3 +1,4 @@
+import 'package:flame/camera.dart' show MaxViewport;
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
@@ -183,6 +184,34 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
       GameWidget(key: dungeonSceneKey, game: _scene);
 }
 
+/// The default [MaxViewport] fills all available space, exactly like this
+/// one, but its own dartdoc admits it "does not perform any clipping" — nor
+/// does Flame's `GameRenderBox.paint` clip on its behalf. Nothing in
+/// Flame's render pipeline confines a game's paint to the viewport's own
+/// reported size; it is only ever used to position the camera.
+/// `_DungeonScene`'s [World] deliberately holds every tile in the current
+/// floor's `visible ∪ explored` set (`dungeon_material.dart`'s own
+/// invariant), which is routinely taller than the box the crawl's `Column`
+/// gives the map, so every tile the camera scrolls out of that box keeps
+/// painting straight through onto whatever chrome sits above or below it.
+/// This subclass adds exactly the clip [MaxViewport] omits — nothing else
+/// about its size tracking changes.
+class _ClippedMaxViewport extends MaxViewport {
+  Rect _clipRect = Rect.zero;
+
+  @override
+  void clip(Canvas canvas) => canvas.clipRect(_clipRect, doAntiAlias: false);
+
+  @override
+  bool containsLocalPoint(Vector2 point) =>
+      point.x >= 0 && point.x <= size.x && point.y >= 0 && point.y <= size.y;
+
+  @override
+  void onViewportResize() {
+    _clipRect = Rect.fromLTWH(0, 0, size.x, size.y);
+  }
+}
+
 class _DungeonScene extends FlameGame
     with TapCallbacks, DragCallbacks, LongPressCallbacks {
   _DungeonScene({
@@ -190,7 +219,7 @@ class _DungeonScene extends FlameGame
     required this._onTap,
     required this._onPan,
     required this._onLongPress,
-  });
+  }) : super(camera: CameraComponent(viewport: _ClippedMaxViewport()));
 
   DungeonSceneSnapshot _snapshot;
   ValueChanged<Position> _onTap;
