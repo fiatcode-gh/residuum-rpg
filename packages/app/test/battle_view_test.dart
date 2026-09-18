@@ -105,28 +105,38 @@ GameState battleGame({
   );
 }
 
-Future<GameBloc> _pushGame(WidgetTester tester, GameState game) async {
+Future<GameBloc> _pushGame(
+  WidgetTester tester,
+  GameState game, {
+  TextScaler? textScaler,
+}) async {
   final town = TownBloc(profile: newProfile(worldSeed: 5));
   final bloc = GameBloc(game: game, stepDelay: Duration.zero);
-  await tester.pumpWidget(
-    MaterialApp(
-      home: Builder(
-        builder: (context) => TextButton(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => MultiBlocProvider(
-                providers: [
-                  BlocProvider.value(value: town),
-                  BlocProvider.value(value: bloc),
-                ],
-                child: const GameScreen(palette: DungeonPalette.crypt),
-              ),
+  final app = MaterialApp(
+    home: Builder(
+      builder: (context) => TextButton(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => MultiBlocProvider(
+              providers: [
+                BlocProvider.value(value: town),
+                BlocProvider.value(value: bloc),
+              ],
+              child: const GameScreen(palette: DungeonPalette.crypt),
             ),
           ),
-          child: const Text('down'),
         ),
+        child: const Text('down'),
       ),
     ),
+  );
+  await tester.pumpWidget(
+    textScaler == null
+        ? app
+        : MediaQuery(
+            data: MediaQueryData(textScaler: textScaler),
+            child: app,
+          ),
   );
   await tester.tap(find.text('down'));
   await tester.pumpAndSettle();
@@ -302,11 +312,30 @@ void main() {
       expect(bloc.state.game.monsters, isEmpty);
       expect(logSentences(bloc.state).last, 'The ghoul dies.');
       expect(find.byType(BattleDock), findsNothing);
-      expect(find.byType(BattleShelf), findsNothing);
+      expect(find.text('✳ Firebolt 2'), findsNothing);
+      expect(find.text('Wait'), findsNothing);
       expect(find.byType(DungeonSceneHost), findsOneWidget);
       expect(find.byType(ListView), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+      'the caption row reads at elevated text scale without overflow',
+      (tester) async {
+        // arrange - a simple battle to show the activation timeline
+        tester.view.physicalSize = _phone;
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        final game = battleGame(monsters: [ghoulAt(const Position(1, 2))]);
+
+        // act - render the dock at 2.0x text scale
+        await _pushGame(tester, game, textScaler: TextScaler.linear(2.0));
+
+        // assert - no overflow exception raised
+        expect(tester.takeException(), isNull);
+        expect(find.byType(BattleDock), findsOneWidget);
+      },
+    );
   });
 
   group('the activation timeline', () {
@@ -335,26 +364,24 @@ void main() {
       expect(find.byKey(const Key('timeline-actor-ghoul-1-2')), findsOneWidget);
       expect(find.byKey(const Key('timeline-actor-ghoul-2-3')), findsOneWidget);
       expect(find.byKey(const Key('timeline-next-hero')), findsOneWidget);
-      final timelineLabels = find
-          .descendant(
-            of: find.byKey(const Key('dock-backing')),
-            matching: find.byType(Text),
-          )
-          .evaluate()
-          .map((element) => (element.widget as Text).data)
-          .whereType<String>()
-          .toList();
-      expect(timelineLabels, [
-        '@ YOU',
-        '›',
-        'g¹',
-        '›',
-        'g¹',
-        '›',
-        'g²',
-        '›',
-        '@ YOU',
-      ]);
+      void expectCell(Key key, String glyph, String word) {
+        expect(
+          find.descendant(of: find.byKey(key), matching: find.text(glyph)),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: find.byKey(key), matching: find.text(word)),
+          findsOneWidget,
+        );
+      }
+
+      expectCell(const Key('timeline-current-hero'), '@', 'You');
+      expectCell(const Key('timeline-actor-ghoul-1-1'), 'g¹', 'the ghoul¹');
+      expectCell(const Key('timeline-actor-ghoul-1-2'), 'g¹', 'the ghoul¹');
+      expectCell(const Key('timeline-actor-ghoul-2-3'), 'g²', 'the ghoul²');
+      expectCell(const Key('timeline-next-hero'), '@', 'You');
+      expect(find.text('NOW'), findsOneWidget);
+      expect(find.text('NEXT'), findsOneWidget);
       final currentSemantics = tester.widget<Semantics>(
         find
             .ancestor(
@@ -400,6 +427,35 @@ void main() {
       );
       expect(find.textContaining('IN '), findsNothing);
     });
+    testWidgets(
+      'the NEXT caption sits over the token it labels, not a guessed gap',
+      (tester) async {
+        // arrange - same scene as the row above, so the first "next" token
+        // is `timeline-actor-ghoul-1-1`.
+        final game = battleGame(
+          monsters: [
+            ghoulAt(const Position(1, 2), id: 'ghoul-1', speed: 20),
+            ghoulAt(const Position(3, 1), id: 'ghoul-2', energy: 50),
+          ],
+          visible: {
+            const Position(1, 1),
+            const Position(1, 2),
+            const Position(3, 1),
+          },
+        );
+
+        // act
+        await _pushGame(tester, game);
+
+        // assert - the caption's left edge lands on the token it names,
+        // never on a gap guessed from the chevron glyph's own advance.
+        final nextDx = tester.getTopLeft(find.text('NEXT')).dx;
+        final firstNextTokenDx = tester
+            .getTopLeft(find.byKey(const Key('timeline-actor-ghoul-1-1')))
+            .dx;
+        expect(nextDx, closeTo(firstNextTokenDx, 0.5));
+      },
+    );
     testWidgets(
       'a duplicate survivor keeps its suffix in the timeline and inspect after '
       'a sibling dies',
@@ -451,7 +507,13 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(find.text('the ghoul²'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(BottomSheet),
+            matching: find.text('the ghoul²'),
+          ),
+          findsOneWidget,
+        );
         expect(
           find.descendant(
             of: find.byType(BottomSheet),
@@ -495,6 +557,8 @@ void main() {
       expect(find.text('...'), findsNothing);
       expect(find.textContaining('IN '), findsNothing);
       expect(find.textContaining('NOW —'), findsNothing);
+      expect(find.text('NOW'), findsOneWidget);
+      expect(find.text('NEXT'), findsNothing);
     });
 
     testWidgets('the dock scrolls a truly overflowing legal queue on a phone', (
@@ -533,6 +597,8 @@ void main() {
         matching: find.byType(Scrollable),
       );
       final laterToken = find.byKey(const Key('timeline-actor-ghoul-6-12'));
+      final currentHero = find.byKey(const Key('timeline-current-hero'));
+      final currentHeroRectBefore = tester.getRect(currentHero);
 
       // assert - a real queue exceeds the phone, then drag reaches its end.
       final position = tester.state<ScrollableState>(scrollable).position;
@@ -541,9 +607,10 @@ void main() {
         tester.getRect(laterToken).left,
         greaterThan(tester.getRect(dock).right),
       );
-      await tester.drag(scrollable, const Offset(-800, 0));
+      await tester.drag(scrollable, const Offset(-1000, 0));
       await tester.pumpAndSettle();
       expect(position.pixels, greaterThan(0));
+      expect(tester.getRect(currentHero), currentHeroRectBefore);
       expect(
         tester.getRect(laterToken).right,
         lessThanOrEqualTo(tester.getRect(dock).right),
@@ -551,9 +618,15 @@ void main() {
       await tester.tap(laterToken);
       await tester.pumpAndSettle();
       expect(bloc.state.selectedActorId, 'ghoul-6');
-      expect(find.text('the ghoul⁶'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.text('the ghoul⁶'),
+        ),
+        findsOneWidget,
+      );
       expect(find.byType(DungeonSceneHost), findsOneWidget);
-      expect(find.byType(BattleShelf), findsOneWidget);
+      expect(find.text('Wait'), findsOneWidget);
       expect(find.textContaining('Engaged'), findsOneWidget);
       expect(find.byType(ListView), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -643,7 +716,14 @@ void main() {
 
       // assert
       expect(bloc.state.armedSpellId, 'firebolt');
-      expect(find.text('✳ Firebolt 2 — armed'), findsOneWidget);
+      expect(find.text('✳ Firebolt 2'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('✳ Firebolt 2')),
+          matching: find.text('— armed'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('an armed cast at a visible monster names the target', (
@@ -691,7 +771,7 @@ void main() {
       // act
       await tester.tap(find.text('✳ Firebolt 2'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('✳ Firebolt 2 — armed'));
+      await tester.tap(find.text('✳ Firebolt 2'));
       await tester.pumpAndSettle();
 
       // assert
@@ -798,8 +878,21 @@ void main() {
 
       // assert - one armed slot at a time
       expect(bloc.state.armedSpellId, 'bind');
-      expect(find.text('⛒ Bind 3 — armed'), findsOneWidget);
-      expect(find.text('✳ Firebolt 2 — armed'), findsNothing);
+      expect(find.text('⛒ Bind 3'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('⛒ Bind 3')),
+          matching: find.text('— armed'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('✳ Firebolt 2')),
+          matching: find.text('— armed'),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('mend casts on the hero without a card tap', (tester) async {
@@ -892,7 +985,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // act
-      await tester.tap(find.byKey(overflowKey));
+      await tester.tap(find.byKey(const ValueKey('+1')));
       await tester.pumpAndSettle();
 
       // assert - every spell is reachable from the sheet, cost-free
@@ -917,7 +1010,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // act
-      await tester.tap(find.byKey(overflowKey));
+      await tester.tap(find.byKey(const ValueKey('+1')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('overflow-bind')));
       await tester.pumpAndSettle();

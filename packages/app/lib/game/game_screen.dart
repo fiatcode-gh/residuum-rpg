@@ -5,9 +5,11 @@ import 'package:residuum_core/core.dart';
 import '../art/art_assets.dart';
 import '../town/town_bloc.dart';
 import '../world/world_bloc.dart';
-import 'action_icon.dart';
 import 'battle_view.dart';
+import 'crawl_action_row.dart';
 import 'crawl_status.dart';
+import 'crawl_style.dart';
+import 'crawl_surfaces.dart';
 import 'dungeon_palette.dart';
 import 'dungeon_scene.dart';
 import 'game_bloc.dart';
@@ -16,13 +18,8 @@ import 'log_line.dart';
 import 'grid_geometry.dart';
 import 'pack_screen.dart';
 import 'spell_row.dart';
-import '../town/town_style.dart' show ink, dim;
 
 const recenterKey = Key('recenter');
-const shelfKey = Key('battle-shelf');
-const overflowKey = Key('shelf-overflow');
-const shelfWaitKey = Key('shelf-wait');
-const controlsKey = Key('crawl-controls');
 
 class GameScreen extends StatelessWidget {
   const GameScreen({required this.palette, super.key});
@@ -56,84 +53,103 @@ class GameScreen extends StatelessWidget {
       listenWhen: (before, after) => !before.hasFled && after.hasFled,
       listener: (context, state) =>
           leaveEncounter(context, state, EncounterEnding.fled),
-      child: Scaffold(
-        body: SafeArea(
-          child: BlocBuilder<GameBloc, GameViewState>(
-            builder: (context, state) {
-              final bloc = context.read<GameBloc>();
-              return Stack(
-                children: [
-                  Column(
-                    children: [
-                      if (state.isBattleOpen)
-                        BattleDock(
-                          state: state,
-                          onActorSelected: (actor) {
-                            final presentation = state.presentationOf(actor.id);
-                            if (presentation == null) return;
-                            bloc.add(TimelineActorSelected(actor.id));
-                            showEnemyInfo(context, actor, presentation);
-                          },
-                        ),
-                      Expanded(
-                        key: dungeonSceneSlotKey,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: LayoutBuilder(
-                            builder: (mapContext, constraints) {
-                              final size = constraints.biggest;
-                              return Stack(
-                                children: [
-                                  DungeonSceneHost(
-                                    key: dungeonSceneHostKey,
-                                    state: state,
-                                    palette: palette,
-                                    onTap: (position) => _onMapTap(
-                                      context,
-                                      bloc,
-                                      state,
-                                      position,
-                                    ),
-                                    onPan: (delta) =>
-                                        bloc.add(MapPanned(delta)),
-                                    onLongPress: (position) => _onMapLongPress(
-                                      context,
-                                      state,
-                                      position,
-                                    ),
-                                  ),
-                                  if (_heroOffScreen(state, size))
-                                    Positioned(
-                                      top: 8,
-                                      right: 8,
-                                      child: FloatingActionButton.small(
-                                        key: recenterKey,
-                                        onPressed: () =>
-                                            bloc.add(const RecenterPressed()),
-                                        child: const Icon(
-                                          Icons.center_focus_strong,
-                                        ),
-                                      ),
-                                    ),
-                                ],
+      child: Theme(
+        data: crawlTheme,
+        child: Scaffold(
+          body: SafeArea(
+            child: BlocBuilder<GameBloc, GameViewState>(
+              builder: (context, state) {
+                final bloc = context.read<GameBloc>();
+                return Stack(
+                  children: [
+                    Column(
+                      children: [
+                        CrawlStatus(state: state, dungeon: bloc.dungeon),
+                        if (state.isBattleOpen)
+                          BattleDock(
+                            state: state,
+                            onActorSelected: (actor) {
+                              final presentation = state.presentationOf(
+                                actor.id,
                               );
+                              if (presentation == null) return;
+                              bloc.add(TimelineActorSelected(actor.id));
+                              showEnemyInfo(context, actor, presentation);
                             },
                           ),
+                        Expanded(
+                          key: dungeonSceneSlotKey,
+                          child: DecoratedBox(
+                            position: DecorationPosition.foreground,
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                top: BorderSide(
+                                  color: crawlRule,
+                                  width: crawlHairline,
+                                ),
+                                bottom: BorderSide(
+                                  color: crawlRule,
+                                  width: crawlHairline,
+                                ),
+                              ),
+                            ),
+                            child: LayoutBuilder(
+                              builder: (mapContext, constraints) {
+                                final size = constraints.biggest;
+                                return Stack(
+                                  children: [
+                                    DungeonSceneHost(
+                                      key: dungeonSceneHostKey,
+                                      state: state,
+                                      palette: palette,
+                                      onTap: (position) => _onMapTap(
+                                        context,
+                                        bloc,
+                                        state,
+                                        position,
+                                      ),
+                                      onPan: (delta) =>
+                                          bloc.add(MapPanned(delta)),
+                                      onLongPress: (position) =>
+                                          _onMapLongPress(
+                                            context,
+                                            state,
+                                            position,
+                                          ),
+                                    ),
+                                    if (_heroOffScreen(state, size))
+                                      Positioned(
+                                        top: 8,
+                                        right: 8,
+                                        child: CrawlPill(
+                                          key: recenterKey,
+                                          label: 'Recenter on the hero',
+                                          icon: Icons.center_focus_strong,
+                                          onPressed: () =>
+                                              bloc.add(const RecenterPressed()),
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
                         ),
-                      ),
-                      if (state.isBattleOpen)
-                        BattleShelf(state: state, bloc: bloc),
-                      CrawlStatus(state: state, dungeon: bloc.dungeon),
-                      LogPeek(key: logPeekKey, state: state, bloc: bloc),
-                      _Controls(key: controlsKey, state: state),
-                    ],
-                  ),
-                  if (state.logDrawerExtent != LogDrawerExtent.peek)
-                    LogDrawer(key: logDrawerKey, state: state, bloc: bloc),
-                  if (state.game.isGameOver) _DeathOverlay(state: state),
-                ],
-              );
-            },
+                        LogPeek(key: logPeekKey, state: state, bloc: bloc),
+                        CrawlActionRow(
+                          key: actionRowKey,
+                          notes: _notesFor(state),
+                          actions: _actionsFor(context, bloc, state),
+                        ),
+                      ],
+                    ),
+                    if (state.logDrawerExtent != LogDrawerExtent.peek)
+                      LogDrawer(key: logDrawerKey, state: state, bloc: bloc),
+                    if (state.game.isGameOver) _DeathOverlay(state: state),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -196,155 +212,142 @@ bool _heroOffScreen(GameViewState state, Size size) {
   return heroOffScreen(size, geometry, state.game.hero.position);
 }
 
-/// The one row of controls the crawl needs, each appearing only when it can do
-/// something.
+/// The crawl's one action row: every verb that applies, each appearing only
+/// when it can do something.
 ///
-/// A control that is visible but inert teaches the player nothing; a control
-/// that appears exactly when it applies is how the rules explain themselves. The
+/// A chip that is visible but inert teaches the player nothing; a chip that
+/// appears exactly when it applies is how the rules explain themselves. The
 /// pack is the exception and is always reachable, because looking at what you
 /// are carrying is not an action and should never be gated.
 ///
-/// Labels are short because the row divides by how many controls apply, and on
-/// the stairs with something underfoot that is four ways. 'Drink potion (2)'
-/// ellipsized to 'Drink poti…' there, which threw away the count — the one part
-/// of that label the player cannot get anywhere else.
-
-class _Controls extends StatelessWidget {
-  const _Controls({required this.state, super.key});
-
-  final GameViewState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final bloc = context.read<GameBloc>();
-    final underfoot = state.itemsUnderfoot;
-    final node = state.nodeUnderfoot;
-    final potion = state.firstPotion;
-    final ending = state.canLeave && state.isAtTheBottom;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Column(
-        children: [
-          if (ending)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 4),
-              child: Text(
-                doneAtTheBottom,
-                style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  color: Color(0xFF8A919E),
-                ),
-              ),
-            ),
-          if (node != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                'Underfoot: ${node.marking} ${node.word}',
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  color: Color(0xFF8A919E),
-                ),
-              ),
-            ),
-          if (underfoot.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                underfoot.length == 1
-                    ? 'Here: ${underfoot.last.displayName}'
-                    : 'Here: ${underfoot.last.displayName} '
-                          'and ${underfoot.length - 1} more',
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  color: Color(0xFF8A919E),
-                ),
-              ),
-            ),
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            alignment: WrapAlignment.center,
-            children: [
-              if (state.canPickUp)
-                _Control(
-                  label: 'Pick up',
-                  onPressed: () => bloc.add(const PickUpPressed()),
-                ),
-              if (state.canGather)
-                _Control(
-                  label: node!.verb,
-                  onPressed: () => bloc.add(const GatherPressed()),
-                ),
-              if (potion != null)
-                _Control(
-                  label: 'Drink (${state.potionCount})',
-                  icon: ActionIcon.potion,
-                  onPressed: state.game.isGameOver
-                      ? null
-                      : () => bloc.add(const QuickDrinkPressed()),
-                ),
-              _Control(
-                label: 'Pack (${state.game.inventory.length})',
-                icon: ActionIcon.pack,
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => BlocProvider.value(
-                      value: bloc,
-                      child: const CrawlPackScreen(),
-                    ),
-                  ),
-                ),
-              ),
-              if (state.isEncounter &&
-                  !state.isRoadClear &&
-                  !state.isBattleOpen)
-                _Control(
-                  label: 'Wait',
-                  icon: ActionIcon.wait,
-                  onPressed: () =>
-                      context.read<GameBloc>().add(const WaitPressed()),
-                ),
-              if (state.canFlee)
-                _Control(
-                  label: 'Flee',
-                  onPressed: () =>
-                      context.read<GameBloc>().add(const FleePressed()),
-                ),
-              if (state.isRoadClear)
-                _Control(
-                  label: 'Move on',
-                  onPressed: () =>
-                      leaveEncounter(context, state, EncounterEnding.cleared),
-                ),
-              if (state.canAscend)
-                _Control(
-                  label: 'Ascend <',
-                  icon: ActionIcon.ascend,
-                  onPressed: () => bloc.add(const AscendPressed()),
-                ),
-              if (state.canDescend)
-                _Control(
-                  label: 'Descend >',
-                  icon: ActionIcon.descend,
-                  onPressed: () => bloc.add(const DescendPressed()),
-                ),
-              if (state.canLeave)
-                _Control(
-                  label: ending ? doneControl : 'Leave',
-                  onPressed: () => ending
-                      ? _confirmCompletion(context, state)
-                      : suspendDungeon(context, state),
-                ),
-            ],
-          ),
-        ],
+/// Exploration and the combat shelf shared no row before this unit — a hero
+/// mid-fight saw the combat shelf under the map and the exploration row
+/// beneath it, and Drink was live on both. The Drink and Wait entries below
+/// carry the merge's whole mechanism: each gains the guard its other half
+/// already had, so both render from exactly one guard, never two.
+List<CrawlAction> _actionsFor(
+  BuildContext context,
+  GameBloc bloc,
+  GameViewState state,
+) {
+  final isBattleOpen = state.isBattleOpen;
+  final firstPotion = state.firstPotion;
+  final node = state.nodeUnderfoot;
+  final readied = state.knownSpells.take(readiedSpellCount);
+  final ending = state.canLeave && state.isAtTheBottom;
+  return [
+    if (isBattleOpen && firstPotion != null)
+      CrawlAction(
+        label: 'Drink (${state.potionCount})',
+        icon: ActionIcon.potion,
+        onPressed: state.game.isGameOver
+            ? null
+            : () => bloc.add(const QuickDrinkPressed()),
       ),
-    );
-  }
+    if (isBattleOpen)
+      for (final spell in readied)
+        CrawlAction(
+          label:
+              '${spell.school.schoolMarking} ${spell.name} '
+              '${spell.manaCost}',
+          icon: ActionIcon.forSpell(spell.id),
+          armable: true,
+          armed: state.armedSpellId == spell.id,
+          onPressed: () => _onSpell(bloc, state, spell),
+        ),
+    if (isBattleOpen && state.knownSpells.length > readiedSpellCount)
+      CrawlAction(
+        label: '+${state.knownSpells.length - readiedSpellCount}',
+        icon: ActionIcon.more,
+        onPressed: () => _openSpellsOverflow(context, bloc, state),
+      ),
+    if (isBattleOpen)
+      CrawlAction(
+        label: 'Wait',
+        icon: ActionIcon.wait,
+        onPressed: () => bloc.add(const WaitPressed()),
+      ),
+    if (state.canPickUp)
+      CrawlAction(
+        label: 'Pick up',
+        onPressed: () => bloc.add(const PickUpPressed()),
+      ),
+    if (state.canGather)
+      CrawlAction(
+        label: node!.verb,
+        onPressed: () => bloc.add(const GatherPressed()),
+      ),
+    if (!isBattleOpen && firstPotion != null)
+      CrawlAction(
+        label: 'Drink (${state.potionCount})',
+        icon: ActionIcon.potion,
+        onPressed: state.game.isGameOver
+            ? null
+            : () => bloc.add(const QuickDrinkPressed()),
+      ),
+    CrawlAction(
+      label: 'Pack (${state.game.inventory.length})',
+      icon: ActionIcon.pack,
+      onPressed: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) =>
+              BlocProvider.value(value: bloc, child: const CrawlPackScreen()),
+        ),
+      ),
+    ),
+    if (state.isEncounter && !state.isRoadClear && !isBattleOpen)
+      CrawlAction(
+        label: 'Wait',
+        icon: ActionIcon.wait,
+        onPressed: () => bloc.add(const WaitPressed()),
+      ),
+    if (state.canFlee)
+      CrawlAction(
+        label: 'Flee',
+        onPressed: () => bloc.add(const FleePressed()),
+      ),
+    if (state.isRoadClear)
+      CrawlAction(
+        label: 'Move on',
+        onPressed: () =>
+            leaveEncounter(context, state, EncounterEnding.cleared),
+      ),
+    if (state.canAscend)
+      CrawlAction(
+        label: 'Ascend <',
+        icon: ActionIcon.ascend,
+        onPressed: () => bloc.add(const AscendPressed()),
+      ),
+    if (state.canDescend)
+      CrawlAction(
+        label: 'Descend >',
+        icon: ActionIcon.descend,
+        onPressed: () => bloc.add(const DescendPressed()),
+      ),
+    if (state.canLeave)
+      CrawlAction(
+        label: ending ? doneControl : 'Leave',
+        onPressed: () => ending
+            ? _confirmCompletion(context, state)
+            : suspendDungeon(context, state),
+      ),
+  ];
+}
+
+/// The crawl's conditional notice sentences, in the same order and under the
+/// same conditions as before the merge.
+List<String> _notesFor(GameViewState state) {
+  final node = state.nodeUnderfoot;
+  final underfoot = state.itemsUnderfoot;
+  return [
+    if (state.canLeave && state.isAtTheBottom) doneAtTheBottom,
+    if (node != null) 'Underfoot: ${node.marking} ${node.word}',
+    if (underfoot.isNotEmpty)
+      underfoot.length == 1
+          ? 'Here: ${underfoot.last.displayName}'
+          : 'Here: ${underfoot.last.displayName} '
+                'and ${underfoot.length - 1} more',
+  ];
 }
 
 /// Hands the finished run back to the town and uncovers the town screen.
@@ -425,38 +428,17 @@ Future<void> _confirmCompletion(
   BuildContext context,
   GameViewState state,
 ) async {
-  final done = await showDialog<bool>(
-    context: context,
-    builder: (dialog) => AlertDialog(
-      title: const Text(
-        'The delve is done. Leave with your spoils?',
-        style: TextStyle(fontFamily: 'monospace'),
-      ),
-      content: const Text(
+  final done = await showCrawlConfirm(
+    context,
+    title: 'The delve is done. Leave with your spoils?',
+    body:
         'There is nothing below this floor, so walking out ends the delve '
         'rather than leaving it standing. Everything you carry comes with '
         'you.',
-        style: TextStyle(fontFamily: 'monospace', fontSize: 13),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialog).pop(false),
-          child: const Text(
-            'Stay down here',
-            style: TextStyle(fontFamily: 'monospace'),
-          ),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(dialog).pop(true),
-          child: const Text(
-            'Leave with them',
-            style: TextStyle(fontFamily: 'monospace'),
-          ),
-        ),
-      ],
-    ),
+    dismiss: 'Stay down here',
+    confirm: 'Leave with them',
   );
-  if (!(done ?? false) || !context.mounted) return;
+  if (!done || !context.mounted) return;
   leaveDungeon(context, state, died: false);
 }
 
@@ -485,44 +467,6 @@ void leaveEncounter(
   Navigator.of(context).pop();
 }
 
-class _Control extends StatelessWidget {
-  const _Control({required this.label, required this.onPressed, this.icon});
-
-  final String label;
-  final VoidCallback? onPressed;
-  final ActionIcon? icon;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    enabled: onPressed != null,
-    label: label,
-    onTap: onPressed,
-    child: ExcludeSemantics(
-      child: FilledButton(
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-          minimumSize: const Size(0, 40),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              ActionIconImage(icon!),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
 class _DeathOverlay extends StatelessWidget {
   const _DeathOverlay({required this.state});
 
@@ -530,34 +474,23 @@ class _DeathOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ColoredBox(
-    color: const Color(0xCC0E1014),
+    color: crawlScrim,
     child: Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'You died.',
-            style: TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 28,
-              color: Color(0xFFE6EAF0),
-            ),
-          ),
-          const SizedBox(height: 8),
+          const Text('You died.', style: crawlHeadline),
+          const SizedBox(height: crawlRhythm * 2),
           const Text(
             'What you carried is gone. What you wore is not.',
-            style: TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 13,
-              color: Color(0xFF8A919E),
-            ),
+            style: crawlBodyDim,
           ),
-          const SizedBox(height: 16),
-          FilledButton(
+          const SizedBox(height: crawlRhythm * 4),
+          CrawlPill(
+            label: state.isEncounter ? 'Wake at home' : 'Return to town',
             onPressed: () => state.isEncounter
                 ? leaveEncounter(context, state, EncounterEnding.died)
                 : leaveDungeon(context, state, died: true),
-            child: Text(state.isEncounter ? 'Wake at home' : 'Return to town'),
           ),
         ],
       ),
@@ -565,184 +498,44 @@ class _DeathOverlay extends StatelessWidget {
   );
 }
 
-/// The one combat shelf: readied abilities, the overflow into the full
-/// grimoire, a quick drink, and Wait.
-///
-/// Consolidation, not restriction: the readied slots are the first few known
-/// spells in the pack's own order — school, then name — and the overflow lists
-/// every known spell, so nothing a hero knows is unreachable from the shelf.
-/// A target spell arms and the map carries the aim; Mend and Ward land on the
-/// hero and cast from the row itself.
-///
-/// The armed state reads by border and word — never a hue — the same grammar
-/// the old bar used.
-class BattleShelf extends StatelessWidget {
-  const BattleShelf({super.key, required this.state, required this.bloc});
-
-  final GameViewState state;
-  final GameBloc bloc;
-
-  /// How many known spells sit readied on the shelf before the overflow.
-  static const int readiedSpellCount = 3;
-
-  void _onSpell(Spell spell) {
-    if (spell.kind == SpellKind.mend || spell.kind == SpellKind.ward) {
-      bloc.add(CastPressed(spell.id));
-    } else {
-      bloc.add(SkillArmed(state.armedSpellId == spell.id ? null : spell.id));
-    }
-  }
-
-  Widget _shelfButton(Spell spell) {
-    final armed = state.armedSpellId == spell.id;
-    final icon = ActionIcon.forSpell(spell.id);
-    return TextButton(
-      key: Key('shelf-spell-${spell.id}'),
-      onPressed: () => _onSpell(spell),
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        side: armed ? const BorderSide(color: ink) : null,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            ActionIconImage(icon),
-            const SizedBox(width: 6),
-          ],
-          Text(
-            armed
-                ? '${spell.school.schoolMarking} ${spell.name} '
-                      '${spell.manaCost} — armed'
-                : '${spell.school.schoolMarking} ${spell.name} '
-                      '${spell.manaCost}',
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 12,
-              color: ink,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openOverflow(BuildContext context) {
-    return showModalBottomSheet<void>(
-      context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    'Spells',
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 13,
-                      color: ink,
-                    ),
-                  ),
-                ),
-                for (final spell in state.knownSpells)
-                  _OverflowRow(
-                    spell: spell,
-                    armed: state.armedSpellId == spell.id,
-                    onCast: () {
-                      Navigator.of(sheetContext).pop();
-                      _onSpell(spell);
-                    },
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final readied = state.knownSpells.take(readiedSpellCount);
-    final overflowCount = state.knownSpells.length - readiedSpellCount;
-    final potion = state.firstPotion;
-    return Padding(
-      key: shelfKey,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Wrap(
-        spacing: 6,
-        runSpacing: 4,
-        children: [
-          if (potion != null)
-            _ShelfButton(
-              label: 'Drink (${state.potionCount})',
-              icon: ActionIcon.potion,
-              onPressed: state.game.isGameOver
-                  ? null
-                  : () => bloc.add(const QuickDrinkPressed()),
-            ),
-          for (final spell in readied) _shelfButton(spell),
-          if (overflowCount > 0)
-            _ShelfButton(
-              key: overflowKey,
-              label: '+$overflowCount',
-              icon: ActionIcon.more,
-              onPressed: () => _openOverflow(context),
-            ),
-          _ShelfButton(
-            key: shelfWaitKey,
-            label: 'Wait',
-            icon: ActionIcon.wait,
-            onPressed: () => bloc.add(const WaitPressed()),
-          ),
-        ],
-      ),
-    );
+/// What tapping a spell chip or overflow row does: Mend and Ward cast
+/// straight from the row since they never need a target; everything else
+/// arms — a second tap on the same chip disarms.
+void _onSpell(GameBloc bloc, GameViewState state, Spell spell) {
+  if (spell.kind == SpellKind.mend || spell.kind == SpellKind.ward) {
+    bloc.add(CastPressed(spell.id));
+  } else {
+    bloc.add(SkillArmed(state.armedSpellId == spell.id ? null : spell.id));
   }
 }
 
-/// One wide shelf button: a word, tappable, in the dock's ink.
-class _ShelfButton extends StatelessWidget {
-  const _ShelfButton({
-    required this.label,
-    required this.onPressed,
-    this.icon,
-    super.key,
-  });
-
-  final String label;
-  final VoidCallback? onPressed;
-  final ActionIcon? icon;
-
-  @override
-  Widget build(BuildContext context) => TextButton(
-    onPressed: onPressed,
-    style: TextButton.styleFrom(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+/// Opens the full grimoire behind the row's overflow chip: every known
+/// spell, so nothing a hero knows is unreachable from the row.
+Future<void> _openSpellsOverflow(
+  BuildContext context,
+  GameBloc bloc,
+  GameViewState state,
+) => showCrawlSheet<void>(
+  context,
+  children: (sheetContext) => [
+    const Padding(
+      padding: EdgeInsets.only(bottom: crawlPanelPadding),
+      child: Text('Spells', style: crawlPanelTitle),
     ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (icon != null) ...[ActionIconImage(icon!), const SizedBox(width: 6)],
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 12,
-            color: ink,
-          ),
-        ),
-      ],
-    ),
-  );
-}
+    for (final spell in state.knownSpells)
+      _OverflowRow(
+        spell: spell,
+        armed: state.armedSpellId == spell.id,
+        onCast: () {
+          Navigator.of(sheetContext).pop();
+          _onSpell(bloc, state, spell);
+        },
+      ),
+  ],
+);
 
-/// One row of the overflow grimoire: what the shelf button casts, in full.
+/// One row of the overflow grimoire: what the row's chip would cast, in
+/// full — the school and name a chip's marking can only abbreviate.
 class _OverflowRow extends StatelessWidget {
   const _OverflowRow({
     required this.spell,
@@ -755,29 +548,26 @@ class _OverflowRow extends StatelessWidget {
   final VoidCallback onCast;
 
   @override
-  Widget build(BuildContext context) => SpellRow(
-    spell: spell,
-    style: const TextStyle(fontFamily: 'monospace', fontSize: 13, color: ink),
-    dimStyle: const TextStyle(
-      fontFamily: 'monospace',
-      fontSize: 11,
-      color: dim,
-    ),
-    detail: effectOf(spell),
-    trailing: TextButton(
-      key: Key('overflow-${spell.id}'),
-      onPressed: onCast,
-      style: TextButton.styleFrom(
-        side: armed ? const BorderSide(color: ink) : null,
-      ),
-      child: Text(
-        armed ? '— armed' : spell.school.schoolMarking,
-        style: const TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 12,
-          color: ink,
+  Widget build(BuildContext context) {
+    final skin = crawlChipSkin(CrawlChipState.armed);
+    return SpellRow(
+      spell: spell,
+      style: crawlLine,
+      dimStyle: crawlDetail,
+      detail: effectOf(spell),
+      trailing: TextButton(
+        key: Key('overflow-${spell.id}'),
+        onPressed: onCast,
+        style: TextButton.styleFrom(
+          side: armed
+              ? BorderSide(color: skin.border, width: skin.borderWidth)
+              : null,
+        ),
+        child: Text(
+          armed ? '— armed' : spell.school.schoolMarking,
+          style: crawlLine,
         ),
       ),
-    ),
-  );
+    );
+  }
 }

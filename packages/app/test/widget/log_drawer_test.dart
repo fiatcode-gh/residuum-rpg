@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/crawl_action_row.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/event_messages.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
+import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/log_drawer.dart';
 import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_app/town/town_bloc.dart';
@@ -120,7 +122,7 @@ void main() {
     await _pushGame(tester, bloc);
 
     final peekTop = tester.getTopLeft(find.byKey(logPeekKey)).dy;
-    final controlsTop = tester.getTopLeft(find.byKey(controlsKey)).dy;
+    final controlsTop = tester.getTopLeft(find.byKey(actionRowKey)).dy;
     expect(peekTop, lessThan(controlsTop));
   });
 
@@ -250,12 +252,63 @@ void main() {
       final olderSentence = tester.widget<Text>(_inDrawer('First line.'));
       final olderMark = tester.widget<Text>(find.text(LogCategory.moved.mark));
 
-      expect(newestSentence.style!.color, const Color(0xFFE6EAF0));
-      expect(newestMark.style!.color, const Color(0xFFE6EAF0));
-      expect(olderSentence.style!.color, const Color(0xFF8A919E));
-      expect(olderMark.style!.color, const Color(0xFF8A919E));
+      expect(
+        newestSentence.style!.color!.computeLuminance(),
+        greaterThan(olderSentence.style!.color!.computeLuminance()),
+      );
+      expect(newestMark.style!.color, newestSentence.style!.color);
+      expect(olderMark.style!.color, olderSentence.style!.color);
     },
   );
+
+  testWidgets(
+    'the peek renders an expand affordance and shows no category mark',
+    (tester) async {
+      await onAPhone(tester);
+      final bloc = GameBloc(
+        game: _game(),
+        log: const [LogLine('Something is on the road.', LogCategory.noticed)],
+        stepDelay: Duration.zero,
+      );
+      addTearDown(bloc.close);
+      await _pushGame(tester, bloc);
+
+      expect(
+        find.descendant(of: find.byKey(logPeekKey), matching: find.text('›')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(logPeekKey),
+          matching: find.text(LogCategory.noticed.mark),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets("a row's mark sits left of its sentence, inside the gutter", (
+    tester,
+  ) async {
+    await onAPhone(tester);
+    final bloc = GameBloc(
+      game: _game(),
+      log: const [LogLine('Something is on the road.', LogCategory.noticed)],
+      stepDelay: Duration.zero,
+    );
+    addTearDown(bloc.close);
+    await _pushGame(tester, bloc);
+
+    await tester.tap(find.byKey(logPeekKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(logHandleKey));
+    await tester.pumpAndSettle();
+
+    final markRect = tester.getRect(find.text(LogCategory.noticed.mark));
+    final sentenceRect = tester.getRect(_inDrawer('Something is on the road.'));
+    expect(markRect.right, lessThanOrEqualTo(sentenceRect.left));
+    expect(markRect.width, lessThanOrEqualTo(crawlMarkColumn));
+  });
 
   testWidgets('follow holds the reader at newest while active', (tester) async {
     await onAPhone(tester);
