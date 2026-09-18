@@ -2934,3 +2934,228 @@ Append-only. Supersede old decisions; do not rewrite history.
 - `mergeStateStatus` reports `BLOCKED` even with every required check green,
   so a future merge needs the user to say whether bypassing the ruleset is
   acceptable. Do not reach for `--admin` on the architect's own judgement.
+### Unit 12 publication — closed: PR #22 merged
+
+- 2026-09-18 — **PR #22 merged into `main` as
+  `907a4a83e7c592d4f6dd0c55e6f30c3b1b8bc49b`** at 08:49:20Z, base `main`,
+  head `residuum-visual-reboot-12`. Confirmed at source with `gh pr view 22`.
+  The preceding entry's "open, unmerged" state is superseded; the ruleset
+  question it raised was resolved by the user, not by the architect, and no
+  `--admin` bypass appears in the history.
+- Unit 11's merge base `60909e6` is therefore no longer `HEAD`. Units 1–12
+  and the Unit 12.5 gate are all merged and closed.
+
+## Unit 13 — Visual Parity Re-baseline, complete but for the roadmap gate
+
+### External intake, validated 2026-09-18
+
+- A ChatGPT LDD bundle arrived at `units/unit-13/`:
+  `kind: ldd`, `epic: visual-reboot`, `design_status: settled`,
+  `implementation_strategy: not_needed`, `authorization: not-carried`,
+  `observed_ref: b5aeb2f3f81298bbb338b3e22af10d730fb255d2`.
+- `sha256sum -c` passed on all seven artifacts;
+  `validate-planning-handoff.py` returned `ok`.
+- The bundle's mock copy is **byte-identical** to the local one
+  (`0dd2a752…094ed`), so external and local visual truth do not diverge.
+- `observed_ref` was stale in the bundle's favour: it saw PR #22 open, and
+  the PR has since merged. The only intervening change is Unit 12's own crawl
+  seam, which the bundle already assumed. Nothing it relies on is invalid.
+- **The WHAT was approved by the user in the sending session and is honoured
+  rather than re-asked**, because the canonical `units/unit-13/CONTRACT.md` is
+  materially unchanged from the proposal. Unit 13 writes only records, so it
+  needed no local implementation authorization to run.
+- Work ran on branch `residuum-visual-reboot-13` off `907a4a8`. The only
+  pre-existing working-tree change was the untracked bundle itself, which is
+  user-owned and was preserved.
+
+### Stale records corrected, not rewritten
+
+- `units/unit-12/CONTRACT.md` said "drafted, awaiting explicit user
+  approval". Corrected to the true state: approved, implemented, accepted,
+  device-verified, merged as `907a4a8`.
+- `units/unit-12.5/DEVICE-CHECKPOINT.md` still carried a mid-pass forward
+  pointer written while capsule D was in flight, describing dispatches that
+  had completed and live device state that no longer existed. Replaced by a
+  closure note that names what it superseded. Append-only ledger history was
+  not touched.
+
+### What the audit found
+
+Ten frames compared side by side, in colour and in greyscale; **77 numbered
+gaps**, each classified `CODE`, `ASSET`, `CODE + ASSET`,
+`INTENTIONAL DEVIATION` or `ALREADY ACCEPTABLE`. Full record in
+`units/unit-13/PARITY-AUDIT.md` and `PARITY-MATRIX.md`; source grounding in
+`units/unit-13/recon.md`; evidence in
+`.flow/evidence/visual-reboot/unit-13-parity/`.
+
+The three findings that reorder the epic:
+
+- **The lavender is a missing theme, not a styling choice.** `main.dart:81-85`
+  and `:169-172` build the only `MaterialApp` themes as bare
+  `ThemeData(brightness: dark, scaffoldBackgroundColor: #0E1014,
+  useMaterial3: true)`. The crawl escapes it through its own local
+  `crawlTheme` singleton (`crawl_style.dart:146-176`); the town and side
+  screens have no equivalent, so every stock `FilledButton` and `ChoiceChip`
+  renders in Material 3's default lavender. Visible on frames 6, 8, 9 and 10
+  and on no crawl frame. It is the cheapest large visual win in the epic.
+- **There are two style seams and they duplicate the palette.**
+  `crawl_style.dart:3-12` and `town_style.dart:9-12` declare the same four
+  values — `#E6EAF0`, `#8A919E`, `#15181F`, `#2A2E38` — with no shared
+  source, and nine bespoke row anatomies exist across the town screens with
+  no common container, no leading icon slot and no trailing chevron.
+- **The dungeon is value-inverted against the mock.** The mock is dark stone
+  with a torch pool and wall mass; the app renders a bright floor slab on
+  pure black where wall and unknown space are indistinguishable. The authored
+  floor and wall textures already ship and are effectively invisible at
+  `authoredScale` 0.32 under `softLight`. Lighting is one hero-centred radial
+  gradient (`dungeon_scene_material.dart:668-697`) with no placed sources and
+  no falloff at the boundary. Terrain vocabulary is `wall`, `floor`,
+  `stairsUp`, `stairsDown` and nothing else; stairs are a `<` glyph; there is
+  no door, prop, portrait, item, spell or creature art anywhere in the
+  repository beyond 8 verb icons, 18 dungeon tiles and 3 environment jpgs.
+
+### Decisions locked by Unit 13
+
+Recorded in full in `units/unit-13/VISUAL-SYSTEM.md`.
+
+- **Typography**: the monospace-only identity is superseded. Three roles —
+  a letterspaced display roman for titles and captions, a serif text face for
+  names and prose, and monospace retained deliberately for numbers, meters,
+  ordinals and stat columns so they still align. Two authored font faces are
+  required; a libre family is preferred. Recommendation: Spectral for text,
+  EB Garamond for display, because every density failure in the audit is at
+  12–13 px.
+- **Colour**: the lock stands in its true form — no important state by hue
+  alone, every screen legible in greyscale — but "monochrome" was an
+  over-reading. `pair-04-targeting-grey.png` proves the mock's own blue range
+  cells and red target reticle stay distinguishable in greyscale because one
+  is a filled rounded square and the other is four corner marks. Hue is
+  permitted as redundant reinforcement, never as a carrier, and **no
+  red-versus-green pair is permitted anywhere**.
+- **Surfaces**: the inset framed row is the default list unit; a medallion in
+  a fixed-width leading column holds authored art; no elevation, no shadow,
+  no gradient. **Ornament is prohibited** — the mock reads rich because of art
+  and type, not decoration.
+- **Controls**: one family across both seams, states carried by fill, border
+  weight, label weight and icon opacity, as the crawl already does. No stock
+  Material control may render unthemed on any screen.
+- **Assets**: new authored assets are permitted and necessary. Eight families
+  are named and nothing outside them is pre-authorized: verb icons, room
+  medallions, spell medallions, item art by family, ten log pictograms, hero
+  portraits, dungeon structure (stairs, doors, per-biome props, light
+  sources), creature art. `unit-2/ART-BIBLE.md` remains binding.
+- **Composition** is open. Two consequences: the town's numeric status block
+  leaves the title region, and a room with a console becomes a menu of doors
+  with the work behind them, as the Forge frame shows.
+
+### Unit 12.5 AC17 superseded
+
+AC17 concluded that dungeon viewport output was not a dominant remaining
+parity gap and that framing dominated. **Superseded.** The ten-frame evidence
+shows two dominant families of comparable size: the dungeon's
+material/light/structure/actor rendering (frames 2–4), and the
+application-wide type/surface/control/art absence (frames 1, 5–10). Neither
+dominates the other, and the recut roadmap orders work by dependency and cost
+rather than by dominance. `Dungeon Structural Asset Expansion` survives as
+two units rather than one.
+
+### The recut roadmap, awaiting approval
+
+Full text in `units/unit-13/ROADMAP.md`. Eight units plus two defects:
+
+| Unit | Frames | Ownership |
+|---|---|---|
+| U14 Type, palette and surface authority | all ten | CODE + ASSET |
+| U15 Row, control and chip grammar | 1–4, 6–10 | CODE |
+| U16 Authored icon and art families | 1, 5–10 | ASSET + thin CODE |
+| U17 Illustration headers and hero portrait | 1, 6, 9, 10 | CODE + ASSET |
+| U18 Dungeon light and stone value | 2, 3, 4 | CODE |
+| U19 Dungeon structure and props | 2, 3 | CODE + ASSET |
+| U20 Actor representation | 2, 3, 4 | CODE + ASSET |
+| U21 Combat chrome density | 2–5 | CODE |
+
+- **U13.1, the map bleed, runs before U18** — U18 rewrites the same
+  viewport's lighting and U21 re-measures the same seam, so both would
+  inherit the bug. Diagnosed under `flow-debugging`; a `ClipRect` is still
+  the wrong first move, because hiding overflow while the camera keeps
+  showing rows the box does not own silently invalidates the
+  7.93-rows-of-sight figure.
+- **The post-death save-read candidate stays out of the epic** and needs its
+  own contract. It blocks nothing above and must not be diagnosed inside a
+  visual unit.
+- **O3 is not a unit.** U15 touches the same chips and may retire the
+  label-keyed handles in passing.
+
+### Open questions carried to the user
+
+1. The font family.
+2. Whether "never an application-wide design system" is superseded to the
+   extent of a shared token module plus sibling per-screen themes — the shape
+   `crawlTheme` already has, so nothing is restyled implicitly and each
+   screen root opts in. The lock was written when the epic was the crawl
+   seam; the epic is now all ten frames and the palette is already duplicated.
+3. Frame 4's three intermediate cells, which may imply range or path feedback
+   the game does not have. That is a gameplay affordance, and Unit 13 refuses
+   to infer a mechanic from a picture.
+4. The world map and the roster have **no approved frame and no visual
+   baseline anywhere in this epic**. Inherit the vocabulary and accept, or
+   commission frames?
+5. Whether U18 jumps the queue. It shares no code with U14–U17 and needs no
+   new art.
+
+### Verification
+
+- The whole unit is records: `git status` shows changes under `.flow/` only,
+  so AC13 holds by construction and no production proof is owed. No
+  formatter, analyzer or suite run was warranted or performed — Unit 12's
+  gate evidence on `907a4a8` (120 files formatted, 0 changed; `flutter
+  analyze` no issues; 906 tests passing) stands unchanged because no
+  production file moved.
+- Every source claim the audit leans on was re-read by the architect at
+  source rather than taken from a scout: the two seams' colour constants, the
+  missing town-side theme, `cameraCellSize` 36 with its dartdoc rationale,
+  the ten `LogCategory` glyphs, the `pubspec.yaml` asset block and the absent
+  `fonts:` block, and the whole authored-asset inventory.
+- The three read-only scouts (`agent://TownScreensRecon`,
+  `agent://CrawlSeamRecon`, `agent://DungeonArtRecon`) extracted the
+  file:line inventory; their load-bearing facts are condensed into
+  `units/unit-13/recon.md` because agent artifacts do not outlive the session.
+
+### Unit 13 closed — the roadmap and its five open questions, approved 2026-09-18
+
+The architect presented the recut roadmap and the five decisions Unit 13 had
+deliberately refused to make alone. The user answered all five:
+
+1. **Roadmap approved as ordered** — U13.1, then U14 through U21.
+2. **Fonts: Spectral for text, EB Garamond for display.** Every density
+   failure in the audit lives at 12–13 px, which is where a decorative face
+   breaks; Spectral holds that size and EB Garamond's letterspaced caps carry
+   the display register.
+3. **The shared style seam is approved**, and the carry-forward lock "never an
+   application-wide design system" is superseded **to exactly that extent**:
+   one shared token module plus sibling per-screen themes, the shape
+   `crawlTheme` already has. Nothing is restyled implicitly; every screen root
+   opts in. A `MaterialApp`-wide `ThemeData` restyling stock Material controls
+   application-wide remains prohibited.
+4. **Frame 4's three intermediate cells are a mock flourish.** No range or
+   path feedback is implied and none will be built. The map marks the legal
+   targets, as it does today. Unit 13 put this to the user rather than
+   inferring a mechanic from a picture, and the answer closes gap 4.3 as an
+   intentional deviation.
+5. **The world map and the roster inherit the vocabulary and gain an evidence
+   gate.** No frame is commissioned. U14 owes the first device shot of each in
+   colour and greyscale; U15 and U17 re-shoot them when their changes land.
+   They stop being the epic's only unevidenced surfaces.
+
+`units/unit-13/` records were amended to match: the font and seam decisions
+moved from recommendation to settled (`VISUAL-SYSTEM.md` sections 1, 8, 9),
+gap 4.3 reclassified in both `PARITY-AUDIT.md` and `PARITY-MATRIX.md`, U14's
+gate widened to the world map and the roster, and `CONTRACT.md` AC14 closed.
+
+**All fourteen acceptance criteria are met. Unit 13 is closed.**
+
+**What the approval does not carry.** It authorizes the roadmap's shape and
+Unit 13's decisions, not implementation. Every unit still needs its own
+contract approval, and where it carries consequential HOW, its own plan
+approval. Nothing remote is authorized; push, pull request and merge remain
+separate gates — the lesson Unit 12 paid for.
