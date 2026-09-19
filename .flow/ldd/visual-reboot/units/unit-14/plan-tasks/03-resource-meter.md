@@ -16,7 +16,7 @@ All commands run from `packages/app`.
 ## Starting condition
 
 - Tasks 01 and 02 are accepted: `lib/style/tokens.dart` exports the ladder, the
-  rhythm and the eighteen roles but **no meter hue and no `labelColumn`**;
+  rhythm and the **twenty** roles but **no meter hue and no `labelColumn`**;
   `lib/style/surfaces.dart` does not exist; `crawl_style.dart` is aliases only;
   the three crawl chrome caps are re-derived;
 - `crawl_status.dart:118-170` still holds the private `_Meter`, and `:8-10`

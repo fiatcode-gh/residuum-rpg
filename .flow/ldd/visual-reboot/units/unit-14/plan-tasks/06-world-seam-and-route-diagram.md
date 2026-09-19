@@ -119,12 +119,22 @@ every callback and string are **unchanged**.
 
 | line | today | becomes |
 |---|---|---|
-| `:99-103` | `'n DAY(S)'` 10/ink | `textMicro.copyWith(color: ink)` |
-| `:109-111` | `'ON THIS ROAD'` 9/ink | `textMicro.copyWith(color: ink)` |
-| `:115-119` | `'DANGER n/100'` 10/dim | `textMicro` |
-| `:198-202` | node kind word 9/dim | `textMicro` |
-| `:206-210` | node name 11/ink | `textDetail.copyWith(color: ink)` |
-| `:216-220` | node state 9/dim | `textMicro` |
+| `:99-103` | `'n DAY(S)'` 10/ink | `textMicro` |
+| `:109-111` | `'ON THIS ROAD'` 9/ink | `textMicro` |
+| `:115-119` | `'DANGER n/100'` 10/dim | `textMicroDim` |
+| `:198-202` | node kind word 9/dim | `textMicroDim` |
+| `:206-210` | node name 11/ink | `textDetail` |
+| `:216-220` | node state 9/dim | `textMicroDim` |
+
+**Every one of these is a plain alias — no `copyWith` anywhere.** An earlier
+version of this brief mandated `textMicro.copyWith(color: ink)` at the first
+two rows and `textDetail.copyWith(color: ink)` at the node name. Architect
+amendment **A8** struck that: `copyWith` is not const-evaluable, `:109-111`
+is a `const Text`, and the other two allocate per build in a diagram that
+rebuilds on every world state change. `textDetail` and `textMicro` are now
+**ink primaries** with `textDetailDim` and `textMicroDim` beside them, landed
+before this task starts. If you find yourself reaching for `copyWith` on a
+token here, the role you want already exists.
 
 **`textMicro` is 9 px and stays 9 px.** The two 10 px rungs come *down* to 9,
 and that direction is deliberate: `TRAVEL IN PROGRESS` is 16 letters and 2

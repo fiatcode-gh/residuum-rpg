@@ -150,8 +150,10 @@ section's sibling — the `## Craftsmanship` list is the right home:
 
 ```text
 - **Type:** `fontFamily` appears only in `packages/app/lib/style/tokens.dart`.
-  Every text style is a role from that module, varied at a call site only by
-  `copyWith(color:)`. Monospace was retired in Unit 14 and does not come back.
+  Every text style is a role from that module. A role needing a second colour
+  gets a `const` sibling there; `copyWith` of a token is prohibited, because
+  its consumers are `const`. Monospace was retired in Unit 14 and does not
+  come back.
 ```
 
 CI enforces it; `AGENTS.md` is where the next agent reads it before CI has to
