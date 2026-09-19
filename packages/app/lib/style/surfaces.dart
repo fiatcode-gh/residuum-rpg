@@ -73,3 +73,30 @@ class ResourceMeter extends StatelessWidget {
     );
   }
 }
+
+/// One fact, its label at a fixed width and its value beside it.
+///
+/// The label cell exists because a padded string only ever aligned in a
+/// monospaced face, and the face this application draws in no longer is —
+/// `town_style.dart`'s own dartdoc on `markColumn` records the same lesson
+/// for its leading glyph cell. [labelColumn] is the equivalent slot for a
+/// leading word, so a whole column of values holds still without spaces
+/// doing the aligning. `textBody` already carries tabular figures, so the
+/// value's digits cannot jitter either.
+class LabelledValue extends StatelessWidget {
+  const LabelledValue({required this.label, required this.value, super.key});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      SizedBox(
+        width: labelColumn,
+        child: Text(label, style: textLineDim),
+      ),
+      Expanded(child: Text(value, style: textBody)),
+    ],
+  );
+}

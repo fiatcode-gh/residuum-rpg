@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../notice/notice.dart';
+import '../style/surfaces.dart' show LabelledValue;
 import '../style/tokens.dart' as tokens;
 
 import 'package:residuum_core/core.dart';
@@ -155,8 +156,8 @@ class Purse extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text('Carried  $carried gold', style: mono),
-      Text('Banked   $banked gold', style: mono),
+      LabelledValue(label: 'Carried', value: '$carried gold'),
+      LabelledValue(label: 'Banked', value: '$banked gold'),
       const Divider(color: rule, height: 20),
     ],
   );

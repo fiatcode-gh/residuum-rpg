@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 
+import '../style/surfaces.dart';
+
 import 'town_bloc.dart';
 import 'town_style.dart';
+
+/// A handle onto the inn's health meter for tests: the row itself carries
+/// no other stable identity now that it is a [ResourceMeter] rather than a
+/// pinned string.
+const innHealthMeterKey = Key('inn-health-meter');
 
 /// The inn: one bed, one price, one button.
 ///
@@ -42,8 +49,14 @@ class InnScreen extends StatelessWidget {
           Purse(carried: state.gold, banked: state.bankedGold),
           Notice(state.notice),
           const Heading('A bed for the night'),
-          Text('Health   ${state.hp} / ${state.maxHp}', style: mono),
-          Text('Price    $innPrice gold', style: mono),
+          ResourceMeter(
+            key: innHealthMeterKey,
+            label: 'Health',
+            value: state.hp,
+            ceiling: state.maxHp,
+            tint: MeterTint.health,
+          ),
+          LabelledValue(label: 'Price', value: '$innPrice gold'),
           Commit(
             label: 'Rest',
             onPressed: state.canRest && state.gold >= innPrice

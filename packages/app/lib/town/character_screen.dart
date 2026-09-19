@@ -2,12 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
 
+import '../style/surfaces.dart';
 import 'gear_screen.dart';
 import 'pack_screen.dart';
 import 'skills_screen.dart';
 import 'spells_screen.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
+
+/// A handle onto the character screen's health meter for tests: the row
+/// itself carries no other stable identity now that it is a
+/// [ResourceMeter] rather than a pinned string.
+const characterHealthMeterKey = Key('character-health-meter');
+
+/// A handle onto the character screen's mana meter for tests, for the same
+/// reason as [characterHealthMeterKey].
+const characterManaMeterKey = Key('character-mana-meter');
 
 class CharacterScreen extends StatelessWidget {
   const CharacterScreen({super.key});
@@ -37,10 +47,13 @@ class CharacterScreen extends StatelessWidget {
               mana: heroMaxMana(profile.loadout),
             ),
             const SizedBox(height: 12),
-            Text('Spells known    ${profile.knownSpells.length}', style: mono),
-            Text(
-              'Skills trained  $trained/${SkillId.values.length}',
-              style: mono,
+            LabelledValue(
+              label: 'Spells known',
+              value: '${profile.knownSpells.length}',
+            ),
+            LabelledValue(
+              label: 'Skills trained',
+              value: '$trained/${SkillId.values.length}',
             ),
             const SizedBox(height: 12),
             Padding(
@@ -132,12 +145,24 @@ class _Stats extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Attack   $attackMin-$attackMax', style: mono),
-        Text('Armour   $armour', style: mono),
-        Text('Dodge    $dodge%', style: mono),
-        Text('Speed    $speed', style: mono),
-        Text('Health   $hp/$maxHp', style: mono),
-        Text('Mana     $mana', style: mono),
+        LabelledValue(label: 'Attack', value: '$attackMin-$attackMax'),
+        LabelledValue(label: 'Armour', value: '$armour'),
+        LabelledValue(label: 'Dodge', value: '$dodge%'),
+        LabelledValue(label: 'Speed', value: '$speed'),
+        ResourceMeter(
+          key: characterHealthMeterKey,
+          label: 'Health',
+          value: hp,
+          ceiling: maxHp,
+          tint: MeterTint.health,
+        ),
+        ResourceMeter(
+          key: characterManaMeterKey,
+          label: 'Mana',
+          value: mana,
+          ceiling: mana,
+          tint: MeterTint.mana,
+        ),
       ],
     ),
   );

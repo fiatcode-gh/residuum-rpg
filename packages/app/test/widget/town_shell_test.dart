@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/notice/notice.dart';
+import 'package:residuum_app/style/surfaces.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_app/town/town_screen.dart';
 import 'package:residuum_app/world/world_bloc.dart';
@@ -186,13 +187,53 @@ void main() {
       // act
       await _openTown(tester, profile, notice: notice);
 
-      // assert - the three figures, verbatim including their double spaces
+      // assert - health renders through the shared meter: the label, both
+      // figures and the fill fraction, not a padded string
+      final meter = find.byKey(townHealthMeterKey);
+      expect(meter, findsOneWidget);
       expect(
-        find.text('Health   ${profile.hero.hp} / ${profile.maxHp}'),
+        find.descendant(
+          of: meter,
+          matching: find.text('Health ${profile.hero.hp} / ${profile.maxHp}'),
+        ),
         findsOneWidget,
       );
-      expect(find.text('Carried  12 gold'), findsOneWidget);
-      expect(find.text('Banked   40 gold'), findsOneWidget);
+      expect(
+        tester
+            .widget<LinearProgressIndicator>(
+              find.descendant(
+                of: meter,
+                matching: find.byType(LinearProgressIndicator),
+              ),
+            )
+            .value,
+        profile.hero.hp / profile.maxHp,
+      );
+
+      // assert - carried and banked gold each render as a label beside its
+      // value, not as one padded string
+      final carried = find.widgetWithText(LabelledValue, 'Carried');
+      final banked = find.widgetWithText(LabelledValue, 'Banked');
+      expect(carried, findsOneWidget);
+      expect(banked, findsOneWidget);
+      final carriedValue = find.descendant(
+        of: carried,
+        matching: find.text('12 gold'),
+      );
+      final bankedValue = find.descendant(
+        of: banked,
+        matching: find.text('40 gold'),
+      );
+      expect(carriedValue, findsOneWidget);
+      expect(bankedValue, findsOneWidget);
+
+      // assert - the label column holds still: a fixed-width slot, not a
+      // padded string that only ever aligned in monospace
+      expect(
+        tester.getTopLeft(carriedValue).dx,
+        tester.getTopLeft(bankedValue).dx,
+      );
+
       expect(find.text('— the well runs cold.'), findsOneWidget);
     });
 

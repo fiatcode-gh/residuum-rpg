@@ -4,6 +4,7 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../art/art_assets.dart';
+import '../style/surfaces.dart';
 import '../style/tokens.dart' show residuumTheme;
 import '../world/world_bloc.dart';
 import 'alchemist_screen.dart';
@@ -16,6 +17,11 @@ import 'merchant_screen.dart';
 import 'tavern_screen.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
+
+/// A handle onto the town's health meter for tests: the row itself carries
+/// no other stable identity now that it is a [ResourceMeter] rather than a
+/// pinned string.
+const townHealthMeterKey = Key('town-health-meter');
 
 /// One town: a header, a status block and seven doors, each saying what it
 /// is for.
@@ -80,12 +86,21 @@ class TownScreen extends StatelessWidget {
                           style: monoDim,
                         ),
                         const Divider(color: rule, height: 28),
-                        Text(
-                          'Health   ${state.hp} / ${state.maxHp}',
-                          style: mono,
+                        ResourceMeter(
+                          key: townHealthMeterKey,
+                          label: 'Health',
+                          value: state.hp,
+                          ceiling: state.maxHp,
+                          tint: MeterTint.health,
                         ),
-                        Text('Carried  ${state.gold} gold', style: mono),
-                        Text('Banked   ${state.bankedGold} gold', style: mono),
+                        LabelledValue(
+                          label: 'Carried',
+                          value: '${state.gold} gold',
+                        ),
+                        LabelledValue(
+                          label: 'Banked',
+                          value: '${state.bankedGold} gold',
+                        ),
                         const Heading('Materials'),
                         MaterialRows(materials: state.materials),
                         Notice(state.notice),

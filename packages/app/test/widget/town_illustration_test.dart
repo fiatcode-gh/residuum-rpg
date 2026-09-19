@@ -3,6 +3,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/notice/notice.dart';
+import 'package:residuum_app/style/surfaces.dart';
 import 'package:residuum_app/town/forge_screen.dart';
 import 'package:residuum_app/town/illustration.dart';
 import 'package:residuum_app/town/tavern_screen.dart';
@@ -162,12 +163,29 @@ void main() {
       // illustration, scrolling to the later doors exactly as the town
       // shell's own 600-pixel proof does
       expect(find.text('Stonebridge'), findsOneWidget);
+      final meter = find.byKey(townHealthMeterKey);
+      expect(meter, findsOneWidget);
       expect(
-        find.text('Health   ${profile.hero.hp} / ${profile.maxHp}'),
+        find.descendant(
+          of: meter,
+          matching: find.text('Health ${profile.hero.hp} / ${profile.maxHp}'),
+        ),
         findsOneWidget,
       );
-      expect(find.text('Carried  12 gold'), findsOneWidget);
-      expect(find.text('Banked   0 gold'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(LabelledValue, 'Carried'),
+          matching: find.text('12 gold'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.widgetWithText(LabelledValue, 'Banked'),
+          matching: find.text('0 gold'),
+        ),
+        findsOneWidget,
+      );
       expect(find.byType(Notice), findsOneWidget);
       for (final label in _doorLabels) {
         await tester.scrollUntilVisible(find.text(label), 100);
