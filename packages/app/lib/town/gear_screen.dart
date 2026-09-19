@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
 
 import '../game/item_presentation.dart';
+import '../style/tokens.dart' show textLabel;
 import 'town_bloc.dart';
 import 'town_style.dart';
 
@@ -78,12 +79,9 @@ class _GearRow extends StatelessWidget {
                     horizontal: 4,
                     vertical: 10,
                   ),
+                  textStyle: textLabel,
                 ),
-                child: const Text(
-                  'Take off',
-                  maxLines: 1,
-                  style: TextStyle(fontFamily: 'monospace', fontSize: 12),
-                ),
+                child: const Text('Take off', maxLines: 1),
               ),
             ),
           ],

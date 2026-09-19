@@ -4,6 +4,7 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../art/art_assets.dart';
+import '../style/tokens.dart' show residuumTheme;
 import '../world/world_bloc.dart';
 import 'alchemist_screen.dart';
 import 'bank_screen.dart';
@@ -56,85 +57,92 @@ class TownScreen extends StatelessWidget {
   /// can be two doors rather than one: the fork overflowed a 600-pixel screen by
   /// 45 pixels, and a door a player cannot reach is a door that is not there.
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(backgroundColor: panel, foregroundColor: ink),
-    body: SafeArea(
-      child: BlocBuilder<TownBloc, TownViewState>(
-        builder: (context, state) => LayoutBuilder(
-          builder: (context, room) => SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: room.maxHeight),
-              child: IntrinsicHeight(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(_titleFor(state.town), style: placeName),
-                      const SizedBox(height: 4),
-                      Text(_descentsSoFar(state.profile.visit), style: monoDim),
-                      const Divider(color: rule, height: 28),
-                      Text(
-                        'Health   ${state.hp} / ${state.maxHp}',
-                        style: mono,
-                      ),
-                      Text('Carried  ${state.gold} gold', style: mono),
-                      Text('Banked   ${state.bankedGold} gold', style: mono),
-                      const Heading('Materials'),
-                      MaterialRows(materials: state.materials),
-                      Notice(state.notice),
-                      if (state.town == stonebridge)
-                        const Illustration(
-                          EnvironmentArt.stonebridge,
-                          height: townIllustrationHeight,
-                          key: townIllustrationKey,
+  Widget build(BuildContext context) => Theme(
+    data: residuumTheme,
+    child: Scaffold(
+      appBar: AppBar(backgroundColor: panel, foregroundColor: ink),
+      body: SafeArea(
+        child: BlocBuilder<TownBloc, TownViewState>(
+          builder: (context, state) => LayoutBuilder(
+            builder: (context, room) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: room.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(_titleFor(state.town), style: placeName),
+                        const SizedBox(height: 4),
+                        Text(
+                          _descentsSoFar(state.profile.visit),
+                          style: monoDim,
                         ),
-                      const Spacer(),
-                      _Door(
-                        key: const Key('town-door-merchant'),
-                        label: 'Merchant',
-                        purpose: 'Buy, sell, and buy back',
-                        onPressed: () => _open(context, const MerchantScreen()),
-                      ),
-                      _Door(
-                        key: const Key('town-door-bank'),
-                        label: 'Bank',
-                        purpose: 'Gold and gear, safe from death',
-                        onPressed: () => _open(context, const BankScreen()),
-                      ),
-                      _Door(
-                        key: const Key('town-door-inn'),
-                        label: 'Inn',
-                        purpose: 'A bed for the night',
-                        onPressed: () => _open(context, const InnScreen()),
-                      ),
-                      _Door(
-                        key: const Key('town-door-character'),
-                        label: 'Character',
-                        purpose: 'Gear, spells, skills, and pack',
-                        onPressed: () =>
-                            _open(context, const CharacterScreen()),
-                      ),
-                      _Door(
-                        key: const Key('town-door-tavern'),
-                        label: 'Tavern',
-                        purpose: 'Ask about the roads',
-                        onPressed: () => _open(context, const TavernScreen()),
-                      ),
-                      _Door(
-                        key: const Key('town-door-forge'),
-                        label: 'Forge',
-                        purpose: 'Smelt ore, temper steel',
-                        onPressed: () => _open(context, const ForgeScreen()),
-                      ),
-                      _Door(
-                        key: const Key('town-door-alchemist'),
-                        label: 'Alchemist',
-                        purpose: 'Brew herbs into potions',
-                        onPressed: () =>
-                            _open(context, const AlchemistScreen()),
-                      ),
-                    ],
+                        const Divider(color: rule, height: 28),
+                        Text(
+                          'Health   ${state.hp} / ${state.maxHp}',
+                          style: mono,
+                        ),
+                        Text('Carried  ${state.gold} gold', style: mono),
+                        Text('Banked   ${state.bankedGold} gold', style: mono),
+                        const Heading('Materials'),
+                        MaterialRows(materials: state.materials),
+                        Notice(state.notice),
+                        if (state.town == stonebridge)
+                          const Illustration(
+                            EnvironmentArt.stonebridge,
+                            height: townIllustrationHeight,
+                            key: townIllustrationKey,
+                          ),
+                        const Spacer(),
+                        _Door(
+                          key: const Key('town-door-merchant'),
+                          label: 'Merchant',
+                          purpose: 'Buy, sell, and buy back',
+                          onPressed: () =>
+                              _open(context, const MerchantScreen()),
+                        ),
+                        _Door(
+                          key: const Key('town-door-bank'),
+                          label: 'Bank',
+                          purpose: 'Gold and gear, safe from death',
+                          onPressed: () => _open(context, const BankScreen()),
+                        ),
+                        _Door(
+                          key: const Key('town-door-inn'),
+                          label: 'Inn',
+                          purpose: 'A bed for the night',
+                          onPressed: () => _open(context, const InnScreen()),
+                        ),
+                        _Door(
+                          key: const Key('town-door-character'),
+                          label: 'Character',
+                          purpose: 'Gear, spells, skills, and pack',
+                          onPressed: () =>
+                              _open(context, const CharacterScreen()),
+                        ),
+                        _Door(
+                          key: const Key('town-door-tavern'),
+                          label: 'Tavern',
+                          purpose: 'Ask about the roads',
+                          onPressed: () => _open(context, const TavernScreen()),
+                        ),
+                        _Door(
+                          key: const Key('town-door-forge'),
+                          label: 'Forge',
+                          purpose: 'Smelt ore, temper steel',
+                          onPressed: () => _open(context, const ForgeScreen()),
+                        ),
+                        _Door(
+                          key: const Key('town-door-alchemist'),
+                          label: 'Alchemist',
+                          purpose: 'Brew herbs into potions',
+                          onPressed: () =>
+                              _open(context, const AlchemistScreen()),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -203,7 +211,6 @@ class _Door extends StatelessWidget {
         style: TextButton.styleFrom(
           alignment: Alignment.centerLeft,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-          foregroundColor: ink,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

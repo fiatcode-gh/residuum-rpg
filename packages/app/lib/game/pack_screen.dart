@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import '../style/tokens.dart' show residuumTheme;
 import '../town/town_style.dart'
     show Heading, MaterialRows, NothingHere, mono, monoDim, panel, ink;
 import 'game_bloc.dart';
@@ -12,32 +13,35 @@ class CrawlPackScreen extends StatelessWidget {
   const CrawlPackScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Pack', style: TextStyle(fontFamily: 'monospace')),
-      backgroundColor: panel,
-      foregroundColor: ink,
-    ),
-    body: BlocBuilder<GameBloc, GameViewState>(
-      builder: (context, state) {
-        final bloc = context.read<GameBloc>();
-        return ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          children: [
-            PackContents(
-              inventory: state.game.inventory,
-              equipment: state.game.equipment,
-              materials: state.materials,
-              readRefusalFor: state.readRefusalFor,
-              onDrink: (id) => bloc.add(DrinkPressed(id)),
-              onRead: (id) => bloc.add(ReadPressed(id)),
-              onWear: (id) => bloc.add(EquipPressed(id)),
-              onDrop: (id) => bloc.add(DropPressed(id)),
-            ),
-            const SizedBox(height: 24),
-          ],
-        );
-      },
+  Widget build(BuildContext context) => Theme(
+    data: residuumTheme,
+    child: Scaffold(
+      appBar: AppBar(
+        title: const Text('Pack'),
+        backgroundColor: panel,
+        foregroundColor: ink,
+      ),
+      body: BlocBuilder<GameBloc, GameViewState>(
+        builder: (context, state) {
+          final bloc = context.read<GameBloc>();
+          return ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            children: [
+              PackContents(
+                inventory: state.game.inventory,
+                equipment: state.game.equipment,
+                materials: state.materials,
+                readRefusalFor: state.readRefusalFor,
+                onDrink: (id) => bloc.add(DrinkPressed(id)),
+                onRead: (id) => bloc.add(ReadPressed(id)),
+                onWear: (id) => bloc.add(EquipPressed(id)),
+                onDrop: (id) => bloc.add(DropPressed(id)),
+              ),
+              const SizedBox(height: 24),
+            ],
+          );
+        },
+      ),
     ),
   );
 }
@@ -289,10 +293,7 @@ class _PackItemRow extends StatelessWidget {
     style: TextButton.styleFrom(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
     ),
-    child: Text(
-      label,
-      style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-    ),
+    child: Text(label),
   );
 }
 

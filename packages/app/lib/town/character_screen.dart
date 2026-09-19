@@ -50,10 +50,7 @@ class CharacterScreen extends StatelessWidget {
                 child: FilledButton(
                   key: const Key('character-route-gear'),
                   onPressed: () => _open(context, const GearScreen()),
-                  child: const Text(
-                    'Gear',
-                    style: TextStyle(fontFamily: 'monospace'),
-                  ),
+                  child: const Text('Gear'),
                 ),
               ),
             ),
@@ -64,10 +61,7 @@ class CharacterScreen extends StatelessWidget {
                 child: FilledButton(
                   key: const Key('character-route-spells'),
                   onPressed: () => _open(context, const SpellsScreen()),
-                  child: const Text(
-                    'Spells',
-                    style: TextStyle(fontFamily: 'monospace'),
-                  ),
+                  child: const Text('Spells'),
                 ),
               ),
             ),
@@ -78,10 +72,7 @@ class CharacterScreen extends StatelessWidget {
                 child: FilledButton(
                   key: const Key('character-route-skills'),
                   onPressed: () => _open(context, const SkillsScreen()),
-                  child: const Text(
-                    'Skills',
-                    style: TextStyle(fontFamily: 'monospace'),
-                  ),
+                  child: const Text('Skills'),
                 ),
               ),
             ),
@@ -92,10 +83,7 @@ class CharacterScreen extends StatelessWidget {
                 child: FilledButton(
                   key: const Key('character-route-pack'),
                   onPressed: () => _open(context, const TownPackScreen()),
-                  child: const Text(
-                    'Pack',
-                    style: TextStyle(fontFamily: 'monospace'),
-                  ),
+                  child: const Text('Pack'),
                 ),
               ),
             ),

@@ -273,6 +273,10 @@ void main() {
         expect(style.height, isNotNull);
       });
 
+      test('$name sets an explicit textBaseline', () {
+        expect(style.textBaseline, isNotNull);
+      });
+
       test('$name sets an explicit color', () {
         expect(style.color, isNotNull);
       });

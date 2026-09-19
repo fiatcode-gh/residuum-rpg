@@ -47,6 +47,7 @@ const TextStyle displayTitle = TextStyle(
   fontWeight: FontWeight.w500,
   fontVariations: [FontVariation('wght', 500)],
   height: 1.15,
+  textBaseline: TextBaseline.alphabetic,
   color: ink,
   fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
 );
@@ -58,6 +59,7 @@ const TextStyle displayPlace = TextStyle(
   fontWeight: FontWeight.w500,
   fontVariations: [FontVariation('wght', 500)],
   height: 1.15,
+  textBaseline: TextBaseline.alphabetic,
   color: ink,
   fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
 );
@@ -69,6 +71,7 @@ const TextStyle displayRoom = TextStyle(
   fontWeight: FontWeight.w500,
   fontVariations: [FontVariation('wght', 500)],
   height: 1.20,
+  textBaseline: TextBaseline.alphabetic,
   color: ink,
   fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
 );
@@ -80,6 +83,7 @@ const TextStyle displayPanel = TextStyle(
   fontWeight: FontWeight.w500,
   fontVariations: [FontVariation('wght', 500)],
   height: 1.20,
+  textBaseline: TextBaseline.alphabetic,
   color: ink,
   fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
 );
@@ -91,6 +95,7 @@ const TextStyle displayCaption = TextStyle(
   fontWeight: FontWeight.w500,
   fontVariations: [FontVariation('wght', 500)],
   height: 1.25,
+  textBaseline: TextBaseline.alphabetic,
   color: dim,
   fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
 );
@@ -105,6 +110,7 @@ const TextStyle textHeadline = TextStyle(
   fontSize: 26,
   fontWeight: FontWeight.w400,
   height: 1.15,
+  textBaseline: TextBaseline.alphabetic,
   color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -114,6 +120,7 @@ const TextStyle textAction = TextStyle(
   fontSize: 15,
   fontWeight: FontWeight.w400,
   height: 1.25,
+  textBaseline: TextBaseline.alphabetic,
   color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -123,6 +130,7 @@ const TextStyle textBody = TextStyle(
   fontSize: 14,
   fontWeight: FontWeight.w400,
   height: 1.30,
+  textBaseline: TextBaseline.alphabetic,
   color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -132,6 +140,7 @@ const TextStyle textLine = TextStyle(
   fontSize: 13,
   fontWeight: FontWeight.w400,
   height: 1.35,
+  textBaseline: TextBaseline.alphabetic,
   color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -141,6 +150,7 @@ const TextStyle textLineDim = TextStyle(
   fontSize: 13,
   fontWeight: FontWeight.w400,
   height: 1.35,
+  textBaseline: TextBaseline.alphabetic,
   color: dim,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -150,6 +160,7 @@ const TextStyle textLabel = TextStyle(
   fontSize: 13,
   fontWeight: FontWeight.w400,
   height: 1.20,
+  textBaseline: TextBaseline.alphabetic,
   color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -159,6 +170,7 @@ const TextStyle textLabelDim = TextStyle(
   fontSize: 13,
   fontWeight: FontWeight.w400,
   height: 1.20,
+  textBaseline: TextBaseline.alphabetic,
   color: dim,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -168,6 +180,7 @@ const TextStyle textLabelStrong = TextStyle(
   fontSize: 13,
   fontWeight: FontWeight.w600,
   height: 1.20,
+  textBaseline: TextBaseline.alphabetic,
   color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -177,6 +190,7 @@ const TextStyle textCaption = TextStyle(
   fontSize: 11,
   fontWeight: FontWeight.w600,
   height: 1.20,
+  textBaseline: TextBaseline.alphabetic,
   color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -186,6 +200,7 @@ const TextStyle textDetail = TextStyle(
   fontSize: 11,
   fontWeight: FontWeight.w400,
   height: 1.30,
+  textBaseline: TextBaseline.alphabetic,
   color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -195,6 +210,7 @@ const TextStyle textDetailDim = TextStyle(
   fontSize: 11,
   fontWeight: FontWeight.w400,
   height: 1.30,
+  textBaseline: TextBaseline.alphabetic,
   color: dim,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -204,6 +220,7 @@ const TextStyle textGlyph = TextStyle(
   fontSize: 18,
   fontWeight: FontWeight.w400,
   height: 1.00,
+  textBaseline: TextBaseline.alphabetic,
   color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -213,6 +230,7 @@ const TextStyle textGlyphDim = TextStyle(
   fontSize: 18,
   fontWeight: FontWeight.w400,
   height: 1.00,
+  textBaseline: TextBaseline.alphabetic,
   color: dim,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -222,6 +240,7 @@ const TextStyle textMicro = TextStyle(
   fontSize: 9,
   fontWeight: FontWeight.w400,
   height: 1.15,
+  textBaseline: TextBaseline.alphabetic,
   color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -231,6 +250,7 @@ const TextStyle textMicroDim = TextStyle(
   fontSize: 9,
   fontWeight: FontWeight.w400,
   height: 1.15,
+  textBaseline: TextBaseline.alphabetic,
   color: dim,
   fontFeatures: [FontFeature.tabularFigures()],
 );

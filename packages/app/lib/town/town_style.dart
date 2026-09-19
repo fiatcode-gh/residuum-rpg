@@ -3,48 +3,32 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../notice/notice.dart';
+import '../style/tokens.dart' as tokens;
 
 import 'package:residuum_core/core.dart';
 
-const Color ink = Color(0xFFE6EAF0);
-const Color dim = Color(0xFF8A919E);
-const Color panel = Color(0xFF15181F);
-const Color rule = Color(0xFF2A2E38);
+const Color ink = tokens.ink;
+const Color dim = tokens.dim;
+const Color panel = tokens.panel;
+const Color rule = tokens.rule;
 
-const TextStyle mono = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 14,
-  color: ink,
-);
+const TextStyle mono = tokens.textBody;
 
-const TextStyle monoDim = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 12,
-  color: dim,
-);
+const TextStyle monoDim = tokens.textLineDim;
 
 /// The width of every leading mark column in the town.
 ///
 /// One constant rather than a number repeated per row, because the markings
-/// are not all one cell wide in the device's monospace font and a column
-/// that drifts by two pixels steps sideways on the phone.
+/// are not all one cell wide in the text face, and a column that drifts by
+/// two pixels steps sideways on the phone. A device pass caught exactly
+/// that.
 const double markColumn = 28;
 
 /// The type a place announces itself in.
-const TextStyle placeName = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 20,
-  letterSpacing: 5,
-  color: ink,
-);
+const TextStyle placeName = tokens.displayPlace;
 
 /// The type a room inside a place announces itself in.
-const TextStyle roomName = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 15,
-  letterSpacing: 4,
-  color: ink,
-);
+const TextStyle roomName = tokens.displayRoom;
 
 /// A section title above a list.
 ///
@@ -62,15 +46,7 @@ class Heading extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          text.toUpperCase(),
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 11,
-            letterSpacing: 2,
-            color: dim,
-          ),
-        ),
+        Text(text.toUpperCase(), style: tokens.displayCaption),
         const Divider(color: rule, height: 9),
       ],
     ),
@@ -158,13 +134,9 @@ class ItemRow extends StatelessWidget {
             onPressed: onPressed,
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+              textStyle: tokens.textLabel,
             ),
-            child: Text(
-              action,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-            ),
+            child: Text(action, maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ),
       ],
@@ -200,7 +172,7 @@ class Purse extends StatelessWidget {
 /// are legible in greyscale and read aloud.
 ///
 /// **Laid out in fixed-width columns rather than by padding the text.** The
-/// markings are not all one cell wide in the device's monospace font — the ingot
+/// markings are not all one cell wide in the text face — the ingot
 /// bar is wider than the ore diamond — so a padded string aligns on the desktop
 /// and steps sideways on the phone. A device pass caught exactly that.
 class MaterialRows extends StatelessWidget {
@@ -377,10 +349,7 @@ class Commit extends StatelessWidget {
       style: FilledButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
       ),
-      child: Text(
-        label,
-        style: const TextStyle(fontFamily: 'monospace', fontSize: 15),
-      ),
+      child: Text(label),
     ),
   );
 }
@@ -393,16 +362,19 @@ class TownRoom extends StatelessWidget {
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(backgroundColor: panel, foregroundColor: ink),
-    body: ListView(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-      children: [
-        Text(title, style: roomName),
-        const Divider(color: rule, height: 22),
-        ...children,
-        const SizedBox(height: 24),
-      ],
+  Widget build(BuildContext context) => Theme(
+    data: tokens.residuumTheme,
+    child: Scaffold(
+      appBar: AppBar(backgroundColor: panel, foregroundColor: ink),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+        children: [
+          Text(title, style: roomName),
+          const Divider(color: rule, height: 22),
+          ...children,
+          const SizedBox(height: 24),
+        ],
+      ),
     ),
   );
 }
