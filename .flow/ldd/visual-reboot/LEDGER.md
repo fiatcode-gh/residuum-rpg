@@ -3588,3 +3588,87 @@ The remaining claims of that class — brief 05's `labelColumn = 96` and brief
 red/green proof, so they fail loudly at execution rather than silently. The
 `flow-planner` session was lost to a connection fault mid-amendment and the
 architect completed A8 directly; the plan is intact and `b8fe4f1` records it.
+
+### U14 Tasks 04 and 05 accepted, and A9 ruled inside Task 04
+
+**Task 04 — `7090866`, `feat: put the town and pack screens under the theme`.
+The lavender is gone.** `town_style.dart` keeps its names as aliases and
+declares no colour of its own; `residuumTheme` wraps the town room, the town
+screen, the pack screen and both roster dialogs, which are root-navigator
+routes and do not inherit from the screen that opened them.
+
+- **Ten control families proved off the Material 3 default palette**, not the
+  four the audit named. The test reads the rendered fill off the `Material`
+  each control builds — never a constructor argument — and compares it
+  against a `ThemeData(brightness: dark, useMaterial3: true)` built **live
+  inside the test**, so no default colour is written down anywhere and a
+  framework palette change cannot make the assertion lie. Expected Red
+  observed on all eight table rows; two of them null-crashed pre-fix rather
+  than failing cleanly, and the executor made those reads nullable before
+  calling the Red clean rather than accepting a crash as evidence.
+- Inline monospace styles came off the stock controls so their labels take
+  the theme's, which is what carries enabled against disabled. No control was
+  replaced with a bespoke one — that is U15's work, and keeping them stock is
+  what keeps twenty-six existing widget-type finders valid.
+- **No contrast threshold was added**, confirmed explicitly. The only
+  luminance comparisons are two strict `lessThan` orderings.
+
+**A9, ruled during Task 04 — every role carries an explicit `textBaseline`.**
+
+- The roster's name dialog became **the first `TextField` ever mounted under
+  `residuumTheme`**, and it crashed. Verified at source by the architect:
+  `TextStyle.merge` returns a non-inheriting style verbatim
+  (`text_style.dart:1079`, `if (!other.inherit) return other;`), discarding
+  `titleMedium`'s baseline, and `InputDecorator` then reads
+  `labelStyle.textBaseline!` unconditionally (`input_decorator.dart:2327`).
+  Four pre-existing `roster_screen_test.dart` cases broke with it.
+- **The fix is the hole, not the field.** The module sets `inherit`, family,
+  height, colour and features explicitly so nothing leaks from an ambient
+  theme — then left the baseline to be inherited from a style that
+  `inherit: false` guarantees is never consulted. Patching
+  `inputDecorationTheme` alone would leave the trap armed for the next role
+  meeting a widget that reads `textBaseline!`, with no way for a later
+  executor to know it was there. All twenty roles gained
+  `TextBaseline.alphabetic`; the invariant sweep gained a sixth check.
+- **Proved inert**, which mattered because a line-metric change would reopen
+  the dp budget: chrome measured fresh at **331 / 429 / 578 dp**, unchanged,
+  with the probe file snapshotted by SHA-256 before the probe and restored to
+  the identical hash after — not restored from `HEAD`.
+
+**Task 05 — `67513bb`, `feat: align the town's value columns by layout, not
+by padding`.** `labelColumn` and `LabelledValue`; six space-padded label
+columns converted, including `inn_screen.dart:45-46` under A3, closing
+residual R6; the town, character and inn screens on the shared
+`ResourceMeter`.
+
+- **`labelColumn = 96` was the plan's last unverified font-metric claim and
+  it held.** Measured through a `TextPainter` on the bundled face rather than
+  reasoned: the widest labels are `Spells known` at 76.34 dp and `Skills
+  trained` at 76.05 dp, against the plan's ≈86 dp hand-estimate, leaving
+  about 20 dp of clearance. The value was not changed to fit.
+- **Three test sites were rewritten to behaviour, not re-pinned.** The status
+  block now asserts the meter's arithmetic and that the value cells share one
+  `x`, rather than matching `'Carried  12 gold'` verbatim.
+- **Two rounds of collateral padding removed.** Converting the character
+  screen made `expect(find.text('Attack   4-4'), findsNothing)` in
+  `pack_screen_test.dart` unfalsifiable — it passed for the wrong reason and
+  would keep passing whatever the pack screen rendered. Replaced with a
+  finder on the widget the character screen now builds, and proved
+  falsifiable with a throwaway positive control. Four neighbouring absence
+  checks — `'SPELLS'`, `'WORN'`, `'SKILLS'`, `'Cast'` — turned out to pin
+  strings that never existed in `lib`; the architect independently checked
+  that `Heading` uppercases its text before accepting that reading, since a
+  literal grep would miss `Heading('Spells')`. They were deleted rather than
+  replaced: adding four live absence checks to restore the line count would
+  be padding of a different kind.
+
+**Architect-run gates on the committed tree:** `dart format` 128 files / 0
+changed, `flutter analyze` no issues, full `flutter test` **1109 passing**.
+
+**Handed forward to Task 06, because its brief does not list it.**
+`world_screen.dart:197` still renders the padded `Carried  ${gold} gold`, and
+four test files pin that exact string — `roster_refusal_test.dart`,
+`roster_session_test.dart`, `suspend_door_test.dart` and
+`world_screen_test.dart`. They break the moment the world seam converts.
+
+**Paused by the user after Task 05**, tree clean, five of eight tasks done.

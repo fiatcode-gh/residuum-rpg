@@ -2,20 +2,27 @@
 
 **Units 1–12 are merged to `main`, Unit 12.5's device gate is closed, Unit 13
 is complete and accepted, and Unit 13.1 — the map bleed — is fixed and closed.
-U14's contract is approved with monospace retired outright, and U14's
-execution-grade plan is written, amended and approved. Nothing is implemented.
-The user paused here deliberately, intending to resume in the same session.**
+U14's contract and plan are approved. **Tasks 01 through 05 of 08 are
+implemented, verified and committed.** The user paused here deliberately,
+intending to resume in the same session.**
 
 ## Exact state
 
 - `main` is `907a4a83e7c592d4f6dd0c55e6f30c3b1b8bc49b`, the PR #22 merge
   (2026-09-18T08:49:20Z). The earlier record that PR #22 was open and
   unmerged is superseded.
-- Branch **`residuum-visual-reboot-13`** off `907a4a8` carries `9c2d66e`
-  `docs:` (Unit 13's records), `e8bcf29` `fix:` (Unit 13.1 —
-  `dungeon_scene.dart` +30/-1 plus its new test), `5ac1a49` `docs:` (U14's
-  contract approval) and the U14 plan commit. Nothing is pushed; there is no
-  pull request.
+- Branch **`residuum-visual-reboot-13`** off `907a4a8`, working tree clean,
+  nothing pushed, no pull request. Eleven commits: `9c2d66e` Unit 13's
+  records, `e8bcf29` Unit 13.1's fix, `03e8c0c` its record, `5ac1a49` U14's
+  contract approval, `14a7bed` U14's plan, `b8d934b` Task 01, `a09efc2`
+  amendment A6, `8e1efbd` Task 02, `7ade1c9` amendments A7 and the task
+  records, `d959f23` amendment A8's leaf, `b8fe4f1` A8's plan edit, `0f1882d`
+  Task 03, `7090866` Task 04, `de89acc` its record, `67513bb` Task 05.
+- **Architect-run gates at the pause point**, on the committed tree:
+  `dart format` 128 files / 0 changed, `flutter analyze` no issues, full
+  `flutter test` **1109 passing**.
+- **Crawl chrome is 331 / 429 / 578 dp** and has not moved through five
+  tasks. Caps are 360 / 450 / 600, the last being the contract's own ceiling.
 - Unit 13's canonical records are in `units/unit-13/`: `CONTRACT.md`,
   `recon.md`, `PARITY-AUDIT.md`, `PARITY-MATRIX.md`, `VISUAL-SYSTEM.md`,
   `ROADMAP.md`. The external ChatGPT bundle it came from sits beside them and
@@ -29,10 +36,22 @@ The user paused here deliberately, intending to resume in the same session.**
 ## Exact next action — paused by the user, resume here
 
 **Dispatch one fresh `flow-plan-executor` on
-`units/unit-14/plan-tasks/01-faces-and-token-module.md`.** Hand it the
-artifact path, not pasted content. Then 02 through 08 in strict order, one
-fresh executor each, one writer at a time, non-isolated on this same
-checkout. No architect decision is open; the plan is approved and amended.
+`units/unit-14/plan-tasks/06-world-seam-and-route-diagram.md`.** Hand it the
+artifact path, not pasted content. Then 07, then 08, one fresh executor each,
+one writer at a time, non-isolated on this checkout. No architect decision is
+open.
+
+**Task 08 goes to `sonic`, not to a plan executor.** A7 deleted the only
+keep-list trap that justified the heavier agent, and the brief says so.
+
+**Hand Task 06 this, because its brief does not list it.** `world_screen.dart`
+still renders the padded `Carried  ${gold} gold` at `:197`, and four test
+files pin that exact string: `roster_refusal_test.dart`,
+`roster_session_test.dart`, `suspend_door_test.dart` and
+`world_screen_test.dart`. Task 05 converted the town's six padded columns and
+left these because the world screen is Task 06's. They will break the moment
+the conversion lands, and each must be rewritten to the behaviour it defends,
+never re-pinned to a new string.
 
 After 08: **Gate A** (dp re-confirmation on the final tree), **Gate B**
 (integrated gates, diff audit, acceptance review), **Gate C** (the
@@ -49,6 +68,54 @@ Three duties U14 inherits and must not lose:
   tuning target — every remedy belongs to U15 or a contract amendment.
 
 Nothing remote is authorized. Push and pull request are each their own gate.
+
+## What tasks 01–05 landed
+
+| task | commit | what |
+|---|---|---|
+| 01 | `b8d934b` | Spectral and EB Garamond bundled with their licences; `lib/style/tokens.dart`; the test-host `FontLoader` without which every measurement is Ahem; boot screen migrated |
+| 02 | `8e1efbd` | `crawl_style.dart` to aliases, `crawlTheme` deleted, three theme sites, chrome re-measured and the caps re-derived |
+| A8 | `d959f23` | `textDetailDim` and `textMicroDim`; the `copyWith` rule struck outright |
+| 03 | `0f1882d` | `ResourceMeter` and the epic's first hue, geometry moved verbatim |
+| 04 | `7090866` | the town, pack and roster dialogs under `residuumTheme`; ten control families proved off the M3 palette; A9's `textBaseline` on all twenty roles |
+| 05 | `67513bb` | `labelColumn` and `LabelledValue`; six padded columns converted including the Inn's two; town, character and inn meters |
+
+## Four amendments ruled during execution, all the same class
+
+Every one was a claim about what compiles, what a formula yields, or what the
+framework does — the class a plan cannot settle by reasoning. None was
+catchable by reading the plan. They are indexed in `PLAN.md` §"Architect
+amendments A1–A9".
+
+- **A6** — AC4's fill-versus-surface contrast of 1.5:1 is unsatisfiable
+  against this ladder: `raised` on `panel` is 1.076:1 WCAG and 1.491:1 plain.
+  Struck, not retuned. **Standing rule:** every luminance claim here must be a
+  strict ordering or an accent-against-ladder contrast, and must say which
+  reading it uses.
+- **A7** — `crawlChevron` as a `final copyWith` does not compile; all four
+  consumers sit in `const` contexts and the plan named three. Became a `const`
+  alias of `textGlyphDim`.
+- **A8** — the `copyWith` rule itself was the defect, with three more mandates
+  waiting in Task 06. Struck outright; `textDetail` and `textMicro` flipped to
+  ink primaries with `Dim` siblings. **Twenty roles.**
+- **A9** — an `inherit: false` style with a null `textBaseline` crashes any
+  `TextField` under the theme: `TextStyle.merge` returns a non-inheriting
+  style verbatim (`text_style.dart:1079`) and `InputDecorator` reads
+  `labelStyle.textBaseline!` (`input_decorator.dart:2327`). All twenty roles
+  carry `TextBaseline.alphabetic`; the invariant sweep has a sixth check.
+
+**The remaining claim of that class is already tested.** Brief 06's estimate
+that `TRAVEL IN PROGRESS` measures ≈108 dp at 9 px against a 120 dp box is
+checked by that task's own no-clipped-label proof. Task 05's `labelColumn =
+96` was the other, and it held: measured widest label 76.34 dp.
+
+## Suite count, read honestly
+
+907 before Task 01, **1109** now. The growth is overwhelmingly
+parameterisation — twenty roles times six invariants, plus the per-mark glyph
+sweep and the ten-row palette table. Task 01 added four behavioural groups,
+Task 03 nine cases, Task 04 twelve. Do not read 1109 as coverage growth and do
+not try to keep the number up.
 
 ## U14's plan, in the ten facts a resume needs
 
