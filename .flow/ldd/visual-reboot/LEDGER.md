@@ -3506,3 +3506,85 @@ independently and struck the assertion instead:
   state which reading it uses. A fill-versus-surface ratio between two
   adjacent ladder values is not provable and must not be reintroduced in U15
   through U21. Recorded as `a09efc2`.
+
+### U14 Tasks 02 and 03 accepted, and A8 ruled between them
+
+**Task 02 — `8e1efbd`, `feat: render the crawl in the authored faces`.**
+`crawl_style.dart` is aliases only: ten colours, five rhythm metrics and
+sixteen type roles, with no colour literal and no `TextStyle` constructor
+left. `crawlTheme` deleted, the three theme sites on `residuumTheme`.
+
+- **The dp re-measurement, which was this unit's real risk, came in well.**
+  Chrome with both faces registered in both hosts: exploration **331 dp**,
+  typical combat **429 dp**, worst legal combat **578 dp**. No density rose.
+  The old caps of 360/560/720 were sized against Ahem at exactly 1.000 em per
+  character and were never comparable to anything real; the new caps are the
+  measured figure rounded up plus 20 dp, which puts worst legal combat's cap
+  at exactly the contract's own 600 dp ceiling. The plan predicted "near 570"
+  from U13.1's device figure of 580.95; measured 578 is 8 dp off. Device
+  confirmation is still owed at Gate C.
+- **A7, ruled during execution.** The plan made `crawlChevron` a `final`
+  equal to `textGlyph.copyWith(color: dim)`. `copyWith` is not
+  const-evaluable and **all four consumers sit in `const` contexts** —
+  `battle_view.dart:55` inside a `const Opacity`, `:70`, `:84`, and
+  `log_drawer.dart:80`, which the brief never named and which sat in its own
+  do-not-edit list. The package did not compile. The executor proposed
+  dropping `const` at all four sites; the architect refused — four widgets
+  losing canonicalisation in the region that rebuilds on every state change,
+  plus an edit inside a fenced file, to preserve an expression style nothing
+  else in the design uses. `tokens.dart` already pairs every dim sibling as a
+  separate `const` literal, so `crawlChevron` became a `const` alias of a new
+  eighteenth role, `textGlyphDim`.
+
+**A8, ruled by the architect, landed as a standalone `sonic` leaf —
+`d959f23`, `refactor: give the last two roles their const dim siblings`.**
+
+- A7 fixed one instance; **the rule was the defect.** The plan's
+  "vary a token's colour at a call site with `copyWith`" permission had three
+  surviving mandates, all in brief 06 — one of them another `const Text` that
+  would not have compiled, two allocating per build in a diagram that
+  rebuilds on every world state change.
+- `textDetail` and `textMicro` were the module's only dim primaries, which is
+  exactly why the plan reached for `copyWith(color: ink)` to get an ink
+  variant. Both flip to ink primaries and gain `textDetailDim` and
+  `textMicroDim` — **twenty roles**, every pairable one now reading the same
+  way. `crawlTokenWord` and `crawlDetail` repoint to the dim sibling, so
+  nothing changed on screen.
+- **It did not wait for Task 06.** Carrying a known-unsound rule through three
+  more tasks is how the fourth instance gets found at Gate B.
+- The `AGENTS.md` house rule that brief 07 installs was itself teaching
+  `copyWith(color:)` as the sanctioned way to vary a colour. Corrected in the
+  same amendment, before it could be written into the repository permanently.
+
+**Task 03 — `0f1882d`, `feat: give the resources one meter and the epic's
+first hue`.** `ResourceMeter` and `MeterTint` in `lib/style/surfaces.dart`,
+geometry moved verbatim from `crawl_status.dart`'s private `_Meter`, the
+crawl status adopting it, and `crawl_status_test.dart` needing **zero** edits
+because it only ever addressed the meters through their keys.
+
+- **Chrome unchanged at 331 / 429 / 578 dp**, byte-identical to Task 02's
+  figures — which is what proves the geometry moved rather than being rebuilt.
+  The executor measured it by a temporary `print` probe against a file it
+  snapshotted by md5 first and restored to the same md5 after, twice.
+- **The epic's first hue**, verified independently by the architect before
+  dispatch and again by the executor: health `#D99A3D` at relative luminance
+  0.3820, mana `#7FA8D9` at 0.3753, track at 0.0273. `|ΔL| = 0.0067` against a
+  0.02 ceiling, so in greyscale neither meter reads as fuller than the other;
+  each clears WCAG **5.587:1** and **5.500:1** against the track. A6 does not
+  reach this threshold — it is a bright accent against a dark track, not one
+  dark ladder step against another.
+
+**Architect-run gates after each task:** `dart format` 0 changed,
+`flutter analyze` no issues, full `flutter test` 1058 then 1068 then **1077**
+passing. The growth is parameterised invariant cases for new roles plus Task
+03's nine behavioural cases, not coverage inflation.
+
+**A process note worth keeping.** Three plan defects have now been caught by
+executors rather than by the plan's own review, and all three were the same
+class of claim: an assertion about what compiles, what a formula yields, or
+what a font contains. A6 was arithmetic, A7 and A8 were const-evaluability.
+The remaining claims of that class — brief 05's `labelColumn = 96` and brief
+06's 108 dp caps-advance estimate — are each checked by their own task's
+red/green proof, so they fail loudly at execution rather than silently. The
+`flow-planner` session was lost to a connection fault mid-amendment and the
+architect completed A8 directly; the plan is intact and `b8fe4f1` records it.
