@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import '../style/surfaces.dart';
 import 'crawl_style.dart';
 import 'game_bloc.dart';
 
@@ -90,80 +91,28 @@ class _ResourceRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _Meter(
+          child: ResourceMeter(
             key: hpMeterKey,
             label: 'HP',
             value: shown,
             ceiling: ceiling,
+            tint: MeterTint.health,
             note: _condition(fraction),
           ),
         ),
         if (state.game.knownSpells.isNotEmpty) ...[
           const SizedBox(width: 12),
           Expanded(
-            child: _Meter(
+            child: ResourceMeter(
               key: manaMeterKey,
               label: 'Mana',
               value: state.mana,
               ceiling: state.maxMana,
+              tint: MeterTint.mana,
               note: state.warded > 0 ? 'Ward ${state.warded}' : '',
             ),
           ),
         ],
-      ],
-    );
-  }
-}
-
-class _Meter extends StatelessWidget {
-  const _Meter({
-    required this.label,
-    required this.value,
-    required this.ceiling,
-    required this.note,
-    super.key,
-  });
-
-  final String label;
-  final int value;
-  final int ceiling;
-  final String note;
-
-  @override
-  Widget build(BuildContext context) {
-    final fill = ceiling == 0 ? 0.0 : (value / ceiling).clamp(0, 1).toDouble();
-    return Row(
-      children: [
-        Expanded(
-          flex: 8,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text('$label $value / $ceiling', style: crawlBody),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          flex: 6,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: LinearProgressIndicator(
-              value: fill,
-              minHeight: 8,
-              backgroundColor: crawlRule,
-              valueColor: const AlwaysStoppedAnimation(crawlInk),
-            ),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          flex: 6,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerRight,
-            child: Text(note, style: crawlBody),
-          ),
-        ),
       ],
     );
   }

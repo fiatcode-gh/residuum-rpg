@@ -14,6 +14,20 @@ const Color dim = Color(0xFF8A919E);
 const Color ink = Color(0xFFE6EAF0);
 const Color scrim = Color(0xCC0E1014);
 
+/// The epic's first permitted hue, reserved for the two resource fills and
+/// nothing else. Warm amber for health and cold blue for mana carry no
+/// meaning on their own — the label, the number, the ceiling and the fill
+/// fraction each already say what the meter reads, so removing the hue
+/// loses nothing. The pair is chosen so neither reads as fuller than the
+/// other in a greyscale capture at equal fraction: relative luminance
+/// 0.3820 and 0.3753, `|ΔL| = 0.0067` against a 0.02 ceiling, while each
+/// still clears 4.5 : 1 WCAG contrast against [rule] with room to spare.
+/// Red is deliberately avoided — `VISUAL-SYSTEM.md` §2 reserves hot red for
+/// mortal danger and the armed target reticle, and warm amber is the
+/// permitted register for light, fire and gold instead.
+const Color meterHealthFill = Color(0xFFD99A3D);
+const Color meterManaFill = Color(0xFF7FA8D9);
+
 const double gutter = 12;
 const double rhythm = 4;
 const double radius = 6;
