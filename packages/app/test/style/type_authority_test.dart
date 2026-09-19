@@ -245,13 +245,15 @@ void main() {
       'textLabelStrong': textLabelStrong,
       'textCaption': textCaption,
       'textDetail': textDetail,
+      'textDetailDim': textDetailDim,
       'textGlyph': textGlyph,
       'textGlyphDim': textGlyphDim,
       'textMicro': textMicro,
+      'textMicroDim': textMicroDim,
     };
 
-    test('there are exactly eighteen roles', () {
-      expect(roles, hasLength(18));
+    test('there are exactly twenty roles', () {
+      expect(roles, hasLength(20));
     });
 
     for (final entry in roles.entries) {

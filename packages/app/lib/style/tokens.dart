@@ -172,6 +172,15 @@ const TextStyle textDetail = TextStyle(
   fontSize: 11,
   fontWeight: FontWeight.w400,
   height: 1.30,
+  color: ink,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle textDetailDim = TextStyle(
+  inherit: false,
+  fontFamily: textFace,
+  fontSize: 11,
+  fontWeight: FontWeight.w400,
+  height: 1.30,
   color: dim,
   fontFeatures: [FontFeature.tabularFigures()],
 );
@@ -194,6 +203,15 @@ const TextStyle textGlyphDim = TextStyle(
   fontFeatures: [FontFeature.tabularFigures()],
 );
 const TextStyle textMicro = TextStyle(
+  inherit: false,
+  fontFamily: textFace,
+  fontSize: 9,
+  fontWeight: FontWeight.w400,
+  height: 1.15,
+  color: ink,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle textMicroDim = TextStyle(
   inherit: false,
   fontFamily: textFace,
   fontSize: 9,

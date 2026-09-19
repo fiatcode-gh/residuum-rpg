@@ -47,7 +47,7 @@ const TextStyle crawlLine = textLine;
 const TextStyle crawlLineOlder = textLineDim;
 const TextStyle crawlGlyph = textGlyph;
 const TextStyle crawlChevron = textGlyphDim;
-const TextStyle crawlTokenWord = textDetail;
+const TextStyle crawlTokenWord = textDetailDim;
 
 /// `inherit: false` on every chip and caption style below: the invariant
 /// now lives in `tokens.dart` and applies to every role, so `_ActionChip`
@@ -59,7 +59,7 @@ const TextStyle crawlChipLabel = textLabel;
 const TextStyle crawlChipLabelDisabled = textLabelDim;
 const TextStyle crawlChipLabelArmed = textLabelStrong;
 const TextStyle crawlCaption = textCaption;
-const TextStyle crawlDetail = textDetail;
+const TextStyle crawlDetail = textDetailDim;
 const TextStyle crawlHeadline = textHeadline;
 
 /// available, disabled and armed: the crawl's whole chip-state vocabulary.
