@@ -1,65 +1,68 @@
 # Resume Visual Reboot
 
-**Units 1–12 are merged to `main`, Unit 12.5's device gate is closed, Units 13
-and 13.1 are closed, and Unit 14 is implemented and locally accepted: all
-eight plan tasks landed, Gate A re-confirmed, Gate B closed through an
-acceptance review, a correction round and a scoped closure review. Only the
-device gate remains, and it is blocked on the user starting `Medium_Phone`.**
+**Units 1–12 are merged to `main`, Unit 12.5 is closed, Units 13 and 13.1 are
+closed, and Unit 14 is complete and locally accepted — implementation, Gate A,
+Gate B and the thirteen-capsule device pass all done. The only thing left is
+the user's integration choice.**
 
 ## Exact state
 
-- `main` is `907a4a83e7c592d4f6dd0c55e6f30c3b1b8bc49b`, the PR #22 merge
-  (2026-09-18T08:49:20Z).
-- Branch **`residuum-visual-reboot-13`**, HEAD **`68d0d96`**, `packages/app`
-  clean, nothing pushed, no pull request. U14's code range is
-  `5ac1a49..68d0d96`.
-- **Package gates at `68d0d96`**, architect-run and reviewer-reproduced:
-  `dart format` 0 changed, `flutter analyze` no issues, full `flutter test`
-  **1114 passing**. The figure is 1114, not 1113 — see the closure review's
-  F1 in the ledger.
-- **Gate A**: 331.0 / 429.0 / 578.0 dp at the three densities, 22 dp under
-  the contract's 600 dp ceiling. **Widget-test dp**, not device dp.
-- **Gate B is closed**: full review ACCEPT WITH FINDINGS (zero Critical, zero
-  Important, seven Minor), five code findings corrected in `68d0d96`, scoped
-  closure **CLOSED WITH FINDINGS — device gate MAY PROCEED**. Two findings
-  parked with reasons (F2, F3) and two kept by the architect as record
-  corrections (M3, M5).
-- **The recovery checkpoint is written**: `.flow/checkpoints/68d0d96.md`.
+- `main` is `907a4a83e7c592d4f6dd0c55e6f30c3b1b8bc49b`, the PR #22 merge.
+- Branch **`residuum-visual-reboot-13`**, HEAD **`68d0d96`** for code;
+  architect records sit on top. `packages/app` clean, **nothing pushed, no
+  pull request.**
+- **Package gates at `68d0d96`**: `dart format` 0 changed, `flutter analyze`
+  no issues, full `flutter test` **1114 passing** (1114, not 1113 — the
+  closure review caught a receipt figure that had been predicted rather than
+  observed).
+- **Gate A**: 331.0 / 429.0 / 578.0 dp, widget-test.
+- **Gate B closed**: acceptance review ACCEPT WITH FINDINGS (zero Critical,
+  zero Important, seven Minor), five corrected in `68d0d96`, scoped closure
+  CLOSED WITH FINDINGS.
+- **Gate C closed**: fifteen sessions on `emulator-5554`, 174 artefacts under
+  `.flow/evidence/68d0d96/`. Device chrome **332.95 / 432.00 / 582.86 dp**
+  post-`SafeArea`, **17.14 dp under the 600 dp ceiling**. **U13.1 is
+  hardware-confirmed.** Both save slots restored and architect-re-verified
+  byte-identical.
+- **All eleven acceptance criteria are closed.**
 
-## Exact next action — blocked on the user
+## Exact next action — the user's decision
 
-**Ask the user to start `Medium_Phone`, then run Gate C.** At the last check
-`adb devices` showed two physical phones and no emulator. This is the only
-open blocker; nothing else in the unit is waiting on anything.
+**Run `flow-integrating`.** The unit is locally accepted with fresh evidence
+and nothing remote has happened. The choice is the user's: merge locally,
+push and open a pull request, keep the branch as it is, or split it.
 
-Then dispatch fresh `flow-evidence-verifier` sessions, **one coherent capsule
-each**, each carrying its own `Evidence capsule:` manifest, writing to
-`.flow/evidence/68d0d96/<capsule-id>/`. Main keeps the checkpoint, the
-acceptance brief, the evidence inspection and the final judgement, and does
-**not** drive the device sequence itself.
+Nothing authorises a push, a pull request, a merge or any other
+stakeholder-visible write without the user's explicit word for that action.
+**Unit 12 is the standing lesson: deciding what to do about a finding is not
+authorisation for the remote action that follows from it.**
 
-**Every capsule cites `68d0d96`**, not `8ab8d09`. The head moved after the
-full acceptance review, and a capsule naming the superseded head would cite a
-tree no longer on the branch.
+After integration, the roadmap's next unit is **U15, row, control and chip
+grammar**, which depends on U14.
 
-The thirteen capsules A–M are defined in `PLAN.md` section "Gate C — the
-device pass". Its three inherited duties, which must not be lost:
+## What U15 inherits, beyond the roadmap
 
-- **Capsule J is the ceiling-density crawl** and carries U13.1's hardware
-  confirmation. If the `BattleDock` is covered there, U13.1 reopens.
-- **Capsules F and G are the roster's and the world map's first visual
-  baselines** in this epic.
-- **Capsules H, I and J carry the device dp figures**, compared per density
-  against Gate A's. Expected agreement within 2 dp; a wider divergence is the
-  first thing the receipt must explain, and the likeliest cause is F3 —
-  `✳ ✚ ⛒` are absent from Spectral and sit inside chip labels `_fitFor`
-  measures. **Worst legal combat over 600 dp on device is a
-  stop-and-escalate**, not an executor's call and not a tuning target.
-
-Both save slots are backed up and hashed before any install, and restored
-from the backups afterwards — never from the device, whose rotation drifts
-during play. Nothing remote is authorized; push, pull request and merge are
-each their own gate.
+- **M5 — the character screen's mana meter states capacity, not a pool.** It
+  renders `value == ceiling`, so the bar is always full; with a crawl
+  suspended at 2/8 the screen still reads `Mana 8 / 8`. True as capacity, but
+  a stronger claim than the unlabelled number it replaced. Render capacity
+  without a fill bar. **Do not add a mana getter to `TownViewState`** — the
+  town genuinely does not have that information.
+- **The Tavern's `Ask` carries no affordability cue**; the refusal is only
+  the notice sentence afterwards. Capsule E measured the control as
+  pixel-identical before and after a refusal.
+- **F2 — the bare `expect(tester.takeException(), isNull)` pattern** appears
+  about twenty-five times across the suite. One was deleted as a Gate B
+  finding; its twin survives at `character_screen_test.dart:369`. Several
+  occurrences **are** load-bearing — they carry a `reason:` or sit in tests
+  named for overflow-freedom — so this needs a judgement pass, not a sweep.
+- **F3 — import order is convention only.** `analysis_options.yaml` includes
+  `flutter_lints` and adds nothing; `directives_ordering` is in neither
+  installed package, so the order will drift again. Enabling it is a separate
+  decision.
+- **No test pins the meter's rendered fill colour anywhere**, so a regression
+  in `surfaces.dart`'s tint mapping would be caught only by device evidence.
+  Pre-existing, not introduced by this unit.
 
 ## What Unit 14 landed, task by task
 

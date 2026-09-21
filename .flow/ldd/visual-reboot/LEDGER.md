@@ -4039,3 +4039,137 @@ evidence. Pre-existing at `8ab8d09`, not introduced by the round.
 **Capsules must cite `68d0d96`.** The head moved after the full review, and a
 capsule labelled with the superseded head would name a tree no longer on the
 branch.
+
+## Gate C — the device pass, complete and accepted
+
+Fifteen sequential sessions on a user-started `Medium_Phone` (`emulator-5554`,
+1080x2400 at density 420, 2.625 device pixels per dp) against the debug build
+of **`68d0d96`**, whose installed `base.apk` was proved byte-identical to its
+own build artefact rather than merely "installed without error". One setup
+session, thirteen scene capsules A–M, one closing restore. 174 frames and
+crops under `.flow/evidence/68d0d96/`, every colour frame carrying a
+greyscale twin verified by **raw-pixel comparison**, never the anomalous
+`compare -metric AE` this workstation returns.
+
+### The dp budget on hardware, and the convention that had to be ruled first
+
+| density | Gate A (widget) | device (post-`SafeArea`) | Δ | U12.5 |
+|---|---:|---:|---:|---:|
+| exploration worst | 331.0 dp | **332.95 dp** | +1.95 | 331.1 |
+| combat typical | 429.0 dp | **432.00 dp** | +3.00 | 438.1 |
+| combat worst legal | 578.0 dp | **582.86 dp** | +4.86 | 580.95 |
+
+**AC7 passes with 17.14 dp of margin against the 600 dp ceiling** — the
+tightest figure in the unit, and less than one chip run, exactly as U12.5
+found.
+
+**A15 was ruled mid-pass and is the reason those numbers mean anything.**
+Capsule H reported 380.95 dp and correctly diagnosed a ~50 dp gap that was
+not a regression: the widget-test host never sets `tester.view.padding`, so
+`SafeArea` removes nothing there, while this device removes a 63 px status
+bar and a 63 px navigation bar — 126 px, 48.0 dp — before the `Expanded` map
+sees the surface. Capsules I, J and K each re-observed the insets from
+`WindowInsets` in logcat rather than inheriting the figure. The usable
+surface is **866.29 dp**, which capsule K then measured the log drawer's full
+extent at, to the hundredth. Read against the raw display, capsule J would
+have reported 630.86 dp and manufactured a false ceiling breach.
+
+### Unit 13.1 is hardware-confirmed and does not reopen
+
+Capsule J, at the least map height in the whole pass — **283.43 dp, 7.87 tile
+rows of sight** — found the `BattleDock` **not covered, not clipped, not
+overpainted**. The verifier sampled full RGB across the eleven-row gap
+between the dock's own card border and the map's top hairline, at every
+column rather than four, and found flat `#0E1014` scaffold throughout. Before
+`_ClippedMaxViewport` this exact density painted about 55 dp of dungeon over
+the dock, halving both ring tokens and hiding the words `You` and
+`the wight¹` outright. **U13.1's only open obligation is discharged.**
+
+The eleven-chip row rendered in full: `Drink (12)` · `Firebolt 2` ·
+`Frost Lance 4` · `Mend 3` · `+3` · `Wait` · `Pick up` · `Gather` ·
+`Pack (19)` · `Ascend <` · `Finish`, three runs of 4 + 4 + 3, greatest label
+line count 2 (`Frost Lance 4` wrapping between words), no split word, no
+ellipsis, no label touching its border, no verb hidden — the same verbs and
+the same run split U12.5 photographed.
+
+### What the type does on glass
+
+- **The 96 dp label column holds.** Capsule A measured the town's two value
+  cells starting at x=305 px against a predicted 304.5 — identical to the
+  pixel — with about 53 dp of clearance. Capsule B measured the thinnest
+  margin in the application, `Skills trained` at 75.05 dp, leaving
+  **20.6–21.0 dp**, matching the bundled-face figure of 76.34 dp within
+  rasterisation noise.
+- **F8's clip risk is settled.** Capsule G measured `TRAVEL IN PROGRESS` at
+  **97.90 dp** against the widget test's 98.79 and its 120 dp box, and
+  `NO ROAD FROM HERE` at 98.67 dp. Every label was checked for a **cut glyph
+  edge** rather than for looking fine — `TextOverflow.clip` draws no ellipsis,
+  so a clipped label reads as a slightly short word. The two widest were
+  zoomed 4x and show complete serif terminals. **Nothing clips anywhere in
+  the pass.**
+- **No tofu anywhere.** Capsule K rendered **nine of ten** log category marks
+  through real play, beating U12.5's eight, including three of F3's twelve
+  fallback marks — `◎`, `⇅`, `✕` — each zoomed and each a real glyph.
+  Capsule J rendered the three spell-chip marks. Capsule M confirmed the
+  map's own glyph set, which Task 01's coverage test says Spectral covers
+  fully, does so on hardware.
+- **No lavender on any surface.** Every capsule sampled rendered pixels
+  rather than judging by eye. The theme's cluster sits at hue 216–223 degrees
+  and 9–25% saturation; M3's `#D0BCFF` is hue 258 at full saturation, 35–42
+  degrees and several times the saturation away. **Capsule L settled AC5 on
+  all seven overlay surfaces at once** — both crawl sheets, the completion
+  confirm, the death overlay, both roster dialogs and the world travel
+  dialog.
+- **A9 holds on hardware.** The roster's name dialog — the application's only
+  `TextField`, and the widget that crashed under a null `textBaseline` —
+  rendered its label, its bordered field, its pre-filled text and a selection
+  handle, with the on-screen keyboard confirming real focus. No crash.
+- **The map glyphs survived the move to a serif.** Capsule M measured each
+  glyph's ink box against its 94.5 px cell: the hero `@` off centre by
+  0.10 x 0.67 dp, the stairs by 0.10 x 2.38, the monster letter by 0.48 x
+  2.19, and the two independently drawn ghouls produced **pixel-identical
+  offsets**. The superscript depth badge at `cameraCellSize * 0.30` renders
+  complete with visible serif detail at an 11 px ink height — the smallest
+  type in the application, legible only because its amber ink clears the
+  stone floor by a wide margin.
+- **Greyscale holds everywhere.** Capsule B measured the two meter fills at
+  **161 and 163** of 255 in the twin — the 0.0067 lightness design target
+  landing as a 0.78% difference, so neither meter reads as fuller by
+  brightness. Capsule K's newest-versus-older log ordering holds identically
+  in greyscale, 234 against 144. Capsule M's hero and monster separate by
+  letterform, not hue.
+
+### Both save slots restored, and independently re-verified
+
+`save.json` `18995c4a…b46d3` and `save-previous.json` `8909f70c…a9b11`,
+restored from the pre-install backups — never from the device, whose rotation
+drifted the previous slot during the pass — with ownership and mode
+preserved, and **the architect re-ran `sha256sum` on both device files
+afterwards** rather than accepting the receipt's MATCH. The app relaunched on
+the user's own state (THE CRYPT, HP 12/20) with no save-error text in the UI
+or in logcat.
+
+### Three things the pass recorded rather than smoothed over
+
+- **The Tavern's `Ask` carries no affordability cue of its own.** Capsule E
+  found the control renders identically whether or not the hero can pay; the
+  refusal is communicated only by the notice sentence afterwards. Not a Unit
+  14 regression — the unit restyled, it did not design the affordance — and
+  recorded for U15 alongside M5's capacity meter.
+- **Capsule M restarted the AVD.** It had stopped between capsules L and M,
+  and the verifier started it rather than stalling the pass. The
+  user-started rule exists so the architect never assumes a device; a
+  mid-pass restart of an already-authorised pass is within a verifier's own
+  environment authority, and it is recorded rather than hidden.
+- **Capsule M corrected a premise in its own brief.** The brief said the map
+  draws `*` for litter; `*` is the ore-vein gather node's glyph, and litter
+  draws each ground item's own base glyph — a dropped Iron Sword renders `)`.
+  The capsule measured the litter layer correctly and said so.
+
+### Unit 14 is complete and locally accepted
+
+All eleven acceptance criteria are closed: AC1, AC2, AC3, AC5, AC9 and AC10
+at Gate B; AC4 and AC6 at Gate B for the suite and at Gate C on glass; AC7
+across Gate A and capsules H, I and J; AC8 across every greyscale twin; and
+**AC11 by the thirteen capsules themselves**. Nothing is pushed, no pull
+request exists, and the integration choice is the user's.
