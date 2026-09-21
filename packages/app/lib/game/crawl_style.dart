@@ -2,22 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../style/tokens.dart';
 
-const Color crawlInk = ink;
-const Color crawlDim = dim;
-const Color crawlPanel = panel;
-const Color crawlRule = rule;
-const Color crawlVoid = ground;
-const Color crawlRaised = raised;
-const Color crawlRecessed = recessed;
-const Color crawlArmedFill = armedFill;
-const Color crawlDisabledRule = disabledRule;
-const Color crawlScrim = scrim;
-
-const double crawlGutter = gutter;
-const double crawlRhythm = rhythm;
-const double crawlRadius = radius;
-const double crawlHairline = hairline;
-const double crawlTapTarget = tapTarget;
 const double crawlPanelPadding = 8;
 const double crawlTokenCell = 44;
 const double crawlTokenWidth = 76;
@@ -38,29 +22,19 @@ const int crawlChipMaxColumns = 5;
 const int crawlChipMaxLabelLines = 3;
 const double crawlDisabledIconOpacity = 0.45;
 
-const TextStyle crawlPlace = displayRoom;
-const TextStyle crawlBody = textBody;
-const TextStyle crawlBodyDim = textLineDim;
-const TextStyle crawlRegionLabel = displayCaption;
-const TextStyle crawlPanelTitle = displayPanel;
-const TextStyle crawlLine = textLine;
-const TextStyle crawlLineOlder = textLineDim;
-const TextStyle crawlGlyph = textGlyph;
-const TextStyle crawlChevron = textGlyphDim;
-const TextStyle crawlTokenWord = textDetailDim;
-
 /// `inherit: false` on every chip and caption style below: the invariant
 /// now lives in `tokens.dart` and applies to every role, so `_ActionChip`
 /// renders these consts directly rather than through a `copyWith`, and the
 /// object `_fitFor` measures is still the object `Text` paints —
 /// measurement and render can never drift onto two different `TextStyle`
 /// instances of the same nominal values.
+/// `_fitFor` measures these exact objects and names the heaviest explicitly
+/// (`crawl_action_row.dart:154-163`); the seam owning the names is what lets
+/// U15 retune the ladder without touching a shared role.
 const TextStyle crawlChipLabel = textLabel;
 const TextStyle crawlChipLabelDisabled = textLabelDim;
 const TextStyle crawlChipLabelArmed = textLabelStrong;
 const TextStyle crawlCaption = textCaption;
-const TextStyle crawlDetail = textDetailDim;
-const TextStyle crawlHeadline = textHeadline;
 
 /// available, disabled and armed: the crawl's whole chip-state vocabulary.
 enum CrawlChipState { available, disabled, armed }
@@ -88,23 +62,23 @@ class CrawlChipSkin {
 /// re-checking the greyscale reading it protects.
 CrawlChipSkin crawlChipSkin(CrawlChipState state) => switch (state) {
   CrawlChipState.available => const CrawlChipSkin(
-    fill: crawlRaised,
-    border: crawlRule,
-    borderWidth: crawlHairline,
+    fill: raised,
+    border: rule,
+    borderWidth: hairline,
     label: crawlChipLabel,
     iconOpacity: 1,
   ),
   CrawlChipState.disabled => const CrawlChipSkin(
-    fill: crawlRecessed,
-    border: crawlDisabledRule,
-    borderWidth: crawlHairline,
+    fill: recessed,
+    border: disabledRule,
+    borderWidth: hairline,
     label: crawlChipLabelDisabled,
     iconOpacity: crawlDisabledIconOpacity,
   ),
   CrawlChipState.armed => const CrawlChipSkin(
-    fill: crawlArmedFill,
-    border: crawlInk,
-    borderWidth: crawlHairline * 2,
+    fill: armedFill,
+    border: ink,
+    borderWidth: hairline * 2,
     label: crawlChipLabelArmed,
     iconOpacity: 1,
   ),

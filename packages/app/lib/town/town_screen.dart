@@ -5,7 +5,8 @@ import 'package:residuum_core/core.dart';
 
 import '../art/art_assets.dart';
 import '../style/surfaces.dart';
-import '../style/tokens.dart' show residuumTheme;
+import '../style/tokens.dart'
+    show displayPlace, ink, panel, residuumTheme, rule, textBody, textLineDim;
 import '../world/world_bloc.dart';
 import 'alchemist_screen.dart';
 import 'bank_screen.dart';
@@ -79,11 +80,11 @@ class TownScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(_titleFor(state.town), style: placeName),
+                        Text(_titleFor(state.town), style: displayPlace),
                         const SizedBox(height: 4),
                         Text(
                           _descentsSoFar(state.profile.visit),
-                          style: monoDim,
+                          style: textLineDim,
                         ),
                         const Divider(color: rule, height: 28),
                         ResourceMeter(
@@ -231,9 +232,9 @@ class _Door extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label, style: mono),
+            Text(label, style: textBody),
             const SizedBox(height: 2),
-            Text(purpose, style: monoDim),
+            Text(purpose, style: textLineDim),
           ],
         ),
       ),

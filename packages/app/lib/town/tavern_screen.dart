@@ -8,6 +8,7 @@ import '../world/world_bloc.dart';
 import 'illustration.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
+import '../style/tokens.dart';
 
 /// The tavern: where the map is bought a place at a time.
 ///
@@ -55,7 +56,7 @@ class TavernScreen extends StatelessWidget {
               for (final line in world.log.reversed.take(6))
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Text(line, style: monoDim),
+                  child: Text(line, style: textLineDim),
                 ),
           ],
         );

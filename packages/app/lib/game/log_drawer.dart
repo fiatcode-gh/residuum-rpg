@@ -4,6 +4,7 @@ import 'crawl_style.dart';
 import 'crawl_surfaces.dart';
 import 'game_bloc.dart';
 import 'log_line.dart';
+import '../style/tokens.dart';
 
 const logPeekKey = Key('log-peek');
 const logHandleKey = Key('log-handle');
@@ -11,7 +12,7 @@ const logDrawerKey = Key('log-drawer');
 const logCloseKey = Key('log-close');
 const logUnreadKey = Key('log-unread');
 
-TextStyle _rowStyle(bool newest) => newest ? crawlLine : crawlLineOlder;
+TextStyle _rowStyle(bool newest) => newest ? textLine : textLineDim;
 
 /// The centred drag handle pill the mock draws atop both the peek and the
 /// drawer: the one shape that says "there is more here" without a word.
@@ -24,7 +25,7 @@ class _HandlePill extends StatelessWidget {
       width: 32,
       height: 4,
       decoration: BoxDecoration(
-        color: crawlDim,
+        color: dim,
         borderRadius: BorderRadius.circular(2),
       ),
     ),
@@ -56,13 +57,13 @@ class LogPeek extends StatelessWidget {
         width: double.infinity,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: crawlGutter,
-            vertical: crawlRhythm,
+            horizontal: gutter,
+            vertical: rhythm,
           ),
           child: CrawlPanel(
             padding: const EdgeInsets.symmetric(
               horizontal: crawlPanelPadding,
-              vertical: crawlRhythm,
+              vertical: rhythm,
             ),
             child: Row(
               children: [
@@ -76,8 +77,8 @@ class LogPeek extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: crawlRhythm),
-                const Text('›', style: crawlChevron),
+                const SizedBox(width: rhythm),
+                const Text('›', style: textGlyphDim),
               ],
             ),
           ),
@@ -116,11 +117,8 @@ class _LogRow extends StatelessWidget {
                     height: crawlMarkWell,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: crawlRecessed,
-                      border: Border.all(
-                        color: crawlRule,
-                        width: crawlHairline,
-                      ),
+                      color: recessed,
+                      border: Border.all(color: rule, width: hairline),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(line.category.mark, style: style),
@@ -213,7 +211,7 @@ class _LogDrawerState extends State<LogDrawer> {
           ? 1.0
           : 0.45,
       child: ColoredBox(
-        color: crawlPanel,
+        color: panel,
         child: Column(
           children: [
             Semantics(
@@ -230,10 +228,10 @@ class _LogDrawerState extends State<LogDrawer> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: crawlGutter),
+              padding: const EdgeInsets.symmetric(horizontal: gutter),
               child: Row(
                 children: [
-                  const Text('MESSAGE LOG', style: crawlPanelTitle),
+                  const Text('MESSAGE LOG', style: displayPanel),
                   const Spacer(),
                   CrawlPill(
                     key: logCloseKey,
@@ -245,18 +243,16 @@ class _LogDrawerState extends State<LogDrawer> {
               ),
             ),
             Container(
-              height: crawlHairline,
-              margin: const EdgeInsets.symmetric(horizontal: crawlGutter),
-              color: crawlRule,
+              height: hairline,
+              margin: const EdgeInsets.symmetric(horizontal: gutter),
+              color: rule,
             ),
             Expanded(
               child: Stack(
                 children: [
                   ListView.builder(
                     controller: _controller,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: crawlGutter,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: gutter),
                     itemCount: widget.state.log.length,
                     itemBuilder: (context, index) => _LogRow(
                       line: widget.state.log[index],

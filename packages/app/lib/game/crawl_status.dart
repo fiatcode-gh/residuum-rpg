@@ -3,8 +3,8 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../style/surfaces.dart';
-import 'crawl_style.dart';
 import 'game_bloc.dart';
+import '../style/tokens.dart';
 
 const hpMeterKey = Key('hp-meter');
 const manaMeterKey = Key('mana-meter');
@@ -22,21 +22,14 @@ class CrawlStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(
-      horizontal: crawlGutter,
-      vertical: crawlRhythm,
-    ),
+    padding: const EdgeInsets.symmetric(horizontal: gutter, vertical: rhythm),
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         _HeaderRow(state: state, dungeon: dungeon),
-        const SizedBox(height: crawlRhythm),
+        const SizedBox(height: rhythm),
         _ResourceRow(state: state),
-        const Divider(
-          height: crawlHairline,
-          thickness: crawlHairline,
-          color: crawlRule,
-        ),
+        const Divider(height: hairline, thickness: hairline, color: rule),
       ],
     ),
   );
@@ -55,13 +48,13 @@ class _HeaderRow extends StatelessWidget {
         child: FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text(_placeName(state, dungeon), style: crawlPlace),
+          child: Text(_placeName(state, dungeon), style: displayRoom),
         ),
       ),
       const SizedBox(width: 8),
       _BattleGlyph(state: state),
       const SizedBox(width: 4),
-      Text(_battleWord(state), style: crawlBody),
+      Text(_battleWord(state), style: textBody),
       const SizedBox(width: 8),
       if (!state.isEncounter)
         SizedBox(
@@ -70,7 +63,7 @@ class _HeaderRow extends StatelessWidget {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
-            child: Text('${state.depth} / ${state.deepest}', style: crawlBody),
+            child: Text('${state.depth} / ${state.deepest}', style: textBody),
           ),
         ),
     ],
@@ -138,7 +131,7 @@ class _BattleGlyph extends StatelessWidget {
         : null;
     return SizedBox(
       width: 18,
-      child: Text(glyph ?? '', textAlign: TextAlign.center, style: crawlBody),
+      child: Text(glyph ?? '', textAlign: TextAlign.center, style: textBody),
     );
   }
 }

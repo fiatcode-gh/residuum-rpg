@@ -6,6 +6,7 @@ import 'crawl_surfaces.dart';
 import 'game_bloc.dart';
 import 'activation_timeline.dart';
 import 'actor_presentation.dart';
+import '../style/tokens.dart';
 
 /// The battle dock: a compact, accessible view of the upcoming activations
 /// over the live map.
@@ -28,10 +29,7 @@ class BattleDock extends StatelessWidget {
     final queue = state.activationQueue;
     final hasRemainder = queue.length > 1;
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: crawlGutter,
-        vertical: crawlRhythm,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: gutter, vertical: rhythm),
       child: CrawlPanel(
         key: const Key('dock-backing'),
         padding: const EdgeInsets.all(crawlPanelPadding),
@@ -52,13 +50,13 @@ class BattleDock extends StatelessWidget {
                   // every face, rather than a guessed constant.
                   const Opacity(
                     opacity: 0,
-                    child: Text('›', style: crawlChevron),
+                    child: Text('›', style: textGlyphDim),
                   ),
                   Flexible(child: CrawlRegionLabel('NEXT')),
                 ],
               ],
             ),
-            const SizedBox(height: crawlRhythm),
+            const SizedBox(height: rhythm),
             Row(
               children: [
                 _TimelineToken(
@@ -67,7 +65,7 @@ class BattleDock extends StatelessWidget {
                   state: state,
                   onActorSelected: onActorSelected,
                 ),
-                if (hasRemainder) const Text('›', style: crawlChevron),
+                if (hasRemainder) const Text('›', style: textGlyphDim),
                 if (hasRemainder)
                   Expanded(
                     child: SingleChildScrollView(
@@ -81,7 +79,7 @@ class BattleDock extends StatelessWidget {
                             queueIndex++
                           ) ...[
                             if (queueIndex > 1)
-                              const Text('›', style: crawlChevron),
+                              const Text('›', style: textGlyphDim),
                             _TimelineToken(
                               token: queue[queueIndex],
                               queueIndex: queueIndex,
@@ -122,16 +120,16 @@ class _TimelineCell extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: crawlRaised,
-            border: Border.all(color: crawlRule, width: crawlHairline),
+            color: raised,
+            border: Border.all(color: rule, width: hairline),
           ),
-          child: Text(glyph, style: crawlGlyph),
+          child: Text(glyph, style: textGlyph),
         ),
         SizedBox(
           width: crawlTokenWidth,
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(word, style: crawlTokenWord),
+            child: Text(word, style: textDetailDim),
           ),
         ),
       ],
@@ -204,9 +202,9 @@ void showEnemyInfo(
     children: (sheetContext) => [
       Row(
         children: [
-          Text(presentation.glyphLabel, style: crawlGlyph),
+          Text(presentation.glyphLabel, style: textGlyph),
           const SizedBox(width: 10),
-          Expanded(child: Text(presentation.displayName, style: crawlLine)),
+          Expanded(child: Text(presentation.displayName, style: textLine)),
         ],
       ),
       const SizedBox(height: 8),
@@ -235,6 +233,6 @@ class _EnemyInfoLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 2),
-    child: Text(text, style: crawlLine),
+    child: Text(text, style: textLine),
   );
 }

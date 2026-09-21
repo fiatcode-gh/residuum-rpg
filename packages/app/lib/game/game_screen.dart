@@ -84,13 +84,10 @@ class GameScreen extends StatelessWidget {
                             position: DecorationPosition.foreground,
                             decoration: const BoxDecoration(
                               border: Border(
-                                top: BorderSide(
-                                  color: crawlRule,
-                                  width: crawlHairline,
-                                ),
+                                top: BorderSide(color: rule, width: hairline),
                                 bottom: BorderSide(
-                                  color: crawlRule,
-                                  width: crawlHairline,
+                                  color: rule,
+                                  width: hairline,
                                 ),
                               ),
                             ),
@@ -475,18 +472,18 @@ class _DeathOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ColoredBox(
-    color: crawlScrim,
+    color: scrim,
     child: Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('You died.', style: crawlHeadline),
-          const SizedBox(height: crawlRhythm * 2),
+          const Text('You died.', style: textHeadline),
+          const SizedBox(height: rhythm * 2),
           const Text(
             'What you carried is gone. What you wore is not.',
-            style: crawlBodyDim,
+            style: textLineDim,
           ),
-          const SizedBox(height: crawlRhythm * 4),
+          const SizedBox(height: rhythm * 4),
           CrawlPill(
             label: state.isEncounter ? 'Wake at home' : 'Return to town',
             onPressed: () => state.isEncounter
@@ -521,7 +518,7 @@ Future<void> _openSpellsOverflow(
   children: (sheetContext) => [
     const Padding(
       padding: EdgeInsets.only(bottom: crawlPanelPadding),
-      child: Text('Spells', style: crawlPanelTitle),
+      child: Text('Spells', style: displayPanel),
     ),
     for (final spell in state.knownSpells)
       _OverflowRow(
@@ -553,8 +550,8 @@ class _OverflowRow extends StatelessWidget {
     final skin = crawlChipSkin(CrawlChipState.armed);
     return SpellRow(
       spell: spell,
-      style: crawlLine,
-      dimStyle: crawlDetail,
+      style: textLine,
+      dimStyle: textDetailDim,
       detail: effectOf(spell),
       trailing: TextButton(
         key: Key('overflow-${spell.id}'),
@@ -566,7 +563,7 @@ class _OverflowRow extends StatelessWidget {
         ),
         child: Text(
           armed ? '— armed' : spell.school.schoolMarking,
-          style: crawlLine,
+          style: textLine,
         ),
       ),
     );

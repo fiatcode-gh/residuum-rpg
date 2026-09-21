@@ -5,6 +5,7 @@ import 'package:residuum_content/content.dart';
 import '../game/spell_row.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
+import '../style/tokens.dart';
 
 class SpellsScreen extends StatelessWidget {
   const SpellsScreen({super.key});
@@ -22,8 +23,8 @@ class SpellsScreen extends StatelessWidget {
             for (final spell in known)
               SpellRow(
                 spell: spell,
-                style: mono,
-                dimStyle: monoDim,
+                style: textBody,
+                dimStyle: textLineDim,
                 detail: effectOf(spell),
               ),
         ],

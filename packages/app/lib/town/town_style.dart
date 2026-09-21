@@ -4,18 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../notice/notice.dart';
 import '../style/surfaces.dart' show LabelledValue;
-import '../style/tokens.dart' as tokens;
 
 import 'package:residuum_core/core.dart';
 
-const Color ink = tokens.ink;
-const Color dim = tokens.dim;
-const Color panel = tokens.panel;
-const Color rule = tokens.rule;
-
-const TextStyle mono = tokens.textBody;
-
-const TextStyle monoDim = tokens.textLineDim;
+import '../style/tokens.dart';
 
 /// The width of every leading mark column in the town.
 ///
@@ -24,12 +16,6 @@ const TextStyle monoDim = tokens.textLineDim;
 /// two pixels steps sideways on the phone. A device pass caught exactly
 /// that.
 const double markColumn = 28;
-
-/// The type a place announces itself in.
-const TextStyle placeName = tokens.displayPlace;
-
-/// The type a room inside a place announces itself in.
-const TextStyle roomName = tokens.displayRoom;
 
 /// A section title above a list.
 ///
@@ -47,7 +33,7 @@ class Heading extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(text.toUpperCase(), style: tokens.displayCaption),
+        Text(text.toUpperCase(), style: displayCaption),
         const Divider(color: rule, height: 9),
       ],
     ),
@@ -63,7 +49,7 @@ class NothingHere extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Text(text, style: monoDim),
+    child: Text(text, style: textLineDim),
   );
 }
 
@@ -110,7 +96,7 @@ class ItemRow extends StatelessWidget {
       children: [
         SizedBox(
           width: markColumn,
-          child: Text(marking, style: monoDim, textAlign: TextAlign.center),
+          child: Text(marking, style: textLineDim, textAlign: TextAlign.center),
         ),
         Expanded(
           child: Column(
@@ -119,12 +105,12 @@ class ItemRow extends StatelessWidget {
             children: [
               Text(
                 name,
-                style: mono,
+                style: textBody,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               if (onPressed == null && reason != null)
-                Text(reason!, style: monoDim),
+                Text(reason!, style: textLineDim),
             ],
           ),
         ),
@@ -135,7 +121,7 @@ class ItemRow extends StatelessWidget {
             onPressed: onPressed,
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-              textStyle: tokens.textLabel,
+              textStyle: textLabel,
             ),
             child: Text(action, maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
@@ -192,10 +178,10 @@ class MaterialRows extends StatelessWidget {
             children: [
               SizedBox(
                 width: markColumn,
-                child: Text(id.marking, style: mono),
+                child: Text(id.marking, style: textBody),
               ),
-              SizedBox(width: 84, child: Text(id.word, style: mono)),
-              Text('${materials[id] ?? 0}', style: mono),
+              SizedBox(width: 84, child: Text(id.word, style: textBody)),
+              Text('${materials[id] ?? 0}', style: textBody),
             ],
           ),
         ),
@@ -218,7 +204,7 @@ class Notice extends StatelessWidget {
     if (notice == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 10),
-      child: Text('— ${notice!.sentence}.', style: monoDim),
+      child: Text('— ${notice!.sentence}.', style: textLineDim),
     );
   }
 }
@@ -292,7 +278,7 @@ class _CountStepperState extends State<CountStepper> {
   Widget build(BuildContext context) {
     Widget edge(String glyph, int by) {
       final dead = widget.value + by < 0 || widget.value + by > widget.cap;
-      final glyph_ = Text(glyph, style: dead ? monoDim : mono);
+      final glyph_ = Text(glyph, style: dead ? textLineDim : textBody);
       return GestureDetector(
         onTapDown: dead ? null : (_) => _pressDown(by),
         onTapUp: dead ? null : (_) => _release(),
@@ -314,7 +300,7 @@ class _CountStepperState extends State<CountStepper> {
           child: Text(
             '${widget.value}',
             textAlign: TextAlign.center,
-            style: mono,
+            style: textBody,
           ),
         ),
         edge('+', 1),
@@ -322,7 +308,7 @@ class _CountStepperState extends State<CountStepper> {
           onTapDown: capped ? null : (_) => widget.onChanged(widget.cap),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            child: Text('MAX', style: capped ? monoDim : mono),
+            child: Text('MAX', style: capped ? textLineDim : textBody),
           ),
         ),
       ],
@@ -364,13 +350,13 @@ class TownRoom extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Theme(
-    data: tokens.residuumTheme,
+    data: residuumTheme,
     child: Scaffold(
       appBar: AppBar(backgroundColor: panel, foregroundColor: ink),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
         children: [
-          Text(title, style: roomName),
+          Text(title, style: displayRoom),
           const Divider(color: rule, height: 22),
           ...children,
           const SizedBox(height: 24),

@@ -6,6 +6,7 @@ import '../style/surfaces.dart';
 
 import 'town_bloc.dart';
 import 'town_style.dart';
+import '../style/tokens.dart';
 
 /// A handle onto the inn's health meter for tests: the row itself carries
 /// no other stable identity now that it is a [ResourceMeter] rather than a
@@ -63,7 +64,7 @@ class InnScreen extends StatelessWidget {
                 ? () => bloc.add(const RestPressed())
                 : null,
           ),
-          Text(_why(state), style: monoDim),
+          Text(_why(state), style: textLineDim),
         ],
       ),
     );

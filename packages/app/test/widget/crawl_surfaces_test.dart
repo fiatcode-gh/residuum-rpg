@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
-import 'package:residuum_app/town/town_style.dart' as town;
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../support/phone.dart';
+
+import 'package:residuum_app/style/tokens.dart';
 
 const _arena = '''
 #######
@@ -221,9 +221,7 @@ Future<Color?> _bareDialogColor(WidgetTester tester) async {
 
 void main() {
   group('every crawl overlay renders on the crawl surface', () {
-    testWidgets('the spells overflow sheet renders on crawlPanel', (
-      tester,
-    ) async {
+    testWidgets('the spells overflow sheet renders on panel', (tester) async {
       // arrange - the bare Material 3 default, for contrast
       final bareColor = await _bareBottomSheetColor(tester);
 
@@ -234,11 +232,11 @@ void main() {
 
       // assert
       final sheetColor = _routeSurfaceColor(tester, BottomSheet);
-      expect(sheetColor, crawlPanel);
+      expect(sheetColor, panel);
       expect(sheetColor, isNot(bareColor));
     });
 
-    testWidgets('the enemy info sheet renders on crawlPanel', (tester) async {
+    testWidgets('the enemy info sheet renders on panel', (tester) async {
       // arrange
       final bareColor = await _bareBottomSheetColor(tester);
 
@@ -249,11 +247,11 @@ void main() {
 
       // assert
       final sheetColor = _routeSurfaceColor(tester, BottomSheet);
-      expect(sheetColor, crawlPanel);
+      expect(sheetColor, panel);
       expect(sheetColor, isNot(bareColor));
     });
 
-    testWidgets('the completion confirm renders on crawlPanel', (tester) async {
+    testWidgets('the completion confirm renders on panel', (tester) async {
       // arrange
       final bareColor = await _bareDialogColor(tester);
 
@@ -264,11 +262,11 @@ void main() {
 
       // assert
       final dialogColor = _routeSurfaceColor(tester, Dialog);
-      expect(dialogColor, crawlPanel);
+      expect(dialogColor, panel);
       expect(dialogColor, isNot(bareColor));
     });
 
-    testWidgets('the death overlay renders on crawlScrim', (tester) async {
+    testWidgets('the death overlay renders on scrim', (tester) async {
       // act
       await _openCrawl(tester, _gameOverScene());
 
@@ -281,7 +279,7 @@ void main() {
             )
             .first,
       );
-      expect(overlay.color, crawlScrim);
+      expect(overlay.color, scrim);
     });
   });
 
@@ -293,11 +291,11 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('Pack (0)')));
       await tester.pumpAndSettle();
 
-      // assert - the town's own panel and ink, hardcoded regardless of the
-      // ambient theme the crawl scoped over its own subtree
+      // assert - the pack route pushed from the crawl is inside a theme at all
+      // and renders on the shared panel surface
       final appBar = tester.widget<AppBar>(find.byType(AppBar));
-      expect(appBar.backgroundColor, town.panel);
-      expect(appBar.foregroundColor, town.ink);
+      expect(appBar.backgroundColor, panel);
+      expect(appBar.foregroundColor, ink);
     },
   );
 }

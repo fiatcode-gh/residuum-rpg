@@ -3,8 +3,8 @@ import 'package:flutter/semantics.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-import '../style/tokens.dart' show textDetail, textMicro, textMicroDim;
-import '../town/town_style.dart';
+import '../style/tokens.dart'
+    show ink, panel, rule, textBody, textDetail, textMicro, textMicroDim;
 
 class WorldRouteDiagram extends StatelessWidget {
   const WorldRouteDiagram({
@@ -356,7 +356,7 @@ class _UnknownMarker extends StatelessWidget {
         color: panel,
         shape: CircleBorder(side: BorderSide(color: rule)),
       ),
-      child: const Text('?', style: mono),
+      child: const Text('?', style: textBody),
     ),
   );
 }

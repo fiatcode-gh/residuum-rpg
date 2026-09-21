@@ -3,9 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-import '../style/tokens.dart' show residuumTheme;
-import '../town/town_style.dart'
-    show Heading, MaterialRows, NothingHere, mono, monoDim, panel, ink;
+import '../style/tokens.dart'
+    show ink, panel, residuumTheme, textBody, textLineDim;
+import '../town/town_style.dart' show Heading, MaterialRows, NothingHere;
 import 'game_bloc.dart';
 import 'item_presentation.dart';
 
@@ -241,22 +241,22 @@ class _PackItemRow extends StatelessWidget {
             children: [
               SizedBox(
                 width: 28,
-                child: Text(item.rarity.marking, style: mono),
+                child: Text(item.rarity.marking, style: textBody),
               ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(stack.label, style: mono),
-                    if (stats.isNotEmpty) Text(stats, style: monoDim),
+                    Text(stack.label, style: textBody),
+                    if (stats.isNotEmpty) Text(stats, style: textLineDim),
                     if (showBookTeaching && item.base.isSpellBook)
-                      Text(_teachingLine(item), style: monoDim),
+                      Text(_teachingLine(item), style: textLineDim),
                     if (slot != null)
                       Text(
                         deltaLine(wornDeltas(item, equipment[slot])),
-                        style: monoDim,
+                        style: textLineDim,
                       ),
-                    if (refusal != null) Text(refusal, style: monoDim),
+                    if (refusal != null) Text(refusal, style: textLineDim),
                   ],
                 ),
               ),

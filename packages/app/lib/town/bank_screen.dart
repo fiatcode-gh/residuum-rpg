@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'town_bloc.dart';
 import 'town_style.dart';
+import '../style/tokens.dart';
 
 /// Why a Bank commit is dead.
 ///
@@ -85,7 +86,7 @@ class _BankScreenState extends State<BankScreen> {
                       setState(() => _pendingBank = 0);
                     },
             ),
-            if (state.gold <= 0) Text(purseIsShort, style: monoDim),
+            if (state.gold <= 0) Text(purseIsShort, style: textLineDim),
             if (state.profile.inventory.isEmpty)
               const NothingHere('You are carrying nothing.'),
             for (final item in state.profile.inventory)
@@ -110,7 +111,7 @@ class _BankScreenState extends State<BankScreen> {
                       setState(() => _pendingTake = 0);
                     },
             ),
-            if (state.bankedGold <= 0) Text(vaultIsShort, style: monoDim),
+            if (state.bankedGold <= 0) Text(vaultIsShort, style: textLineDim),
             if (state.profile.bank.isEmpty)
               const NothingHere('The vault is empty.'),
             for (final item in state.profile.bank)

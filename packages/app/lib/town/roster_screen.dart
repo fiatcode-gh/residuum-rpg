@@ -3,7 +3,7 @@ import 'package:residuum_content/content.dart';
 
 import '../notice/notice.dart';
 import '../save/boot.dart';
-import '../style/tokens.dart' show residuumTheme;
+import '../style/tokens.dart' show residuumTheme, rule, textBody, textLineDim;
 import 'town_style.dart';
 
 /// What the player asked the roster to do.
@@ -278,15 +278,15 @@ class _HeroRow extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(hero.label, style: mono),
+                          Text(hero.label, style: textBody),
                           if (playing) ...[
                             const SizedBox(width: 10),
-                            const Text('playing', style: monoDim),
+                            const Text('playing', style: textLineDim),
                           ],
                         ],
                       ),
                       const SizedBox(height: 2),
-                      Text(rosterLine(hero), style: monoDim),
+                      Text(rosterLine(hero), style: textLineDim),
                     ],
                   ),
                 ),
