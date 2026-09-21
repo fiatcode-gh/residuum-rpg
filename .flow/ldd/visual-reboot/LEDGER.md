@@ -3672,3 +3672,222 @@ four test files pin that exact string — `roster_refusal_test.dart`,
 `world_screen_test.dart`. They break the moment the world seam converts.
 
 **Paused by the user after Task 05**, tree clean, five of eight tasks done.
+
+### U14 Task 06 accepted, and A10 and A12 ruled around it
+
+**Task 06 — `fb55622`, `feat: put the world and its route diagram under the
+theme`.** The world screen was the last screen root without a theme. Its
+`Scaffold` and both root-navigator `AlertDialog`s now wrap `residuumTheme`;
+the ten `fontFamily: 'monospace'` literals in `world_screen.dart` and the six
+in `world_route_diagram.dart` are gone, replaced by plain token aliases with
+no `copyWith` anywhere, per A8; the three padded status rows take Task 05's
+`ResourceMeter` and `LabelledValue` behind a new `worldHealthMeterKey`.
+
+- **A10, ruled by the architect at dispatch.** Brief 06 named two test
+  rewrites and listed `roster_session_test.dart` as must-stay-green
+  *unedited*, which was false: `roster_session_test.dart` pins the padded
+  `Carried  N gold` five times and `roster_refusal_test.dart` twice. Both
+  files joined Task 06's owned set with the edit boundary drawn at those
+  assertions only. All ten pins across four files are now `find.descendant`
+  on the `LabelledValue` labelled `Carried`, or on `worldHealthMeterKey` —
+  the behaviour each padded string stood in for, never a new literal. A
+  full-suite grep confirms no `'Health   '`, `'Carried  '` or `'Banked   '`
+  literal survives anywhere under `packages/app`.
+- **A12 — the brief's "passes before and after" claim for the no-clipping
+  proof was wrong, and the reason is worth carrying.** The test measured Red
+  on both scenarios before the change (`TRAVEL IN PROGRESS` at 110 dp in a
+  110 dp box, `DANGER n/100` at 128 in 128), because `'monospace'` is never
+  registered with the widget-test host — `test/support/fonts.dart` loads only
+  `textFace` and `displayFace`, so `--use-test-fonts` substitutes Ahem and
+  its advance clips at any rung. Architect-verified at source. Green on the
+  migrated tree at **98.79 dp** with a journey in progress and **100.17 dp**
+  standing still, against the 120 dp box. No assertion changed; the guard is
+  real after the change, and the executor recorded the true split in the test
+  file's own doc comment. This is U13.1's measurement trap in a new costume:
+  an unregistered family in a widget test is measured as Ahem, not as the
+  face the device will use.
+- **The nine-px rung is now evidence, not an estimate.** The plan's ≈108 dp
+  hand-estimate for `TRAVEL IN PROGRESS` was the last unverified font-metric
+  claim in U14; measured, it is 98.79 dp. Every such claim the plan made has
+  now held or been corrected by measurement rather than by tuning.
+- One deviation, accepted: `tokens.dart` is imported `as tokens` rather than
+  with a `show` clause, matching `town_style.dart`'s own precedent, so the
+  brief's `residuumTheme` audit grep lands on exactly the three wrap sites
+  and not a fourth from the import line.
+
+**Architect verification on the committed tree:** the five audit greps
+returned exactly what the brief specified — nothing for `fontFamily`,
+`monospace`, `TextStyle(` and the padded rows in `lib/world`, and
+`residuumTheme` at `world_screen.dart:64`, `:144`, `:480`. The production
+diff was read in full: geometry, `maxLines`, `TextOverflow.clip`, `Semantics`
+labels and every string are untouched. Executor gates: `dart format` 129
+files / 0 changed, `flutter analyze` clean, full `flutter test` **1115
+passing** (the six-test delta is exactly the new diagram-fit group).
+
+### U14 Task 07 accepted — AC2 closed and guarded, and A11 ruled at dispatch
+
+**A11 — brief 07's prose-sweep list is stale.** The brief expects the
+surviving `monospace` prose in `battle_view.dart:229`, `town_style.dart:29`
+and `:203` and `main.dart:144`; the architect re-ran the grep on `fb55622`
+and all four are already clear. What survives is dartdoc *Tasks 01 and 05
+wrote while retiring the face*: `tokens.dart:40-41` and `surfaces.dart:80`,
+both explaining that padded label columns only ever aligned in a fixed-width
+face. Those three lines are the sweep and Task 07 owns them, prose only.
+
+This is not cosmetic: Task 07's own CI gate greps `monospace` across
+`lib --include='*.dart'`, which matches comments, so the gate cannot pass on
+the tree that introduces it until they are rewritten. The brief's "the sweep
+must not disturb `tokens.dart`" is rescoped to behaviour — no declaration,
+value or role changes, with `type_authority_test.dart` green and unedited as
+the proof.
+
+**Task 07 — `2763663`, `feat: move the map glyph off monospace and guard the
+word for good`.** Five files, 23 insertions, 5 deletions. The dungeon's two
+glyph paints read `fontFamily: textFace`; `cameraCellSize`,
+`glyphBaseFontScale`, the `* 0.30` badge derivation, `height: 1`,
+`Anchor.center` and U13.1's `_ClippedMaxViewport` are untouched, and the diff
+proves it. Both A11 prose sites now say "fixed-width face" and keep their
+warning intact.
+
+**AC2 is closed.** `monospace` appears nowhere in `packages/app/lib`, and no
+screen declares a font-family literal — architect-verified independently by
+re-running both greps on the committed tree: the only `fontFamily` hits are
+the twenty role declarations in `tokens.dart` and the two token references in
+`dungeon_scene.dart`.
+
+**The guard is what makes AC2 survive U15 through U21.** `.github/workflows/
+ci.yml` gains a `type authority gate` step on the `app` leg only
+(`if: matrix.package == 'app'`), after `analyze`, in the `if`-block form the
+plan specified — a bare `! grep` inverts the wrong exit code. `AGENTS.md`
+gains the same rule in prose, in `## Craftsmanship`. The executor proved the
+gate can fail without mutating a tracked file, by running its grep against
+`fb55622` through `git show`.
+
+Gates: `dart format` 129 files / 0 changed, `flutter analyze` clean, full
+suite **1115 passing** — unchanged from `fb55622`, as a behaviour-neutral
+change should be. Grep 3 (`Color(0x` on the two seams and `main.dart`)
+returned nothing but **AC3 stays open**: A4 gives its closure to Task 08,
+which deletes the alias declarations outright and re-runs the grep in its
+stronger form.
+
+### U14 Task 08 dispatched to `sonic`, and A13 ruled at dispatch
+
+Task 08 goes to `sonic`, not to a plan executor: A7 deleted `crawlChevron`
+from the keep list, which was the brief's own strongest argument for a
+reasoning agent, and the brief says so.
+
+**A13 — brief 08's starting condition and one mapping note are stale, and
+both are architect-verified rather than left for the agent to discover.** The
+architect counted the seams at `2763663` before dispatch:
+
+- the brief's "26 alias declarations plus 5 kept type declarations" in
+  `crawl_style.dart` is the **pre-A7** count. True figures: **27 deleted, 4
+  kept**, which is what the brief's own deletion table, keep table and grep
+  expectation 2 already say. The 35-declaration total is unchanged;
+- the brief's note that `crawlTokenWord` and `crawlDetail` "both alias
+  `textDetail`" is **pre-A8**; both now alias `textDetailDim`, which is what
+  A8 ruled. Two names collapsing onto one rung is expected and is not an
+  alias/plan disagreement;
+- membership otherwise matches the brief's tables **exactly** — all 27 crawl
+  aliases, all 8 town aliases, the 14 real metrics, the 4 chip-ladder styles
+  and the chip-state table are where the tables say. The brief's
+  stop-and-report on membership does not fire;
+- one addition the brief predates: `town_style.dart` also imports
+  `surfaces.dart show LabelledValue` (Task 05). That import stays; only the
+  `tokens.dart` prefix is dropped.
+
+Without A13 a low-reasoning agent would have hit three apparent contract
+violations in its first ten minutes and stopped on all three.
+
+### U14 Task 08 accepted — AC3 closed, after `sonic` stalled and a plan executor finished it
+
+**Task 08 — `bbd18b4`, `refactor: delete the alias layer and let every screen
+read the shared token`.** 23 files, 189 insertions, 240 deletions. All 35
+alias declarations are gone: 27 from `crawl_style.dart`, 8 from
+`town_style.dart`. `crawl_style.dart` keeps 14 real metrics, the four
+chip-ladder styles with the dartdoc A4 required, and the chip-state table;
+`town_style.dart` keeps `markColumn`, its widgets and its `surfaces.dart`
+import, and reads `tokens.dart` unprefixed.
+
+**AC3 is closed, and more strongly than Task 07 closed it:** neither seam
+declares a `Color` at all — architect-verified by re-running the greps on the
+committed tree. `TextStyle(` construction survives in exactly two files,
+`tokens.dart` and `dungeon_scene.dart`'s two cell-derived glyph paints.
+
+**`sonic` was the wrong agent, and the record should say why rather than
+blame the routing.** A7 removed the keep-list trap that had justified a
+reasoning agent, so the brief's own recommendation was sound on its face. It
+stalled anyway, at 62 analyzer errors, on a decision the brief had already
+granted it (whether to unprefix an import or prefix its references), and it
+left one real defect behind: a language-server rename had eaten the word
+`tokens` out of a **string literal**, turning
+`import '../style/tokens.dart'` into `import '../style/dart'`. The lesson is
+narrower than "never use `sonic`": **an analyzer-driven repair loop is not a
+mechanical leaf**, however exhaustively the name list is enumerated, because
+the worklist is discovered by running a tool and reading what it says.
+
+A fresh `flow-plan-executor` finished from the dirty tree, worked the
+analyzer from 62 issues to zero, and did the verification `sonic` had
+skipped: **every substitution reconciled against the alias's own former
+right-hand side** at `2763663`, name by name, since a wrong-value
+substitution between two `Color`s is invisible to the type checker. No
+disagreement found. `crawlVoid` had no residual reference at all.
+
+**A14, ruled at that dispatch.** Four `testWidgets` descriptions named a
+deleted alias (`'… renders on crawlPanel'`). On brief 08's literal reading a
+description string is neither an identifier substitution nor an import, so it
+looked like a stop-and-report. It is not: a description naming a symbol that
+no longer exists is a stale name, and the rule exists to catch a rename
+laundering a behavioural change. The `test/` diff is otherwise exactly two
+import removals, four identifier substitutions in `expect` calls, and the one
+required comment correction with its assertion unchanged.
+
+### Gate A — the dp budget re-confirmed on the final tree
+
+**Architect-measured at `bbd18b4`, on all three densities:**
+
+| density | measured | cap | contract ceiling |
+|---|---:|---:|---:|
+| exploration worst | **331.0 dp** | 360 | — |
+| combat typical | **429.0 dp** | 450 | — |
+| combat worst legal | **578.0 dp** | 600 | 600 |
+
+Identical to Task 02's re-derived figures. **The chrome has not moved through
+six subsequent tasks**, and worst legal combat sits 22 dp under the
+contract's own ceiling.
+
+The figures are not printed by the suite — `reason:` renders only on failure
+— so they were taken from an **untracked copy** of
+`crawl_action_row_test.dart` with three `debugPrint`s injected, run once and
+deleted. No tracked file was mutated; `git status` showed the copy as the
+only untracked path and nothing else changed. Record the method: a future
+Gate A needs the same trick, and mutating the tracked test to read its own
+numbers is the wrong way to get them.
+
+**These are widget-test dp, not device dp.** Gate C's capsules H, I and J
+supply the device figures, and U13.1's trap stands: the two surfaces measured
+208.43 dp against 285.33 dp for the same scene when the face was unregistered.
+
+### Gate B — the mechanical diff audit, architect-run at `bbd18b4`
+
+Against the U14 base `5ac1a49`:
+
+- **zero change under `packages/core` or `packages/content`** — no marking
+  constant touched, as A2 required;
+- **no new package dependency.** `pubspec.yaml`'s only change is the `fonts:`
+  block replacing the template's commented example; the three faces are
+  assets, not packages;
+- **both `MaterialApp.theme` arguments are still bare** —
+  `brightness: Brightness.dark`, `scaffoldBackgroundColor: ground`,
+  `useMaterial3: true`, and nothing else, at `main.dart:82` and `:164`. AC5
+  holds literally: the application-wide theme restyles no stock control, and
+  every screen root opts in;
+- **every frozen constant is intact**: `cameraCellSize = 36`
+  (`grid_geometry.dart:16`), `glyphBaseFontScale = 0.73`
+  (`glyph_marks.dart:4`), and `dungeon_scene.dart`'s two derivations
+  `cameraCellSize * glyphBaseFontScale` and `cameraCellSize * 0.30`;
+- **integrated package gates, architect-run on the final tree:**
+  `dart format` 129 files / 0 changed, `flutter analyze` no issues, full
+  `flutter test` **1115 passing**.
+
+The independent acceptance review is the remaining half of Gate B.
