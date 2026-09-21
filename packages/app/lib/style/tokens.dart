@@ -37,8 +37,8 @@ const double tapTarget = 44;
 /// The width of the leading word cell in a [LabelledValue] row.
 ///
 /// A fixed-width slot, not a padded string: the town's own space-padded
-/// columns aligned only in monospace, and the text face is no longer
-/// monospace. The widest label in the set is `Skills trained` at 14
+/// columns aligned only in a fixed-width face, and the text face is no
+/// longer fixed-width. The widest label in the set is `Skills trained` at 14
 /// characters; measured directly in `textLineDim` with the bundled face it
 /// comes to a little over 76 dp, so 96 dp clears it with room for the gap
 /// before the value cell starts.

@@ -39,6 +39,11 @@ backups, and audit/build reports are untracked evidence in `.flow/evidence/`.
   splitting.
 - YAGNI: build for the current milestone only. No premature abstraction; duplicate twice
   before extracting.
+- **Type:** `fontFamily` appears only in `packages/app/lib/style/tokens.dart`.
+  Every text style is a role from that module. A role needing a second colour
+  gets a `const` sibling there; `copyWith` of a token is prohibited, because
+  its consumers are `const`. Monospace was retired in Unit 14 and does not
+  come back.
 
 ## Testing
 

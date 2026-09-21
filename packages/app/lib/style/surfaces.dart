@@ -77,7 +77,7 @@ class ResourceMeter extends StatelessWidget {
 /// One fact, its label at a fixed width and its value beside it.
 ///
 /// The label cell exists because a padded string only ever aligned in a
-/// monospaced face, and the face this application draws in no longer is —
+/// fixed-width face, and the face this application draws in no longer is —
 /// `town_style.dart`'s own dartdoc on `markColumn` records the same lesson
 /// for its leading glyph cell. [labelColumn] is the equivalent slot for a
 /// leading word, so a whole column of values holds still without spaces

@@ -15,6 +15,7 @@ import 'game_bloc.dart';
 import 'glyph_marks.dart';
 import 'glyph_plan.dart';
 import 'grid_geometry.dart';
+import '../style/tokens.dart' show textFace;
 
 const dungeonSceneKey = Key('dungeon-scene');
 const dungeonSceneHostKey = Key('dungeon-scene-host');
@@ -429,7 +430,7 @@ class _GlyphComponent extends PositionComponent {
     style: TextStyle(
       color: cell.ink.withValues(alpha: cell.opacity),
       fontSize: cameraCellSize * glyphBaseFontScale,
-      fontFamily: 'monospace',
+      fontFamily: textFace,
       height: 1,
     ),
   );
@@ -438,7 +439,7 @@ class _GlyphComponent extends PositionComponent {
     style: TextStyle(
       color: cell.ink.withValues(alpha: cell.opacity),
       fontSize: cameraCellSize * 0.30,
-      fontFamily: 'monospace',
+      fontFamily: textFace,
       height: 1,
     ),
   );
