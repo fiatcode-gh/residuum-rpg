@@ -3,10 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 
 import '../style/surfaces.dart';
-
+import '../style/tokens.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
-import '../style/tokens.dart';
 
 /// A handle onto the inn's health meter for tests: the row itself carries
 /// no other stable identity now that it is a [ResourceMeter] rather than a

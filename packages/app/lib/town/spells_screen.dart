@@ -3,9 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 
 import '../game/spell_row.dart';
+import '../style/tokens.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
-import '../style/tokens.dart';
 
 class SpellsScreen extends StatelessWidget {
   const SpellsScreen({super.key});

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../style/tokens.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
-import '../style/tokens.dart';
 
 /// Why a Bank commit is dead.
 ///

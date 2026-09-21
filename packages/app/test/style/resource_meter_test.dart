@@ -123,8 +123,20 @@ void main() {
         ),
       );
 
-      expect(find.text('HP 14 / 20'), findsOneWidget);
-      expect(find.text('Mana 2 / 4'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(hpKey),
+          matching: find.text('HP 14 / 20'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(manaKey),
+          matching: find.text('Mana 2 / 4'),
+        ),
+        findsOneWidget,
+      );
     });
   });
 

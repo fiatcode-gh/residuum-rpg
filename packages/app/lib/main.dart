@@ -5,23 +5,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-import 'game/game_bloc.dart';
-import 'game/log_line.dart';
-import 'game/game_screen.dart';
-import 'game/dungeon_palette.dart';
 import 'art/dungeon_art.dart';
-
+import 'game/dungeon_palette.dart';
+import 'game/game_bloc.dart';
+import 'game/game_screen.dart';
+import 'game/log_line.dart';
+import 'notice/notice.dart';
 import 'save/autosaver.dart';
 import 'save/boot.dart';
 import 'save/save_files_io.dart';
 import 'save/save_store.dart';
-import 'notice/notice.dart';
+import 'style/tokens.dart';
 import 'town/roster_screen.dart';
 import 'town/town_bloc.dart';
 import 'town/town_screen.dart';
 import 'world/world_bloc.dart';
 import 'world/world_screen.dart';
-import 'style/tokens.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

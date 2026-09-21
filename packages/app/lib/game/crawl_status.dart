@@ -3,8 +3,8 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../style/surfaces.dart';
-import 'game_bloc.dart';
 import '../style/tokens.dart';
+import 'game_bloc.dart';
 
 const hpMeterKey = Key('hp-meter');
 const manaMeterKey = Key('mana-meter');

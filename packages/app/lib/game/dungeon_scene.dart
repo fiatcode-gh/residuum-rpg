@@ -7,15 +7,15 @@ import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 
 import '../art/dungeon_art.dart';
+import '../style/tokens.dart' show textFace;
+import 'actor_presentation.dart';
 import 'dungeon_material.dart';
 import 'dungeon_palette.dart';
 import 'dungeon_scene_material.dart';
-import 'actor_presentation.dart';
 import 'game_bloc.dart';
 import 'glyph_marks.dart';
 import 'glyph_plan.dart';
 import 'grid_geometry.dart';
-import '../style/tokens.dart' show textFace;
 
 const dungeonSceneKey = Key('dungeon-scene');
 const dungeonSceneHostKey = Key('dungeon-scene-host');

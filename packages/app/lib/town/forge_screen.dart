@@ -4,10 +4,10 @@ import 'package:residuum_core/core.dart';
 
 import '../art/art_assets.dart';
 import '../game/item_presentation.dart';
+import '../style/tokens.dart';
 import 'illustration.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
-import '../style/tokens.dart';
 
 /// The forge: a smelter and a bench.
 ///

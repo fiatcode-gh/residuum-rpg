@@ -33,10 +33,6 @@ class ResourceMeter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fill = ceiling == 0 ? 0.0 : (value / ceiling).clamp(0, 1).toDouble();
-    final fillColour = switch (tint) {
-      MeterTint.health => meterHealthFill,
-      MeterTint.mana => meterManaFill,
-    };
     return Row(
       children: [
         Expanded(
@@ -56,7 +52,12 @@ class ResourceMeter extends StatelessWidget {
               value: fill,
               minHeight: 8,
               backgroundColor: rule,
-              valueColor: AlwaysStoppedAnimation(fillColour),
+              valueColor: switch (tint) {
+                MeterTint.health => const AlwaysStoppedAnimation(
+                  meterHealthFill,
+                ),
+                MeterTint.mana => const AlwaysStoppedAnimation(meterManaFill),
+              },
             ),
           ),
         ),

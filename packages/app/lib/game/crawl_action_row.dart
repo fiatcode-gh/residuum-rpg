@@ -3,9 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../art/art_assets.dart';
+import '../style/tokens.dart';
 import 'action_icon.dart';
 import 'crawl_style.dart';
-import '../style/tokens.dart';
 
 /// One verb the crawl action row can offer.
 ///

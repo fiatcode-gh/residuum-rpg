@@ -4,12 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/style/tokens.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../support/phone.dart';
-
-import 'package:residuum_app/style/tokens.dart';
 
 const _arena = '''
 #######

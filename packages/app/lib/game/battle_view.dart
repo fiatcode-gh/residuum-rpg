@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 
+import '../style/tokens.dart';
+import 'activation_timeline.dart';
+import 'actor_presentation.dart';
 import 'crawl_style.dart';
 import 'crawl_surfaces.dart';
 import 'game_bloc.dart';
-import 'activation_timeline.dart';
-import 'actor_presentation.dart';
-import '../style/tokens.dart';
 
 /// The battle dock: a compact, accessible view of the upcoming activations
 /// over the live map.

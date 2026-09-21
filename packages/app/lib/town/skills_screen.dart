@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:residuum_core/core.dart';
 import 'package:residuum_app/game/event_messages.dart' show skillName;
+import 'package:residuum_core/core.dart';
 
+import '../style/tokens.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
-import '../style/tokens.dart';
 
 class SkillsScreen extends StatelessWidget {
   const SkillsScreen({super.key});

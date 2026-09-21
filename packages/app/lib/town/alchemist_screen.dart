@@ -5,9 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import '../style/tokens.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
-import '../style/tokens.dart';
 
 /// The alchemist: one pot, one recipe.
 ///

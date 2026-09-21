@@ -4,11 +4,11 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../art/art_assets.dart';
+import '../style/tokens.dart';
 import '../world/world_bloc.dart';
 import 'illustration.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
-import '../style/tokens.dart';
 
 /// The tavern: where the map is bought a place at a time.
 ///

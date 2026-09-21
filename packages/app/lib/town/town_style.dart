@@ -1,12 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:residuum_core/core.dart';
 
 import '../notice/notice.dart';
 import '../style/surfaces.dart' show LabelledValue;
-
-import 'package:residuum_core/core.dart';
-
 import '../style/tokens.dart';
 
 /// The width of every leading mark column in the town.

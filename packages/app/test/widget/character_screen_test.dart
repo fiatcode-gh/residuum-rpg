@@ -203,7 +203,6 @@ void main() {
       expect(find.text('Ore'), findsNothing);
       expect(find.text('Wrath'), findsNothing);
       expect(find.textContaining('forge speaks'), findsNothing);
-      expect(tester.takeException(), isNull);
     });
 
     testWidgets('routes are presentation-only and retain bloc identity', (

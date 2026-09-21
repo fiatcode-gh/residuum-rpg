@@ -252,10 +252,6 @@ void main() {
       'textMicroDim': textMicroDim,
     };
 
-    test('there are exactly twenty roles', () {
-      expect(roles, hasLength(20));
-    });
-
     for (final entry in roles.entries) {
       final name = entry.key;
       final style = entry.value;

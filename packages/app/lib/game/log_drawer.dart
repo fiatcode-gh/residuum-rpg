@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../style/tokens.dart';
 import 'crawl_style.dart';
 import 'crawl_surfaces.dart';
 import 'game_bloc.dart';
 import 'log_line.dart';
-import '../style/tokens.dart';
 
 const logPeekKey = Key('log-peek');
 const logHandleKey = Key('log-handle');
