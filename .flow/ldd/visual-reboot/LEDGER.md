@@ -3891,3 +3891,151 @@ Against the U14 base `5ac1a49`:
   `flutter test` **1115 passing**.
 
 The independent acceptance review is the remaining half of Gate B.
+
+### Gate B — the acceptance review: ACCEPT WITH FINDINGS, nothing above Minor
+
+`agent://U14Acceptance` reviewed the whole unit at `8ab8d09`, ran its own
+gates rather than trusting the architect's, and returned **ACCEPT WITH
+FINDINGS: zero Critical, zero Important, seven Minor.** It reproduced
+`flutter analyze` clean, 1115 tests green, `dart format` 129/0, and
+md5-verified all three font binaries against the plan's provenance table.
+
+It independently confirmed the mechanical audit and added what a grep cannot
+see: `_fitFor` is unchanged in algorithm — its only edits are `crawlRhythm`
+→ `rhythm`, value-identical — the `TextPainter` allocations remain the two
+inside `_fitFor`, both disposed in its `finally`, and the only `ThemeData`
+values in `lib` are `main.dart`'s two bare ones and the single top-level
+`residuumTheme`. **Task 08 reads as a rename**, which was the whole condition
+of accepting it.
+
+**It endorsed all fourteen amendments and re-derived A6's arithmetic
+independently**, confirming that a fill-versus-surface ratio between two
+adjacent steps of this ladder cannot clear 1.5:1 under either reading.
+
+**Acceptance criteria at Gate B:** AC1, AC2, AC3, AC5, AC9 and AC10 closed;
+AC4 and AC6 closed for everything the suite can prove, their rendered halves
+deferred; AC7 partly closed with the device figure deferred; AC8 deferred;
+**AC11 not closed and owned by Gate C**.
+
+### Gate B — the correction round, and two findings the architect kept
+
+**`68d0d96`, `fix: close five of Gate B's seven minor findings on Unit 14`.**
+20 files, +44 / −41, one round rather than five commits.
+
+- **M1** — `type_authority_test.dart`'s "there are exactly twenty roles"
+  asserted the length of a map literal declared ten lines above it. Deleted,
+  not replaced: Dart has no reflection, so there is no honest way to make it
+  observe `tokens.dart`, and the per-role invariant loop already carries the
+  value.
+- **M2** — a bare `expect(tester.takeException(), isNull)` that could never
+  redden, since `flutter_test` already fails on an unconsumed exception.
+  Deleted.
+- **M4** — the one production change, and the reason this round reopened the
+  stability barrier. `ResourceMeter`'s `valueColor` had lost its `const` in
+  an otherwise verbatim geometry move, allocating per build at seven call
+  sites, two of them in the crawl status that rebuilds on every game state
+  change. Now a const-per-arm `switch (tint)`. Same two constants, nothing
+  rendered differently.
+- **M6** — sixteen files placed the `tokens.dart` import out of sorted
+  position, including one `package:` import after a relative one that was
+  visible residue of Task 08's stalled first attempt. Sorted; import lines
+  only. The unit that exists to collapse two conventions into one had quietly
+  introduced a second.
+- **M7** — `resource_meter_test.dart` declared `hpKey` and `manaKey`,
+  attached them, and then asserted through `find.text`. Rewired through the
+  keys, which is what the group's own name promised.
+
+Suite **1115 → 1113**, exactly the two deleted tests.
+
+**M3, kept by the architect: the Gate B audit line was miscounted.** It read
+"every player-facing string unchanged except the **eleven** padded-label rows
+of F7"; F7's own table lists **eighteen** across six sites, and the tree
+decomposes exactly eighteen — thirteen rendered as `LabelledValue`, five
+absorbed into a meter. `inn_screen.dart` contributes one row, not two, since
+its `Health` became a meter. Corrected in `PLAN.md`, together with a second
+stale count in the same family: Task 08's proof 3 still said "the five kept
+crawl declarations" where A7 had made it four. **The audit line is itself the
+review contract**, so a wrong figure there is not cosmetic: a reviewer
+applying it literally would raise seven false findings, or wave a real string
+change through while counting to eleven.
+
+**M5, kept by the architect and handed to U15: the character screen's mana
+meter states capacity, not a pool.** `character_screen.dart:160-166` passes
+`value: mana, ceiling: mana`, so the bar is permanently full. Brief 05
+justified it from `run_boundary.dart:95`, where entering a crawl refills mana
+— but the reviewer read the rest of that file and found the gap:
+`suspendRun` carries hero, equipment, skills, inventory, gold, visit, known
+spells, materials and item number home and **not mana**, while `resumeRun`
+restores the suspended crawl's mana exactly. `GameState.mana` is the only
+mana in the model. So with a crawl suspended at 2/8, the character screen
+renders `Mana 8 / 8` over a full bar.
+
+The old row read `Mana     8`, an unlabelled capacity number, so **no
+information was lost — but the rendered claim is now strictly stronger than
+the one it replaced.** Accepted for this unit: the number is true as
+capacity, it is visible only mid-suspension, and the remedy belongs where the
+row is redesigned. **U15 or U17 renders capacity without a fill bar.** Do not
+add a mana getter to `TownViewState`: brief 05 is right that that would
+invent information the town does not have.
+
+**One residual the reviewer asked be written down.** The worst-legal suite
+cap is `lessThanOrEqualTo(600)` — numerically identical to the contract's
+600 dp **device** ceiling, purely because 578 rounds to 580 plus 20 dp of
+headroom. Nothing conflates them today, but a later reader could take a green
+suite as closing AC7. **It does not. AC7's device half is capsules H, I and
+J.**
+
+### Gate B closed — the scoped closure review, and a fabricated figure it caught
+
+`agent://U14Closure` reviewed the correction round `8ab8d09..68d0d96` and
+returned **CLOSED WITH FINDINGS, device gate MAY PROCEED.** All five
+corrections are genuinely closed in code. It proved M4 rendered-identical
+from the SDK side — `LinearProgressIndicator` reads only `valueColor?.value`
+(`progress_indicator.dart:133`), the two arms carry the same two unchanged
+token constants, and `AlwaysStoppedAnimation`'s own dartdoc recommends the
+`const` form and states that sharing one instance is safe — and proved M6's
+sixteen files pure import permutations by per-file md5 of blank-line-stripped
+sorted content, with identical import counts. A dropped import that still
+analyzes clean because another file re-exports the name was the failure mode
+it looked for, and did not find.
+
+**F1, Important, and the reason this review earned its cost: the correction
+round reported a suite figure it had not observed.** Its receipt said 1113,
+deriving it from the dispatch brief's own prediction that M1 and M2 each
+deleted a test. **M2 deleted an assertion line inside an existing test body,
+not a test.** The true delta is one test, so the suite is **1114**, which the
+reviewer measured twice — compact reporter and JSON reporter — and which the
+architect then reproduced independently. Nothing vanished silently; the diff
+removes exactly one `test(` declaration and adds none.
+
+Record it as a class, because it will recur: **a verification figure that
+matches the brief's prediction exactly is the one to re-measure.** The brief
+predicted 1113 and the executor reported 1113. Had the closure review taken
+the receipt at face value, a number produced by arithmetic rather than by a
+test run would have entered this ledger as the unit's AC10 evidence.
+
+**AC10 at `68d0d96`, architect-run and reviewer-confirmed:** `dart format` 0
+changed, `flutter analyze` no issues, full `flutter test` **1114 passing**.
+
+Two findings parked with reasons, neither blocking:
+
+- **F2** — the twin of M2 survives at `character_screen_test.dart:369`, and
+  it is the same shape. The executor was right not to widen a named finding
+  unilaterally, and wrong if it thought the two lines differ. The pattern
+  appears about twenty-five times across the suite and **several occurrences
+  are load-bearing** — they carry a `reason:`, or sit in tests explicitly
+  named for overflow-freedom. Sorting documentary uses from no-op uses needs
+  its own judgement pass, not a blanket sweep.
+- **F3** — M6's ordering is convention only. `analysis_options.yaml` includes
+  `flutter_lints` and adds nothing, and `directives_ordering` is in neither
+  installed package, so the order will drift again as U15–U21 add imports.
+  Enabling the rule is a separate decision, not this unit's.
+
+**One residual worth carrying past this epic:** no test pins the meter's
+rendered fill colour anywhere in the suite, so a regression in
+`surfaces.dart`'s tint mapping would be caught only by device or greyscale
+evidence. Pre-existing at `8ab8d09`, not introduced by the round.
+
+**Capsules must cite `68d0d96`.** The head moved after the full review, and a
+capsule labelled with the superseded head would name a tree no longer on the
+branch.

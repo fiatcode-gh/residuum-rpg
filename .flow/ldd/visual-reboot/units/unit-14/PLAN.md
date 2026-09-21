@@ -1127,7 +1127,8 @@ Behaviour is unchanged, so there is no Red and no new test. The proof is:
    returns **nothing** — neither seam declares a colour at all. That closes
    **AC3** more strongly than Task 07 did;
 3. `grep -n "TextStyle" lib/game/crawl_style.dart lib/town/town_style.dart`
-   returns only the five kept crawl declarations;
+   returns only the four kept crawl declarations — four, not five, since A7
+   moved `crawlChevron` to the delete list;
 4. Task 07's closing greps 3 and 4 re-run, because Task 08 rewrote exactly the
    files they cover;
 5. **the full suite green with no test edited except by the rename and its
@@ -1570,9 +1571,10 @@ grep -rn "TextStyle("             packages/app/lib --include=*.dart
 
 Expected: the first returns **nothing** — neither seam declares a colour at
 all, which closes **AC3** more strongly than Task 07's grep did. The second
-returns only the five kept crawl declarations (`crawlChipLabel`,
-`crawlChipLabelDisabled`, `crawlChipLabelArmed`, `crawlCaption`,
-`crawlChevron`). The third and fourth match Task 07's expectations unchanged.
+returns only the four kept crawl declarations (`crawlChipLabel`,
+`crawlChipLabelDisabled`, `crawlChipLabelArmed`, `crawlCaption`). A7 moved
+`crawlChevron` off this list and A13 recorded the corrected count. The third
+and fourth match Task 07's expectations unchanged.
 
 And the proof that carries the whole task: **`flutter analyze` clean, and the
 full suite green with no test edited except by the rename and its imports.** A
@@ -1642,9 +1644,13 @@ diff:
   golden-image test;
 - no per-build `ThemeData` allocation and no `TextPainter` allocated outside
   `_fitFor`'s one measurement pass;
-- every player-facing string unchanged except the **eleven** padded-label rows
-  of F7 that `LabelledValue` decomposes — nine in Boundaries plus the two in
-  `inn_screen.dart` that A3 authorised;
+- every player-facing string unchanged except the **eighteen** padded-label
+  rows of F7 that `LabelledValue` and `ResourceMeter` decompose — thirteen
+  rendered as `LabelledValue` and five absorbed into a meter, across the six
+  sites F7's own table lists, including the two in `inn_screen.dart` that A3
+  authorised. The earlier figure of eleven did not match F7's own table and
+  would have had a reviewer either raise seven false findings or wave a real
+  string change through while counting to eleven;
 - **Task 08's diff is behaviour-neutral**: read it as a rename, and confirm no
   test carries a substantive edit. A changed expectation, finder or value
   inside Task 08's commit is a must-fix finding, not a style preference.
