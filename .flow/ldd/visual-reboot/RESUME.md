@@ -26,16 +26,21 @@ the user's integration choice.**
   byte-identical.
 - **All eleven acceptance criteria are closed.**
 
-## Exact next action — the user's decision
+## Exact next action — the merge gate, which is the user's
 
-**Run `flow-integrating`.** The unit is locally accepted with fresh evidence
-and nothing remote has happened. The choice is the user's: merge locally,
-push and open a pull request, keep the branch as it is, or split it.
+**PR #23 is open and unmerged**: https://github.com/fiatcode-gh/residuum-rpg/pull/23,
+24 commits against `main`, `MERGEABLE`, verified at source after creation.
+The branch is pushed and tracking `origin/residuum-visual-reboot-13`.
 
-Nothing authorises a push, a pull request, a merge or any other
-stakeholder-visible write without the user's explicit word for that action.
-**Unit 12 is the standing lesson: deciding what to do about a finding is not
-authorisation for the remote action that follows from it.**
+**Merge is its own gate and has not been given.** Choosing to open a pull
+request was not authorisation to merge it. Unit 12 is the standing lesson,
+and `--admin` is never reached for on the architect's own judgement.
+
+Once the user reports it merged: re-verify `main` at source with a fetch
+rather than trusting the report, then run the `flow-artifacts` lifecycle —
+`.flow/checkpoints/68d0d96.md` and `.flow/evidence/68d0d96/` (174 artefacts,
+17 MB) are removable once integration is confirmed, while the tracked ledger
+is never touched.
 
 After integration, the roadmap's next unit is **U15, row, control and chip
 grammar**, which depends on U14.

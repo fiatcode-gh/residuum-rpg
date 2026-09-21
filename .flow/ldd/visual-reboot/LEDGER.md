@@ -4173,3 +4173,19 @@ at Gate B; AC4 and AC6 at Gate B for the suite and at Gate C on glass; AC7
 across Gate A and capsules H, I and J; AC8 across every greyscale twin; and
 **AC11 by the thirteen capsules themselves**. Nothing is pushed, no pull
 request exists, and the integration choice is the user's.
+
+### Unit 14 publication — PR #23 open, unmerged
+
+- 2026-09-21 — **The user chose push and pull request, and both are done.**
+  `residuum-visual-reboot-13` is pushed and
+  [PR #23](https://github.com/fiatcode-gh/residuum-rpg/pull/23) is open
+  against `main`: 24 commits, `MERGEABLE`, verified at source after creation
+  rather than assumed from the command's exit code.
+- The pull request carries Unit 14, Unit 13's re-baseline records and Unit
+  13.1's viewport fix. Its body states the three device dp figures against
+  their caps, names the post-`SafeArea` measurement convention so a reviewer
+  does not read the raw display and see a breach, and records the two
+  follow-ups handed to U15 rather than burying them.
+- **Merge is its own gate and has not been given.** The standing Unit 12
+  lesson holds: choosing to open a pull request is not authorisation to merge
+  it, and `--admin` is never reached for on the architect's own judgement.
