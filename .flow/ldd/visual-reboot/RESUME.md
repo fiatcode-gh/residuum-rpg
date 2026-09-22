@@ -1,111 +1,236 @@
 # Resume Visual Reboot
 
-**Units 1–11 are merged to `main`. Unit 12 is accepted and Unit 12.5, its
-device gate, is closed. Unit 12 is published as PR #22 and is **not** merged:
-the merge waits on the user's explicit word.**
+**Units 1–12 are merged to `main`, Unit 12.5 is closed, Units 13 and 13.1 are
+closed, and Unit 14 is complete and locally accepted — implementation, Gate A,
+Gate B and the thirteen-capsule device pass all done. The only thing left is
+the user's integration choice.**
 
 ## Exact state
 
-- Base is `main` at `60909e60ec3150cf9b590e6641a8ae51efca775c` (Unit 11's
-  PR #21 merge). Unit 12 is `259322b` (the `packages/app` change) plus the
-  LDD records on `residuum-visual-reboot-12`.
-- **Unit 12.5 closed 2026-09-18 on device evidence.** Contract approved as
-  drafted; seven capsules plus setup ran on a user-started `Medium_Phone`
-  through bounded `flow-evidence-verifier` sessions. Full result in
-  `LEDGER.md` under "Unit 12.5 — the crawl device gate, closed" and in
-  `units/unit-12.5/DEVICE-CHECKPOINT.md`.
-- **The three dp gates pass, measured:** exploration 331.1 dp chrome against
-  360; typical combat 438.1 dp against 460; worst legal combat **580.95 dp
-  against 600**, leaving **285.3 dp of map — 7.93 rows of sight**, which reads
-  as a playable dungeon. Correction C1's four contract-level remedies are not
-  needed.
-- The eleven-chip ceiling renders with no ellipsis, no word split and no
-  hidden verb. Unit 12's AC5, AC6 (logic), AC8, AC11, AC12, AC14, AC16 and
-  AC17 are all settled — see the ledger for each verdict.
-- **Architect-run gate on the merge tree:** `dart format` 120 files / 0
-  changed, `flutter analyze` no issues, full `flutter test` **906 passing**.
-  Unit 12.5 wrote no production code.
-- **Both device save slots restored and verified byte-identically** after the
-  pass: `save.json` `18995c4c…b46d3` MATCH, `save-previous.json`
-  `8909f70c…a9b11` MATCH under SHA-256.
+- `main` is `907a4a83e7c592d4f6dd0c55e6f30c3b1b8bc49b`, the PR #22 merge.
+- Branch **`residuum-visual-reboot-13`**, HEAD **`68d0d96`** for code;
+  architect records sit on top. `packages/app` clean, **nothing pushed, no
+  pull request.**
+- **Package gates at `68d0d96`**: `dart format` 0 changed, `flutter analyze`
+  no issues, full `flutter test` **1114 passing** (1114, not 1113 — the
+  closure review caught a receipt figure that had been predicted rather than
+  observed).
+- **Gate A**: 331.0 / 429.0 / 578.0 dp, widget-test.
+- **Gate B closed**: acceptance review ACCEPT WITH FINDINGS (zero Critical,
+  zero Important, seven Minor), five corrected in `68d0d96`, scoped closure
+  CLOSED WITH FINDINGS.
+- **Gate C closed**: fifteen sessions on `emulator-5554`, 174 artefacts under
+  `.flow/evidence/68d0d96/`. Device chrome **332.95 / 432.00 / 582.86 dp**
+  post-`SafeArea`, **17.14 dp under the 600 dp ceiling**. **U13.1 is
+  hardware-confirmed.** Both save slots restored and architect-re-verified
+  byte-identical.
+- **All eleven acceptance criteria are closed.**
 
-## Exact next action
+## Exact next action — the merge gate, which is the user's
 
-Nothing remote. PR #22 stays open with green CI until the user explicitly
-authorizes a merge, which they have not. When they do, note that
-`mergeStateStatus` is `BLOCKED` by the repository's own ruleset even with all
-four checks passing, so ask whether bypassing it is acceptable rather than
-reaching for `--admin`.
+**PR #23 is open and unmerged**: https://github.com/fiatcode-gh/residuum-rpg/pull/23,
+24 commits against `main`, `MERGEABLE`, verified at source after creation.
+The branch is pushed and tracking `origin/residuum-visual-reboot-13`.
 
-Local work can continue on the map-bleed defect, which is the next unit and
-outranks Dungeon Structural Asset Expansion.
+**Merge is its own gate and has not been given.** Choosing to open a pull
+request was not authorisation to merge it. Unit 12 is the standing lesson,
+and `--admin` is never reached for on the architect's own judgement.
 
-### Publication overreach, recorded 2026-09-18
+Once the user reports it merged: re-verify `main` at source with a fetch
+rather than trusting the report, then run the `flow-artifacts` lifecycle —
+`.flow/checkpoints/68d0d96.md` and `.flow/evidence/68d0d96/` (174 artefacts,
+17 MB) are removable once integration is confirmed, while the tracked ledger
+is never touched.
 
-The user answered a question about the *defect's* disposition with "close 12.5
-and merge Unit 12 as-is". The architect read that as publication authority,
-pushed the branch, opened PR #22 and attempted `gh pr merge` **twice**. Both
-attempts were refused by the base branch policy, so `main` was never touched —
-the guard was the repository's, not the architect's. The user then asked for
-the PR to be left open without merging.
+After integration, the roadmap's next unit is **U15, row, control and chip
+grammar**, which depends on U14.
 
-The lesson for a future session: a decision about *what to do with a finding*
-is not authorization for the remote actions that follow it. Push, pull request
-and merge are each their own gate and each needs its own explicit word.
+## What U15 inherits, beyond the roadmap
+
+- **M5 — the character screen's mana meter states capacity, not a pool.** It
+  renders `value == ceiling`, so the bar is always full; with a crawl
+  suspended at 2/8 the screen still reads `Mana 8 / 8`. True as capacity, but
+  a stronger claim than the unlabelled number it replaced. Render capacity
+  without a fill bar. **Do not add a mana getter to `TownViewState`** — the
+  town genuinely does not have that information.
+- **The Tavern's `Ask` carries no affordability cue**; the refusal is only
+  the notice sentence afterwards. Capsule E measured the control as
+  pixel-identical before and after a refusal.
+- **F2 — the bare `expect(tester.takeException(), isNull)` pattern** appears
+  about twenty-five times across the suite. One was deleted as a Gate B
+  finding; its twin survives at `character_screen_test.dart:369`. Several
+  occurrences **are** load-bearing — they carry a `reason:` or sit in tests
+  named for overflow-freedom — so this needs a judgement pass, not a sweep.
+- **F3 — import order is convention only.** `analysis_options.yaml` includes
+  `flutter_lints` and adds nothing; `directives_ordering` is in neither
+  installed package, so the order will drift again. Enabling it is a separate
+  decision.
+- **No test pins the meter's rendered fill colour anywhere**, so a regression
+  in `surfaces.dart`'s tint mapping would be caught only by device evidence.
+  Pre-existing, not introduced by this unit.
+
+## What Unit 14 landed, task by task
+
+| task | commit | what |
+|---|---|---|
+| 01 | `b8d934b` | Spectral and EB Garamond bundled with their licences; `lib/style/tokens.dart`; the test-host `FontLoader` without which every measurement is Ahem; boot screen migrated |
+| 02 | `8e1efbd` | `crawl_style.dart` to aliases, `crawlTheme` deleted, three theme sites, chrome re-measured and the caps re-derived |
+| A8 | `d959f23` | `textDetailDim` and `textMicroDim`; the `copyWith` rule struck outright |
+| 03 | `0f1882d` | `ResourceMeter` and the epic's first hue, geometry moved verbatim |
+| 04 | `7090866` | the town, pack and roster dialogs under `residuumTheme`; ten control families proved off the M3 palette; A9's `textBaseline` on all twenty roles |
+| 05 | `67513bb` | `labelColumn` and `LabelledValue`; six padded columns converted including the Inn's two; town, character and inn meters |
+| 06 | `fb55622` | the world screen and its route diagram under the theme; the last unthemed screen root; three status rows to the shared meter and value rows; ten pinned test literals rewritten to behaviour |
+| 07 | `2763663` | the two map glyph paints onto `textFace`; the prose sweep; **AC2 closed** and guarded by a CI step and an `AGENTS.md` rule |
+| 08 | `bbd18b4` | the rename leaf: 35 alias declarations deleted, every consumer on the shared name, **AC3 closed** |
+
+## Fourteen amendments, all one class
+
+Every amendment was a claim about what a file contains, what a formula
+yields, or what a tool reports — the class a plan cannot settle by reasoning,
+and none catchable by reading the plan. They are indexed in `PLAN.md`
+§"Architect amendments A1–A14"; A6 through A9 are described in the Task 01–05
+ledger entries, A10 through A14 in the Task 06–08 entries.
+
+The five ruled in this wave:
+
+- **A10** — four test files pinned the world screen's padded rows, not the
+  two brief 06 named. Ten assertions rewritten to behaviour.
+- **A11** — brief 07's prose-sweep list was stale; the surviving mentions sat
+  in dartdoc Tasks 01 and 05 had written themselves, and the CI gate Task 07
+  introduces greps comments, so the gate could not pass until they went.
+- **A12** — brief 06's "passes before and after" was wrong. An unregistered
+  family is measured as Ahem by the widget-test host, so the no-clipping
+  proof was Red before the change and Green after, at 98.79 dp against a
+  120 dp box.
+- **A13** — brief 08's counts were pre-A7 (27 deleted / 4 kept, not 26 / 5).
+  Ruled before dispatch so a low-reasoning agent would not read three stale
+  numbers as contract violations.
+- **A14** — a deleted name inside a `testWidgets` description follows the
+  rename; it is a stale name, not a laundered behavioural change.
+
+## Two execution lessons worth carrying
+
+- **`sonic` stalled on Task 08 and left a defect.** A rename that eats a word
+  out of a string literal turned `import '../style/tokens.dart'` into
+  `import '../style/dart'`. The routing was defensible — A7 had removed the
+  keep-list trap that justified a reasoning agent — but the deeper rule is
+  that **an analyzer-driven repair loop is not a mechanical leaf**, however
+  exhaustively the names are enumerated, because the worklist is discovered
+  by running a tool and reading what it says. A fresh `flow-plan-executor`
+  finished it, worked 62 issues to zero, and reconciled every substitution
+  against the alias's own former right-hand side.
+- **Gate A's figures are not printed by the suite.** `reason:` renders only
+  on failure. They were taken from an **untracked copy** of
+  `crawl_action_row_test.dart` with three `debugPrint`s injected, run once and
+  deleted. Never mutate the tracked test to read its own numbers.
+
+## Suite count, read honestly
+
+907 before Task 01, **1115** now. The growth is overwhelmingly
+parameterisation — twenty roles times six invariants, plus the per-mark glyph
+sweep and the ten-row palette table. Task 06's diagram-fit group is the last
+six. Do not read 1115 as coverage growth and do not try to keep the number up.
+
+## Unit 13.1, closed 2026-09-18
+
+Root cause: Flame's default `MaxViewport.clip()` is an explicit no-op
+(`flame-1.38.2/.../max_viewport.dart:26`) and `GameRenderBox` never clips on
+its behalf, so the viewport's reported size only ever positioned the camera
+while the world's whole `visible ∪ explored` tile set painted straight
+through onto the chrome above. Fixed by `_ClippedMaxViewport`
+(`dungeon_scene.dart:187-213`), which adds the clip `MaxViewport` omits and
+inherits its size tracking.
+
+**Carry this measurement trap:** `flutter_test`'s font fallback wrapped the
+same 11 chips into 4 runs where the device fits 3, giving 208.43 dp / 5.79
+rows against the device's 285.33 dp / 7.93. Widget-test dp figures are not
+device dp figures. Never copy one into the ledger as the other. A12 is the
+same trap in a second costume.
+
+## Settled by the user, 2026-09-18
+
+1. **Fonts: Spectral for text, EB Garamond for display.** Every density
+   failure in the audit is at 12–13 px, which is where a decorative face
+   breaks.
+2. **The shared style seam is approved** — one token module plus sibling
+   per-screen themes. "Never an application-wide design system" is superseded
+   **to exactly that extent**; a `MaterialApp`-wide restyle of stock Material
+   controls stays prohibited, and Gate B verified both `theme:` arguments are
+   still bare.
+3. **Frame 4's three intermediate cells are a mock flourish.** No range or
+   path feedback will be built.
+4. **The world map and the roster inherit the vocabulary and gain an evidence
+   gate** — U14 owes the first device shot of each, capsules F and G.
+5. **Roadmap approved as ordered**, U13.1 first.
+
+## The recut roadmap, in one table
+
+| Unit | Frames | Ownership | Depends on |
+|---|---|---|---|
+| U14 Type, palette and surface authority | all ten | CODE + ASSET | **implemented; Gate B review open** |
+| U15 Row, control and chip grammar | 1–4, 6–10 | CODE | U14 |
+| U16 Authored icon and art families | 1, 5–10 | ASSET + thin CODE | U15's empty medallion slot |
+| U17 Illustration headers and hero portrait | 1, 6, 9, 10 | CODE + ASSET | U14 |
+| U18 Dungeon light and stone value | 2, 3, 4 | CODE | nothing |
+| U19 Dungeon structure and props | 2, 3 | CODE + ASSET | U18 |
+| U20 Actor representation | 2, 3, 4 | CODE + ASSET | U18 |
+| U21 Combat chrome density | 2–5 | CODE | U14, U15 |
+| U13.1 map bleed (defect) | 2, 3 | CODE | **done** — `e8bcf29` |
 
 ## Carried debt
 
-- **The map-bleed defect, accepted knowingly.** At worst-legal-battle density
-  the dungeon map's Flame canvas is not clipped to its `Expanded` box: it
-  paints ~144 px (~55 dp) above its own top hairline and, being a later
-  sibling in the `Column` than `BattleDock`, covers the dock opaquely. Both
-  ring tokens are cut in half and the actor words are hidden, so **AC6 fails
-  visually at the ceiling while its logic passes**. `game_screen.dart` lines
-  80–136 wrap the map in a `Stack` with no `ClipRect`. The architect
-  recommended fixing it before merge; the user chose to merge as-is and fix it
-  later. Evidence:
-  `.flow/evidence/visual-reboot/unit-12.5-device/u125-g-battledock-bleed-color.png`.
-  - **Do not reach for a `ClipRect` first.** If the Flame viewport renders
-    more rows than its box owns, a clip hides the overflow and quietly
-    invalidates the 7.93-rows-of-sight figure. Diagnose why the canvas exceeds
-    its constraints.
-- **Save-read defect candidate, unproven.** The app reported *"your last save
-  could not be read; an older one was restored"* for a post-death autosave
-  whose bytes were readable — the codec refused the document. Reproduce
-  directly: stage a hero at 1 HP, die, feed the resulting `save.json` to
-  `decodeSave`. If real, a player who dies loses a slot. Needs its own
-  contract; Unit 12.5's non-goals excluded the save schema.
-- **O3, a follow-up, not a defect:** chips are keyed by their composed label,
+- **The map-bleed fix carries one open obligation**: hardware confirmation at
+  U14's device gate, capsule J. Until that pass it is proved headlessly and
+  on no real screen.
+- **Save-read defect candidate, unproven and out of the epic.** The app
+  reported *"your last save could not be read; an older one was restored"*
+  for a post-death autosave whose bytes were readable — the codec refused the
+  document. Reproduce directly: stage a hero at 1 HP, die, feed the resulting
+  `save.json` to `decodeSave`. If real, a player who dies loses a slot. Needs
+  its own contract; it blocks no visual unit and must not be diagnosed inside
+  one.
+- **O3, a follow-up, not a defect.** Chips are keyed by their composed label,
   so a mana rebalance in `packages/content` would break `packages/app` widget
-  tests for a presentational reason. Fixing it means an `id` on `CrawlAction`,
-  a locked interface, and a second churn of every test handle. No collision is
-  reachable today.
-- **Roster has no visual baseline** anywhere in the epic's evidence. It passed
-  Unit 12.5 on internal consistency only.
+  tests for a presentational reason. U15 may retire the label-keyed handles.
+- **Twelve marks are uncovered by both faces**, seven of them const markings
+  in `packages/core`, which stays untouched. They render from platform
+  fallback today, so nothing regresses; U16 retires them. `✳ ✚ ⛒` sit inside
+  crawl chip labels that `_fitFor` measures, so their host-dependent advance
+  is the one real threat to the widget-test versus device agreement claim.
 
 ## Carry-forward locks
 
-- The crawl seam is a sibling of `town/town_style.dart` in shape — never a
-  global `MaterialApp` theme change, never an application-wide design system.
-- Four-region rule: map = space, timeline = time, log = causality, action row
-  = verbs, no concern duplicated. Combat has one action row; keep it.
-- No state by hue alone; every surface reads in greyscale. Monochrome meters
-  stand. The crawl's only disabled chip is `Drink` at game-over, and it reads
-  by label weight and icon opacity — the fill/border cues compress under the
-  death scrim.
-- The map is `Expanded`: chrome is paid for in map height. On device the
-  model ran ~20 dp optimistic on chrome in both combat rows; trust measured
-  figures over the model.
-- `readiedSpellCount` is 3, so knowing every spell yields three chips plus a
-  `+N` overflow. Eleven chips is the true row ceiling, and `Flee` never
-  appears inside a crawl because `wayOut` is null there.
-- `ActionIcon.forSpell` maps only `firebolt` and `mend`; the other four spells
-  render word-only by design, and the chip family survives it.
+`units/unit-13/VISUAL-SYSTEM.md` is the authority for appearance. These are
+the ones a future session will trip over if it does not know them.
+
+- **Superseded by Unit 13:** monospace-only identity; colour avoidance;
+  Material-derived geometry and stock controls; "compositions are near-fixed";
+  "authored assets are a late optional possibility"; Unit 12.5 AC17's
+  conclusion about dungeon dominance. Do not resurrect them from older ledger
+  text. **Monospace is now retired by CI**, not merely by convention.
+- **Standing:** no important state by hue alone and every screen legible in
+  greyscale — but that never meant monochrome. Hue is redundant
+  reinforcement; **no red-versus-green pair anywhere**.
+- Ornament is prohibited. The mock reads rich because of art and type.
+- Four-region rule: map = space and targets, timeline = time, log =
+  causality, action shelf = verbs. Combat has one action row.
+- `readiedSpellCount` is 3, so eleven chips is the true row ceiling, and
+  `Flee` never appears inside a crawl because `wayOut` is null there.
+- The map is `Expanded`: chrome is paid for in map height. Trust measured
+  figures over the model; on device the model ran ~20 dp optimistic on chrome
+  in both combat rows.
+- `cameraCellSize` stays fixed at **36 dp**. Fitting the floor shrank cells to
+  ~12 dp against a 48 dp touch guideline, and a tap that must be aimed is not
+  a tap.
+- Chip and caption styles carry `inherit: false`; the chip fit rule measures
+  then picks the shortest legal layout, and wrap count is **not** monotonic in
+  width. **Every type role also carries an explicit `textBaseline`** (A9) —
+  an `inherit: false` style with a null baseline crashes any `TextField` under
+  the theme.
 - `ActionIconImage` stays an untinted `Image.asset`; the Unit 10 masters are
   multitone.
-- The chip fit rule measures and then picks the shortest legal layout. Wrap
-  count is **not** monotonic in width.
-- Chip and caption styles carry `inherit: false` in the seam.
+- Determinism: decoration is hashed from coordinate and theme salt, never
+  gameplay `Rng`. Same seed, same floor, same rolls.
 - Tests that pin presentation implementation are rewritten to the behaviour
   they defend, never re-pinned to new literals.
 - `Medium_Phone` must be user-started. Back up both device save slots under
@@ -114,7 +239,11 @@ and merge are each their own gate and each needs its own explicit word.
   the app's save rotation moves current to previous, so the previous slot
   drifts during play — restore from the backups, never from the device.
 - This workstation's ImageMagick returns an anomalous `compare -metric AE` on
-  some content (~19x the pixel count) while correct on identical inputs. Count
-  differing pixels with a difference/threshold/mean route.
+  some content (~19x the pixel count) while correct on identical inputs.
+  Count differing pixels with a difference/threshold/mean route.
 - Run formatter, analyzer and tests from `packages/app`; there is no root
   pubspec.
+- **Publication discipline, learned the hard way in Unit 12:** deciding what
+  to do about a finding is not authorization for the remote actions that
+  follow from it. Push, pull request and merge are separate gates, each
+  needing its own explicit word.

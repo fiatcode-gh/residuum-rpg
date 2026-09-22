@@ -8,6 +8,7 @@ import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/pack_screen.dart';
+import 'package:residuum_app/style/surfaces.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -193,11 +194,7 @@ void main() {
       ]) {
         expect(find.text(section), findsOneWidget);
       }
-      expect(find.text('Attack   4-4'), findsNothing);
-      expect(find.text('SPELLS'), findsNothing);
-      expect(find.text('WORN'), findsNothing);
-      expect(find.text('SKILLS'), findsNothing);
-      expect(find.text('Cast'), findsNothing);
+      expect(find.widgetWithText(LabelledValue, 'Attack'), findsNothing);
       expect(find.text('Take off'), findsNothing);
       expect(bloc.state.game, same(gameBefore));
       expect(bloc.state.log, same(logBefore));

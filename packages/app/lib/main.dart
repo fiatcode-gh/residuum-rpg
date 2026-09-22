@@ -5,17 +5,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-import 'game/game_bloc.dart';
-import 'game/log_line.dart';
-import 'game/game_screen.dart';
-import 'game/dungeon_palette.dart';
 import 'art/dungeon_art.dart';
-
+import 'game/dungeon_palette.dart';
+import 'game/game_bloc.dart';
+import 'game/game_screen.dart';
+import 'game/log_line.dart';
+import 'notice/notice.dart';
 import 'save/autosaver.dart';
 import 'save/boot.dart';
 import 'save/save_files_io.dart';
 import 'save/save_store.dart';
-import 'notice/notice.dart';
+import 'style/tokens.dart';
 import 'town/roster_screen.dart';
 import 'town/town_bloc.dart';
 import 'town/town_screen.dart';
@@ -80,7 +80,7 @@ class _BootFailureScreenState extends State<BootFailureScreen> {
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xFF0E1014),
+      scaffoldBackgroundColor: ground,
       useMaterial3: true,
     ),
     home: _retrying == null
@@ -109,40 +109,34 @@ class _BootFailureScreenState extends State<BootFailureScreen> {
     });
   }
 
-  Widget _screen() => Scaffold(
-    body: SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Spacer(),
-            const Text(
-              'The crawl is unreachable.',
-              style: TextStyle(fontFamily: 'monospace', fontSize: 20),
-            ),
-            const SizedBox(height: 12),
-            Text(_bootFailed, style: monoLike),
-            const Spacer(),
-            FilledButton(
-              onPressed: _beginFresh,
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+  Widget _screen() => Theme(
+    data: residuumTheme,
+    child: Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Spacer(),
+              const Text('The crawl is unreachable.', style: textHeadline),
+              const SizedBox(height: 12),
+              Text(_bootFailed, style: textLine),
+              const Spacer(),
+              FilledButton(
+                onPressed: _beginFresh,
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: const Text('Begin fresh'),
               ),
-              child: const Text(
-                'Begin fresh',
-                style: TextStyle(fontFamily: 'monospace', fontSize: 15),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     ),
   );
 }
-
-/// The failure screen's one style: the same monospace the screens above use.
-const TextStyle monoLike = TextStyle(fontFamily: 'monospace', fontSize: 13);
 
 /// The app, and the one thing it can do that no screen can: play somebody else.
 ///
@@ -168,7 +162,7 @@ class _ResiduumAppState extends State<ResiduumApp> {
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xFF0E1014),
+      scaffoldBackgroundColor: ground,
       useMaterial3: true,
     ),
     home: _Session(

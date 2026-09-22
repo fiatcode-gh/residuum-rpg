@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
 
 import '../game/item_presentation.dart';
+import '../style/tokens.dart' show textBody, textLabel, textLineDim;
 import 'town_bloc.dart';
 import 'town_style.dart';
 
@@ -55,14 +56,14 @@ class _GearRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 88, child: Text(slotLabel(slot), style: monoDim)),
+          SizedBox(width: 88, child: Text(slotLabel(slot), style: textLineDim)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(worn?.displayName ?? '—', style: mono),
-                if (stats.isNotEmpty) Text(stats, style: monoDim),
-                if (refusal != null) Text(refusal!, style: monoDim),
+                Text(worn?.displayName ?? '—', style: textBody),
+                if (stats.isNotEmpty) Text(stats, style: textLineDim),
+                if (refusal != null) Text(refusal!, style: textLineDim),
               ],
             ),
           ),
@@ -78,12 +79,9 @@ class _GearRow extends StatelessWidget {
                     horizontal: 4,
                     vertical: 10,
                   ),
+                  textStyle: textLabel,
                 ),
-                child: const Text(
-                  'Take off',
-                  maxLines: 1,
-                  style: TextStyle(fontFamily: 'monospace', fontSize: 12),
-                ),
+                child: const Text('Take off', maxLines: 1),
               ),
             ),
           ],

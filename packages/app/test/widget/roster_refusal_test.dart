@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/save/save_files.dart';
+import 'package:residuum_app/style/surfaces.dart';
 import 'package:residuum_content/content.dart';
 
 import '../support/pumped_app.dart';
@@ -90,7 +91,13 @@ void main() {
 
       // assert
       expect(app.saved!.hero.label, 'Cato');
-      expect(find.text('Carried  0 gold'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(LabelledValue, 'Carried'),
+          matching: find.text('0 gold'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('a retry after a refusal can still land', (tester) async {
@@ -109,7 +116,13 @@ void main() {
 
       // assert — the second edit landed on the disk and the session rebuilt.
       expect(app.saved!.hero.label, 'Ilse');
-      expect(find.text('Carried  0 gold'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(LabelledValue, 'Carried'),
+          matching: find.text('0 gold'),
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

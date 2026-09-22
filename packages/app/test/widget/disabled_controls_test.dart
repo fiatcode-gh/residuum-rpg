@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/town/bank_screen.dart';
+import 'package:residuum_app/town/inn_screen.dart';
 import 'package:residuum_app/town/merchant_screen.dart';
 import 'package:residuum_content/content.dart';
 
@@ -71,6 +72,14 @@ void main() {
 
       // assert
       expect(find.text('A night costs 12 and you carry 5.'), findsOneWidget);
+      final maxHp = newProfile(worldSeed: 909).maxHp;
+      expect(
+        find.descendant(
+          of: find.byKey(innHealthMeterKey),
+          matching: find.text('Health 4 / $maxHp'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('still says so when nothing is wrong with the hero', (

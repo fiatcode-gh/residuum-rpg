@@ -510,7 +510,10 @@ void main() {
       expect(
         explorationWorst,
         lessThanOrEqualTo(360),
-        reason: 'measured exploration-worst chrome: $explorationWorst dp',
+        reason:
+            'measured exploration-worst chrome: $explorationWorst dp '
+            '(re-derived cap: 331.0 dp measured, rounded up to 340, '
+            '+20 dp headroom)',
       );
       _expectLegalRow(tester, reason: 'exploration worst');
 
@@ -521,8 +524,11 @@ void main() {
       // assert
       expect(
         combatTypical,
-        lessThanOrEqualTo(560),
-        reason: 'measured combat-typical chrome: $combatTypical dp',
+        lessThanOrEqualTo(450),
+        reason:
+            'measured combat-typical chrome: $combatTypical dp '
+            '(re-derived cap: 429.0 dp measured, rounded up to 430, '
+            '+20 dp headroom)',
       );
       _expectLegalRow(tester, reason: 'combat typical');
 
@@ -533,8 +539,11 @@ void main() {
       // assert
       expect(
         combatWorstLegal,
-        lessThanOrEqualTo(720),
-        reason: 'measured combat-worst-legal chrome: $combatWorstLegal dp',
+        lessThanOrEqualTo(600),
+        reason:
+            'measured combat-worst-legal chrome: $combatWorstLegal dp '
+            '(re-derived cap: 578.0 dp measured, rounded up to 580, '
+            '+20 dp headroom)',
       );
       _expectLegalRow(tester, reason: 'combat worst legal');
       _expectRunCapacity(tester);

@@ -2934,3 +2934,1258 @@ Append-only. Supersede old decisions; do not rewrite history.
 - `mergeStateStatus` reports `BLOCKED` even with every required check green,
   so a future merge needs the user to say whether bypassing the ruleset is
   acceptable. Do not reach for `--admin` on the architect's own judgement.
+### Unit 12 publication — closed: PR #22 merged
+
+- 2026-09-18 — **PR #22 merged into `main` as
+  `907a4a83e7c592d4f6dd0c55e6f30c3b1b8bc49b`** at 08:49:20Z, base `main`,
+  head `residuum-visual-reboot-12`. Confirmed at source with `gh pr view 22`.
+  The preceding entry's "open, unmerged" state is superseded; the ruleset
+  question it raised was resolved by the user, not by the architect, and no
+  `--admin` bypass appears in the history.
+- Unit 11's merge base `60909e6` is therefore no longer `HEAD`. Units 1–12
+  and the Unit 12.5 gate are all merged and closed.
+
+## Unit 13 — Visual Parity Re-baseline, complete but for the roadmap gate
+
+### External intake, validated 2026-09-18
+
+- A ChatGPT LDD bundle arrived at `units/unit-13/`:
+  `kind: ldd`, `epic: visual-reboot`, `design_status: settled`,
+  `implementation_strategy: not_needed`, `authorization: not-carried`,
+  `observed_ref: b5aeb2f3f81298bbb338b3e22af10d730fb255d2`.
+- `sha256sum -c` passed on all seven artifacts;
+  `validate-planning-handoff.py` returned `ok`.
+- The bundle's mock copy is **byte-identical** to the local one
+  (`0dd2a752…094ed`), so external and local visual truth do not diverge.
+- `observed_ref` was stale in the bundle's favour: it saw PR #22 open, and
+  the PR has since merged. The only intervening change is Unit 12's own crawl
+  seam, which the bundle already assumed. Nothing it relies on is invalid.
+- **The WHAT was approved by the user in the sending session and is honoured
+  rather than re-asked**, because the canonical `units/unit-13/CONTRACT.md` is
+  materially unchanged from the proposal. Unit 13 writes only records, so it
+  needed no local implementation authorization to run.
+- Work ran on branch `residuum-visual-reboot-13` off `907a4a8`. The only
+  pre-existing working-tree change was the untracked bundle itself, which is
+  user-owned and was preserved.
+
+### Stale records corrected, not rewritten
+
+- `units/unit-12/CONTRACT.md` said "drafted, awaiting explicit user
+  approval". Corrected to the true state: approved, implemented, accepted,
+  device-verified, merged as `907a4a8`.
+- `units/unit-12.5/DEVICE-CHECKPOINT.md` still carried a mid-pass forward
+  pointer written while capsule D was in flight, describing dispatches that
+  had completed and live device state that no longer existed. Replaced by a
+  closure note that names what it superseded. Append-only ledger history was
+  not touched.
+
+### What the audit found
+
+Ten frames compared side by side, in colour and in greyscale; **77 numbered
+gaps**, each classified `CODE`, `ASSET`, `CODE + ASSET`,
+`INTENTIONAL DEVIATION` or `ALREADY ACCEPTABLE`. Full record in
+`units/unit-13/PARITY-AUDIT.md` and `PARITY-MATRIX.md`; source grounding in
+`units/unit-13/recon.md`; evidence in
+`.flow/evidence/visual-reboot/unit-13-parity/`.
+
+The three findings that reorder the epic:
+
+- **The lavender is a missing theme, not a styling choice.** `main.dart:81-85`
+  and `:169-172` build the only `MaterialApp` themes as bare
+  `ThemeData(brightness: dark, scaffoldBackgroundColor: #0E1014,
+  useMaterial3: true)`. The crawl escapes it through its own local
+  `crawlTheme` singleton (`crawl_style.dart:146-176`); the town and side
+  screens have no equivalent, so every stock `FilledButton` and `ChoiceChip`
+  renders in Material 3's default lavender. Visible on frames 6, 8, 9 and 10
+  and on no crawl frame. It is the cheapest large visual win in the epic.
+- **There are two style seams and they duplicate the palette.**
+  `crawl_style.dart:3-12` and `town_style.dart:9-12` declare the same four
+  values — `#E6EAF0`, `#8A919E`, `#15181F`, `#2A2E38` — with no shared
+  source, and nine bespoke row anatomies exist across the town screens with
+  no common container, no leading icon slot and no trailing chevron.
+- **The dungeon is value-inverted against the mock.** The mock is dark stone
+  with a torch pool and wall mass; the app renders a bright floor slab on
+  pure black where wall and unknown space are indistinguishable. The authored
+  floor and wall textures already ship and are effectively invisible at
+  `authoredScale` 0.32 under `softLight`. Lighting is one hero-centred radial
+  gradient (`dungeon_scene_material.dart:668-697`) with no placed sources and
+  no falloff at the boundary. Terrain vocabulary is `wall`, `floor`,
+  `stairsUp`, `stairsDown` and nothing else; stairs are a `<` glyph; there is
+  no door, prop, portrait, item, spell or creature art anywhere in the
+  repository beyond 8 verb icons, 18 dungeon tiles and 3 environment jpgs.
+
+### Decisions locked by Unit 13
+
+Recorded in full in `units/unit-13/VISUAL-SYSTEM.md`.
+
+- **Typography**: the monospace-only identity is superseded. Three roles —
+  a letterspaced display roman for titles and captions, a serif text face for
+  names and prose, and monospace retained deliberately for numbers, meters,
+  ordinals and stat columns so they still align. Two authored font faces are
+  required; a libre family is preferred. Recommendation: Spectral for text,
+  EB Garamond for display, because every density failure in the audit is at
+  12–13 px.
+- **Colour**: the lock stands in its true form — no important state by hue
+  alone, every screen legible in greyscale — but "monochrome" was an
+  over-reading. `pair-04-targeting-grey.png` proves the mock's own blue range
+  cells and red target reticle stay distinguishable in greyscale because one
+  is a filled rounded square and the other is four corner marks. Hue is
+  permitted as redundant reinforcement, never as a carrier, and **no
+  red-versus-green pair is permitted anywhere**.
+- **Surfaces**: the inset framed row is the default list unit; a medallion in
+  a fixed-width leading column holds authored art; no elevation, no shadow,
+  no gradient. **Ornament is prohibited** — the mock reads rich because of art
+  and type, not decoration.
+- **Controls**: one family across both seams, states carried by fill, border
+  weight, label weight and icon opacity, as the crawl already does. No stock
+  Material control may render unthemed on any screen.
+- **Assets**: new authored assets are permitted and necessary. Eight families
+  are named and nothing outside them is pre-authorized: verb icons, room
+  medallions, spell medallions, item art by family, ten log pictograms, hero
+  portraits, dungeon structure (stairs, doors, per-biome props, light
+  sources), creature art. `unit-2/ART-BIBLE.md` remains binding.
+- **Composition** is open. Two consequences: the town's numeric status block
+  leaves the title region, and a room with a console becomes a menu of doors
+  with the work behind them, as the Forge frame shows.
+
+### Unit 12.5 AC17 superseded
+
+AC17 concluded that dungeon viewport output was not a dominant remaining
+parity gap and that framing dominated. **Superseded.** The ten-frame evidence
+shows two dominant families of comparable size: the dungeon's
+material/light/structure/actor rendering (frames 2–4), and the
+application-wide type/surface/control/art absence (frames 1, 5–10). Neither
+dominates the other, and the recut roadmap orders work by dependency and cost
+rather than by dominance. `Dungeon Structural Asset Expansion` survives as
+two units rather than one.
+
+### The recut roadmap, awaiting approval
+
+Full text in `units/unit-13/ROADMAP.md`. Eight units plus two defects:
+
+| Unit | Frames | Ownership |
+|---|---|---|
+| U14 Type, palette and surface authority | all ten | CODE + ASSET |
+| U15 Row, control and chip grammar | 1–4, 6–10 | CODE |
+| U16 Authored icon and art families | 1, 5–10 | ASSET + thin CODE |
+| U17 Illustration headers and hero portrait | 1, 6, 9, 10 | CODE + ASSET |
+| U18 Dungeon light and stone value | 2, 3, 4 | CODE |
+| U19 Dungeon structure and props | 2, 3 | CODE + ASSET |
+| U20 Actor representation | 2, 3, 4 | CODE + ASSET |
+| U21 Combat chrome density | 2–5 | CODE |
+
+- **U13.1, the map bleed, runs before U18** — U18 rewrites the same
+  viewport's lighting and U21 re-measures the same seam, so both would
+  inherit the bug. Diagnosed under `flow-debugging`; a `ClipRect` is still
+  the wrong first move, because hiding overflow while the camera keeps
+  showing rows the box does not own silently invalidates the
+  7.93-rows-of-sight figure.
+- **The post-death save-read candidate stays out of the epic** and needs its
+  own contract. It blocks nothing above and must not be diagnosed inside a
+  visual unit.
+- **O3 is not a unit.** U15 touches the same chips and may retire the
+  label-keyed handles in passing.
+
+### Open questions carried to the user
+
+1. The font family.
+2. Whether "never an application-wide design system" is superseded to the
+   extent of a shared token module plus sibling per-screen themes — the shape
+   `crawlTheme` already has, so nothing is restyled implicitly and each
+   screen root opts in. The lock was written when the epic was the crawl
+   seam; the epic is now all ten frames and the palette is already duplicated.
+3. Frame 4's three intermediate cells, which may imply range or path feedback
+   the game does not have. That is a gameplay affordance, and Unit 13 refuses
+   to infer a mechanic from a picture.
+4. The world map and the roster have **no approved frame and no visual
+   baseline anywhere in this epic**. Inherit the vocabulary and accept, or
+   commission frames?
+5. Whether U18 jumps the queue. It shares no code with U14–U17 and needs no
+   new art.
+
+### Verification
+
+- The whole unit is records: `git status` shows changes under `.flow/` only,
+  so AC13 holds by construction and no production proof is owed. No
+  formatter, analyzer or suite run was warranted or performed — Unit 12's
+  gate evidence on `907a4a8` (120 files formatted, 0 changed; `flutter
+  analyze` no issues; 906 tests passing) stands unchanged because no
+  production file moved.
+- Every source claim the audit leans on was re-read by the architect at
+  source rather than taken from a scout: the two seams' colour constants, the
+  missing town-side theme, `cameraCellSize` 36 with its dartdoc rationale,
+  the ten `LogCategory` glyphs, the `pubspec.yaml` asset block and the absent
+  `fonts:` block, and the whole authored-asset inventory.
+- The three read-only scouts (`agent://TownScreensRecon`,
+  `agent://CrawlSeamRecon`, `agent://DungeonArtRecon`) extracted the
+  file:line inventory; their load-bearing facts are condensed into
+  `units/unit-13/recon.md` because agent artifacts do not outlive the session.
+
+### Unit 13 closed — the roadmap and its five open questions, approved 2026-09-18
+
+The architect presented the recut roadmap and the five decisions Unit 13 had
+deliberately refused to make alone. The user answered all five:
+
+1. **Roadmap approved as ordered** — U13.1, then U14 through U21.
+2. **Fonts: Spectral for text, EB Garamond for display.** Every density
+   failure in the audit lives at 12–13 px, which is where a decorative face
+   breaks; Spectral holds that size and EB Garamond's letterspaced caps carry
+   the display register.
+3. **The shared style seam is approved**, and the carry-forward lock "never an
+   application-wide design system" is superseded **to exactly that extent**:
+   one shared token module plus sibling per-screen themes, the shape
+   `crawlTheme` already has. Nothing is restyled implicitly; every screen root
+   opts in. A `MaterialApp`-wide `ThemeData` restyling stock Material controls
+   application-wide remains prohibited.
+4. **Frame 4's three intermediate cells are a mock flourish.** No range or
+   path feedback is implied and none will be built. The map marks the legal
+   targets, as it does today. Unit 13 put this to the user rather than
+   inferring a mechanic from a picture, and the answer closes gap 4.3 as an
+   intentional deviation.
+5. **The world map and the roster inherit the vocabulary and gain an evidence
+   gate.** No frame is commissioned. U14 owes the first device shot of each in
+   colour and greyscale; U15 and U17 re-shoot them when their changes land.
+   They stop being the epic's only unevidenced surfaces.
+
+`units/unit-13/` records were amended to match: the font and seam decisions
+moved from recommendation to settled (`VISUAL-SYSTEM.md` sections 1, 8, 9),
+gap 4.3 reclassified in both `PARITY-AUDIT.md` and `PARITY-MATRIX.md`, U14's
+gate widened to the world map and the roster, and `CONTRACT.md` AC14 closed.
+
+**All fourteen acceptance criteria are met. Unit 13 is closed.**
+
+**What the approval does not carry.** It authorizes the roadmap's shape and
+Unit 13's decisions, not implementation. Every unit still needs its own
+contract approval, and where it carries consequential HOW, its own plan
+approval. Nothing remote is authorized; push, pull request and merge remain
+separate gates — the lesson Unit 12 paid for.
+
+## Unit 13.1 — the map bleed, closed
+
+Contract: `units/unit-13.1/CONTRACT.md`, approved 2026-09-18. First in the
+recut roadmap, ahead of U14, because U18 rewrites this viewport's lighting and
+U21 re-measures this seam.
+
+### Root cause — Flame's default viewport does not honour its own size
+
+- **`MaxViewport.clip()` is an explicit no-op.**
+  `flame-1.38.2/lib/src/camera/viewports/max_viewport.dart:26` is `void
+  clip(Canvas canvas) {}`, and the class dartdoc says so outright: "This
+  viewport does not perform any clipping." `GameRenderBox.paint`
+  (`game_render_box.dart:146-151`) calls `game.render(canvas)` with no clip of
+  its own. The viewport's reported size positions the camera and is never
+  enforced as a paint boundary. Verified at source by the architect, not
+  taken from the worker's report.
+- `_DungeonScene`'s world always holds every tile in the floor's
+  `visible ∪ explored` set — `dungeon_material.dart:171`'s own documented
+  invariant — which is routinely taller than the box the crawl's `Column`
+  gives the map. Every such tile painted wherever the camera transformed it,
+  inside the box or not.
+- Nothing downstream caught it. `GameRenderBox` is `sizedByParent` with
+  `computeDryLayout` returning `constraints.biggest`, so it always reports the
+  correct box size no matter what it paints;
+  `RenderStack._hasVisualOverflow` is set only from a `Positioned` child's
+  geometry, and the map `Stack` at `game_screen.dart:99` has exactly one
+  non-positioned child, so the `Stack`'s default `Clip.hardEdge` never
+  installed a clip layer.
+
+### Two architect leads, one confirmed and one killed
+
+- Lead 1 (the `RenderStack` clip never trips) was **right about why nothing
+  intercepted the leak and wrong about the cause.**
+- Lead 2 (a stale canvas size, suspiciously near `BattleDock`'s height) is
+  **ruled out by direct measurement**: at the reproduction the `Expanded`
+  box, `game.canvasSize`, `camera.viewport.size` and `game.size` agree to
+  float32 precision. No size was ever stale. The failing layer is paint, not
+  layout.
+
+### The contract's trap did not apply, and the record should say why
+
+The contract forbade reaching for a `ClipRect` first, on the theory that a
+clip could hide overflow while the camera kept showing rows the box did not
+own. **That failure mode was impossible here:** the camera window already
+equalled the box exactly, so no candidate fix could cost the player a row.
+The trap was still the right instruction — it is what forced the diagnosis
+that proved the trap moot.
+
+### The fix — clip inside the scene, not around it
+
+The user chose a clipping viewport over a widget-level `ClipRect`, on the
+architect's recommendation. `_ClippedMaxViewport`
+(`dungeon_scene.dart:187-213`) overrides exactly three members — `clip`,
+`containsLocalPoint`, `onViewportResize` — mirroring `FixedSizeViewport`
+while inheriting `MaxViewport`'s canvas-size tracking untouched.
+`_DungeonScene` passes it a `CameraComponent` at `:222`. Thirty lines.
+
+Why not the `ClipRect`, which the diagnosing worker preferred as cheapest:
+
+- it leaves the game still painting outside its box and relies on an outer
+  clip that a later recomposition — U18 and U21 both touch this seam — can
+  silently drop;
+- it adds a Flutter compositing layer per frame where the viewport fix adds
+  one `canvas.clipRect` inside the existing pass;
+- **it would have invalidated the unit's own proof.** The regression test
+  calls `game.render(canvas)` directly, so a widget-tree clip would leave it
+  failing forever. The fix and the proof must sit at the same layer. The
+  worker also overstated the viewport option's cost as "reimplement
+  `onGameResize`"; subclassing inherits it.
+
+`containsLocalPoint` was tightened to the viewport rect because
+`viewport.dart:114-118` documents it as one contract with `clip`. It is a
+non-event for input: the widget box equals the viewport, so a point outside
+could never arrive.
+
+### Verification
+
+- **Proof**: `packages/app/test/widget/dungeon_scene_bleed_test.dart` builds
+  the density (dock mounted, action row wrapped past one run, floor taller
+  than any viewport this chrome leaves), renders the live game onto a
+  sentinel-filled canvas 200 dp larger on each side, and asserts the pixel
+  one dp beyond each edge stays sentinel.
+- **Red proved independently by the architect**, not accepted on report: a
+  throwaway `git worktree` at `9c2d66e` with the test copied in fails at the
+  `abovePixel` assertion, `dungeon_scene_bleed_test.dart:250`. The same test
+  passes on the fixed tree. The worktree was removed afterwards.
+- **Architect-run gate on the fixed tree**: `dart format` 121 files / 0
+  changed, `flutter analyze` no issues, full `flutter test` **907 passing** —
+  one more than Unit 12's 906, which is this unit's own test.
+- Hit-testing after the `containsLocalPoint` change: `dungeon_scene_test.dart`
+  13/13, including the tap/pan/long-press projection tests. Map-rect
+  assertions in `crawl_layout_test.dart`, `crawl_action_row_test.dart` and
+  `log_drawer_test.dart` 27/27.
+- **Row count unchanged**, as predicted: `mapRect` and `canvasSize` identical
+  before and after. The fix adds a paint-time clip and touches nothing that
+  feeds the row-count formula. The ledger's 7.93 rows of sight stands.
+- **A measurement trap worth carrying:** the worker's synthetic
+  worst-legal-battle scene wraps the same 11 chips into **4** runs where the
+  device's font fits **3**, giving 208.43 dp of map / 5.79 rows against the
+  device's 285.33 dp / 7.93. `flutter_test`'s font fallback measures chip text
+  differently from the device. Widget-test dp figures are not device dp
+  figures; never copy one into the ledger as the other.
+
+### AC7 amended — no emulator pass for this unit
+
+The user dropped AC7's dedicated device capsule. The fix lands at the game's
+own render call, which is exactly the layer the headless pixel proof
+observes, so an emulator pass with its save backup-and-restore ritual would
+buy one screenshot and nothing else. **Confirmation on real hardware is owed
+at U14's device gate**, whose capsule list now carries the ceiling-density
+crawl as an inherited duty (`units/unit-13/ROADMAP.md`, U14). If that pass
+shows the dock covered at the ceiling, U13.1 reopens.
+
+No separate acceptance-reviewer pass was spent: the change is thirty lines at
+one named seam, root-caused at source by the architect independently, proved
+red-then-green by the architect independently, and gated across the full
+suite. The residual risk it carries is the device confirmation above, which is
+scheduled rather than assumed.
+
+### Commit
+
+`e8bcf29` — `fix: clip the dungeon scene to its own viewport`, on
+`residuum-visual-reboot-13`. Not pushed. Production diff is
+`dungeon_scene.dart` +30/-1 plus the new test; nothing in `packages/core` or
+`packages/content` moved.
+
+## Unit 14 — Type, palette and surface authority: contract approved
+
+- 2026-09-18 — **The user approved `units/unit-14/CONTRACT.md`** and, in the
+  same breath, **retired monospace outright**: "drop monospace rule and pursue
+  visual parity with the mock ups".
+- The contract as drafted kept a third, mechanical type role — monospace for
+  numbers, meters, ordinals, stat columns and map glyphs. That is gone. The
+  mock uses no monospace anywhere, not even for `14/20` or `Strength 8`, and
+  the standing instruction is parity with the approved frames rather than a
+  compromise with the old terminal identity. `'monospace'` must appear nowhere
+  in `packages/app/lib` when the unit closes.
+- **The alignment objection is answered by the source, not by faith.** The
+  town already aligns its marking columns with a fixed-width slot,
+  `markColumn = 28` (`town_style.dart:31`), and that constant's own dartdoc
+  says why: "the markings are not all one cell wide in the device's monospace
+  font". Monospace never aligned them. Numeric alignment comes from the text
+  face's tabular figures plus fixed-width slots, and the plan must **verify**
+  the shipped faces carry `tnum` rather than assume it.
+- Retiring monospace also takes the dungeon's map glyphs off whatever face
+  Android supplies (`dungeon_scene.dart:432`, `:441`). Each glyph is centred in
+  its own cell by `Anchor.center`, so nothing about the grid ever depended on a
+  uniform advance width. It should additionally close U13.1's
+  widget-test-versus-device metric divergence, because a bundled face resolves
+  identically in both hosts — which the plan must have the executor confirm.
+- **Glyph coverage becomes a pre-cutover check**, recorded in the contract: the
+  text face must carry the log categories, the item marks, the superscript
+  ordinals, the stepper's minus, the world's `?`, the stair glyphs and the
+  battle glyphs. A missing mark needs a decision now, not a tofu box on a
+  device screenshot later.
+- `units/unit-13/VISUAL-SYSTEM.md` sections 1, 8 and 9,
+  `PARITY-MATRIX.md`'s typography row and `ROADMAP.md`'s U14 entry were all
+  amended to match. The three-role table is now two roles.
+- **`flow-planner` dispatched** (`agent://Unit14Planner`) to own the
+  execution-grade plan and its task briefs, matching Unit 12's plan as the
+  local standard. **No implementation is authorized**: the plan returns for its
+  own separate approval before any production-writing worker.
+
+### Unit 14 plan approved 2026-09-18
+
+`flow-planner` (`agent://Unit14Planner`) returned an execution-grade
+`units/unit-14/PLAN.md` (1509 lines) plus seven task briefs (3841 lines
+total), at `5ac1a49` with a clean tree and no mutation outside
+`units/unit-14/`. The user approved it with corrections.
+
+**Three planner findings that would have derailed execution.** All were found
+before any code was written, which is what the planning stage is for.
+
+- **F4, the one that would have sunk it.** `flutter test` always passes
+  `--use-test-fonts` **and** `--disable-asset-fonts` to `flutter_tester`
+  (`flutter_tools/lib/src/test/flutter_tester_device.dart:119-120`, verified
+  at source by the architect, not taken on report). Ahem's advance and line
+  box are exactly 1.000 em — that is the whole of U13.1's 208.43-versus-285.33
+  dp divergence, because `'monospace'` is unregistered in the test host. **So
+  bundling the faces does not close the divergence on its own:** pubspec fonts
+  never reach that host. The plan ships `test/flutter_test_config.dart` plus a
+  `FontLoader` as a locked, non-optional decision. The contract asked the
+  executor to confirm rather than assume; the answer was no.
+- **F5.** Spectral's own `hhea` line box is 1.5220 em against EB Garamond's
+  1.3050 and the device monospace's ~1.32. Inherited, that is +15% on every
+  text row and puts worst legal combat near **668 dp against the 600 dp
+  ceiling**. Every one of the seventeen type roles therefore carries an
+  explicit `height`; that single decision is what holds the budget. The scale
+  goes *up* 1 px at the small rungs — Spectral's x-height is 0.450 em against
+  monospace's 0.528 — and rows still get shorter.
+- **F3.** The faces are missing exactly twelve of the app's marks, derived by
+  scanning all three packages rather than from the contract's hand list.
+  Roboto, the artifact-cache fallback, lacks all twelve too, so they already
+  render from platform fallback today and will continue to. No regression, and
+  no `fontFamilyFallback` is declared precisely so that chain is left alone.
+
+**Verified rather than assumed:** tabular figures were read out of the font
+binaries. Spectral's GSUB carries `tnum`/`lnum`/`onum`/`pnum`/`zero` and its
+default digits are already uniform-width and lining; EB Garamond carries
+`tnum` but defaults to oldstyle, so display roles also carry
+`liningFigures()`. No font-driven fallback to a fixed-width slot is needed —
+the slots this unit adds exist for the padded-string reason instead.
+
+**Shape.** Eight sequential tasks, none parallelisable, each ending on a
+compiling tree: 01 faces and token module → 02 crawl seam and dp
+re-measurement → 03 resource meter → 04 town theme and the lavender → 05
+numeric alignment and town meters → 06 world seam and route diagram → 07 map
+glyph sweep and guard → 08 the rename leaf → Gate A (dp re-confirmation on the
+final tree) → Gate B (integrated acceptance) → Gate C (thirteen device
+capsules). Seven of the eight go to fresh `flow-plan-executor` sessions on one
+non-isolated Unit 14 checkout, one writer at a time; Main owns the three gates.
+
+**AC4 became a better test than the contract asked for.** Ten unthemed stock
+control families, not the four the audit named — one explicit `colorScheme`
+catches the eleventh nobody enumerated. For each family the test reads the
+*rendered* fill and foreground from the `Material` the control builds, never a
+constructor argument, and asserts it is not the corresponding colour of a
+`ThemeData(brightness: dark, useMaterial3: true)` built **live inside the
+test**, so no lavender hex is ever written down and a framework palette change
+cannot make the test lie.
+
+### The five decisions settled at approval
+
+1. **Plan approved** with the corrections below.
+2. **The alias strategy is transitional, not the end state** — the architect
+   overruled the planner here. Aliases are the right migration mechanism and
+   stay through tasks 01–07, because they are what makes seven compiling steps
+   possible instead of one forty-file commit. But three names per colour is
+   not an end state to hand the seven units that follow: a maintainer should
+   not have to work out whether `ink`, `crawlInk` and the shared token are the
+   same value. **Task 08** is a mechanical `lsp`-driven rename leaf that
+   deletes every alias which only re-names a shared token and keeps every
+   declaration that names a seam concept the shared module lacks — the chip
+   state ladder, `crawlLogPeekHeight`, `crawlMarkColumn` and their kin. The
+   decidable rule: if deleting the name and inlining the token loses no
+   meaning, delete it. Acceptance is that `crawl_style.dart` and
+   `town_style.dart` declare no `Color` at all, with the full suite green and
+   no test edited except by the rename itself — a test needing a real edit
+   means the rename was not mechanical and the executor escalates.
+3. **One `residuumTheme` at six roots**, not three named siblings. Once the
+   ladder and the roles are shared, three sibling `ThemeData` values would
+   differ in no field whatsoever — that is the duplication this unit exists to
+   delete. The lock's intent survives verbatim: `MaterialApp.theme` restyles
+   nothing and every screen root opts in. Reversal cost is two lines, recorded.
+4. **No mark changes in `core` or `content`.** Seven of the twelve uncovered
+   marks are const markings in `packages/core` — the Epic and Legendary stars,
+   the ingot bar, the herb, the three spell-school sigils — which this unit's
+   boundaries forbid touching, and the contract simultaneously mandated a
+   glyph-coverage check. Resolved: the twelve are a recorded pre-existing
+   platform-fallback set proved by an automated coverage test; U16 retires them
+   with the log pictograms and spell medallions. Escalate only on device tofu
+   or a 600 dp breach. One bounded risk is named: `✳ ✚ ⛒` sit inside crawl
+   chip labels that `_fitFor` measures, so their host-dependent advance is a
+   real threat to the widget-test/device agreement claim.
+5. **`inn_screen.dart:45-46` authorised**, closing R6 rather than carrying it.
+   Six space-padded label columns across the town only ever aligned in
+   monospace; five were in boundary and the Inn's two were not, because that
+   file declares no font family. Leaving one screen drifting while five are
+   fixed is worse than either extreme. The contract's boundary was widened by
+   those two lines, and separately for `.github/workflows/ci.yml` and
+   `AGENTS.md`, which carry the guard that keeps `'monospace'` from returning
+   in U15 through U21 — a source-text assertion belongs in CI, not the suite.
+
+### Two contract corrections the planner made, both accepted
+
+- **The monospace census is sixty literals across eleven files, not "roughly
+  fifty"**, plus four dartdoc prose mentions the contract's own grep would
+  miss — `battle_view.dart:229`, `town_style.dart:29` and `:203`,
+  `main.dart:144`. Two of those are the device-metric dartdocs the contract's
+  Traps section protects, so each rewrite must keep its warning while losing
+  the word.
+- **The HP meter is warm amber `#D99A3D`, not the mock's red**, a deliberate
+  deviation recorded so no executor "corrects" it: section 2 reserves hot red
+  for mortal danger and the armed reticle. Mana is `#7FA8D9`. The two fills sit
+  0.0067 apart in lightness, so neither reads as fuller in greyscale, and each
+  is 5.5:1 above the track.
+
+**No implementation had begun at approval time.** Plan approval authorizes
+local execution inside this plan's envelope only; publication remains its own
+gate.
+
+### U14 Task 01 accepted — the faces, the token module, and A6
+
+- `b8d934b` — `feat: give the application two authored typefaces and one token
+  module`. The three font files md5-verified against the table in the brief,
+  both `OFL.txt` committed beside them, `lib/style/tokens.dart` with two
+  families, ten ladder colours, five rhythm values, seventeen type roles and
+  `residuumTheme`, `test/flutter_test_config.dart` plus `test/support/fonts.dart`
+  for the test-host `FontLoader`, and `main.dart`'s boot failure screen as the
+  first consumer with `monoLike` deleted.
+- **Architect-run gate on the accepted tree:** `dart format` 125 files / 0
+  changed, `flutter analyze` no issues, full `flutter test` **1053 passing**.
+  The jump from Unit 12's 907 is **parameterisation, not coverage growth** —
+  seventeen roles times five invariants plus the per-mark cmap sweep, all in
+  Task 01's one new test file. Recorded so no later session reads 1053 as 146
+  new behaviours.
+- The token module was inspected at source: dartdoc only, no comments in
+  bodies, an explicit `height` on every role with the 1.522 em reason
+  documented at the declaration, and `error: ink` reasoned rather than left at
+  M3's stock red because this design may not carry a state by hue alone.
+
+**Two executor discretion calls, both accepted.**
+
+- The brief's width-based glyph-coverage proxy was **empirically wrong**:
+  several genuinely covered Spectral glyphs — the digits, `§ − < > × –` —
+  share Spectral's own `.notdef` advance of exactly 0.500 em, so "width equals
+  font size therefore absent" is undecidable. Replaced with a direct cmap
+  parser (format 4 and 12) reading the committed font bytes inside the test,
+  which is also how PLAN.md's F3 established the absent set originally. The
+  twelve absent marks were confirmed exactly, against both faces, with no
+  thirteenth.
+- The faces-resolve proof is a host-agnostic inequality: a `TextPainter` over
+  ten `i`s is strictly narrower than one over ten `M`s. Under Ahem they are
+  exactly equal, which is the captured Red — `Expected: a value less than
+  <130.0> / Actual: <130.0>`. That single assertion is what stops the suite
+  silently reverting to Ahem metrics in any later task.
+
+**A6, a plan defect ruled during execution rather than at acceptance.** The
+executor found AC4's third assertion — a control's rendered fill differing
+from its surface by 1.5:1 — unsatisfiable under WCAG and cleared it only by
+switching to a plain `Lmax/Lmin` reading. The architect recomputed
+independently and struck the assertion instead:
+
+- `raised` `#1B1F27` against `ground` `#0E1014`: **1.153:1** WCAG, 2.643:1 plain.
+- `raised` against `panel` `#15181F`: 1.076:1 WCAG, **1.491:1 plain** — below
+  the threshold on *both* readings, and several of Task 04's ten control
+  families sit on `panel`. The spec would have failed there, and the obvious
+  executor response is to lower the number until it passes.
+- The assertion also misreads the design: this ladder is deliberately
+  low-contrast and a control's boundary is its 1 dp `rule` border, which is
+  the one genuinely separated step at 1.308:1 WCAG / 2.997:1 plain against
+  panel. AC4 keeps the two assertions that cannot pass by accident — the fill
+  equals its named token, and it is not the corresponding colour of a
+  `ThemeData(brightness: dark, useMaterial3: true)` built live inside the test.
+- Every other luminance claim in the plan was audited. The meter's 5.5:1
+  against its rule track **stands** — it is a bright accent against a dark
+  track, not one dark ladder step against another, measured 5.587:1 and
+  5.500:1 with 24% headroom. The meter's `|ΔL| < 0.02` is a sameness claim,
+  not a contrast claim, and is sound. Four existing claims are strict
+  orderings and carry no threshold. R5's descriptive "1.6:1" was simply wrong
+  and is corrected to 1.163:1 WCAG / 1.763:1 plain.
+- **Standing rule now in the plan:** every luminance claim against this ladder
+  must be a strict ordering or an accent-against-ladder contrast, and must
+  state which reading it uses. A fill-versus-surface ratio between two
+  adjacent ladder values is not provable and must not be reintroduced in U15
+  through U21. Recorded as `a09efc2`.
+
+### U14 Tasks 02 and 03 accepted, and A8 ruled between them
+
+**Task 02 — `8e1efbd`, `feat: render the crawl in the authored faces`.**
+`crawl_style.dart` is aliases only: ten colours, five rhythm metrics and
+sixteen type roles, with no colour literal and no `TextStyle` constructor
+left. `crawlTheme` deleted, the three theme sites on `residuumTheme`.
+
+- **The dp re-measurement, which was this unit's real risk, came in well.**
+  Chrome with both faces registered in both hosts: exploration **331 dp**,
+  typical combat **429 dp**, worst legal combat **578 dp**. No density rose.
+  The old caps of 360/560/720 were sized against Ahem at exactly 1.000 em per
+  character and were never comparable to anything real; the new caps are the
+  measured figure rounded up plus 20 dp, which puts worst legal combat's cap
+  at exactly the contract's own 600 dp ceiling. The plan predicted "near 570"
+  from U13.1's device figure of 580.95; measured 578 is 8 dp off. Device
+  confirmation is still owed at Gate C.
+- **A7, ruled during execution.** The plan made `crawlChevron` a `final`
+  equal to `textGlyph.copyWith(color: dim)`. `copyWith` is not
+  const-evaluable and **all four consumers sit in `const` contexts** —
+  `battle_view.dart:55` inside a `const Opacity`, `:70`, `:84`, and
+  `log_drawer.dart:80`, which the brief never named and which sat in its own
+  do-not-edit list. The package did not compile. The executor proposed
+  dropping `const` at all four sites; the architect refused — four widgets
+  losing canonicalisation in the region that rebuilds on every state change,
+  plus an edit inside a fenced file, to preserve an expression style nothing
+  else in the design uses. `tokens.dart` already pairs every dim sibling as a
+  separate `const` literal, so `crawlChevron` became a `const` alias of a new
+  eighteenth role, `textGlyphDim`.
+
+**A8, ruled by the architect, landed as a standalone `sonic` leaf —
+`d959f23`, `refactor: give the last two roles their const dim siblings`.**
+
+- A7 fixed one instance; **the rule was the defect.** The plan's
+  "vary a token's colour at a call site with `copyWith`" permission had three
+  surviving mandates, all in brief 06 — one of them another `const Text` that
+  would not have compiled, two allocating per build in a diagram that
+  rebuilds on every world state change.
+- `textDetail` and `textMicro` were the module's only dim primaries, which is
+  exactly why the plan reached for `copyWith(color: ink)` to get an ink
+  variant. Both flip to ink primaries and gain `textDetailDim` and
+  `textMicroDim` — **twenty roles**, every pairable one now reading the same
+  way. `crawlTokenWord` and `crawlDetail` repoint to the dim sibling, so
+  nothing changed on screen.
+- **It did not wait for Task 06.** Carrying a known-unsound rule through three
+  more tasks is how the fourth instance gets found at Gate B.
+- The `AGENTS.md` house rule that brief 07 installs was itself teaching
+  `copyWith(color:)` as the sanctioned way to vary a colour. Corrected in the
+  same amendment, before it could be written into the repository permanently.
+
+**Task 03 — `0f1882d`, `feat: give the resources one meter and the epic's
+first hue`.** `ResourceMeter` and `MeterTint` in `lib/style/surfaces.dart`,
+geometry moved verbatim from `crawl_status.dart`'s private `_Meter`, the
+crawl status adopting it, and `crawl_status_test.dart` needing **zero** edits
+because it only ever addressed the meters through their keys.
+
+- **Chrome unchanged at 331 / 429 / 578 dp**, byte-identical to Task 02's
+  figures — which is what proves the geometry moved rather than being rebuilt.
+  The executor measured it by a temporary `print` probe against a file it
+  snapshotted by md5 first and restored to the same md5 after, twice.
+- **The epic's first hue**, verified independently by the architect before
+  dispatch and again by the executor: health `#D99A3D` at relative luminance
+  0.3820, mana `#7FA8D9` at 0.3753, track at 0.0273. `|ΔL| = 0.0067` against a
+  0.02 ceiling, so in greyscale neither meter reads as fuller than the other;
+  each clears WCAG **5.587:1** and **5.500:1** against the track. A6 does not
+  reach this threshold — it is a bright accent against a dark track, not one
+  dark ladder step against another.
+
+**Architect-run gates after each task:** `dart format` 0 changed,
+`flutter analyze` no issues, full `flutter test` 1058 then 1068 then **1077**
+passing. The growth is parameterised invariant cases for new roles plus Task
+03's nine behavioural cases, not coverage inflation.
+
+**A process note worth keeping.** Three plan defects have now been caught by
+executors rather than by the plan's own review, and all three were the same
+class of claim: an assertion about what compiles, what a formula yields, or
+what a font contains. A6 was arithmetic, A7 and A8 were const-evaluability.
+The remaining claims of that class — brief 05's `labelColumn = 96` and brief
+06's 108 dp caps-advance estimate — are each checked by their own task's
+red/green proof, so they fail loudly at execution rather than silently. The
+`flow-planner` session was lost to a connection fault mid-amendment and the
+architect completed A8 directly; the plan is intact and `b8fe4f1` records it.
+
+### U14 Tasks 04 and 05 accepted, and A9 ruled inside Task 04
+
+**Task 04 — `7090866`, `feat: put the town and pack screens under the theme`.
+The lavender is gone.** `town_style.dart` keeps its names as aliases and
+declares no colour of its own; `residuumTheme` wraps the town room, the town
+screen, the pack screen and both roster dialogs, which are root-navigator
+routes and do not inherit from the screen that opened them.
+
+- **Ten control families proved off the Material 3 default palette**, not the
+  four the audit named. The test reads the rendered fill off the `Material`
+  each control builds — never a constructor argument — and compares it
+  against a `ThemeData(brightness: dark, useMaterial3: true)` built **live
+  inside the test**, so no default colour is written down anywhere and a
+  framework palette change cannot make the assertion lie. Expected Red
+  observed on all eight table rows; two of them null-crashed pre-fix rather
+  than failing cleanly, and the executor made those reads nullable before
+  calling the Red clean rather than accepting a crash as evidence.
+- Inline monospace styles came off the stock controls so their labels take
+  the theme's, which is what carries enabled against disabled. No control was
+  replaced with a bespoke one — that is U15's work, and keeping them stock is
+  what keeps twenty-six existing widget-type finders valid.
+- **No contrast threshold was added**, confirmed explicitly. The only
+  luminance comparisons are two strict `lessThan` orderings.
+
+**A9, ruled during Task 04 — every role carries an explicit `textBaseline`.**
+
+- The roster's name dialog became **the first `TextField` ever mounted under
+  `residuumTheme`**, and it crashed. Verified at source by the architect:
+  `TextStyle.merge` returns a non-inheriting style verbatim
+  (`text_style.dart:1079`, `if (!other.inherit) return other;`), discarding
+  `titleMedium`'s baseline, and `InputDecorator` then reads
+  `labelStyle.textBaseline!` unconditionally (`input_decorator.dart:2327`).
+  Four pre-existing `roster_screen_test.dart` cases broke with it.
+- **The fix is the hole, not the field.** The module sets `inherit`, family,
+  height, colour and features explicitly so nothing leaks from an ambient
+  theme — then left the baseline to be inherited from a style that
+  `inherit: false` guarantees is never consulted. Patching
+  `inputDecorationTheme` alone would leave the trap armed for the next role
+  meeting a widget that reads `textBaseline!`, with no way for a later
+  executor to know it was there. All twenty roles gained
+  `TextBaseline.alphabetic`; the invariant sweep gained a sixth check.
+- **Proved inert**, which mattered because a line-metric change would reopen
+  the dp budget: chrome measured fresh at **331 / 429 / 578 dp**, unchanged,
+  with the probe file snapshotted by SHA-256 before the probe and restored to
+  the identical hash after — not restored from `HEAD`.
+
+**Task 05 — `67513bb`, `feat: align the town's value columns by layout, not
+by padding`.** `labelColumn` and `LabelledValue`; six space-padded label
+columns converted, including `inn_screen.dart:45-46` under A3, closing
+residual R6; the town, character and inn screens on the shared
+`ResourceMeter`.
+
+- **`labelColumn = 96` was the plan's last unverified font-metric claim and
+  it held.** Measured through a `TextPainter` on the bundled face rather than
+  reasoned: the widest labels are `Spells known` at 76.34 dp and `Skills
+  trained` at 76.05 dp, against the plan's ≈86 dp hand-estimate, leaving
+  about 20 dp of clearance. The value was not changed to fit.
+- **Three test sites were rewritten to behaviour, not re-pinned.** The status
+  block now asserts the meter's arithmetic and that the value cells share one
+  `x`, rather than matching `'Carried  12 gold'` verbatim.
+- **Two rounds of collateral padding removed.** Converting the character
+  screen made `expect(find.text('Attack   4-4'), findsNothing)` in
+  `pack_screen_test.dart` unfalsifiable — it passed for the wrong reason and
+  would keep passing whatever the pack screen rendered. Replaced with a
+  finder on the widget the character screen now builds, and proved
+  falsifiable with a throwaway positive control. Four neighbouring absence
+  checks — `'SPELLS'`, `'WORN'`, `'SKILLS'`, `'Cast'` — turned out to pin
+  strings that never existed in `lib`; the architect independently checked
+  that `Heading` uppercases its text before accepting that reading, since a
+  literal grep would miss `Heading('Spells')`. They were deleted rather than
+  replaced: adding four live absence checks to restore the line count would
+  be padding of a different kind.
+
+**Architect-run gates on the committed tree:** `dart format` 128 files / 0
+changed, `flutter analyze` no issues, full `flutter test` **1109 passing**.
+
+**Handed forward to Task 06, because its brief does not list it.**
+`world_screen.dart:197` still renders the padded `Carried  ${gold} gold`, and
+four test files pin that exact string — `roster_refusal_test.dart`,
+`roster_session_test.dart`, `suspend_door_test.dart` and
+`world_screen_test.dart`. They break the moment the world seam converts.
+
+**Paused by the user after Task 05**, tree clean, five of eight tasks done.
+
+### U14 Task 06 accepted, and A10 and A12 ruled around it
+
+**Task 06 — `fb55622`, `feat: put the world and its route diagram under the
+theme`.** The world screen was the last screen root without a theme. Its
+`Scaffold` and both root-navigator `AlertDialog`s now wrap `residuumTheme`;
+the ten `fontFamily: 'monospace'` literals in `world_screen.dart` and the six
+in `world_route_diagram.dart` are gone, replaced by plain token aliases with
+no `copyWith` anywhere, per A8; the three padded status rows take Task 05's
+`ResourceMeter` and `LabelledValue` behind a new `worldHealthMeterKey`.
+
+- **A10, ruled by the architect at dispatch.** Brief 06 named two test
+  rewrites and listed `roster_session_test.dart` as must-stay-green
+  *unedited*, which was false: `roster_session_test.dart` pins the padded
+  `Carried  N gold` five times and `roster_refusal_test.dart` twice. Both
+  files joined Task 06's owned set with the edit boundary drawn at those
+  assertions only. All ten pins across four files are now `find.descendant`
+  on the `LabelledValue` labelled `Carried`, or on `worldHealthMeterKey` —
+  the behaviour each padded string stood in for, never a new literal. A
+  full-suite grep confirms no `'Health   '`, `'Carried  '` or `'Banked   '`
+  literal survives anywhere under `packages/app`.
+- **A12 — the brief's "passes before and after" claim for the no-clipping
+  proof was wrong, and the reason is worth carrying.** The test measured Red
+  on both scenarios before the change (`TRAVEL IN PROGRESS` at 110 dp in a
+  110 dp box, `DANGER n/100` at 128 in 128), because `'monospace'` is never
+  registered with the widget-test host — `test/support/fonts.dart` loads only
+  `textFace` and `displayFace`, so `--use-test-fonts` substitutes Ahem and
+  its advance clips at any rung. Architect-verified at source. Green on the
+  migrated tree at **98.79 dp** with a journey in progress and **100.17 dp**
+  standing still, against the 120 dp box. No assertion changed; the guard is
+  real after the change, and the executor recorded the true split in the test
+  file's own doc comment. This is U13.1's measurement trap in a new costume:
+  an unregistered family in a widget test is measured as Ahem, not as the
+  face the device will use.
+- **The nine-px rung is now evidence, not an estimate.** The plan's ≈108 dp
+  hand-estimate for `TRAVEL IN PROGRESS` was the last unverified font-metric
+  claim in U14; measured, it is 98.79 dp. Every such claim the plan made has
+  now held or been corrected by measurement rather than by tuning.
+- One deviation, accepted: `tokens.dart` is imported `as tokens` rather than
+  with a `show` clause, matching `town_style.dart`'s own precedent, so the
+  brief's `residuumTheme` audit grep lands on exactly the three wrap sites
+  and not a fourth from the import line.
+
+**Architect verification on the committed tree:** the five audit greps
+returned exactly what the brief specified — nothing for `fontFamily`,
+`monospace`, `TextStyle(` and the padded rows in `lib/world`, and
+`residuumTheme` at `world_screen.dart:64`, `:144`, `:480`. The production
+diff was read in full: geometry, `maxLines`, `TextOverflow.clip`, `Semantics`
+labels and every string are untouched. Executor gates: `dart format` 129
+files / 0 changed, `flutter analyze` clean, full `flutter test` **1115
+passing** (the six-test delta is exactly the new diagram-fit group).
+
+### U14 Task 07 accepted — AC2 closed and guarded, and A11 ruled at dispatch
+
+**A11 — brief 07's prose-sweep list is stale.** The brief expects the
+surviving `monospace` prose in `battle_view.dart:229`, `town_style.dart:29`
+and `:203` and `main.dart:144`; the architect re-ran the grep on `fb55622`
+and all four are already clear. What survives is dartdoc *Tasks 01 and 05
+wrote while retiring the face*: `tokens.dart:40-41` and `surfaces.dart:80`,
+both explaining that padded label columns only ever aligned in a fixed-width
+face. Those three lines are the sweep and Task 07 owns them, prose only.
+
+This is not cosmetic: Task 07's own CI gate greps `monospace` across
+`lib --include='*.dart'`, which matches comments, so the gate cannot pass on
+the tree that introduces it until they are rewritten. The brief's "the sweep
+must not disturb `tokens.dart`" is rescoped to behaviour — no declaration,
+value or role changes, with `type_authority_test.dart` green and unedited as
+the proof.
+
+**Task 07 — `2763663`, `feat: move the map glyph off monospace and guard the
+word for good`.** Five files, 23 insertions, 5 deletions. The dungeon's two
+glyph paints read `fontFamily: textFace`; `cameraCellSize`,
+`glyphBaseFontScale`, the `* 0.30` badge derivation, `height: 1`,
+`Anchor.center` and U13.1's `_ClippedMaxViewport` are untouched, and the diff
+proves it. Both A11 prose sites now say "fixed-width face" and keep their
+warning intact.
+
+**AC2 is closed.** `monospace` appears nowhere in `packages/app/lib`, and no
+screen declares a font-family literal — architect-verified independently by
+re-running both greps on the committed tree: the only `fontFamily` hits are
+the twenty role declarations in `tokens.dart` and the two token references in
+`dungeon_scene.dart`.
+
+**The guard is what makes AC2 survive U15 through U21.** `.github/workflows/
+ci.yml` gains a `type authority gate` step on the `app` leg only
+(`if: matrix.package == 'app'`), after `analyze`, in the `if`-block form the
+plan specified — a bare `! grep` inverts the wrong exit code. `AGENTS.md`
+gains the same rule in prose, in `## Craftsmanship`. The executor proved the
+gate can fail without mutating a tracked file, by running its grep against
+`fb55622` through `git show`.
+
+Gates: `dart format` 129 files / 0 changed, `flutter analyze` clean, full
+suite **1115 passing** — unchanged from `fb55622`, as a behaviour-neutral
+change should be. Grep 3 (`Color(0x` on the two seams and `main.dart`)
+returned nothing but **AC3 stays open**: A4 gives its closure to Task 08,
+which deletes the alias declarations outright and re-runs the grep in its
+stronger form.
+
+### U14 Task 08 dispatched to `sonic`, and A13 ruled at dispatch
+
+Task 08 goes to `sonic`, not to a plan executor: A7 deleted `crawlChevron`
+from the keep list, which was the brief's own strongest argument for a
+reasoning agent, and the brief says so.
+
+**A13 — brief 08's starting condition and one mapping note are stale, and
+both are architect-verified rather than left for the agent to discover.** The
+architect counted the seams at `2763663` before dispatch:
+
+- the brief's "26 alias declarations plus 5 kept type declarations" in
+  `crawl_style.dart` is the **pre-A7** count. True figures: **27 deleted, 4
+  kept**, which is what the brief's own deletion table, keep table and grep
+  expectation 2 already say. The 35-declaration total is unchanged;
+- the brief's note that `crawlTokenWord` and `crawlDetail` "both alias
+  `textDetail`" is **pre-A8**; both now alias `textDetailDim`, which is what
+  A8 ruled. Two names collapsing onto one rung is expected and is not an
+  alias/plan disagreement;
+- membership otherwise matches the brief's tables **exactly** — all 27 crawl
+  aliases, all 8 town aliases, the 14 real metrics, the 4 chip-ladder styles
+  and the chip-state table are where the tables say. The brief's
+  stop-and-report on membership does not fire;
+- one addition the brief predates: `town_style.dart` also imports
+  `surfaces.dart show LabelledValue` (Task 05). That import stays; only the
+  `tokens.dart` prefix is dropped.
+
+Without A13 a low-reasoning agent would have hit three apparent contract
+violations in its first ten minutes and stopped on all three.
+
+### U14 Task 08 accepted — AC3 closed, after `sonic` stalled and a plan executor finished it
+
+**Task 08 — `bbd18b4`, `refactor: delete the alias layer and let every screen
+read the shared token`.** 23 files, 189 insertions, 240 deletions. All 35
+alias declarations are gone: 27 from `crawl_style.dart`, 8 from
+`town_style.dart`. `crawl_style.dart` keeps 14 real metrics, the four
+chip-ladder styles with the dartdoc A4 required, and the chip-state table;
+`town_style.dart` keeps `markColumn`, its widgets and its `surfaces.dart`
+import, and reads `tokens.dart` unprefixed.
+
+**AC3 is closed, and more strongly than Task 07 closed it:** neither seam
+declares a `Color` at all — architect-verified by re-running the greps on the
+committed tree. `TextStyle(` construction survives in exactly two files,
+`tokens.dart` and `dungeon_scene.dart`'s two cell-derived glyph paints.
+
+**`sonic` was the wrong agent, and the record should say why rather than
+blame the routing.** A7 removed the keep-list trap that had justified a
+reasoning agent, so the brief's own recommendation was sound on its face. It
+stalled anyway, at 62 analyzer errors, on a decision the brief had already
+granted it (whether to unprefix an import or prefix its references), and it
+left one real defect behind: a language-server rename had eaten the word
+`tokens` out of a **string literal**, turning
+`import '../style/tokens.dart'` into `import '../style/dart'`. The lesson is
+narrower than "never use `sonic`": **an analyzer-driven repair loop is not a
+mechanical leaf**, however exhaustively the name list is enumerated, because
+the worklist is discovered by running a tool and reading what it says.
+
+A fresh `flow-plan-executor` finished from the dirty tree, worked the
+analyzer from 62 issues to zero, and did the verification `sonic` had
+skipped: **every substitution reconciled against the alias's own former
+right-hand side** at `2763663`, name by name, since a wrong-value
+substitution between two `Color`s is invisible to the type checker. No
+disagreement found. `crawlVoid` had no residual reference at all.
+
+**A14, ruled at that dispatch.** Four `testWidgets` descriptions named a
+deleted alias (`'… renders on crawlPanel'`). On brief 08's literal reading a
+description string is neither an identifier substitution nor an import, so it
+looked like a stop-and-report. It is not: a description naming a symbol that
+no longer exists is a stale name, and the rule exists to catch a rename
+laundering a behavioural change. The `test/` diff is otherwise exactly two
+import removals, four identifier substitutions in `expect` calls, and the one
+required comment correction with its assertion unchanged.
+
+### Gate A — the dp budget re-confirmed on the final tree
+
+**Architect-measured at `bbd18b4`, on all three densities:**
+
+| density | measured | cap | contract ceiling |
+|---|---:|---:|---:|
+| exploration worst | **331.0 dp** | 360 | — |
+| combat typical | **429.0 dp** | 450 | — |
+| combat worst legal | **578.0 dp** | 600 | 600 |
+
+Identical to Task 02's re-derived figures. **The chrome has not moved through
+six subsequent tasks**, and worst legal combat sits 22 dp under the
+contract's own ceiling.
+
+The figures are not printed by the suite — `reason:` renders only on failure
+— so they were taken from an **untracked copy** of
+`crawl_action_row_test.dart` with three `debugPrint`s injected, run once and
+deleted. No tracked file was mutated; `git status` showed the copy as the
+only untracked path and nothing else changed. Record the method: a future
+Gate A needs the same trick, and mutating the tracked test to read its own
+numbers is the wrong way to get them.
+
+**These are widget-test dp, not device dp.** Gate C's capsules H, I and J
+supply the device figures, and U13.1's trap stands: the two surfaces measured
+208.43 dp against 285.33 dp for the same scene when the face was unregistered.
+
+### Gate B — the mechanical diff audit, architect-run at `bbd18b4`
+
+Against the U14 base `5ac1a49`:
+
+- **zero change under `packages/core` or `packages/content`** — no marking
+  constant touched, as A2 required;
+- **no new package dependency.** `pubspec.yaml`'s only change is the `fonts:`
+  block replacing the template's commented example; the three faces are
+  assets, not packages;
+- **both `MaterialApp.theme` arguments are still bare** —
+  `brightness: Brightness.dark`, `scaffoldBackgroundColor: ground`,
+  `useMaterial3: true`, and nothing else, at `main.dart:82` and `:164`. AC5
+  holds literally: the application-wide theme restyles no stock control, and
+  every screen root opts in;
+- **every frozen constant is intact**: `cameraCellSize = 36`
+  (`grid_geometry.dart:16`), `glyphBaseFontScale = 0.73`
+  (`glyph_marks.dart:4`), and `dungeon_scene.dart`'s two derivations
+  `cameraCellSize * glyphBaseFontScale` and `cameraCellSize * 0.30`;
+- **integrated package gates, architect-run on the final tree:**
+  `dart format` 129 files / 0 changed, `flutter analyze` no issues, full
+  `flutter test` **1115 passing**.
+
+The independent acceptance review is the remaining half of Gate B.
+
+### Gate B — the acceptance review: ACCEPT WITH FINDINGS, nothing above Minor
+
+`agent://U14Acceptance` reviewed the whole unit at `8ab8d09`, ran its own
+gates rather than trusting the architect's, and returned **ACCEPT WITH
+FINDINGS: zero Critical, zero Important, seven Minor.** It reproduced
+`flutter analyze` clean, 1115 tests green, `dart format` 129/0, and
+md5-verified all three font binaries against the plan's provenance table.
+
+It independently confirmed the mechanical audit and added what a grep cannot
+see: `_fitFor` is unchanged in algorithm — its only edits are `crawlRhythm`
+→ `rhythm`, value-identical — the `TextPainter` allocations remain the two
+inside `_fitFor`, both disposed in its `finally`, and the only `ThemeData`
+values in `lib` are `main.dart`'s two bare ones and the single top-level
+`residuumTheme`. **Task 08 reads as a rename**, which was the whole condition
+of accepting it.
+
+**It endorsed all fourteen amendments and re-derived A6's arithmetic
+independently**, confirming that a fill-versus-surface ratio between two
+adjacent steps of this ladder cannot clear 1.5:1 under either reading.
+
+**Acceptance criteria at Gate B:** AC1, AC2, AC3, AC5, AC9 and AC10 closed;
+AC4 and AC6 closed for everything the suite can prove, their rendered halves
+deferred; AC7 partly closed with the device figure deferred; AC8 deferred;
+**AC11 not closed and owned by Gate C**.
+
+### Gate B — the correction round, and two findings the architect kept
+
+**`68d0d96`, `fix: close five of Gate B's seven minor findings on Unit 14`.**
+20 files, +44 / −41, one round rather than five commits.
+
+- **M1** — `type_authority_test.dart`'s "there are exactly twenty roles"
+  asserted the length of a map literal declared ten lines above it. Deleted,
+  not replaced: Dart has no reflection, so there is no honest way to make it
+  observe `tokens.dart`, and the per-role invariant loop already carries the
+  value.
+- **M2** — a bare `expect(tester.takeException(), isNull)` that could never
+  redden, since `flutter_test` already fails on an unconsumed exception.
+  Deleted.
+- **M4** — the one production change, and the reason this round reopened the
+  stability barrier. `ResourceMeter`'s `valueColor` had lost its `const` in
+  an otherwise verbatim geometry move, allocating per build at seven call
+  sites, two of them in the crawl status that rebuilds on every game state
+  change. Now a const-per-arm `switch (tint)`. Same two constants, nothing
+  rendered differently.
+- **M6** — sixteen files placed the `tokens.dart` import out of sorted
+  position, including one `package:` import after a relative one that was
+  visible residue of Task 08's stalled first attempt. Sorted; import lines
+  only. The unit that exists to collapse two conventions into one had quietly
+  introduced a second.
+- **M7** — `resource_meter_test.dart` declared `hpKey` and `manaKey`,
+  attached them, and then asserted through `find.text`. Rewired through the
+  keys, which is what the group's own name promised.
+
+Suite **1115 → 1113**, exactly the two deleted tests.
+
+**M3, kept by the architect: the Gate B audit line was miscounted.** It read
+"every player-facing string unchanged except the **eleven** padded-label rows
+of F7"; F7's own table lists **eighteen** across six sites, and the tree
+decomposes exactly eighteen — thirteen rendered as `LabelledValue`, five
+absorbed into a meter. `inn_screen.dart` contributes one row, not two, since
+its `Health` became a meter. Corrected in `PLAN.md`, together with a second
+stale count in the same family: Task 08's proof 3 still said "the five kept
+crawl declarations" where A7 had made it four. **The audit line is itself the
+review contract**, so a wrong figure there is not cosmetic: a reviewer
+applying it literally would raise seven false findings, or wave a real string
+change through while counting to eleven.
+
+**M5, kept by the architect and handed to U15: the character screen's mana
+meter states capacity, not a pool.** `character_screen.dart:160-166` passes
+`value: mana, ceiling: mana`, so the bar is permanently full. Brief 05
+justified it from `run_boundary.dart:95`, where entering a crawl refills mana
+— but the reviewer read the rest of that file and found the gap:
+`suspendRun` carries hero, equipment, skills, inventory, gold, visit, known
+spells, materials and item number home and **not mana**, while `resumeRun`
+restores the suspended crawl's mana exactly. `GameState.mana` is the only
+mana in the model. So with a crawl suspended at 2/8, the character screen
+renders `Mana 8 / 8` over a full bar.
+
+The old row read `Mana     8`, an unlabelled capacity number, so **no
+information was lost — but the rendered claim is now strictly stronger than
+the one it replaced.** Accepted for this unit: the number is true as
+capacity, it is visible only mid-suspension, and the remedy belongs where the
+row is redesigned. **U15 or U17 renders capacity without a fill bar.** Do not
+add a mana getter to `TownViewState`: brief 05 is right that that would
+invent information the town does not have.
+
+**One residual the reviewer asked be written down.** The worst-legal suite
+cap is `lessThanOrEqualTo(600)` — numerically identical to the contract's
+600 dp **device** ceiling, purely because 578 rounds to 580 plus 20 dp of
+headroom. Nothing conflates them today, but a later reader could take a green
+suite as closing AC7. **It does not. AC7's device half is capsules H, I and
+J.**
+
+### Gate B closed — the scoped closure review, and a fabricated figure it caught
+
+`agent://U14Closure` reviewed the correction round `8ab8d09..68d0d96` and
+returned **CLOSED WITH FINDINGS, device gate MAY PROCEED.** All five
+corrections are genuinely closed in code. It proved M4 rendered-identical
+from the SDK side — `LinearProgressIndicator` reads only `valueColor?.value`
+(`progress_indicator.dart:133`), the two arms carry the same two unchanged
+token constants, and `AlwaysStoppedAnimation`'s own dartdoc recommends the
+`const` form and states that sharing one instance is safe — and proved M6's
+sixteen files pure import permutations by per-file md5 of blank-line-stripped
+sorted content, with identical import counts. A dropped import that still
+analyzes clean because another file re-exports the name was the failure mode
+it looked for, and did not find.
+
+**F1, Important, and the reason this review earned its cost: the correction
+round reported a suite figure it had not observed.** Its receipt said 1113,
+deriving it from the dispatch brief's own prediction that M1 and M2 each
+deleted a test. **M2 deleted an assertion line inside an existing test body,
+not a test.** The true delta is one test, so the suite is **1114**, which the
+reviewer measured twice — compact reporter and JSON reporter — and which the
+architect then reproduced independently. Nothing vanished silently; the diff
+removes exactly one `test(` declaration and adds none.
+
+Record it as a class, because it will recur: **a verification figure that
+matches the brief's prediction exactly is the one to re-measure.** The brief
+predicted 1113 and the executor reported 1113. Had the closure review taken
+the receipt at face value, a number produced by arithmetic rather than by a
+test run would have entered this ledger as the unit's AC10 evidence.
+
+**AC10 at `68d0d96`, architect-run and reviewer-confirmed:** `dart format` 0
+changed, `flutter analyze` no issues, full `flutter test` **1114 passing**.
+
+Two findings parked with reasons, neither blocking:
+
+- **F2** — the twin of M2 survives at `character_screen_test.dart:369`, and
+  it is the same shape. The executor was right not to widen a named finding
+  unilaterally, and wrong if it thought the two lines differ. The pattern
+  appears about twenty-five times across the suite and **several occurrences
+  are load-bearing** — they carry a `reason:`, or sit in tests explicitly
+  named for overflow-freedom. Sorting documentary uses from no-op uses needs
+  its own judgement pass, not a blanket sweep.
+- **F3** — M6's ordering is convention only. `analysis_options.yaml` includes
+  `flutter_lints` and adds nothing, and `directives_ordering` is in neither
+  installed package, so the order will drift again as U15–U21 add imports.
+  Enabling the rule is a separate decision, not this unit's.
+
+**One residual worth carrying past this epic:** no test pins the meter's
+rendered fill colour anywhere in the suite, so a regression in
+`surfaces.dart`'s tint mapping would be caught only by device or greyscale
+evidence. Pre-existing at `8ab8d09`, not introduced by the round.
+
+**Capsules must cite `68d0d96`.** The head moved after the full review, and a
+capsule labelled with the superseded head would name a tree no longer on the
+branch.
+
+## Gate C — the device pass, complete and accepted
+
+Fifteen sequential sessions on a user-started `Medium_Phone` (`emulator-5554`,
+1080x2400 at density 420, 2.625 device pixels per dp) against the debug build
+of **`68d0d96`**, whose installed `base.apk` was proved byte-identical to its
+own build artefact rather than merely "installed without error". One setup
+session, thirteen scene capsules A–M, one closing restore. 174 frames and
+crops under `.flow/evidence/68d0d96/`, every colour frame carrying a
+greyscale twin verified by **raw-pixel comparison**, never the anomalous
+`compare -metric AE` this workstation returns.
+
+### The dp budget on hardware, and the convention that had to be ruled first
+
+| density | Gate A (widget) | device (post-`SafeArea`) | Δ | U12.5 |
+|---|---:|---:|---:|---:|
+| exploration worst | 331.0 dp | **332.95 dp** | +1.95 | 331.1 |
+| combat typical | 429.0 dp | **432.00 dp** | +3.00 | 438.1 |
+| combat worst legal | 578.0 dp | **582.86 dp** | +4.86 | 580.95 |
+
+**AC7 passes with 17.14 dp of margin against the 600 dp ceiling** — the
+tightest figure in the unit, and less than one chip run, exactly as U12.5
+found.
+
+**A15 was ruled mid-pass and is the reason those numbers mean anything.**
+Capsule H reported 380.95 dp and correctly diagnosed a ~50 dp gap that was
+not a regression: the widget-test host never sets `tester.view.padding`, so
+`SafeArea` removes nothing there, while this device removes a 63 px status
+bar and a 63 px navigation bar — 126 px, 48.0 dp — before the `Expanded` map
+sees the surface. Capsules I, J and K each re-observed the insets from
+`WindowInsets` in logcat rather than inheriting the figure. The usable
+surface is **866.29 dp**, which capsule K then measured the log drawer's full
+extent at, to the hundredth. Read against the raw display, capsule J would
+have reported 630.86 dp and manufactured a false ceiling breach.
+
+### Unit 13.1 is hardware-confirmed and does not reopen
+
+Capsule J, at the least map height in the whole pass — **283.43 dp, 7.87 tile
+rows of sight** — found the `BattleDock` **not covered, not clipped, not
+overpainted**. The verifier sampled full RGB across the eleven-row gap
+between the dock's own card border and the map's top hairline, at every
+column rather than four, and found flat `#0E1014` scaffold throughout. Before
+`_ClippedMaxViewport` this exact density painted about 55 dp of dungeon over
+the dock, halving both ring tokens and hiding the words `You` and
+`the wight¹` outright. **U13.1's only open obligation is discharged.**
+
+The eleven-chip row rendered in full: `Drink (12)` · `Firebolt 2` ·
+`Frost Lance 4` · `Mend 3` · `+3` · `Wait` · `Pick up` · `Gather` ·
+`Pack (19)` · `Ascend <` · `Finish`, three runs of 4 + 4 + 3, greatest label
+line count 2 (`Frost Lance 4` wrapping between words), no split word, no
+ellipsis, no label touching its border, no verb hidden — the same verbs and
+the same run split U12.5 photographed.
+
+### What the type does on glass
+
+- **The 96 dp label column holds.** Capsule A measured the town's two value
+  cells starting at x=305 px against a predicted 304.5 — identical to the
+  pixel — with about 53 dp of clearance. Capsule B measured the thinnest
+  margin in the application, `Skills trained` at 75.05 dp, leaving
+  **20.6–21.0 dp**, matching the bundled-face figure of 76.34 dp within
+  rasterisation noise.
+- **F8's clip risk is settled.** Capsule G measured `TRAVEL IN PROGRESS` at
+  **97.90 dp** against the widget test's 98.79 and its 120 dp box, and
+  `NO ROAD FROM HERE` at 98.67 dp. Every label was checked for a **cut glyph
+  edge** rather than for looking fine — `TextOverflow.clip` draws no ellipsis,
+  so a clipped label reads as a slightly short word. The two widest were
+  zoomed 4x and show complete serif terminals. **Nothing clips anywhere in
+  the pass.**
+- **No tofu anywhere.** Capsule K rendered **nine of ten** log category marks
+  through real play, beating U12.5's eight, including three of F3's twelve
+  fallback marks — `◎`, `⇅`, `✕` — each zoomed and each a real glyph.
+  Capsule J rendered the three spell-chip marks. Capsule M confirmed the
+  map's own glyph set, which Task 01's coverage test says Spectral covers
+  fully, does so on hardware.
+- **No lavender on any surface.** Every capsule sampled rendered pixels
+  rather than judging by eye. The theme's cluster sits at hue 216–223 degrees
+  and 9–25% saturation; M3's `#D0BCFF` is hue 258 at full saturation, 35–42
+  degrees and several times the saturation away. **Capsule L settled AC5 on
+  all seven overlay surfaces at once** — both crawl sheets, the completion
+  confirm, the death overlay, both roster dialogs and the world travel
+  dialog.
+- **A9 holds on hardware.** The roster's name dialog — the application's only
+  `TextField`, and the widget that crashed under a null `textBaseline` —
+  rendered its label, its bordered field, its pre-filled text and a selection
+  handle, with the on-screen keyboard confirming real focus. No crash.
+- **The map glyphs survived the move to a serif.** Capsule M measured each
+  glyph's ink box against its 94.5 px cell: the hero `@` off centre by
+  0.10 x 0.67 dp, the stairs by 0.10 x 2.38, the monster letter by 0.48 x
+  2.19, and the two independently drawn ghouls produced **pixel-identical
+  offsets**. The superscript depth badge at `cameraCellSize * 0.30` renders
+  complete with visible serif detail at an 11 px ink height — the smallest
+  type in the application, legible only because its amber ink clears the
+  stone floor by a wide margin.
+- **Greyscale holds everywhere.** Capsule B measured the two meter fills at
+  **161 and 163** of 255 in the twin — the 0.0067 lightness design target
+  landing as a 0.78% difference, so neither meter reads as fuller by
+  brightness. Capsule K's newest-versus-older log ordering holds identically
+  in greyscale, 234 against 144. Capsule M's hero and monster separate by
+  letterform, not hue.
+
+### Both save slots restored, and independently re-verified
+
+`save.json` `18995c4a…b46d3` and `save-previous.json` `8909f70c…a9b11`,
+restored from the pre-install backups — never from the device, whose rotation
+drifted the previous slot during the pass — with ownership and mode
+preserved, and **the architect re-ran `sha256sum` on both device files
+afterwards** rather than accepting the receipt's MATCH. The app relaunched on
+the user's own state (THE CRYPT, HP 12/20) with no save-error text in the UI
+or in logcat.
+
+### Three things the pass recorded rather than smoothed over
+
+- **The Tavern's `Ask` carries no affordability cue of its own.** Capsule E
+  found the control renders identically whether or not the hero can pay; the
+  refusal is communicated only by the notice sentence afterwards. Not a Unit
+  14 regression — the unit restyled, it did not design the affordance — and
+  recorded for U15 alongside M5's capacity meter.
+- **Capsule M restarted the AVD.** It had stopped between capsules L and M,
+  and the verifier started it rather than stalling the pass. The
+  user-started rule exists so the architect never assumes a device; a
+  mid-pass restart of an already-authorised pass is within a verifier's own
+  environment authority, and it is recorded rather than hidden.
+- **Capsule M corrected a premise in its own brief.** The brief said the map
+  draws `*` for litter; `*` is the ore-vein gather node's glyph, and litter
+  draws each ground item's own base glyph — a dropped Iron Sword renders `)`.
+  The capsule measured the litter layer correctly and said so.
+
+### Unit 14 is complete and locally accepted
+
+All eleven acceptance criteria are closed: AC1, AC2, AC3, AC5, AC9 and AC10
+at Gate B; AC4 and AC6 at Gate B for the suite and at Gate C on glass; AC7
+across Gate A and capsules H, I and J; AC8 across every greyscale twin; and
+**AC11 by the thirteen capsules themselves**. Nothing is pushed, no pull
+request exists, and the integration choice is the user's.
+
+### Unit 14 publication — PR #23 open, unmerged
+
+- 2026-09-21 — **The user chose push and pull request, and both are done.**
+  `residuum-visual-reboot-13` is pushed and
+  [PR #23](https://github.com/fiatcode-gh/residuum-rpg/pull/23) is open
+  against `main`: 24 commits, `MERGEABLE`, verified at source after creation
+  rather than assumed from the command's exit code.
+- The pull request carries Unit 14, Unit 13's re-baseline records and Unit
+  13.1's viewport fix. Its body states the three device dp figures against
+  their caps, names the post-`SafeArea` measurement convention so a reviewer
+  does not read the raw display and see a breach, and records the two
+  follow-ups handed to U15 rather than burying them.
+- **Merge is its own gate and has not been given.** The standing Unit 12
+  lesson holds: choosing to open a pull request is not authorisation to merge
+  it, and `--admin` is never reached for on the architect's own judgement.

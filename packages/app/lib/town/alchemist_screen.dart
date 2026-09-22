@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import '../style/tokens.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
 
@@ -62,10 +63,10 @@ class _AlchemistScreenState extends State<AlchemistScreen> {
             const Heading('Materials'),
             MaterialRows(materials: state.materials),
             const Heading('Brewing'),
-            Text('$brewCost herbs make 1 healing potion.', style: mono),
+            Text('$brewCost herbs make 1 healing potion.', style: textBody),
             Text(
               'The shelf asks ${AlchemistScreen._worth()} gold for one.',
-              style: monoDim,
+              style: textLineDim,
             ),
             const SizedBox(height: 16),
             CountStepper(
@@ -88,7 +89,7 @@ class _AlchemistScreenState extends State<AlchemistScreen> {
                   ? 'The pot is on and you have what it takes.'
                   : '${state.brewReason![0].toUpperCase()}'
                         '${state.brewReason!.substring(1)}.',
-              style: monoDim,
+              style: textLineDim,
             ),
           ],
         );

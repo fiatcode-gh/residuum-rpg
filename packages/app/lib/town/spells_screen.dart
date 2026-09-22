@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 
 import '../game/spell_row.dart';
+import '../style/tokens.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
 
@@ -22,8 +23,8 @@ class SpellsScreen extends StatelessWidget {
             for (final spell in known)
               SpellRow(
                 spell: spell,
-                style: mono,
-                dimStyle: monoDim,
+                style: textBody,
+                dimStyle: textLineDim,
                 detail: effectOf(spell),
               ),
         ],

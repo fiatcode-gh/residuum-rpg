@@ -3,6 +3,7 @@ import 'package:residuum_content/content.dart';
 
 import '../notice/notice.dart';
 import '../save/boot.dart';
+import '../style/tokens.dart' show residuumTheme, rule, textBody, textLineDim;
 import 'town_style.dart';
 
 /// What the player asked the roster to do.
@@ -130,31 +131,22 @@ class RosterScreen extends StatelessWidget {
     final last = document.heroes.length == 1;
     final given = await showDialog<bool>(
       context: context,
-      builder: (dialog) => AlertDialog(
-        title: Text(
-          'Delete ${hero.label}?',
-          style: const TextStyle(fontFamily: 'monospace'),
-        ),
-        content: Text(
-          _deletionWarning(hero, last: last),
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialog).pop(false),
-            child: const Text(
-              'Keep this hero',
-              style: TextStyle(fontFamily: 'monospace'),
+      builder: (dialog) => Theme(
+        data: residuumTheme,
+        child: AlertDialog(
+          title: Text('Delete ${hero.label}?'),
+          content: Text(_deletionWarning(hero, last: last)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialog).pop(false),
+              child: const Text('Keep this hero'),
             ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialog).pop(true),
-            child: const Text(
-              'Delete this hero',
-              style: TextStyle(fontFamily: 'monospace'),
+            TextButton(
+              onPressed: () => Navigator.of(dialog).pop(true),
+              child: const Text('Delete this hero'),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
     if (!(given ?? false) || !context.mounted) return;
@@ -235,27 +227,22 @@ class _NameDialogState extends State<_NameDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text(
-      'Name your hero',
-      style: TextStyle(fontFamily: 'monospace'),
+  Widget build(BuildContext context) => Theme(
+    data: residuumTheme,
+    child: AlertDialog(
+      title: const Text('Name your hero'),
+      content: TextField(controller: _typed, autofocus: true),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Not yet'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(_typed.text),
+          child: const Text('Begin'),
+        ),
+      ],
     ),
-    content: TextField(
-      controller: _typed,
-      autofocus: true,
-      style: mono,
-      decoration: const InputDecoration(border: OutlineInputBorder()),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: const Text('Not yet', style: TextStyle(fontFamily: 'monospace')),
-      ),
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(_typed.text),
-        child: const Text('Begin', style: TextStyle(fontFamily: 'monospace')),
-      ),
-    ],
   );
 }
 
@@ -291,15 +278,15 @@ class _HeroRow extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(hero.label, style: mono),
+                          Text(hero.label, style: textBody),
                           if (playing) ...[
                             const SizedBox(width: 10),
-                            const Text('playing', style: monoDim),
+                            const Text('playing', style: textLineDim),
                           ],
                         ],
                       ),
                       const SizedBox(height: 2),
-                      Text(rosterLine(hero), style: monoDim),
+                      Text(rosterLine(hero), style: textLineDim),
                     ],
                   ),
                 ),
@@ -310,12 +297,7 @@ class _HeroRow extends StatelessWidget {
               width: 88,
               child: TextButton(
                 onPressed: onDelete,
-                style: TextButton.styleFrom(foregroundColor: ink),
-                child: const Text(
-                  'Delete',
-                  maxLines: 1,
-                  style: TextStyle(fontFamily: 'monospace', fontSize: 12),
-                ),
+                child: const Text('Delete', maxLines: 1),
               ),
             ),
           ],

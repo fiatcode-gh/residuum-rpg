@@ -1,50 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-
-import '../notice/notice.dart';
-
 import 'package:residuum_core/core.dart';
 
-const Color ink = Color(0xFFE6EAF0);
-const Color dim = Color(0xFF8A919E);
-const Color panel = Color(0xFF15181F);
-const Color rule = Color(0xFF2A2E38);
-
-const TextStyle mono = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 14,
-  color: ink,
-);
-
-const TextStyle monoDim = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 12,
-  color: dim,
-);
+import '../notice/notice.dart';
+import '../style/surfaces.dart' show LabelledValue;
+import '../style/tokens.dart';
 
 /// The width of every leading mark column in the town.
 ///
 /// One constant rather than a number repeated per row, because the markings
-/// are not all one cell wide in the device's monospace font and a column
-/// that drifts by two pixels steps sideways on the phone.
+/// are not all one cell wide in the text face, and a column that drifts by
+/// two pixels steps sideways on the phone. A device pass caught exactly
+/// that.
 const double markColumn = 28;
-
-/// The type a place announces itself in.
-const TextStyle placeName = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 20,
-  letterSpacing: 5,
-  color: ink,
-);
-
-/// The type a room inside a place announces itself in.
-const TextStyle roomName = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 15,
-  letterSpacing: 4,
-  color: ink,
-);
 
 /// A section title above a list.
 ///
@@ -62,15 +31,7 @@ class Heading extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          text.toUpperCase(),
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 11,
-            letterSpacing: 2,
-            color: dim,
-          ),
-        ),
+        Text(text.toUpperCase(), style: displayCaption),
         const Divider(color: rule, height: 9),
       ],
     ),
@@ -86,7 +47,7 @@ class NothingHere extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Text(text, style: monoDim),
+    child: Text(text, style: textLineDim),
   );
 }
 
@@ -133,7 +94,7 @@ class ItemRow extends StatelessWidget {
       children: [
         SizedBox(
           width: markColumn,
-          child: Text(marking, style: monoDim, textAlign: TextAlign.center),
+          child: Text(marking, style: textLineDim, textAlign: TextAlign.center),
         ),
         Expanded(
           child: Column(
@@ -142,12 +103,12 @@ class ItemRow extends StatelessWidget {
             children: [
               Text(
                 name,
-                style: mono,
+                style: textBody,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               if (onPressed == null && reason != null)
-                Text(reason!, style: monoDim),
+                Text(reason!, style: textLineDim),
             ],
           ),
         ),
@@ -158,13 +119,9 @@ class ItemRow extends StatelessWidget {
             onPressed: onPressed,
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+              textStyle: textLabel,
             ),
-            child: Text(
-              action,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-            ),
+            child: Text(action, maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ),
       ],
@@ -183,8 +140,8 @@ class Purse extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text('Carried  $carried gold', style: mono),
-      Text('Banked   $banked gold', style: mono),
+      LabelledValue(label: 'Carried', value: '$carried gold'),
+      LabelledValue(label: 'Banked', value: '$banked gold'),
       const Divider(color: rule, height: 20),
     ],
   );
@@ -200,7 +157,7 @@ class Purse extends StatelessWidget {
 /// are legible in greyscale and read aloud.
 ///
 /// **Laid out in fixed-width columns rather than by padding the text.** The
-/// markings are not all one cell wide in the device's monospace font — the ingot
+/// markings are not all one cell wide in the text face — the ingot
 /// bar is wider than the ore diamond — so a padded string aligns on the desktop
 /// and steps sideways on the phone. A device pass caught exactly that.
 class MaterialRows extends StatelessWidget {
@@ -219,10 +176,10 @@ class MaterialRows extends StatelessWidget {
             children: [
               SizedBox(
                 width: markColumn,
-                child: Text(id.marking, style: mono),
+                child: Text(id.marking, style: textBody),
               ),
-              SizedBox(width: 84, child: Text(id.word, style: mono)),
-              Text('${materials[id] ?? 0}', style: mono),
+              SizedBox(width: 84, child: Text(id.word, style: textBody)),
+              Text('${materials[id] ?? 0}', style: textBody),
             ],
           ),
         ),
@@ -245,7 +202,7 @@ class Notice extends StatelessWidget {
     if (notice == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 10),
-      child: Text('— ${notice!.sentence}.', style: monoDim),
+      child: Text('— ${notice!.sentence}.', style: textLineDim),
     );
   }
 }
@@ -319,7 +276,7 @@ class _CountStepperState extends State<CountStepper> {
   Widget build(BuildContext context) {
     Widget edge(String glyph, int by) {
       final dead = widget.value + by < 0 || widget.value + by > widget.cap;
-      final glyph_ = Text(glyph, style: dead ? monoDim : mono);
+      final glyph_ = Text(glyph, style: dead ? textLineDim : textBody);
       return GestureDetector(
         onTapDown: dead ? null : (_) => _pressDown(by),
         onTapUp: dead ? null : (_) => _release(),
@@ -341,7 +298,7 @@ class _CountStepperState extends State<CountStepper> {
           child: Text(
             '${widget.value}',
             textAlign: TextAlign.center,
-            style: mono,
+            style: textBody,
           ),
         ),
         edge('+', 1),
@@ -349,7 +306,7 @@ class _CountStepperState extends State<CountStepper> {
           onTapDown: capped ? null : (_) => widget.onChanged(widget.cap),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            child: Text('MAX', style: capped ? monoDim : mono),
+            child: Text('MAX', style: capped ? textLineDim : textBody),
           ),
         ),
       ],
@@ -377,10 +334,7 @@ class Commit extends StatelessWidget {
       style: FilledButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
       ),
-      child: Text(
-        label,
-        style: const TextStyle(fontFamily: 'monospace', fontSize: 15),
-      ),
+      child: Text(label),
     ),
   );
 }
@@ -393,16 +347,19 @@ class TownRoom extends StatelessWidget {
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(backgroundColor: panel, foregroundColor: ink),
-    body: ListView(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-      children: [
-        Text(title, style: roomName),
-        const Divider(color: rule, height: 22),
-        ...children,
-        const SizedBox(height: 24),
-      ],
+  Widget build(BuildContext context) => Theme(
+    data: residuumTheme,
+    child: Scaffold(
+      appBar: AppBar(backgroundColor: panel, foregroundColor: ink),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+        children: [
+          Text(title, style: displayRoom),
+          const Divider(color: rule, height: 22),
+          ...children,
+          const SizedBox(height: 24),
+        ],
+      ),
     ),
   );
 }

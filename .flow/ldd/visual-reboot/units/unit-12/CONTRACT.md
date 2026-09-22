@@ -1,6 +1,11 @@
 # Unit 12 — Crawl Interface Visual Grammar
 
-Status: **drafted, awaiting explicit user approval**
+Status: **approved, implemented, accepted, device-verified, merged.** The
+user approved this WHAT on 2026-09-17; the plan was approved separately; the
+implementation landed as `259322b`; Unit 12.5 closed its device gate on
+2026-09-18; PR #22 merged into `main` as `907a4a8` at 2026-09-18T08:49:20Z.
+Corrected by Unit 13's intake reconciliation — this line previously still
+read "drafted, awaiting explicit user approval".
 Base: `main` at `60909e60ec3150cf9b590e6641a8ae51efca775c`
 Intake: validated external LDD bundle, `authorization: not-carried`
 Visual reference: `.flow/evidence/visual-reboot/residuum_visual_reboot_approved_mock.png`, frames 2–5

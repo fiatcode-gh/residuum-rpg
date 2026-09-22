@@ -351,16 +351,17 @@ Paused by the user mid-unit. Nothing is in flight; no agent is running.
   Recorded as a known consequence of the Unit 10 master set's coverage, not
   a defect, and not a reason to expand scope here.
 
-## Exact next action
+## Exact next action — none; superseded 2026-09-18 by Unit 13's intake
 
-Capsule D (expanded log) is dispatched. Then E (sheets and overlays, carrying
-the disabled-`Drink` duty above and needing a game-over hero who is *carrying
-a potion*), F (town-side regression), G (density ceiling) last, followed by
-the restoring capsule. Capsule G also inherits **AC6's silent-truncation
-duty**: it is the only remaining scene likely to hold an actor the hero has
-not yet seen, so the queue's silent truncation can be observed there. The
-unit's remaining thresholds are the 600 dp / 244 dp pair at capsule G.
+**Unit 12.5 is closed.** Capsules A through G all ran, the restoring capsule
+ran after them, and both device save slots were verified byte-identically:
+`save.json` `18995c4c…b46d3` MATCH and `save-previous.json`
+`8909f70c…a9b11` MATCH under SHA-256. The three dp gates passed as measured —
+exploration 331.1, typical combat 438.1, worst legal combat 580.95 against
+600 — and the full result is in `LEDGER.md` under "Unit 12.5 — the crawl
+device gate, closed".
 
-Live device state while the capsules run: `app_flutter/save.json` holds
-capsule B/C's fixture `aa6b5f18…48eb`, `save-previous.json` is untouched at
-`8909f70c…a9b11`, and the restoring capsule owes both slots back.
+The text that stood here was a mid-pass forward pointer written while
+capsule D was in flight. It described dispatches that have since completed
+and live device state that no longer exists. It is removed rather than
+rewritten, because a closed unit has no next action.

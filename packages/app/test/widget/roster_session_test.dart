@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/style/surfaces.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -47,7 +48,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.text('Carried  40 gold'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(LabelledValue, 'Carried'),
+          matching: find.text('40 gold'),
+        ),
+        findsOneWidget,
+      );
       expect(app.saved!.active, 'hero-1');
     });
 
@@ -139,7 +146,13 @@ void main() {
       // assert
       expect(app.saved!.heroes, hasLength(3));
       expect(app.saved!.hero.label, 'Cato');
-      expect(find.text('Carried  0 gold'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(LabelledValue, 'Carried'),
+          matching: find.text('0 gold'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('deleting the hero being played lands on the one left', (
@@ -159,7 +172,13 @@ void main() {
       // assert
       expect(app.saved!.heroes.keys.toList(), ['hero-1']);
       expect(app.saved!.active, 'hero-1');
-      expect(find.text('Carried  40 gold'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(LabelledValue, 'Carried'),
+          matching: find.text('40 gold'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('the last hero deleted is replaced, never removed', (
@@ -189,7 +208,13 @@ void main() {
       expect(app.saved!.heroes, hasLength(1));
       expect(app.saved!.hero.label, 'Cato');
       expect(app.saved!.heroes.containsKey('hero-1'), isFalse);
-      expect(find.text('Carried  0 gold'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(LabelledValue, 'Carried'),
+          matching: find.text('0 gold'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('leaving the roster without choosing changes nothing', (
@@ -205,7 +230,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.text('Carried  7 gold'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(LabelledValue, 'Carried'),
+          matching: find.text('7 gold'),
+        ),
+        findsOneWidget,
+      );
       expect(app.saved!.active, 'hero-2');
     });
 

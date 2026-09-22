@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../art/art_assets.dart';
+import '../style/tokens.dart';
 import 'action_icon.dart';
 import 'crawl_style.dart';
 
@@ -63,16 +64,13 @@ class CrawlActionRow extends StatelessWidget {
       'a verb must appear once',
     );
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: crawlGutter,
-        vertical: crawlRhythm,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: gutter, vertical: rhythm),
       child: Column(
         children: [
           for (final note in notes)
             Padding(
-              padding: const EdgeInsets.only(bottom: crawlRhythm),
-              child: Text(note, style: crawlBodyDim),
+              padding: const EdgeInsets.only(bottom: rhythm),
+              child: Text(note, style: textLineDim),
             ),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -205,7 +203,7 @@ _RowFit _fitFor(
       final chipHeight =
           crawlChipVerticalPadding * 2 +
           actionIconSize +
-          crawlRhythm +
+          rhythm +
           labelBlock +
           captionHeight;
       final runs = (actions.length / columns).ceil();
@@ -235,7 +233,7 @@ _RowFit _fitFor(
     final chipHeight =
         crawlChipVerticalPadding * 2 +
         actionIconSize +
-        crawlRhythm +
+        rhythm +
         labelBlock +
         captionHeight;
     return _RowFit(
@@ -298,16 +296,16 @@ class _ActionChip extends StatelessWidget {
             color: skin.fill,
             shape: RoundedRectangleBorder(
               side: BorderSide(color: skin.border, width: skin.borderWidth),
-              borderRadius: BorderRadius.circular(crawlRadius),
+              borderRadius: BorderRadius.circular(radius),
             ),
             child: InkWell(
               onTap: action.onPressed,
-              borderRadius: BorderRadius.circular(crawlRadius),
+              borderRadius: BorderRadius.circular(radius),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   icon,
-                  const SizedBox(height: crawlRhythm),
+                  const SizedBox(height: rhythm),
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: crawlChipPadding,

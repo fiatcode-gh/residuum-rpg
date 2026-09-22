@@ -3,7 +3,8 @@ import 'package:flutter/semantics.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-import '../town/town_style.dart';
+import '../style/tokens.dart'
+    show ink, panel, rule, textBody, textDetail, textMicro, textMicroDim;
 
 class WorldRouteDiagram extends StatelessWidget {
   const WorldRouteDiagram({
@@ -96,27 +97,14 @@ class WorldRouteDiagram extends StatelessWidget {
       children: [
         Text(
           '${projected.route.days} $dayWord',
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 10,
-            color: ink,
-          ),
+          style: textMicro,
           maxLines: 1,
           overflow: TextOverflow.clip,
         ),
-        if (active)
-          const Text(
-            'ON THIS ROAD',
-            style: TextStyle(fontFamily: 'monospace', fontSize: 9, color: ink),
-            maxLines: 1,
-          ),
+        if (active) const Text('ON THIS ROAD', style: textMicro, maxLines: 1),
         Text(
           'DANGER ${projected.danger}/100',
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 10,
-            color: dim,
-          ),
+          style: textMicroDim,
           maxLines: 1,
           overflow: TextOverflow.clip,
         ),
@@ -193,31 +181,16 @@ class WorldRouteDiagram extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              _kindWord(node.kind),
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 9,
-                color: dim,
-              ),
-            ),
+            Text(_kindWord(node.kind), style: textMicroDim),
             Text(
               node.name,
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 11,
-                color: ink,
-              ),
+              style: textDetail,
               maxLines: 1,
               overflow: TextOverflow.clip,
             ),
             Text(
               state,
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 9,
-                color: dim,
-              ),
+              style: textMicroDim,
               maxLines: 1,
               overflow: TextOverflow.clip,
             ),
@@ -383,7 +356,7 @@ class _UnknownMarker extends StatelessWidget {
         color: panel,
         shape: CircleBorder(side: BorderSide(color: rule)),
       ),
-      child: const Text('?', style: mono),
+      child: const Text('?', style: textBody),
     ),
   );
 }

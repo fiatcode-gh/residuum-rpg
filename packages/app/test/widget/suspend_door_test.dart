@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/style/surfaces.dart';
+import 'package:residuum_app/world/world_screen.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -90,7 +92,13 @@ void main() {
 
       // assert
       expect(find.text('RESIDUUM'), findsOneWidget);
-      expect(find.text('Carried  40 gold'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(LabelledValue, 'Carried'),
+          matching: find.text('40 gold'),
+        ),
+        findsOneWidget,
+      );
       expect(app.saved!.run, isNotNull);
       expect(app.saved!.inside, isFalse);
     });
@@ -116,7 +124,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.textContaining('Health   6 /'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(worldHealthMeterKey),
+          matching: find.text('Health 6 / ${profile.maxHp}'),
+        ),
+        findsOneWidget,
+      );
       expect(app.saved!.profile.hero.hp, 6);
     });
 

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-import 'crawl_style.dart';
+import '../style/surfaces.dart';
+import '../style/tokens.dart';
 import 'game_bloc.dart';
 
 const hpMeterKey = Key('hp-meter');
@@ -21,21 +22,14 @@ class CrawlStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(
-      horizontal: crawlGutter,
-      vertical: crawlRhythm,
-    ),
+    padding: const EdgeInsets.symmetric(horizontal: gutter, vertical: rhythm),
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         _HeaderRow(state: state, dungeon: dungeon),
-        const SizedBox(height: crawlRhythm),
+        const SizedBox(height: rhythm),
         _ResourceRow(state: state),
-        const Divider(
-          height: crawlHairline,
-          thickness: crawlHairline,
-          color: crawlRule,
-        ),
+        const Divider(height: hairline, thickness: hairline, color: rule),
       ],
     ),
   );
@@ -54,13 +48,13 @@ class _HeaderRow extends StatelessWidget {
         child: FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text(_placeName(state, dungeon), style: crawlPlace),
+          child: Text(_placeName(state, dungeon), style: displayRoom),
         ),
       ),
       const SizedBox(width: 8),
       _BattleGlyph(state: state),
       const SizedBox(width: 4),
-      Text(_battleWord(state), style: crawlBody),
+      Text(_battleWord(state), style: textBody),
       const SizedBox(width: 8),
       if (!state.isEncounter)
         SizedBox(
@@ -69,7 +63,7 @@ class _HeaderRow extends StatelessWidget {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
-            child: Text('${state.depth} / ${state.deepest}', style: crawlBody),
+            child: Text('${state.depth} / ${state.deepest}', style: textBody),
           ),
         ),
     ],
@@ -90,80 +84,28 @@ class _ResourceRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _Meter(
+          child: ResourceMeter(
             key: hpMeterKey,
             label: 'HP',
             value: shown,
             ceiling: ceiling,
+            tint: MeterTint.health,
             note: _condition(fraction),
           ),
         ),
         if (state.game.knownSpells.isNotEmpty) ...[
           const SizedBox(width: 12),
           Expanded(
-            child: _Meter(
+            child: ResourceMeter(
               key: manaMeterKey,
               label: 'Mana',
               value: state.mana,
               ceiling: state.maxMana,
+              tint: MeterTint.mana,
               note: state.warded > 0 ? 'Ward ${state.warded}' : '',
             ),
           ),
         ],
-      ],
-    );
-  }
-}
-
-class _Meter extends StatelessWidget {
-  const _Meter({
-    required this.label,
-    required this.value,
-    required this.ceiling,
-    required this.note,
-    super.key,
-  });
-
-  final String label;
-  final int value;
-  final int ceiling;
-  final String note;
-
-  @override
-  Widget build(BuildContext context) {
-    final fill = ceiling == 0 ? 0.0 : (value / ceiling).clamp(0, 1).toDouble();
-    return Row(
-      children: [
-        Expanded(
-          flex: 8,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text('$label $value / $ceiling', style: crawlBody),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          flex: 6,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: LinearProgressIndicator(
-              value: fill,
-              minHeight: 8,
-              backgroundColor: crawlRule,
-              valueColor: const AlwaysStoppedAnimation(crawlInk),
-            ),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          flex: 6,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerRight,
-            child: Text(note, style: crawlBody),
-          ),
-        ),
       ],
     );
   }
@@ -189,7 +131,7 @@ class _BattleGlyph extends StatelessWidget {
         : null;
     return SizedBox(
       width: 18,
-      child: Text(glyph ?? '', textAlign: TextAlign.center, style: crawlBody),
+      child: Text(glyph ?? '', textAlign: TextAlign.center, style: textBody),
     );
   }
 }

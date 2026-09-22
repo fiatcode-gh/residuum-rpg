@@ -4,10 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
 
+import '../style/surfaces.dart';
+import '../style/tokens.dart'
+    show displayTitle, residuumTheme, rule, textBody, textLineDim;
 import '../town/town_bloc.dart';
 import '../town/town_style.dart';
 import 'world_bloc.dart';
 import 'world_route_diagram.dart';
+
+/// A handle onto the world's health meter for tests: the row itself carries
+/// no other stable identity now that it is a [ResourceMeter] rather than a
+/// pinned string.
+const worldHealthMeterKey = Key('world-health-meter');
 
 /// The overworld: where the hero is, where they could go, and what is here.
 ///
@@ -53,63 +61,66 @@ class WorldScreen extends StatelessWidget {
   final Future<void> Function() onOpenRoster;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      child: BlocBuilder<WorldBloc, WorldViewState>(
-        builder: (context, state) {
-          final world = context.read<WorldBloc>();
-          final destinations = state
-              .destinationsFrom(world.map)
-              .map((node) => node.id)
-              .toSet();
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: _Standing(state: state),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  children: [
-                    const Heading('The world'),
-                    BlocBuilder<TownBloc, TownViewState>(
-                      buildWhen: (before, after) =>
-                          before.profile != after.profile,
-                      builder: (context, _) => WorldRouteDiagram(
-                        map: world.map,
-                        whereabouts: state.world,
-                        destinations: destinations,
-                        dangerFor: world.dangerFor,
-                        onDestination: (node) =>
-                            _confirmTravel(context, node, state),
+  Widget build(BuildContext context) => Theme(
+    data: residuumTheme,
+    child: Scaffold(
+      body: SafeArea(
+        child: BlocBuilder<WorldBloc, WorldViewState>(
+          builder: (context, state) {
+            final world = context.read<WorldBloc>();
+            final destinations = state
+                .destinationsFrom(world.map)
+                .map((node) => node.id)
+                .toSet();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: _Standing(state: state),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    children: [
+                      const Heading('The world'),
+                      BlocBuilder<TownBloc, TownViewState>(
+                        buildWhen: (before, after) =>
+                            before.profile != after.profile,
+                        builder: (context, _) => WorldRouteDiagram(
+                          map: world.map,
+                          whereabouts: state.world,
+                          destinations: destinations,
+                          dangerFor: world.dangerFor,
+                          onDestination: (node) =>
+                              _confirmTravel(context, node, state),
+                        ),
                       ),
-                    ),
-                    Notice(state.notice),
-                    if (state.log.isNotEmpty) ...[
-                      const Heading('The road so far'),
-                      for (final line in state.log.reversed.take(8))
-                        Text(line, style: monoDim),
+                      Notice(state.notice),
+                      if (state.log.isNotEmpty) ...[
+                        const Heading('The road so far'),
+                        for (final line in state.log.reversed.take(8))
+                          Text(line, style: textLineDim),
+                      ],
+                      const SizedBox(height: 12),
                     ],
-                    const SizedBox(height: 12),
-                  ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                child: _Here(
-                  state: state,
-                  onEnterTown: onEnterTown,
-                  onEnterDungeon: onEnterDungeon,
-                  onResumeCrawl: onResumeCrawl,
-                  onDelveAnew: onDelveAnew,
-                  onOpenRoster: onOpenRoster,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  child: _Here(
+                    state: state,
+                    onEnterTown: onEnterTown,
+                    onEnterDungeon: onEnterDungeon,
+                    onResumeCrawl: onResumeCrawl,
+                    onDelveAnew: onDelveAnew,
+                    onOpenRoster: onOpenRoster,
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     ),
   );
@@ -130,32 +141,25 @@ class WorldScreen extends StatelessWidget {
     final days = road.days == 1 ? 'One day' : '${road.days} days';
     final go = await showDialog<bool>(
       context: context,
-      builder: (dialog) => AlertDialog(
-        title: Text(
-          'Walk to ${node.name}?',
-          style: const TextStyle(fontFamily: 'monospace'),
-        ),
-        content: Text(
-          '$days on the road. Every day is a chance of meeting something, '
-          'and the days pass whether you meet anything or not.',
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialog).pop(false),
-            child: const Text(
-              'Stay here',
-              style: TextStyle(fontFamily: 'monospace'),
-            ),
+      builder: (dialog) => Theme(
+        data: residuumTheme,
+        child: AlertDialog(
+          title: Text('Walk to ${node.name}?'),
+          content: Text(
+            '$days on the road. Every day is a chance of meeting something, '
+            'and the days pass whether you meet anything or not.',
           ),
-          TextButton(
-            onPressed: () => Navigator.of(dialog).pop(true),
-            child: const Text(
-              'Set out',
-              style: TextStyle(fontFamily: 'monospace'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialog).pop(false),
+              child: const Text('Stay here'),
             ),
-          ),
-        ],
+            TextButton(
+              onPressed: () => Navigator.of(dialog).pop(true),
+              child: const Text('Set out'),
+            ),
+          ],
+        ),
       ),
     );
     if (!(go ?? false)) return;
@@ -180,22 +184,20 @@ class _Standing extends StatelessWidget {
       builder: (context, town) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'RESIDUUM',
-            style: TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 22,
-              letterSpacing: 6,
-              color: ink,
-            ),
-          ),
+          const Text('RESIDUUM', style: displayTitle),
           const SizedBox(height: 6),
-          Text(where, style: mono),
-          Text(_dayLine(state, journey), style: monoDim),
+          Text(where, style: textBody),
+          Text(_dayLine(state, journey), style: textLineDim),
           const Divider(color: rule, height: 20),
-          Text('Health   ${town.hp} / ${town.maxHp}', style: mono),
-          Text('Carried  ${town.gold} gold', style: mono),
-          Text('Banked   ${town.bankedGold} gold', style: mono),
+          ResourceMeter(
+            key: worldHealthMeterKey,
+            label: 'Health',
+            value: town.hp,
+            ceiling: town.maxHp,
+            tint: MeterTint.health,
+          ),
+          LabelledValue(label: 'Carried', value: '${town.gold} gold'),
+          LabelledValue(label: 'Banked', value: '${town.bankedGold} gold'),
         ],
       ),
     );
@@ -272,7 +274,7 @@ class _HereState extends State<_Here> {
           padding: EdgeInsets.symmetric(vertical: 10),
           child: Text(
             'You are walking. There is nothing here.',
-            style: monoDim,
+            style: textLineDim,
           ),
         );
       }
@@ -283,7 +285,7 @@ class _HereState extends State<_Here> {
             padding: EdgeInsets.only(bottom: 6),
             child: Text(
               'You are part way there, and nothing is walking you.',
-              style: monoDim,
+              style: textLineDim,
             ),
           ),
           WorldDoor(
@@ -475,22 +477,22 @@ class _HereState extends State<_Here> {
   }) async {
     final answer = await showDialog<bool>(
       context: context,
-      builder: (dialog) => AlertDialog(
-        title: Text(title, style: const TextStyle(fontFamily: 'monospace')),
-        content: Text(
-          body,
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+      builder: (dialog) => Theme(
+        data: residuumTheme,
+        child: AlertDialog(
+          title: Text(title),
+          content: Text(body),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialog).pop(false),
+              child: Text(keep),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialog).pop(true),
+              child: Text(give),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialog).pop(false),
-            child: Text(keep, style: const TextStyle(fontFamily: 'monospace')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialog).pop(true),
-            child: Text(give, style: const TextStyle(fontFamily: 'monospace')),
-          ),
-        ],
       ),
     );
     return answer ?? false;
@@ -518,7 +520,7 @@ class _CampLost extends StatelessWidget {
     child: Text(
       'Your camp was overrun. Residue has refilled the wound, and the camp at '
       '$where is lost.',
-      style: monoDim,
+      style: textLineDim,
     ),
   );
 }
@@ -534,7 +536,7 @@ class _CampWarning extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const Padding(
     padding: EdgeInsets.only(bottom: 6),
-    child: Text('One more day and the camp is overrun.', style: monoDim),
+    child: Text('One more day and the camp is overrun.', style: textLineDim),
   );
 }
 
@@ -553,10 +555,7 @@ class WorldDoor extends StatelessWidget {
       style: FilledButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14),
       ),
-      child: Text(
-        label,
-        style: const TextStyle(fontFamily: 'monospace', fontSize: 15),
-      ),
+      child: Text(label),
     ),
   );
 }

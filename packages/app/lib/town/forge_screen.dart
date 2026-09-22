@@ -4,6 +4,7 @@ import 'package:residuum_core/core.dart';
 
 import '../art/art_assets.dart';
 import '../game/item_presentation.dart';
+import '../style/tokens.dart';
 import 'illustration.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
@@ -64,7 +65,7 @@ class _ForgeScreenState extends State<ForgeScreen> {
             const Heading('Materials'),
             MaterialRows(materials: state.materials),
             const Heading('Smelting'),
-            Text('$smeltCost ore makes 1 ingot.', style: mono),
+            Text('$smeltCost ore makes 1 ingot.', style: textBody),
             const SizedBox(height: 10),
             CountStepper(
               value: pending,
@@ -85,7 +86,7 @@ class _ForgeScreenState extends State<ForgeScreen> {
               state.smeltReason == null
                   ? 'The fire is hot and the ore is ready.'
                   : _capitalised(state.smeltReason!),
-              style: monoDim,
+              style: textLineDim,
             ),
             const Heading('The bench'),
             if (workable.isEmpty)
@@ -155,27 +156,23 @@ class _TemperRow extends StatelessWidget {
             children: [
               SizedBox(
                 width: markColumn,
-                child: Text(item.rarity.marking, style: mono),
+                child: Text(item.rarity.marking, style: textBody),
               ),
-              Expanded(child: Text(item.displayName, style: mono)),
+              Expanded(child: Text(item.displayName, style: textBody)),
               TextButton(
                 onPressed: reason == null ? onTemper : null,
-                style: TextButton.styleFrom(foregroundColor: ink),
-                child: const Text(
-                  'Temper',
-                  style: TextStyle(fontFamily: 'monospace', fontSize: 12),
-                ),
+                child: const Text('Temper'),
               ),
             ],
           ),
           Padding(
             padding: const EdgeInsets.only(left: markColumn),
-            child: Text(statLine(item), style: monoDim),
+            child: Text(statLine(item), style: textLineDim),
           ),
           if (reason != null)
             Padding(
               padding: const EdgeInsets.only(left: markColumn),
-              child: Text(reason!, style: monoDim),
+              child: Text(reason!, style: textLineDim),
             ),
           if (price != null)
             Padding(
@@ -183,7 +180,7 @@ class _TemperRow extends StatelessWidget {
               child: Text(
                 'Next tier: ${price.ingots} '
                 '${price.ingots == 1 ? 'ingot' : 'ingots'}.',
-                style: monoDim,
+                style: textLineDim,
               ),
             ),
         ],

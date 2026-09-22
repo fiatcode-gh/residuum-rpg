@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:residuum_core/core.dart';
 import 'package:residuum_app/game/event_messages.dart' show skillName;
+import 'package:residuum_core/core.dart';
 
+import '../style/tokens.dart';
 import 'town_bloc.dart';
 import 'town_style.dart';
 
@@ -39,9 +40,9 @@ class _SkillRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          SizedBox(width: 88, child: Text(skillName(skill), style: mono)),
+          SizedBox(width: 88, child: Text(skillName(skill), style: textBody)),
           const SizedBox(width: 12),
-          SizedBox(width: 24, child: Text('${state.level}', style: mono)),
+          SizedBox(width: 24, child: Text('${state.level}', style: textBody)),
           const SizedBox(width: 8),
           Expanded(
             child: ClipRRect(
@@ -54,7 +55,10 @@ class _SkillRow extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(width: 56, child: Text('${state.xp}/$cost', style: monoDim)),
+          SizedBox(
+            width: 56,
+            child: Text('${state.xp}/$cost', style: textLineDim),
+          ),
         ],
       ),
     );

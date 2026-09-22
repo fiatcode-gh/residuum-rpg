@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/event_messages.dart' show skillName;
 import 'package:residuum_app/notice/notice.dart';
+import 'package:residuum_app/style/surfaces.dart';
+import 'package:residuum_app/town/character_screen.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_app/town/town_screen.dart';
 import 'package:residuum_app/world/world_bloc.dart';
@@ -95,31 +97,96 @@ void main() {
 
       // assert
       final (attackMin, attackMax) = heroAttack(profile.hero, profile.loadout);
-      expect(find.text('Attack   $attackMin-$attackMax'), findsOneWidget);
+      final attackValue = find.descendant(
+        of: find.widgetWithText(LabelledValue, 'Attack'),
+        matching: find.text('$attackMin-$attackMax'),
+      );
+      final armourValue = find.descendant(
+        of: find.widgetWithText(LabelledValue, 'Armour'),
+        matching: find.text('${heroArmor(profile.loadout)}'),
+      );
+      final dodgeValue = find.descendant(
+        of: find.widgetWithText(LabelledValue, 'Dodge'),
+        matching: find.text('${heroDodgePercent(profile.loadout)}%'),
+      );
+      final speedValue = find.descendant(
+        of: find.widgetWithText(LabelledValue, 'Speed'),
+        matching: find.text('${heroSpeed(profile.hero, profile.loadout)}'),
+      );
+      for (final value in [attackValue, armourValue, dodgeValue, speedValue]) {
+        expect(value, findsOneWidget);
+      }
+
+      final healthMeter = find.byKey(characterHealthMeterKey);
+      expect(healthMeter, findsOneWidget);
       expect(
-        find.text('Armour   ${heroArmor(profile.loadout)}'),
+        find.descendant(
+          of: healthMeter,
+          matching: find.text('Health ${profile.hero.hp} / ${profile.maxHp}'),
+        ),
         findsOneWidget,
       );
       expect(
-        find.text('Dodge    ${heroDodgePercent(profile.loadout)}%'),
+        tester
+            .widget<LinearProgressIndicator>(
+              find.descendant(
+                of: healthMeter,
+                matching: find.byType(LinearProgressIndicator),
+              ),
+            )
+            .value,
+        profile.hero.hp / profile.maxHp,
+      );
+
+      final manaMeter = find.byKey(characterManaMeterKey);
+      expect(manaMeter, findsOneWidget);
+      final maxMana = heroMaxMana(profile.loadout);
+      expect(
+        find.descendant(
+          of: manaMeter,
+          matching: find.text('Mana $maxMana / $maxMana'),
+        ),
         findsOneWidget,
       );
       expect(
-        find.text('Speed    ${heroSpeed(profile.hero, profile.loadout)}'),
-        findsOneWidget,
+        tester
+            .widget<LinearProgressIndicator>(
+              find.descendant(
+                of: manaMeter,
+                matching: find.byType(LinearProgressIndicator),
+              ),
+            )
+            .value,
+        1.0,
       );
-      expect(
-        find.text('Health   ${profile.hero.hp}/${profile.maxHp}'),
-        findsOneWidget,
+
+      final spellsValue = find.descendant(
+        of: find.widgetWithText(LabelledValue, 'Spells known'),
+        matching: find.text('1'),
       );
-      expect(
-        find.text('Mana     ${heroMaxMana(profile.loadout)}'),
-        findsOneWidget,
+      final skillsValue = find.descendant(
+        of: find.widgetWithText(LabelledValue, 'Skills trained'),
+        matching: find.text('1/${SkillId.values.length}'),
       );
-      expect(find.text('Spells known    1'), findsOneWidget);
+      expect(spellsValue, findsOneWidget);
+      expect(skillsValue, findsOneWidget);
+
+      // assert - the label column holds still: a fixed-width slot, not a
+      // padded string. The panel indents its four rows by its own 12 dp
+      // padding (U15's, unchanged), so the panel's column and the two rows
+      // printed below it are two holds-still groups, not one.
+      final panelValueLefts = [
+        attackValue,
+        armourValue,
+        dodgeValue,
+        speedValue,
+      ].map((value) => tester.getTopLeft(value).dx).toList();
+      for (final left in panelValueLefts.skip(1)) {
+        expect(left, panelValueLefts.first);
+      }
       expect(
-        find.text('Skills trained  1/${SkillId.values.length}'),
-        findsOneWidget,
+        tester.getTopLeft(skillsValue).dx,
+        tester.getTopLeft(spellsValue).dx,
       );
       expect(find.byType(TabBar), findsNothing);
       for (final key in const [

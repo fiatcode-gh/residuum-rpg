@@ -4,6 +4,7 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../art/art_assets.dart';
+import '../style/tokens.dart';
 import '../world/world_bloc.dart';
 import 'illustration.dart';
 import 'town_bloc.dart';
@@ -55,7 +56,7 @@ class TavernScreen extends StatelessWidget {
               for (final line in world.log.reversed.take(6))
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Text(line, style: monoDim),
+                  child: Text(line, style: textLineDim),
                 ),
           ],
         );

@@ -15,6 +15,7 @@ import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
 import 'package:residuum_app/game/log_line.dart';
+import 'package:residuum_app/style/surfaces.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_app/world/world_bloc.dart';
 import 'package:residuum_app/world/world_route_diagram.dart';
@@ -622,7 +623,13 @@ void main() {
 
       // assert
       expect(find.text('At Northgate'), findsOneWidget);
-      expect(find.text('Carried  7 gold'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(LabelledValue, 'Carried'),
+          matching: find.text('7 gold'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Enter Northgate'), findsOneWidget);
       expect(app.saved!.active, 'hero-2');
     });
