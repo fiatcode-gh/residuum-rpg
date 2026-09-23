@@ -207,7 +207,9 @@ void main() {
       final forgeIllustration = tester
           .getTopLeft(find.byKey(forgeIllustrationKey))
           .dy;
-      final forgeHeading = tester.getTopLeft(find.text('MATERIALS')).dy;
+      final forgeHeading = tester
+          .getTopLeft(find.byKey(const ValueKey('forge-route-smelt')))
+          .dy;
       expect(forgeIllustration, greaterThan(forgeNotice));
       expect(forgeHeading, greaterThan(forgeIllustration));
 

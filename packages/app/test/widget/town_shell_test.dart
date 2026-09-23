@@ -115,6 +115,21 @@ void main() {
           findsOneWidget,
           reason: purpose,
         );
+        final medallion = find.byKey(Key('$key-medallion'));
+        expect(medallion, findsOneWidget, reason: '$key medallion');
+        expect(tester.getSize(medallion), const Size(44, 44));
+        expect(
+          find.descendant(of: medallion, matching: find.byType(Image)),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: medallion, matching: find.byType(Icon)),
+          findsNothing,
+        );
+        expect(
+          find.descendant(of: medallion, matching: find.byType(Text)),
+          findsNothing,
+        );
         positions.add(tester.getTopLeft(row).dy);
       }
       for (var i = 1; i < positions.length; i++) {

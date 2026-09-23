@@ -138,26 +138,18 @@ void main() {
         profile.hero.hp / profile.maxHp,
       );
 
-      final manaMeter = find.byKey(characterManaMeterKey);
-      expect(manaMeter, findsOneWidget);
       final maxMana = heroMaxMana(profile.loadout);
+      final manaValue = find.descendant(
+        of: find.widgetWithText(LabelledValue, 'Mana capacity'),
+        matching: find.text('$maxMana'),
+      );
+      expect(manaValue, findsOneWidget);
       expect(
         find.descendant(
-          of: manaMeter,
-          matching: find.text('Mana $maxMana / $maxMana'),
+          of: find.widgetWithText(LabelledValue, 'Mana capacity'),
+          matching: find.byType(LinearProgressIndicator),
         ),
-        findsOneWidget,
-      );
-      expect(
-        tester
-            .widget<LinearProgressIndicator>(
-              find.descendant(
-                of: manaMeter,
-                matching: find.byType(LinearProgressIndicator),
-              ),
-            )
-            .value,
-        1.0,
+        findsNothing,
       );
 
       final spellsValue = find.descendant(
@@ -295,14 +287,15 @@ void main() {
   });
 
   group('Town Spells route', () {
-    testWidgets('orders every known spell and offers no action', (
+    testWidgets('orders every known spell and keeps locked identities secret', (
       tester,
     ) async {
       // arrange
       await onAPhone(tester);
+      final knownIds = {bind.id, mend.id, firebolt.id};
       final town = await _openCharacterDoor(
         tester,
-        _hero(knownSpells: {bind.id, mend.id, firebolt.id}),
+        _hero(knownSpells: knownIds),
       );
       addTearDown(town.close);
 
@@ -310,6 +303,8 @@ void main() {
       await _tapRoute(tester, 'character-route-spells', 'Spells');
 
       // assert
+      expect(find.text('KNOWN SPELLS'), findsOneWidget);
+      expect(find.text('LOCKED SPELLS'), findsOneWidget);
       expect(find.text('Firebolt'), findsOneWidget);
       expect(find.text('Mend'), findsOneWidget);
       expect(find.text('Bind'), findsOneWidget);
@@ -324,7 +319,45 @@ void main() {
       );
       expect(find.text('Cast'), findsNothing);
       expect(find.textContaining('unavailable'), findsNothing);
-      expect(find.textContaining('locked'), findsNothing);
+      final lockedCount = spellsById.length - knownIds.length;
+      expect(
+        find.text(
+          lockedCount == 1
+              ? '1 spell remains locked'
+              : '$lockedCount spells remain locked',
+        ),
+        findsOneWidget,
+      );
+      final summary = find.byKey(const Key('spells-locked-summary'));
+      final summarySemantics = tester.getSemantics(
+        find.descendant(of: summary, matching: find.byType(Semantics)).last,
+      );
+      expect(summarySemantics.label, contains('Unknown until learned.'));
+      for (final spell in spellsById.values) {
+        if (!knownIds.contains(spell.id)) {
+          expect(find.text(spell.name), findsNothing);
+          expect(summarySemantics.label, isNot(contains(spell.name)));
+        }
+      }
+    });
+
+    testWidgets('all-known spells use the concise locked empty state', (
+      tester,
+    ) async {
+      // arrange
+      await onAPhone(tester);
+      final town = await _openCharacterDoor(
+        tester,
+        _hero(knownSpells: spellsById.keys.toSet()),
+      );
+      addTearDown(town.close);
+
+      // act
+      await _tapRoute(tester, 'character-route-spells', 'Spells');
+
+      // assert
+      expect(find.text('LOCKED SPELLS'), findsOneWidget);
+      expect(find.text('No spells remain locked.'), findsOneWidget);
     });
 
     testWidgets('shows the exact empty sentence', (tester) async {
@@ -337,6 +370,7 @@ void main() {
       await _tapRoute(tester, 'character-route-spells', 'Spells');
 
       // assert
+      expect(find.text('KNOWN SPELLS'), findsOneWidget);
       expect(find.text('You have not learned any spell yet.'), findsOneWidget);
     });
   });

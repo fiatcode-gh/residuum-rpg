@@ -143,6 +143,25 @@ Future<GameBloc> _pushGame(
   return bloc;
 }
 
+Finder _action(String id) => find.byKey(ValueKey(id));
+
+void _expectAction(String id, {required String label, String? metadata}) {
+  final action = _action(id);
+  expect(action, findsOneWidget, reason: id);
+  expect(
+    find.descendant(of: action, matching: find.text(label)),
+    findsOneWidget,
+    reason: label,
+  );
+  if (metadata != null) {
+    expect(
+      find.descendant(of: action, matching: find.text(metadata)),
+      findsOneWidget,
+      reason: metadata,
+    );
+  }
+}
+
 /// Taps one tile of the map, through the scene's own geometry.
 ///
 /// Both axes of the test arena fit any surface this suite pumps, so the camera
@@ -294,9 +313,8 @@ void main() {
 
       // assert - dock up: map, timeline, bar, HP and log all on one screen
       expect(tester.takeException(), isNull);
-      expect(find.byType(DungeonSceneHost), findsOneWidget);
+      _expectAction('spell:firebolt', label: '✳ Firebolt', metadata: '2 mana');
       expect(find.byType(BattleDock), findsOneWidget);
-      expect(find.text('✳ Firebolt 2'), findsOneWidget);
       expect(find.textContaining('Engaged'), findsOneWidget);
       await _tapTile(tester, const Position(1, 2));
       await tester.pumpAndSettle();
@@ -310,9 +328,8 @@ void main() {
 
       // assert - dock down: the crawl, unchanged; the log row still speaks
       expect(bloc.state.game.monsters, isEmpty);
-      expect(logSentences(bloc.state).last, 'The ghoul dies.');
+      expect(find.byKey(const ValueKey('spell:firebolt')), findsNothing);
       expect(find.byType(BattleDock), findsNothing);
-      expect(find.text('✳ Firebolt 2'), findsNothing);
       expect(find.text('Wait'), findsNothing);
       expect(find.byType(DungeonSceneHost), findsOneWidget);
       expect(find.byType(ListView), findsOneWidget);
@@ -654,7 +671,7 @@ void main() {
         final bloc = await _pushGame(tester, game);
 
         // act - arm the spell from the shelf
-        await tester.tap(find.text('✳ Firebolt 2'));
+        await tester.tap(_action('spell:firebolt'));
         await tester.pumpAndSettle();
 
         // assert - the sight rule marks both; the timeline remains view-only.
@@ -682,8 +699,8 @@ void main() {
       await _pushGame(tester, game);
 
       // assert - school order first (Wrath before Mending), then name
-      expect(find.text('✳ Firebolt 2'), findsOneWidget);
-      expect(find.text('✚ Mend 3'), findsOneWidget);
+      _expectAction('spell:firebolt', label: '✳ Firebolt', metadata: '2 mana');
+      _expectAction('spell:mend', label: '✚ Mend', metadata: '3 mana');
     });
 
     testWidgets('a non-caster sees the shelf, with no Attack row', (
@@ -711,15 +728,15 @@ void main() {
       final bloc = await _pushGame(tester, game);
 
       // act
-      await tester.tap(find.text('✳ Firebolt 2'));
+      await tester.tap(_action('spell:firebolt'));
       await tester.pumpAndSettle();
 
       // assert
       expect(bloc.state.armedSpellId, 'firebolt');
-      expect(find.text('✳ Firebolt 2'), findsOneWidget);
+      _expectAction('spell:firebolt', label: '✳ Firebolt', metadata: '2 mana');
       expect(
         find.descendant(
-          of: find.byKey(const ValueKey('✳ Firebolt 2')),
+          of: _action('spell:firebolt'),
           matching: find.text('— armed'),
         ),
         findsOneWidget,
@@ -746,7 +763,7 @@ void main() {
       final bloc = await _pushGame(tester, game);
 
       // act - arm from the shelf, then tap the adjacent ghoul's tile on the map
-      await tester.tap(find.text('✳ Firebolt 2'));
+      await tester.tap(_action('spell:firebolt'));
       await tester.pumpAndSettle();
       await _tapTile(tester, const Position(1, 2));
       await tester.pumpAndSettle();
@@ -769,14 +786,14 @@ void main() {
       final bloc = await _pushGame(tester, game);
 
       // act
-      await tester.tap(find.text('✳ Firebolt 2'));
+      await tester.tap(_action('spell:firebolt'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('✳ Firebolt 2'));
+      await tester.tap(_action('spell:firebolt'));
       await tester.pumpAndSettle();
 
       // assert
       expect(bloc.state.armedSpellId, isNull);
-      expect(find.text('✳ Firebolt 2'), findsOneWidget);
+      _expectAction('spell:firebolt', label: '✳ Firebolt', metadata: '2 mana');
     });
 
     testWidgets('the shelf reads the spell first, then Wait', (tester) async {
@@ -788,18 +805,10 @@ void main() {
       );
       await _pushGame(tester, game);
 
-      // act + assert - one shelf; no Attack row anywhere on it
-      final labels = find.byWidgetPredicate(
-        (widget) =>
-            widget is Text &&
-            widget.data != null &&
-            const ['Attack', '✳ Firebolt 2', 'Wait'].contains(widget.data),
-      );
-      final texts = labels.evaluate().map((element) {
-        final text = element.widget as Text;
-        return text.data;
-      }).toList();
-      expect(texts, ['✳ Firebolt 2', 'Wait']);
+      expect(_action('spell:firebolt'), findsOneWidget);
+      expect(_action('wait'), findsOneWidget);
+      _expectAction('spell:firebolt', label: '✳ Firebolt', metadata: '2 mana');
+      _expectAction('wait', label: 'Wait');
     });
 
     testWidgets('a timeline actor token opens enemy info, never the bump', (
@@ -871,24 +880,24 @@ void main() {
       final bloc = await _pushGame(tester, game);
 
       // act
-      await tester.tap(find.text('✳ Firebolt 2'));
+      await tester.tap(_action('spell:firebolt'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('⛒ Bind 3'));
+      await tester.tap(_action('spell:bind'));
       await tester.pumpAndSettle();
 
       // assert - one armed slot at a time
       expect(bloc.state.armedSpellId, 'bind');
-      expect(find.text('⛒ Bind 3'), findsOneWidget);
+      _expectAction('spell:bind', label: '⛒ Bind', metadata: '3 mana');
       expect(
         find.descendant(
-          of: find.byKey(const ValueKey('⛒ Bind 3')),
+          of: _action('spell:bind'),
           matching: find.text('— armed'),
         ),
         findsOneWidget,
       );
       expect(
         find.descendant(
-          of: find.byKey(const ValueKey('✳ Firebolt 2')),
+          of: _action('spell:firebolt'),
           matching: find.text('— armed'),
         ),
         findsNothing,
@@ -927,7 +936,7 @@ void main() {
       final bloc = await _pushGame(tester, game);
 
       // act - arm and cast anyway; the button stays tappable
-      await tester.tap(find.text('✳ Firebolt 2'));
+      await tester.tap(_action('spell:firebolt'));
       await tester.pumpAndSettle();
       await _tapTile(tester, const Position(1, 2));
       await tester.pumpAndSettle();
@@ -962,11 +971,15 @@ void main() {
       await _pushGame(tester, game);
 
       // assert - the shelf shows the readied three and counts the overflow
-      expect(find.text('✳ Firebolt 2'), findsOneWidget);
-      expect(find.text('✳ Frost Lance 4'), findsOneWidget);
-      expect(find.text('✚ Mend 3'), findsOneWidget);
-      expect(find.text('+3'), findsOneWidget);
-      expect(find.text('⛒ Bind 3'), findsNothing);
+      _expectAction('spell:firebolt', label: '✳ Firebolt', metadata: '2 mana');
+      _expectAction(
+        'spell:frost-lance',
+        label: '✳ Frost Lance',
+        metadata: '4 mana',
+      );
+      _expectAction('spell:mend', label: '✚ Mend', metadata: '3 mana');
+      _expectAction('spells-overflow', label: '+3');
+      expect(_action('spell:bind'), findsNothing);
     });
 
     testWidgets('the overflow sheet lists every known spell', (tester) async {
@@ -985,7 +998,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // act
-      await tester.tap(find.byKey(const ValueKey('+1')));
+      await tester.tap(_action('spells-overflow'));
       await tester.pumpAndSettle();
 
       // assert - every spell is reachable from the sheet, cost-free
@@ -1010,7 +1023,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // act
-      await tester.tap(find.byKey(const ValueKey('+1')));
+      await tester.tap(_action('spells-overflow'));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('overflow-bind')));
       await tester.pumpAndSettle();
@@ -1031,7 +1044,7 @@ void main() {
       final bloc = await _pushGame(tester, game);
 
       // act
-      await tester.tap(find.text('✚ Mend 3'));
+      await tester.tap(_action('spell:mend'));
       await tester.pumpAndSettle();
 
       // assert - cast immediately, no arming

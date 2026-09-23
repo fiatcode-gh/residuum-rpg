@@ -45,7 +45,7 @@ List<Item> _twoPotions() => const [
 
 /// The bottom-floor stairs scene: standing on `stairsUp`, loot underfoot,
 /// two potions carried — the five-control density the width arithmetic is
-/// argued against (`Pick up`, `Drink (2)`, `Pack (2)`, `Ascend <`, `Finish`).
+/// argued against (`Pick up`, `Drink` ×2, `Pack` ×2, `Ascend <`, `Finish`).
 GameState _stairsScene() {
   final map = FloorMap.parse(_dungeonArena);
   const heroAt = Position(1, 1);
@@ -72,7 +72,7 @@ GameState _stairsScene() {
 
 /// The outermost-ring road scene: a live monster not holding reach, loot
 /// underfoot, two potions carried — the road's own five-control density
-/// (`Pick up`, `Drink (2)`, `Pack (2)`, `Wait`, `Flee`).
+/// (`Pick up`, `Drink` ×2, `Pack` ×2, `Wait`, `Flee`).
 GameState _roadScene() {
   final map = FloorMap.parse(_roadArena);
   const heroAt = Position(0, 1);
@@ -197,45 +197,62 @@ void _expectNoSqueeze(WidgetTester tester) {
   }
 }
 
-Finder _chip(String label) => find.byKey(ValueKey(label));
+Finder _chip(String id) => find.byKey(ValueKey(id));
 
-void _expectIcon(String label) {
-  final chip = _chip(label);
-  expect(chip, findsOneWidget, reason: label);
+void _expectAction(String id, {required String label, String? metadata}) {
+  final chip = _chip(id);
+  expect(chip, findsOneWidget, reason: id);
   expect(
-    find.descendant(of: chip, matching: find.byType(Image)),
+    find.descendant(of: chip, matching: find.text(label)),
     findsOneWidget,
     reason: label,
   );
+  if (metadata != null) {
+    expect(
+      find.descendant(of: chip, matching: find.text(metadata)),
+      findsOneWidget,
+      reason: metadata,
+    );
+  }
 }
 
-void _expectNoIcon(String label) {
-  final chip = _chip(label);
-  expect(chip, findsOneWidget, reason: label);
+void _expectIcon(String id, {required String label, String? metadata}) {
+  _expectAction(id, label: label, metadata: metadata);
   expect(
-    find.descendant(of: chip, matching: find.byType(Image)),
-    findsNothing,
-    reason: label,
+    find.descendant(of: _chip(id), matching: find.byType(Image)),
+    findsOneWidget,
+    reason: id,
   );
 }
 
-/// The label of every chip under [actionRowKey], in the order the row lays
-/// them out (ascending top, then ascending left).
+void _expectNoIcon(String id, {required String label}) {
+  _expectAction(id, label: label);
+  expect(
+    find.descendant(of: _chip(id), matching: find.byType(Image)),
+    findsNothing,
+    reason: id,
+  );
+}
+
+/// The stable id of every chip under [actionRowKey], in layout order
+/// (ascending top, then ascending left).
 List<String> _controlOrder(WidgetTester tester) {
-  final labels = tester
-      .widgetList<Text>(
-        find.descendant(
-          of: find.descendant(
-            of: find.byKey(actionRowKey),
-            matching: find.byType(Wrap),
-          ),
-          matching: find.byType(Text),
-        ),
-      )
-      .map((text) => text.data!)
-      .toList();
+  final ids = [
+    'drink',
+    'pack',
+    'pick-up',
+    'gather',
+    'wait',
+    'flee',
+    'move-on',
+    'ascend',
+    'descend',
+    'leave-dungeon',
+    'spells-overflow',
+  ];
+  final visibleIds = ids.where((id) => _chip(id).evaluate().isNotEmpty);
   final positioned = [
-    for (final label in labels) (label, tester.getTopLeft(_chip(label))),
+    for (final id in visibleIds) (id, tester.getTopLeft(_chip(id))),
   ];
   positioned.sort((one, other) {
     final byDy = one.$2.dy.compareTo(other.$2.dy);
@@ -256,11 +273,11 @@ void main() {
       await _openCrawl(tester, game);
 
       // assert
-      expect(find.text('Pick up'), findsOneWidget);
-      expect(find.text('Drink (2)'), findsOneWidget);
-      expect(find.text('Pack (2)'), findsOneWidget);
-      expect(find.text('Ascend <'), findsOneWidget);
-      expect(find.text(doneControl), findsOneWidget);
+      _expectAction('pick-up', label: 'Pick up');
+      _expectAction('drink', label: 'Drink', metadata: '×2');
+      _expectAction('pack', label: 'Pack', metadata: '×2');
+      _expectAction('ascend', label: 'Ascend <');
+      _expectAction('leave-dungeon', label: doneControl);
       expect(tester.takeException(), isNull);
       _expectNoSqueeze(tester);
     });
@@ -275,11 +292,11 @@ void main() {
       await _openCrawl(tester, game);
 
       // assert
-      expect(find.text('Pick up'), findsOneWidget);
-      expect(find.text('Drink (2)'), findsOneWidget);
-      expect(find.text('Pack (2)'), findsOneWidget);
-      expect(find.text('Wait'), findsOneWidget);
-      expect(find.text('Flee'), findsOneWidget);
+      _expectAction('pick-up', label: 'Pick up');
+      _expectAction('drink', label: 'Drink', metadata: '×2');
+      _expectAction('pack', label: 'Pack', metadata: '×2');
+      _expectAction('wait', label: 'Wait');
+      _expectAction('flee', label: 'Flee');
       expect(tester.takeException(), isNull);
       _expectNoSqueeze(tester);
     });
@@ -297,11 +314,11 @@ void main() {
       await _openCrawl(tester, stairs);
 
       // assert
-      _expectIcon('Drink (2)');
-      _expectIcon('Pack (2)');
-      _expectIcon('Ascend <');
-      _expectNoIcon('Pick up');
-      _expectNoIcon(doneControl);
+      _expectIcon('drink', label: 'Drink', metadata: '×2');
+      _expectIcon('pack', label: 'Pack', metadata: '×2');
+      _expectIcon('ascend', label: 'Ascend <');
+      _expectNoIcon('pick-up', label: 'Pick up');
+      _expectNoIcon('leave-dungeon', label: doneControl);
 
       // arrange - the road scene is the only staged scene with Wait and Flee
       final road = _roadScene();
@@ -309,9 +326,8 @@ void main() {
       // act
       await _openCrawl(tester, road);
 
-      // assert
-      _expectIcon('Wait');
-      _expectNoIcon('Flee');
+      _expectIcon('wait', label: 'Wait');
+      _expectNoIcon('flee', label: 'Flee');
 
       // arrange - a third scene, staged only to reach Descend >
       final descend = _stairsDownScene();
@@ -319,8 +335,7 @@ void main() {
       // act
       await _openCrawl(tester, descend);
 
-      // assert
-      _expectIcon('Descend >');
+      _expectIcon('descend', label: 'Descend >');
       _expectNoSqueeze(tester);
     });
 
@@ -334,8 +349,8 @@ void main() {
         await _openCrawl(tester, game);
 
         // assert
-        expect(find.bySemanticsLabel('Drink (2)'), findsOneWidget);
-        expect(find.bySemanticsLabel('Pack (2)'), findsOneWidget);
+        expect(find.bySemanticsLabel('Drink ×2'), findsOneWidget);
+        expect(find.bySemanticsLabel('Pack ×2'), findsOneWidget);
         expect(find.bySemanticsLabel('Ascend <'), findsOneWidget);
       } finally {
         handle.dispose();
@@ -349,9 +364,9 @@ void main() {
       // act
       await _openCrawl(tester, game);
 
-      // assert - the word and the icon are unchanged, only the tap is gone
-      final drink = _chip('Drink (2)');
+      final drink = _chip('drink');
       expect(drink, findsOneWidget);
+      _expectAction('drink', label: 'Drink', metadata: '×2');
       final inkWell = tester.widget<InkWell>(
         find.descendant(of: drink, matching: find.byType(InkWell)),
       );
@@ -393,13 +408,13 @@ void main() {
       final scenes = <String, (GameState, List<String>)>{
         'stairs': (
           _stairsScene(),
-          ['Pick up', 'Drink (2)', 'Pack (2)', 'Ascend <', doneControl],
+          ['pick-up', 'drink', 'pack', 'ascend', 'leave-dungeon'],
         ),
-        'road': (
-          _roadScene(),
-          ['Pick up', 'Drink (2)', 'Pack (2)', 'Wait', 'Flee'],
+        'road': (_roadScene(), ['pick-up', 'drink', 'pack', 'wait', 'flee']),
+        'stairs down': (
+          _stairsDownScene(),
+          ['pack', 'descend', 'leave-dungeon'],
         ),
-        'stairs down': (_stairsDownScene(), ['Pack (0)', 'Descend >', 'Leave']),
       };
 
       for (final entry in scenes.entries) {

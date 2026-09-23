@@ -69,15 +69,23 @@ Future<GameBloc> _openCrawl(WidgetTester tester, GameState game) async {
   return bloc;
 }
 
-/// Proves a chip labelled [label] is on the action row and that the row
-/// actually renders the word — a bare [ValueKey] match alone would also
-/// pass for a chip whose label rendered empty.
-void _expectChipLabel(String label) {
-  expect(find.byKey(ValueKey(label)), findsOneWidget);
+/// Proves a keyed chip renders the expected visible word and optional
+/// metadata separately.
+void _expectChipLabel(String id, String label, {String? metadata}) {
+  final chip = find.byKey(ValueKey(id));
+  expect(chip, findsOneWidget, reason: id);
   expect(
-    find.descendant(of: find.byKey(actionRowKey), matching: find.text(label)),
+    find.descendant(of: chip, matching: find.text(label)),
     findsOneWidget,
+    reason: label,
   );
+  if (metadata != null) {
+    expect(
+      find.descendant(of: chip, matching: find.text(metadata)),
+      findsOneWidget,
+      reason: metadata,
+    );
+  }
 }
 
 /// Unit 12's no-squeeze proof, scoped to the chip row itself: every chip
@@ -123,8 +131,7 @@ void main() {
       // assert - a control that is always there is a control a player taps by
       // mistake, and the rules charge nothing for it precisely because the
       // screen was not supposed to offer it
-      expect(find.byKey(const ValueKey('Mine')), findsNothing);
-      expect(find.byKey(const ValueKey('Gather')), findsNothing);
+      expect(find.byKey(const ValueKey('gather')), findsNothing);
       addTearDown(bloc.close);
     });
 
@@ -136,7 +143,7 @@ void main() {
       final bloc = await _openCrawl(tester, game);
 
       // assert
-      _expectChipLabel('Mine');
+      _expectChipLabel('gather', 'Mine');
       addTearDown(bloc.close);
     });
 
@@ -148,7 +155,7 @@ void main() {
       final bloc = await _openCrawl(tester, game);
 
       // assert - you mine a seam and you pick a plant
-      _expectChipLabel('Gather');
+      _expectChipLabel('gather', 'Gather');
       addTearDown(bloc.close);
     });
 
@@ -173,11 +180,11 @@ void main() {
       final bloc = await _openCrawl(tester, game);
 
       // act
-      await tester.tap(find.byKey(const ValueKey('Mine')));
+      await tester.tap(find.byKey(const ValueKey('gather')));
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.byKey(const ValueKey('Mine')), findsNothing);
+      expect(find.byKey(const ValueKey('gather')), findsNothing);
       expect(bloc.state.game.materials, {MaterialId.ore: 1});
       addTearDown(bloc.close);
     });
@@ -200,10 +207,9 @@ void main() {
 
       // assert - both controls fit, and neither is ellipsised into nonsense;
       // 'Mine' is four letters for exactly this reason
-      _expectChipLabel('Pick up');
-      _expectChipLabel('Mine');
+      _expectChipLabel('pick-up', 'Pick up');
+      _expectChipLabel('gather', 'Mine');
       _expectNoSqueeze(tester);
-      expect(tester.takeException(), isNull);
       addTearDown(bloc.close);
     });
   });

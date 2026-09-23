@@ -47,6 +47,12 @@ class TavernScreen extends StatelessWidget {
                 marking: '[!]',
                 name: 'Ask about the roads',
                 action: 'Ask $rumorPrice',
+                details: [
+                  town.gold >= rumorPrice
+                      ? 'Affordable — costs $rumorPrice gold.'
+                      : 'Need ${rumorPrice - town.gold} more gold — '
+                            'costs $rumorPrice gold.',
+                ],
                 onPressed: () => _ask(context, world, town),
               ),
             const Heading('What you have been told'),

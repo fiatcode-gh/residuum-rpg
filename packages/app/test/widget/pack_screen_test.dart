@@ -89,13 +89,17 @@ Future<GameBloc> _openCrawlAndPack(WidgetTester tester, GameState game) async {
     ),
   );
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Pack (${game.inventory.length})'));
+  await tester.tap(find.byKey(const ValueKey('pack')));
   await tester.pumpAndSettle();
   return bloc;
 }
 
-ChoiceChip _filter(WidgetTester tester, String name) =>
-    tester.widget<ChoiceChip>(find.byKey(Key('pack-filter-$name')));
+bool _filterSelected(WidgetTester tester, String name) =>
+    tester
+        .getSemantics(find.byKey(Key('pack-filter-$name')))
+        .flagsCollection
+        .isSelected ==
+    ui.Tristate.isTrue;
 
 List<String> _inventoryIds(GameState game) => [
   for (final item in game.inventory) item.id,
@@ -147,15 +151,9 @@ void main() {
       final semanticsBefore = tester.getSemantics(allFilter);
       expect(semanticsBefore.flagsCollection.isSelected, ui.Tristate.isTrue);
       expect(semanticsBefore.flagsCollection.isEnabled, ui.Tristate.isTrue);
-      final sectionLabels = const [
-        'WEAPONS',
-        'ARMOUR',
-        'POTIONS',
-        'BOOKS',
-        'Materials',
-      ];
-      for (final section in sectionLabels) {
-        expect(find.text(section), findsOneWidget);
+      expect(find.text('Materials'), findsOneWidget);
+      for (final section in const ['WEAPONS', 'ARMOUR', 'POTIONS', 'BOOKS']) {
+        expect(find.text(section), findsNothing);
       }
 
       // act
@@ -165,12 +163,9 @@ void main() {
       // assert
       expect(find.byKey(const Key('pack-filter-all')), findsOneWidget);
       expect(find.byKey(const Key('pack-filter-weapons')), findsOneWidget);
-      expect(find.byKey(const Key('pack-filter-armour')), findsOneWidget);
-      expect(find.byKey(const Key('pack-filter-potions')), findsOneWidget);
-      expect(find.byKey(const Key('pack-filter-books')), findsOneWidget);
-      expect(find.byKey(const Key('pack-filter-materials')), findsOneWidget);
-      expect(find.byType(ChoiceChip).first, findsOneWidget);
-      expect(_filter(tester, 'all').selected, isTrue);
+      expect(find.byType(ChoiceChip), findsNothing);
+      expect(find.byType(Chip), findsNothing);
+      expect(_filterSelected(tester, 'all'), isTrue);
       final selectedSemantics = tester.getSemantics(
         find.byKey(const Key('pack-filter-all')),
       );
@@ -183,16 +178,11 @@ void main() {
         'books',
         'materials',
       ]) {
-        expect(_filter(tester, filter).selected, isFalse);
+        expect(_filterSelected(tester, filter), isFalse);
       }
-      for (final section in const [
-        'WEAPONS',
-        'ARMOUR',
-        'POTIONS',
-        'BOOKS',
-        'Materials',
-      ]) {
-        expect(find.text(section), findsOneWidget);
+      expect(find.text('Materials'), findsOneWidget);
+      for (final section in const ['WEAPONS', 'ARMOUR', 'POTIONS', 'BOOKS']) {
+        expect(find.text(section), findsNothing);
       }
       expect(find.widgetWithText(LabelledValue, 'Attack'), findsNothing);
       expect(find.text('Take off'), findsNothing);
@@ -205,6 +195,7 @@ void main() {
     'filters Books and Materials without rebuilding item categories',
     (tester) async {
       // arrange
+
       final bloc = await _openPack(
         tester,
         _crawl(
@@ -243,6 +234,25 @@ void main() {
       }
     },
   );
+  testWidgets(
+    'an explicitly selected empty category keeps one empty sentence',
+    (tester) async {
+      // arrange
+      final bloc = await _openPack(tester, _crawl());
+      addTearDown(bloc.close);
+
+      // act
+      await tester.tap(find.byKey(const Key('pack-filter-books')));
+      await tester.pump();
+
+      // assert
+      expect(find.text('BOOKS'), findsOneWidget);
+      expect(find.text('You are carrying nothing to read.'), findsOneWidget);
+      expect(find.textContaining('nothing you could swing'), findsNothing);
+      expect(find.textContaining('nothing you could wear'), findsNothing);
+      expect(find.textContaining('nothing you could drink'), findsNothing);
+    },
+  );
 
   testWidgets('filter and navigation are transient and spend no turn', (
     tester,
@@ -258,11 +268,11 @@ void main() {
     await tester.pump();
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Pack (0)'));
+    await tester.tap(find.byKey(const ValueKey('pack')));
     await tester.pumpAndSettle();
 
     // assert
-    expect(_filter(tester, 'all').selected, isTrue);
+    expect(_filterSelected(tester, 'all'), isTrue);
     expect(bloc.state.game, same(gameBefore));
     expect(bloc.state.log, same(logBefore));
   });
@@ -627,7 +637,7 @@ void main() {
       // assert
       expect(town.state.profile.equipment[EquipSlot.mainHand]?.id, 'sword');
       expect(town.state.profile.inventory, isEmpty);
-      expect(_filter(tester, 'weapons').selected, isTrue);
+      expect(_filterSelected(tester, 'weapons'), isTrue);
     });
 
     testWidgets('wear refusal is exact and does not invent crawl actions', (
@@ -684,7 +694,7 @@ void main() {
         town.state.profile.inventory.map((item) => item.id),
         isNot(contains('book')),
       );
-      expect(_filter(tester, 'books').selected, isTrue);
+      expect(_filterSelected(tester, 'books'), isTrue);
       expect(find.text('needs Wrath 4'), findsOneWidget);
       final gatedRead = tester.widget<TextButton>(
         find.byKey(const Key('pack-read-gated')),

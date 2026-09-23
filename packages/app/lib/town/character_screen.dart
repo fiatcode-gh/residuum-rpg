@@ -16,10 +16,6 @@ import 'town_style.dart';
 /// [ResourceMeter] rather than a pinned string.
 const characterHealthMeterKey = Key('character-health-meter');
 
-/// A handle onto the character screen's mana meter for tests, for the same
-/// reason as [characterHealthMeterKey].
-const characterManaMeterKey = Key('character-mana-meter');
-
 class CharacterScreen extends StatelessWidget {
   const CharacterScreen({super.key});
   @override
@@ -57,49 +53,29 @@ class CharacterScreen extends StatelessWidget {
               value: '$trained/${SkillId.values.length}',
             ),
             const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  key: const Key('character-route-gear'),
-                  onPressed: () => _open(context, const GearScreen()),
-                  child: const Text('Gear'),
-                ),
-              ),
+            FramedRow(
+              key: const Key('character-route-gear'),
+              title: 'Gear',
+              medallionKey: const Key('character-route-gear-medallion'),
+              onPressed: () => _open(context, const GearScreen()),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  key: const Key('character-route-spells'),
-                  onPressed: () => _open(context, const SpellsScreen()),
-                  child: const Text('Spells'),
-                ),
-              ),
+            FramedRow(
+              key: const Key('character-route-spells'),
+              title: 'Spells',
+              medallionKey: const Key('character-route-spells-medallion'),
+              onPressed: () => _open(context, const SpellsScreen()),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  key: const Key('character-route-skills'),
-                  onPressed: () => _open(context, const SkillsScreen()),
-                  child: const Text('Skills'),
-                ),
-              ),
+            FramedRow(
+              key: const Key('character-route-skills'),
+              title: 'Skills',
+              medallionKey: const Key('character-route-skills-medallion'),
+              onPressed: () => _open(context, const SkillsScreen()),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  key: const Key('character-route-pack'),
-                  onPressed: () => _open(context, const TownPackScreen()),
-                  child: const Text('Pack'),
-                ),
-              ),
+            FramedRow(
+              key: const Key('character-route-pack'),
+              title: 'Pack',
+              medallionKey: const Key('character-route-pack-medallion'),
+              onPressed: () => _open(context, const TownPackScreen()),
             ),
           ],
         );
@@ -157,13 +133,7 @@ class _Stats extends StatelessWidget {
           ceiling: maxHp,
           tint: MeterTint.health,
         ),
-        ResourceMeter(
-          key: characterManaMeterKey,
-          label: 'Mana',
-          value: mana,
-          ceiling: mana,
-          tint: MeterTint.mana,
-        ),
+        LabelledValue(label: 'Mana capacity', value: '$mana'),
       ],
     ),
   );

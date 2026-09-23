@@ -60,6 +60,34 @@ void main() {
       expect(find.text('[!]'), findsOneWidget);
       expect(find.text('Ask about the roads'), findsOneWidget);
       expect(find.text('Ask $rumorPrice'), findsOneWidget);
+      expect(find.text('Affordable — costs $rumorPrice gold.'), findsOneWidget);
+    });
+
+    testWidgets('shows the exact unaffordable cue and keeps Ask live', (
+      tester,
+    ) async {
+      final (town, world) = await _openTavern(
+        tester,
+        profile: newProfile(worldSeed: 4).copyWith(gold: rumorPrice - 1),
+      );
+      final goldBefore = town.state.profile.gold;
+      final discoveredBefore = world.state.world.discovered.length;
+
+      expect(
+        find.text('Need 1 more gold — costs $rumorPrice gold.'),
+        findsOneWidget,
+      );
+      final ask = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Ask $rumorPrice'),
+      );
+      expect(ask.onPressed, isNotNull);
+
+      await tester.tap(find.text('Ask $rumorPrice'));
+      await tester.pumpAndSettle();
+
+      expect(town.state.profile.gold, goldBefore);
+      expect(world.state.world.discovered.length, discoveredBefore);
+      expect(find.text('— you cannot afford that.'), findsOneWidget);
     });
 
     testWidgets('the exhausted line, when every place is already discovered', (

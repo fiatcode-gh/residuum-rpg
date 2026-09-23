@@ -236,7 +236,9 @@ List<CrawlAction> _actionsFor(
   return [
     if (isBattleOpen && firstPotion != null)
       CrawlAction(
-        label: 'Drink (${state.potionCount})',
+        id: 'drink',
+        label: 'Drink',
+        metadata: '×${state.potionCount}',
         icon: ActionIcon.potion,
         onPressed: state.game.isGameOver
             ? null
@@ -245,9 +247,9 @@ List<CrawlAction> _actionsFor(
     if (isBattleOpen)
       for (final spell in readied)
         CrawlAction(
-          label:
-              '${spell.school.schoolMarking} ${spell.name} '
-              '${spell.manaCost}',
+          id: 'spell:${spell.id}',
+          label: '${spell.school.schoolMarking} ${spell.name}',
+          metadata: '${spell.manaCost} mana',
           icon: ActionIcon.forSpell(spell.id),
           armable: true,
           armed: state.armedSpellId == spell.id,
@@ -255,36 +257,43 @@ List<CrawlAction> _actionsFor(
         ),
     if (isBattleOpen && state.knownSpells.length > readiedSpellCount)
       CrawlAction(
+        id: 'spells-overflow',
         label: '+${state.knownSpells.length - readiedSpellCount}',
-        icon: ActionIcon.more,
         onPressed: () => _openSpellsOverflow(context, bloc, state),
       ),
     if (isBattleOpen)
       CrawlAction(
+        id: 'wait',
         label: 'Wait',
         icon: ActionIcon.wait,
         onPressed: () => bloc.add(const WaitPressed()),
       ),
     if (state.canPickUp)
       CrawlAction(
+        id: 'pick-up',
         label: 'Pick up',
         onPressed: () => bloc.add(const PickUpPressed()),
       ),
     if (state.canGather)
       CrawlAction(
+        id: 'gather',
         label: node!.verb,
         onPressed: () => bloc.add(const GatherPressed()),
       ),
     if (!isBattleOpen && firstPotion != null)
       CrawlAction(
-        label: 'Drink (${state.potionCount})',
+        id: 'drink',
+        label: 'Drink',
+        metadata: '×${state.potionCount}',
         icon: ActionIcon.potion,
         onPressed: state.game.isGameOver
             ? null
             : () => bloc.add(const QuickDrinkPressed()),
       ),
     CrawlAction(
-      label: 'Pack (${state.game.inventory.length})',
+      id: 'pack',
+      label: 'Pack',
+      metadata: '×${state.game.inventory.length}',
       icon: ActionIcon.pack,
       onPressed: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
@@ -295,35 +304,41 @@ List<CrawlAction> _actionsFor(
     ),
     if (state.isEncounter && !state.isRoadClear && !isBattleOpen)
       CrawlAction(
+        id: 'wait',
         label: 'Wait',
         icon: ActionIcon.wait,
         onPressed: () => bloc.add(const WaitPressed()),
       ),
     if (state.canFlee)
       CrawlAction(
+        id: 'flee',
         label: 'Flee',
         onPressed: () => bloc.add(const FleePressed()),
       ),
     if (state.isRoadClear)
       CrawlAction(
+        id: 'move-on',
         label: 'Move on',
         onPressed: () =>
             leaveEncounter(context, state, EncounterEnding.cleared),
       ),
     if (state.canAscend)
       CrawlAction(
+        id: 'ascend',
         label: 'Ascend <',
         icon: ActionIcon.ascend,
         onPressed: () => bloc.add(const AscendPressed()),
       ),
     if (state.canDescend)
       CrawlAction(
+        id: 'descend',
         label: 'Descend >',
         icon: ActionIcon.descend,
         onPressed: () => bloc.add(const DescendPressed()),
       ),
     if (state.canLeave)
       CrawlAction(
+        id: 'leave-dungeon',
         label: ending ? doneControl : 'Leave',
         onPressed: () => ending
             ? _confirmCompletion(context, state)

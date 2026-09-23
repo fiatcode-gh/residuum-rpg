@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 
 import '../notice/notice.dart';
-import '../style/surfaces.dart' show LabelledValue;
+import '../style/surfaces.dart' show FramedRow, LabelledValue;
 import '../style/tokens.dart';
 
 /// The width of every leading mark column in the town.
@@ -63,6 +63,7 @@ class ItemRow extends StatelessWidget {
     required this.name,
     required this.action,
     required this.onPressed,
+    this.details = const [],
     this.reason,
     super.key,
   });
@@ -74,6 +75,9 @@ class ItemRow extends StatelessWidget {
   final String action;
 
   final VoidCallback? onPressed;
+
+  /// Additional detail lines shown below the item name in their input order.
+  final List<String> details;
 
   /// Why the button is dead, drawn only while it is.
   ///
@@ -88,43 +92,20 @@ class ItemRow extends StatelessWidget {
   final String? reason;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 3),
-    child: Row(
-      children: [
-        SizedBox(
-          width: markColumn,
-          child: Text(marking, style: textLineDim, textAlign: TextAlign.center),
+  Widget build(BuildContext context) => FramedRow(
+    title: name,
+    details: [...details, if (onPressed == null && reason != null) reason!],
+    medallion: Text(marking, style: textLineDim, textAlign: TextAlign.center),
+    trailing: SizedBox(
+      width: 104,
+      child: FilledButton(
+        onPressed: onPressed,
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+          textStyle: textLabel,
         ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                name,
-                style: textBody,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (onPressed == null && reason != null)
-                Text(reason!, style: textLineDim),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 104,
-          child: FilledButton(
-            onPressed: onPressed,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-              textStyle: textLabel,
-            ),
-            child: Text(action, maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-        ),
-      ],
+        child: Text(action, maxLines: 1, overflow: TextOverflow.ellipsis),
+      ),
     ),
   );
 }

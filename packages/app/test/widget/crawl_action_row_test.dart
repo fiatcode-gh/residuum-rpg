@@ -75,7 +75,7 @@ GameState _battleScene() {
 }
 
 /// The bottom-floor stairs scene: exploration's own typical density —
-/// `Pick up`, `Drink (2)`, `Pack (2)`, `Ascend <`, `Finish`.
+/// `Pick up`, `Drink`, `Pack`, `Ascend <`, `Finish` with count metadata.
 GameState _explorationTypicalScene() {
   final map = FloorMap.parse(_arena);
   const heroAt = Position(1, 1);
@@ -101,9 +101,8 @@ GameState _explorationTypicalScene() {
 }
 
 /// A four-spell combat scene *without* `Frost Lance` — kept only to prove
-/// the broken-word fault: at four columns today, `✳ Firebolt 2` renders as
-/// `✳ Fireb` / `olt 2` because Skia's break-all layout keeps the rendered
-/// paragraph inside its box even though the word does not fit whole.
+/// the visible `✳ Firebolt` label and separate `2 mana` metadata remain
+/// whole at four columns; the old composed text could hide broken words.
 GameState _combatSplitWordScene() {
   final map = FloorMap.parse(_arena);
   const heroAt = Position(1, 1);
@@ -391,13 +390,123 @@ void main() {
       // act
       await _openCrawl(tester, game);
 
-      // assert
-      expect(find.text('Drink (1)'), findsOneWidget);
+      expect(find.byKey(const ValueKey('drink')), findsOneWidget);
+      expect(find.text('Drink'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('drink')),
+          matching: find.text('×1'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('wait')), findsOneWidget);
       expect(find.text('Wait'), findsOneWidget);
       expect(find.byKey(actionRowKey), findsOneWidget);
       expect(find.byKey(const Key('battle-shelf')), findsNothing);
     },
   );
+  testWidgets('stable ids retain chip elements while display fields change', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CrawlActionRow(
+            notes: const [],
+            actions: [
+              CrawlAction(
+                id: 'drink',
+                label: 'Drink',
+                metadata: '×1',
+                onPressed: () {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    final before = tester.element(find.byKey(const ValueKey('drink')));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CrawlActionRow(
+            notes: const [],
+            actions: [
+              CrawlAction(
+                id: 'drink',
+                label: 'Potion',
+                metadata: '×9',
+                onPressed: () {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.element(find.byKey(const ValueKey('drink'))), same(before));
+    expect(find.text('Potion'), findsOneWidget);
+    expect(find.text('×9'), findsOneWidget);
+  });
+
+  testWidgets('ids, semantics and overflow stay independent of display text', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CrawlActionRow(
+            notes: const [],
+            actions: [
+              CrawlAction(id: 'first', label: 'Same', onPressed: () {}),
+              CrawlAction(
+                id: 'second',
+                label: 'Same',
+                metadata: '×2',
+                onPressed: () {},
+              ),
+              CrawlAction(id: 'spells-overflow', label: '+3', onPressed: () {}),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey('first')), findsOneWidget);
+    expect(find.byKey(const ValueKey('second')), findsOneWidget);
+    expect(find.bySemanticsLabel('Same ×2'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('spells-overflow')),
+        matching: find.byType(Image),
+      ),
+      findsNothing,
+    );
+    expect(find.text('+3'), findsOneWidget);
+    semantics.dispose();
+  });
+
+  testWidgets('duplicate action ids assert even when labels differ', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CrawlActionRow(
+            notes: const [],
+            actions: [
+              CrawlAction(id: 'same', label: 'One', onPressed: () {}),
+              CrawlAction(id: 'same', label: 'Two', onPressed: () {}),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isA<AssertionError>());
+  });
 
   testWidgets(
     'every chip in a row shares one width and height, icon over word',
@@ -410,15 +519,9 @@ void main() {
       await _openCrawl(tester, game);
 
       // assert - even widths and heights across the whole row
-      const labels = [
-        'Pick up',
-        'Drink (2)',
-        'Pack (2)',
-        'Ascend <',
-        doneControl,
-      ];
+      const ids = ['pick-up', 'drink', 'pack', 'ascend', 'leave-dungeon'];
       final rects = [
-        for (final label in labels) tester.getRect(find.byKey(ValueKey(label))),
+        for (final id in ids) tester.getRect(find.byKey(ValueKey(id))),
       ];
       for (final rect in rects.skip(1)) {
         expect(rect.width, closeTo(rects.first.width, 0.01));
@@ -426,15 +529,21 @@ void main() {
       }
 
       // assert - every icon-bearing chip carries its icon above its word
-      for (final label in ['Drink (2)', 'Pack (2)', 'Ascend <']) {
-        final chip = find.byKey(ValueKey(label));
+      for (final entry in {
+        'Drink': 'drink',
+        'Pack': 'pack',
+        'Ascend <': 'ascend',
+      }.entries) {
+        final chip = find.byKey(ValueKey(entry.value));
         final imageTop = tester
             .getTopLeft(find.descendant(of: chip, matching: find.byType(Image)))
             .dy;
         final textTop = tester
-            .getTopLeft(find.descendant(of: chip, matching: find.text(label)))
+            .getTopLeft(
+              find.descendant(of: chip, matching: find.text(entry.key)),
+            )
             .dy;
-        expect(imageTop, lessThan(textTop), reason: label);
+        expect(imageTop, lessThan(textTop), reason: entry.key);
       }
     },
   );
@@ -470,33 +579,40 @@ void main() {
     );
   });
 
-  testWidgets(
-    'arming a spell chip adds its own line, a heavier border, and never '
-    'reflows the map',
-    (tester) async {
-      // arrange
-      await onAPhone(tester);
-      final game = _battleScene();
-      await _openCrawl(tester, game);
-      final mapRectBefore = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      final firebolt = find.byKey(const ValueKey('✳ Firebolt 2'));
-      final wait = find.byKey(const ValueKey('Wait'));
-      final unarmedBorder = _borderOf(tester, wait);
+  testWidgets('arming and disarming a spell chip never reflows the map', (
+    tester,
+  ) async {
+    // arrange
+    await onAPhone(tester);
+    final game = _battleScene();
+    await _openCrawl(tester, game);
+    final mapRectBefore = tester.getRect(find.byKey(dungeonSceneSlotKey));
+    final firebolt = find.byKey(const ValueKey('spell:firebolt'));
+    final wait = find.byKey(const ValueKey('wait'));
+    final unarmedBorder = _borderOf(tester, wait);
 
-      // act
-      await tester.tap(firebolt);
-      await tester.pumpAndSettle();
+    // act
+    await tester.tap(firebolt);
+    await tester.pumpAndSettle();
 
-      // assert
-      expect(find.text('✳ Firebolt 2'), findsOneWidget);
-      expect(find.text('— armed'), findsOneWidget);
-      expect(
-        _borderOf(tester, firebolt).width,
-        greaterThan(unarmedBorder.width),
-      );
-      expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRectBefore);
-    },
-  );
+    // assert
+    expect(find.text('✳ Firebolt'), findsOneWidget);
+    expect(find.text('2 mana'), findsOneWidget);
+    expect(_borderOf(tester, firebolt).width, greaterThan(unarmedBorder.width));
+    expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRectBefore);
+
+    // act - tapping the armed chip again disarms it.
+    await tester.tap(firebolt);
+    await tester.pumpAndSettle();
+
+    // assert
+    expect(find.text('— armed'), findsNothing);
+    expect(
+      _borderOf(tester, firebolt).width,
+      closeTo(unarmedBorder.width, 0.01),
+    );
+    expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRectBefore);
+  });
 
   testWidgets(
     'the chrome stays within its revised exploration and combat caps',
@@ -535,6 +651,17 @@ void main() {
       // arrange + act - the worst *legal* combat scene, chosen by rule
       await _openCrawl(tester, _combatWorstLegalScene());
       final combatWorstLegal = _chromeHeight(tester);
+      // The widget fixture excludes verified Android system insets, which
+      // contributed 4.43 dp to the measured device chrome. Keep that same
+      // 600 dp total ceiling by limiting app-owned chrome to 595 dp.
+      expect(
+        combatWorstLegal,
+        lessThanOrEqualTo(595),
+        reason:
+            'worst-legal app chrome must leave at least 4.43 dp for the '
+            'verified Android inset contribution under the unchanged 600 dp '
+            'total ceiling; measured $combatWorstLegal dp',
+      );
 
       // assert
       expect(
@@ -547,6 +674,42 @@ void main() {
       );
       _expectLegalRow(tester, reason: 'combat worst legal');
       _expectRunCapacity(tester);
+      const worstIds = [
+        'drink',
+        'spell:firebolt',
+        'spell:frost-lance',
+        'spell:mend',
+        'spells-overflow',
+        'wait',
+        'pick-up',
+        'gather',
+        'pack',
+        'ascend',
+        'leave-dungeon',
+      ];
+      expect(
+        find
+            .descendant(
+              of: find.byKey(actionRowKey),
+              matching: find.byWidgetPredicate(
+                (widget) => widget.key is ValueKey<String>,
+              ),
+            )
+            .evaluate(),
+        hasLength(11),
+      );
+      for (final id in worstIds) {
+        expect(find.byKey(ValueKey(id)), findsOneWidget);
+      }
+      expect(find.text('Flee'), findsNothing);
+      expect(find.text('+3'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('spells-overflow')),
+          matching: find.byType(Image),
+        ),
+        findsNothing,
+      );
     },
   );
 
@@ -616,7 +779,7 @@ void main() {
     await _openCrawl(tester, game);
 
     // assert
-    final drink = find.byKey(const ValueKey('Drink (2)'));
+    final drink = find.byKey(const ValueKey('drink'));
     expect(drink, findsOneWidget);
     expect(
       find.descendant(of: drink, matching: find.byType(Image)),

@@ -2,6 +2,113 @@ import 'package:flutter/material.dart';
 
 import 'tokens.dart';
 
+/// A shared framed row with a stable leading medallion envelope.
+///
+/// The envelope remains measurable when [medallion] is null, so consumers can
+/// align empty and marked rows without introducing placeholder content.
+class FramedRow extends StatelessWidget {
+  const FramedRow({
+    required this.title,
+    this.details = const [],
+    this.medallion,
+    this.medallionKey,
+    this.trailing,
+    this.onPressed,
+    this.titleStyle = textBody,
+    this.detailStyle = textLineDim,
+    super.key,
+  });
+
+  final String title;
+  final List<String> details;
+  final Widget? medallion;
+  final Key? medallionKey;
+  final Widget? trailing;
+  final VoidCallback? onPressed;
+  final TextStyle titleStyle;
+  final TextStyle detailStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final surface = Material(
+      color: panel,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(radius),
+        side: const BorderSide(color: rule, width: hairline),
+      ),
+      child: InkWell(
+        onTap: onPressed,
+        customBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SizedBox(
+                key: medallionKey,
+                width: tapTarget,
+                height: tapTarget,
+                child: Center(
+                  child: SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        color: Colors.transparent,
+                        shape: BoxShape.circle,
+                        border: Border.fromBorderSide(
+                          BorderSide(color: rule, width: hairline),
+                        ),
+                      ),
+                      child: medallion == null
+                          ? null
+                          : ClipOval(child: Center(child: medallion)),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: titleStyle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    for (final detail in details)
+                      Text(detail, style: detailStyle),
+                  ],
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                Center(child: trailing),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: rhythm),
+      child: Semantics(
+        container: true,
+        button: onPressed != null ? true : null,
+        enabled: onPressed != null ? true : null,
+        onTap: onPressed,
+        child: surface,
+      ),
+    );
+  }
+}
+
 /// Which of the two resource fills a [ResourceMeter] renders.
 enum MeterTint { health, mana }
 

@@ -4189,3 +4189,232 @@ request exists, and the integration choice is the user's.
 - **Merge is its own gate and has not been given.** The standing Unit 12
   lesson holds: choosing to open a pull request is not authorisation to merge
   it, and `--admin` is never reached for on the architect's own judgement.
+
+## Unit 15 intake — 2026-09-22
+
+- **PR #23 is integrated.** Current `main` is
+  `4033de53f96470bfc75dabba6b28bc0ae67816a6`, the merge commit of
+  `residuum-visual-reboot-13`. This supersedes the stale U14 publication
+  pointer above and in the former `RESUME.md`.
+- The untracked, user-owned external bundle
+  `external/unit-15-chatgpt-handoff/` passed the v1 planning-handoff
+  validator and every SHA-256 receipt. Its observed revision equals local
+  `main`; its manifest targets this epic, marks the U15 design settled and
+  the implementation strategy partial, and correctly carries
+  `authorization: not-carried`.
+- The external approval is reconciled as the U15 starting WHAT: replace the
+  remaining bespoke row, navigation-control, filter-control and crawl-action
+  geometries with the U13/U14 grammar while preserving gameplay vocabulary,
+  dispatch, accessibility, density and information boundaries. U15 creates
+  concrete empty-ready medallion consumers but no authored production art.
+- The source-grounded corrections are binding: no Craft mechanic is invented;
+  Tavern retains `Ask about the roads` and its existing rumor transaction;
+  Character must not fabricate current mana in town state; and crawl action
+  identity should stop depending on composed labels only if fresh recon still
+  finds that coupling.
+- Next: write the reconciled canonical U15 contract after fresh consumer/test
+  recon. The external handoff does not authorize planning, code, commits or
+  publication.
+
+- The canonical Unit 15 contract is
+  `units/unit-15/CONTRACT.md`; source and test facts are
+  `units/unit-15/recon.md`. The local contract preserves the externally
+  approved WHAT without material change. Its recorded approval is accepted
+  for local planning only; implementation remains gated by separate explicit
+  plan approval.
+
+- **U15 execution plan accepted locally, 2026-09-22.** `units/unit-15/PLAN.md`
+  and its four sequential fresh-executor capsules are execution-grade against
+  the reconciled contract. The plan locks one `FramedRow` geometry owner,
+  consumer cutover, real-only Forge/Tavern presentation, and crawl stable
+  action identity/metadata without reopening gameplay semantics.
+- Plan quality gate: COR, TTC and CRF pass; SEC is not applicable to this
+  local presentation surface. Residual risk is evidence-only: physical-device
+  crawl height under Spectral metrics, nested row/control semantics, and
+  content-map changes affecting the generic locked-spell count.
+- **Next gate is the user's explicit plan approval.** No production writes
+  are authorized. After approval, use a suitable non-main feature checkout
+  and dispatch a fresh plan executor for
+  `units/unit-15/plan-tasks/01-shared-framed-row.md`.
+
+- **U15 implementation approved by the user, 2026-09-22.** Execution is
+  authorized only within `units/unit-15/PLAN.md` on
+  `residuum-visual-reboot-15`, created from `main`
+  `4033de53f96470bfc75dabba6b28bc0ae67816a6`. Start Task 01 with a fresh
+  `flow-plan-executor`; Task 02–04 remain sequential and each gets a fresh
+  executor after its predecessor's accepted receipt.
+
+### U15 Task 01 — shared framed row, accepted
+
+- Fresh executor added `FramedRow` in `style/surfaces.dart`, converted the
+  narrow `ItemRow` adapter, and added behavior/geometry proof in
+  `test/widget/framed_row_test.dart`. No transaction or route behavior moved.
+- Executor evidence: scoped formatter clean; focused row, merchant, bank and
+  Tavern suite passed 24 tests; three scoped analyzer checks clean.
+- Architect re-ran `flutter test test/widget/framed_row_test.dart`: **4 tests
+  passed**. The checked contract covers the measurable 44 dp host, 36 dp
+  transparent well, no placeholder content, panel framing, static/whole-row
+  semantics and ItemRow detail/refusal/action behavior.
+- Next: a fresh executor may begin Task 02 from the accepted shared API.
+
+### U15 Task 02 — list consumers, accepted
+
+- Town, Character, Spells and Pack now consume the shared grammar. The only
+  correction was removing a duplicate internal Semantics key from `FramedRow`;
+  public keys remain unique and the focused row proof now targets its semantic
+  descendant.
+- Executor ran scoped formatter/analyzer checks and 47 Task 02 tests plus 5
+  shared-row tests. Architect integration proof
+  `framed_row_test.dart`, `town_shell_test.dart`, `character_screen_test.dart`
+  and `pack_screen_test.dart` passed **38 tests**.
+- Next: dispatch a fresh executor for Task 03.
+
+### U15 Task 03 — Forge and Tavern, accepted
+
+- Forge now routes only to its real Smelt and Temper work; Tavern shows a
+  non-destructive affordability cue while retaining the current refusal path.
+- Executor focused evidence passed 54 tests plus scoped formatter/analyzer
+  checks. Architect re-ran Forge and Tavern behavior proof: **35 tests
+  passed**. No transaction semantics or vocabulary changed.
+- Next: dispatch a fresh executor for Task 04.
+
+### U15 Task 04 — crawl stable action geometry, accepted
+
+- Crawl actions now have stable ids independent of visible labels/counts/costs;
+  metadata is separate, overflow is a plain `+N`, and measurement reserves
+  metadata and armed content without map reflow.
+- Executor focused proof passed 13 tests with scoped formatter/analyzer clean.
+  Architect re-ran `crawl_action_row_test.dart`: **12 tests passed**. Widget
+  measurements were exploration 345 dp, typical combat 443 dp and worst legal
+  combat 599 dp; target-device evidence remains required.
+- All four implementation tasks are complete. Next: Main-owned package gates,
+  integrated acceptance review, then device evidence.
+
+- The private effective chip vertical padding is intentionally
+  `crawlChipVerticalPadding - 3`: this local presentation adjustment reserves
+  the separated metadata and armed-caption rows within the locked chrome
+  caps. It does not change action semantics, interaction geometry, camera, or
+  map allocation. Widget geometry evidence covers 345, 443, and 599 dp;
+  target-device evidence remains authoritative.
+
+- Main package gate after Task 04: `dart format --output=none
+  --set-exit-if-changed lib test` and `flutter analyze` passed. `flutter test`
+  failed in legacy crawl widget proofs that still find controls through
+  composed-label keys such as `Drink (2)` and `Mine`; Task 04 deliberately
+  changed those identities to stable action ids and split counts into
+  metadata. A bounded in-plan test-only correction is required before the
+  acceptance review; no production behavior is implicated by this failure.
+
+- The bounded correction migrated all directly affected crawl tests to stable
+  action ids while independently asserting visible labels and metadata. It
+  covered icon/overflow, arming, dispatch, geometry, semantics, order,
+  gather, Pack, resume, battle, and characterization behavior; no production
+  files changed. Focused evidence: 110 tests passed and scoped analysis was
+  clean.
+
+- Fresh package gate after that correction passed:
+  `dart format --output=none --set-exit-if-changed lib test` (130 files, 0
+  changed), `flutter analyze` (no issues), and `flutter test` (1,126 tests).
+  Next: the single integrated acceptance review. Device evidence remains
+  blocked behind that review.
+
+### U15 integrated acceptance review — correction required
+
+- Independent acceptance found U15-ACC-1: the Tempering console rendered the
+  Materials heading but omitted `MaterialRows`, violating the locked Forge
+  console order and hiding current material balances. This is a production
+  defect, not device-only evidence. A scoped Task 03 correction is active;
+  no device evidence may begin until its focused proof and scoped review
+  close the reopened acceptance barrier.
+
+### U15-ACC-1 — Tempering material ledger, corrected
+
+- The correction added `MaterialRows(materials: state.materials)` immediately
+  after the Tempering Materials heading and before its bench work. The new
+  behavioral proof asserts `Purse → Notice → Materials → one MaterialRows →
+  Tempering → bench` while retaining live/refused temper behavior.
+- Fresh evidence: `craft_rooms_test.dart` passed 29 tests; app-wide format
+  passed with 130 files unchanged; `flutter analyze` reported no issues; the
+  full app suite passed 1,127 tests. A scoped independent review remains
+  required before device evidence.
+
+### U15 acceptance closed — target-device gate prepared
+
+- Scoped independent review accepted U15-ACC-1. The Unit 15 automated and
+  acceptance stability barrier is closed on the current tree.
+- Before any device action, recovery checkpoint
+  `.flow/checkpoints/4033de53.md` was written. It records the exact dirty
+  tree, accepted automation, capture requirements, and save-backup/restore
+  obligations.
+- The target-device pass is blocked only on the user starting
+  `Medium_Phone`. No ADB, install, launch, or capture has begun.
+
+### U15 target-device greyscale evidence — blocked
+
+- Device preflight passed: `Medium_Phone` is `emulator-5554`; both save slots
+  were backed up before device mutation and later restoration receipts are
+  byte-identical.
+- Town colour, all seven routes, and empty-medallion alignment passed.
+  OS-level greyscale did not: Android's setting was proven enabled, but ADB
+  screencap/screenrecord were pre-transform, the emulator compositor image
+  was corrupted, and the headless host exposed no emulator window. The
+  verifier correctly recorded `BLOCKED`, not PASS, at
+  `.flow/evidence/4033de53/u15-os-greyscale/RECEIPT.md`.
+- All attempted display settings and both save slots were restored with
+  self-consistent MATCH receipts. Further U15 device acceptance requires a
+  genuine post-transform presentation capture path or user-supplied manual
+  visual evidence; synthetic conversion is rejected.
+
+### Accessibility evidence policy — approved amendment
+
+- The user approved removal of the mandatory OS-level greyscale capture gate
+  across Residuum and Unit 15. The accessibility invariant remains: important
+  state, rarity, and categories must not depend on hue alone.
+- `AGENTS.md`, the game design specification, and the active U15
+  contract/plan now require colour device evidence and redundant non-hue cues,
+  not an OS-level greyscale capture. The documented headless-emulator
+  limitation therefore no longer blocks the U15 device gate.
+
+### U15 device evidence — paused after Character
+
+- Character visual and accessibility capsules passed: the colour screen shows
+  Mana capacity and all four routes; the native tree exposes those same facts.
+  Both capsules restored both save slots with SHA-256 and cmp MATCH.
+- The user requested a pause here. Remaining colour-only capsules are Spells
+  visual/accessibility, Pack, Forge, Tavern, and Crawl. Do not start them
+  until the user resumes.
+
+- On resumed Spells visual evidence, `Medium_Phone` was no longer available:
+  `adb devices -l` returned no devices. No app/save mutation occurred and no
+  evidence was created. The user requested another pause; resume requires the
+  user to start `Medium_Phone` again, then a fresh Spells visual capsule.
+
+### U15 worst-crawl device ceiling — failed
+
+- Worst legal crawl evidence rendered all eleven actions with no Flee and
+  restored both saves MATCH, but app-owned non-map chrome measured about
+  603.43 dp after excluding the verified 48 dp Android system insets. This
+  exceeds the locked `< 600 dp` ceiling by about 3.43 dp.
+- Device evidence is paused. Do not capture the armed state or accept the
+  crawl gate until an in-plan geometry correction has focused proof, fresh
+  package evidence, and scoped acceptance closure.
+
+### U15 crawl ceiling correction and final device closure
+
+- The in-plan correction reduced only private crawl chip vertical padding from
+  `crawlChipVerticalPadding - 3` to `crawlChipVerticalPadding - 5`. New
+  focused proof reduced worst-legal widget chrome from 599 dp to 587 dp while
+  retaining the eleven-action, 1.3×, stable-id, and armed-map contracts.
+- Fresh final package evidence passed: 130 files formatter-clean,
+  `flutter analyze` clean, and 1,127 tests passing. A scoped independent
+  acceptance review accepted the correction.
+- Corrected target-device worst-legal evidence passed at 591.238 dp app-owned
+  non-map chrome: the 2,274 px app-content height less a 722 px map slot at
+  2.625 px/dp. It is strictly below the locked 600 dp ceiling, with eight
+  action-space dp remaining. The direct framebuffer retains eleven actions,
+  plain `+3`, no Flee, and no armed spell.
+- Corrected targeted-spell evidence passed: before/after map rectangles are
+  both `Rect.fromLTRB(0,470,1080,1192)`, the 36 dp camera/viewport framing is
+  unchanged, and the visible Firebolt armed marker and ghoul target outline
+  appear without resolving gameplay. Both capsules restored both canonical
+  save slots by SHA-256 plus `cmp` MATCH.

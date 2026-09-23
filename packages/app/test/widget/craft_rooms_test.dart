@@ -123,7 +123,48 @@ Future<void> _openWithBloc(
   addTearDown(bloc.close);
 }
 
+Future<void> _enterForgeRoute(WidgetTester tester, String route) async {
+  await tester.tap(find.byKey(ValueKey<String>(route)));
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  group('the forge menu', () {
+    testWidgets('offers exactly Smelt and Temper routes', (tester) async {
+      await _openRoom(tester, const ForgeScreen(), _hero());
+
+      expect(find.byKey(const ValueKey('forge-route-smelt')), findsOneWidget);
+      expect(find.byKey(const ValueKey('forge-route-temper')), findsOneWidget);
+      expect(find.text('Smelt'), findsOneWidget);
+      expect(find.text('Turn ore into ingots.'), findsOneWidget);
+      expect(find.text('Temper'), findsOneWidget);
+      expect(find.text('Work carried or worn steel.'), findsOneWidget);
+      expect(find.byType(FilledButton), findsNothing);
+      expect(find.byType(TextButton), findsNothing);
+      expect(find.byType(CountStepper), findsNothing);
+      expect(find.text('Craft'), findsNothing);
+      expect(find.byKey(const ValueKey('forge-route-craft')), findsNothing);
+    });
+
+    testWidgets('routes keep the TownBloc and leave profile state unchanged', (
+      tester,
+    ) async {
+      final bloc = await _openRoom(tester, const ForgeScreen(), _hero());
+      final before = bloc.state.profile;
+
+      await _enterForgeRoute(tester, 'forge-route-smelt');
+      expect(find.text('SMELTING'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      await _enterForgeRoute(tester, 'forge-route-temper');
+      expect(find.text('TEMPERING'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      expect(bloc.state.profile, before);
+    });
+  });
   group('the forge', () {
     testWidgets('offers Smelt only when there is ore for it', (tester) async {
       // arrange
@@ -131,6 +172,7 @@ void main() {
 
       // act
       await _openRoom(tester, const ForgeScreen(), short);
+      await _enterForgeRoute(tester, 'forge-route-smelt');
 
       // assert
       final button = tester.widget<FilledButton>(
@@ -144,6 +186,7 @@ void main() {
       // arrange
       final ready = _hero(materials: const {MaterialId.ore: 4});
       final bloc = await _openRoom(tester, const ForgeScreen(), ready);
+      await _enterForgeRoute(tester, 'forge-route-smelt');
 
       // act - dial one and commit: the n = 1 shape
       await tester.tap(find.text('+'));
@@ -162,6 +205,7 @@ void main() {
       // arrange
       final ready = _hero(materials: const {MaterialId.ore: 4});
       final bloc = await _openRoom(tester, const ForgeScreen(), ready);
+      await _enterForgeRoute(tester, 'forge-route-smelt');
 
       // act - dial two, commit once
       await tester.tap(find.text('+'));
@@ -180,6 +224,7 @@ void main() {
       // arrange - five ore make two ingots, and no more
       final ready = _hero(materials: const {MaterialId.ore: 5});
       await _openRoom(tester, const ForgeScreen(), ready);
+      await _enterForgeRoute(tester, 'forge-route-smelt');
 
       // act
       await tester.tap(find.text('+'));
@@ -197,6 +242,7 @@ void main() {
       // arrange - seven ore make three ingots
       final ready = _hero(materials: const {MaterialId.ore: 7});
       await _openRoom(tester, const ForgeScreen(), ready);
+      await _enterForgeRoute(tester, 'forge-route-smelt');
 
       // act
       await tester.tap(find.text('MAX'));
@@ -210,6 +256,7 @@ void main() {
       // arrange - a hold has room to repeat
       final ready = _hero(materials: const {MaterialId.ore: 40});
       await _openRoom(tester, const ForgeScreen(), ready);
+      await _enterForgeRoute(tester, 'forge-route-smelt');
 
       // act - press down, then pump the cadence. Inside the room's scroll
       // view the tap recogniser first rides out its own press timeout, then
@@ -238,6 +285,7 @@ void main() {
 
       // act
       await _openRoom(tester, const ForgeScreen(), bare);
+      await _enterForgeRoute(tester, 'forge-route-temper');
 
       // assert
       expect(find.text('You have no steel for the bench.'), findsOneWidget);
@@ -283,6 +331,7 @@ void main() {
 
       // act
       await _openRoom(tester, const ForgeScreen(), gated);
+      await _enterForgeRoute(tester, 'forge-route-temper');
 
       // assert - the sentence is temperRefusal's own, so the screen and the
       // transaction can never come to disagree
@@ -306,6 +355,7 @@ void main() {
         );
         // act
         await _openRoom(tester, const ForgeScreen(), gated);
+        await _enterForgeRoute(tester, 'forge-route-temper');
 
         // assert - the reason and the price are two lines, both visible: a hero
         // four levels short can read exactly what the tier will cost
@@ -324,6 +374,7 @@ void main() {
       );
       // act
       await _openRoom(tester, const ForgeScreen(), done);
+      await _enterForgeRoute(tester, 'forge-route-temper');
 
       // assert - there is no next tier to price, so no price line
       expect(find.text('that is worked as far as it goes'), findsOneWidget);
@@ -342,6 +393,7 @@ void main() {
 
       // act
       await _openRoom(tester, const ForgeScreen(), ready);
+      await _enterForgeRoute(tester, 'forge-route-temper');
 
       // assert
       expect(find.text('Next tier: 1 ingot.'), findsOneWidget);
@@ -360,6 +412,7 @@ void main() {
 
       // act
       await _openRoom(tester, const ForgeScreen(), dressed);
+      await _enterForgeRoute(tester, 'forge-route-temper');
 
       // assert - position says what a word used to: sections are the sentence
       expect(find.text('WORN STEEL'), findsOneWidget);
@@ -389,6 +442,7 @@ void main() {
 
       // act
       await _openRoom(tester, const ForgeScreen(), armed);
+      await _enterForgeRoute(tester, 'forge-route-temper');
 
       // assert
       expect(find.text('WORN STEEL'), findsOneWidget);
@@ -406,6 +460,7 @@ void main() {
         gold: 500,
       );
       final bloc = await _openRoom(tester, const ForgeScreen(), ready);
+      await _enterForgeRoute(tester, 'forge-route-temper');
 
       // act
       await tester.tap(find.widgetWithText(TextButton, 'Temper'));
@@ -432,6 +487,7 @@ void main() {
           },
         );
         final bloc = await _openRoom(tester, const ForgeScreen(), leveling);
+        await _enterForgeRoute(tester, 'forge-route-temper');
 
         // act
         await tester.tap(find.widgetWithText(TextButton, 'Temper'));
@@ -455,6 +511,7 @@ void main() {
 
       // act
       await _openRoom(tester, const ForgeScreen(), profile);
+      await _enterForgeRoute(tester, 'forge-route-temper');
 
       // assert - only steel reaches the bench, so the refusal never has to be
       // read on this screen
@@ -471,6 +528,7 @@ void main() {
 
       // act
       await _openWithBloc(tester, bloc, const ForgeScreen());
+      await _enterForgeRoute(tester, 'forge-route-smelt');
 
       // assert - the notice reads directly under the purse, above the
       // materials heading, matching every other room
@@ -480,41 +538,65 @@ void main() {
       );
     });
 
-    testWidgets(
-      'lays out purse, notice, materials, smelting and the bench in that '
-      'order',
-      (tester) async {
-        // arrange
-        final bloc = TownBloc(
-          profile: _hero(materials: const {MaterialId.ore: 4}),
-          notice: const SentenceNotice('the fire is banked'),
-        );
+    testWidgets('the smelting console keeps materials before its own work', (
+      tester,
+    ) async {
+      final bloc = TownBloc(
+        profile: _hero(materials: const {MaterialId.ore: 4}),
+        notice: const SentenceNotice('the fire is banked'),
+      );
 
-        // act
-        await _openWithBloc(tester, bloc, const ForgeScreen());
+      await _openWithBloc(tester, bloc, const ForgeScreen());
+      await _enterForgeRoute(tester, 'forge-route-smelt');
 
-        // assert - top to bottom, exactly the locked shape
-        final ys = <double>[
-          tester.getTopLeft(find.byType(Purse)).dy,
-          tester.getTopLeft(find.byType(Notice)).dy,
-          tester.getTopLeft(find.text('MATERIALS')).dy,
-          tester.getTopLeft(find.byType(MaterialRows)).dy,
-          tester.getTopLeft(find.text('SMELTING')).dy,
-          tester.getTopLeft(find.textContaining('ore makes 1 ingot')).dy,
-          tester.getTopLeft(find.byType(CountStepper)).dy,
-          tester.getTopLeft(find.widgetWithText(FilledButton, 'Smelt')).dy,
-          tester.getTopLeft(find.textContaining('ore is ready')).dy,
-          tester.getTopLeft(find.text('THE BENCH')).dy,
-        ];
-        for (var i = 1; i < ys.length; i++) {
-          expect(ys[i], greaterThan(ys[i - 1]), reason: 'row $i out of order');
-        }
+      final ys = <double>[
+        tester.getTopLeft(find.byType(Purse)).dy,
+        tester.getTopLeft(find.byType(Notice)).dy,
+        tester.getTopLeft(find.text('MATERIALS')).dy,
+        tester.getTopLeft(find.byType(MaterialRows)).dy,
+        tester.getTopLeft(find.text('SMELTING')).dy,
+        tester.getTopLeft(find.textContaining('ore makes 1 ingot')).dy,
+        tester.getTopLeft(find.byType(CountStepper)).dy,
+        tester.getTopLeft(find.widgetWithText(FilledButton, 'Smelt')).dy,
+        tester.getTopLeft(find.textContaining('ore is ready')).dy,
+      ];
+      for (var i = 1; i < ys.length; i++) {
+        expect(ys[i], greaterThan(ys[i - 1]), reason: 'row $i out of order');
+      }
+      expect(find.byType(MaterialRows), findsOneWidget);
+      expect(find.text('THE BENCH'), findsNothing);
+    });
 
-        // assert - one shared material block, not a second private one
-        expect(find.byType(MaterialRows), findsOneWidget);
-        expect(find.text('MATERIALS'), findsOneWidget);
-      },
-    );
+    testWidgets('the tempering console keeps materials before its bench work', (
+      tester,
+    ) async {
+      final bloc = TownBloc(
+        profile: _hero(
+          equipment: {EquipSlot.chest: _gear('drop-2', mailHauberk)},
+          inventory: [_gear('drop-1', ironSword)],
+          materials: const {MaterialId.ingot: 2},
+        ),
+        notice: const SentenceNotice('the fire is banked'),
+      );
+
+      await _openWithBloc(tester, bloc, const ForgeScreen());
+      await _enterForgeRoute(tester, 'forge-route-temper');
+
+      final ys = <double>[
+        tester.getTopLeft(find.byType(Purse)).dy,
+        tester.getTopLeft(find.byType(Notice)).dy,
+        tester.getTopLeft(find.text('MATERIALS')).dy,
+        tester.getTopLeft(find.byType(MaterialRows)).dy,
+        tester.getTopLeft(find.text('TEMPERING')).dy,
+        tester.getTopLeft(find.text('THE BENCH')).dy,
+        tester.getTopLeft(find.text('WORN STEEL')).dy,
+        tester.getTopLeft(find.text('CARRIED STEEL')).dy,
+      ];
+      for (var i = 1; i < ys.length; i++) {
+        expect(ys[i], greaterThan(ys[i - 1]), reason: 'row $i out of order');
+      }
+      expect(find.byType(MaterialRows), findsOneWidget);
+    });
 
     testWidgets('a refused row shows its stat line, reason and next-tier price '
         'together', (tester) async {
@@ -529,6 +611,7 @@ void main() {
 
       // act
       await _openRoom(tester, const ForgeScreen(), gated);
+      await _enterForgeRoute(tester, 'forge-route-temper');
 
       // assert - a refusal never hides the price of the tier it blocks
       expect(find.text(statLine(item)), findsOneWidget);

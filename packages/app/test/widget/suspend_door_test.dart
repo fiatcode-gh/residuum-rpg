@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/style/surfaces.dart';
@@ -225,7 +226,16 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.text('Pack (${carried + 1})'), findsOneWidget);
+      final pack = find.byKey(const ValueKey('pack'));
+      expect(pack, findsOneWidget);
+      expect(
+        find.descendant(of: pack, matching: find.text('Pack')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: pack, matching: find.text('×${carried + 1}')),
+        findsOneWidget,
+      );
       expect(app.saved!.inside, isTrue);
       expect(app.saved!.run!.inventory, hasLength(carried + 1));
       expect(app.saved!.run!.gold, lessThan(500));

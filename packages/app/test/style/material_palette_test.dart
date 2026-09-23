@@ -100,18 +100,9 @@ Color _fillOf(WidgetTester tester, Finder control) =>
 Color _foregroundOf(WidgetTester tester, Finder control) =>
     _materialOf(tester, control).textStyle!.color!;
 
-/// A chip's fill is painted by its own `Ink`, not by a `Material.color` —
-/// unlike every button and dialog in this table.
-Color? _chipFillOf(WidgetTester tester, Finder control) {
-  final decoration =
-      tester
-              .widget<Ink>(
-                find.descendant(of: control, matching: find.byType(Ink)).first,
-              )
-              .decoration
-          as ShapeDecoration?;
-  return decoration?.color;
-}
+/// A Pack filter uses its own themed Material surface rather than a stock chip.
+Color? _chipFillOf(WidgetTester tester, Finder control) =>
+    _materialOf(tester, control).color;
 
 Future<TownBloc> _pumpCharacterScreen(
   WidgetTester tester,
@@ -159,6 +150,11 @@ Future<TownBloc> _pumpTownRoom(
   return town;
 }
 
+Future<void> _enterForgeRoute(WidgetTester tester, String route) async {
+  await tester.tap(find.byKey(ValueKey<String>(route)));
+  await tester.pumpAndSettle();
+}
+
 Future<GameBloc> _pumpPack(WidgetTester tester, GameState game) async {
   final bloc = GameBloc(game: game, stepDelay: Duration.zero);
   await tester.pumpWidget(
@@ -203,9 +199,9 @@ void main() {
         'character-route-skills',
         'character-route-pack',
       ]) {
-        final button = find.byKey(Key(key));
-        final fill = _fillOf(tester, button);
-        expect(fill, tokens.raised, reason: key);
+        final row = find.byKey(Key(key));
+        final fill = _fillOf(tester, row);
+        expect(fill, tokens.panel, reason: key);
         expect(fill, isNot(m3.colorScheme.primary), reason: key);
       }
     });
@@ -250,6 +246,7 @@ void main() {
         const ForgeScreen(),
         _hero(materials: const {MaterialId.ore: 4}),
       );
+      await _enterForgeRoute(tester, 'forge-route-smelt');
       await tester.tap(find.text('+'));
       await tester.pump();
 
@@ -352,19 +349,17 @@ void main() {
   });
 
   group('neither state is told apart by hue alone', () {
-    testWidgets('the selected filter chip still renders a checkmark', (
+    testWidgets('the selected filter still renders a checkmark', (
       tester,
     ) async {
       await _pumpPack(tester, _crawl());
 
       expect(
-        find.byKey(const Key('pack-filter-all')),
-        paints..something((method, arguments) {
-          if (method != #drawPath) return false;
-          final paint = arguments[1] as Paint;
-          return paint.style == PaintingStyle.stroke &&
-              isSameColorAs(tokens.ink).matches(paint.color, {});
-        }),
+        find.descendant(
+          of: find.byKey(const Key('pack-filter-all')),
+          matching: find.text('✓ All'),
+        ),
+        findsOneWidget,
       );
     });
 
@@ -376,6 +371,7 @@ void main() {
         const ForgeScreen(),
         _hero(materials: const {MaterialId.ore: 4}),
       );
+      await _enterForgeRoute(tester, 'forge-route-smelt');
       final smelt = find.widgetWithText(FilledButton, 'Smelt');
 
       final disabledFill = _fillOf(tester, smelt);

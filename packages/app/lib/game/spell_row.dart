@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 
+import '../style/surfaces.dart';
+
 /// One known spell: what it is, what it costs, and — where a cast is offered —
 /// whether it can be cast now.
 ///
@@ -49,31 +51,20 @@ class SpellRow extends StatelessWidget {
   final Widget? trailing;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 28,
-          child: Text(spell.school.schoolMarking, style: style),
-        ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(spell.name, style: style),
-              Text(
-                '${spell.school.schoolWord} · ${spell.manaCost} mana$detail',
-                style: dimStyle,
-              ),
-              if (reason != null) Text(reason!, style: dimStyle),
-            ],
-          ),
-        ),
-        ?trailing,
-      ],
+  Widget build(BuildContext context) => FramedRow(
+    title: spell.name,
+    titleStyle: style,
+    detailStyle: dimStyle,
+    details: [
+      '${spell.school.schoolWord} · ${spell.manaCost} mana$detail',
+      ?reason,
+    ],
+    medallion: Text(
+      spell.school.schoolMarking,
+      style: style,
+      textAlign: TextAlign.center,
     ),
+    trailing: trailing,
   );
 }
 
