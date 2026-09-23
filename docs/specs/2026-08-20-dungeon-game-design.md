@@ -34,7 +34,7 @@ Scope decisions always favor goal 1: fastest path to a fun loop.
 | Decision | Choice |
 | --- | --- |
 | Moment-to-moment gameplay | Turn-based on a tile grid (classic roguelike movement and combat) |
-| Visuals | Colored glyphs on a grid first; renderer designed so a 16x16 pixel-tile atlas can replace glyphs later without gameplay changes |
+| Visuals | Coloured monospace glyphs on a grid are the permanent direction (Unit 16.5): IBM Plex Mono map glyphs with code-drawn light, fog and depth. The renderer stays separable from rules, but no tile atlas is planned |
 | Platform | Phone, touch-first, portrait. Desktop/keyboard is a possible later ring |
 | Death model | Persistent hero. Death returns you to the last town, loses unbanked loot from the run, keeps skills and equipped gear, and reshuffles the dungeon (new floor seeds) |
 | Engine | Plain Flutter. No Flame at first (turn-based needs no real-time loop). Flame may be added later strictly as a renderer |
