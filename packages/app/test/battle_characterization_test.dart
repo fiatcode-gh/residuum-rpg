@@ -110,7 +110,7 @@ void main() {
       // act
       await _pushCrawl(tester, game);
 
-      // assert - engaged: the word on its own chip in the header
+      // assert
       expect(find.byType(GameScreen), findsOneWidget);
       expect(find.text('Engaged 1'), findsOneWidget);
       expect(find.textContaining('Watched'), findsNothing);
@@ -135,7 +135,7 @@ void main() {
       // act
       await _pushCrawl(tester, game);
 
-      // assert - watched: the word alone; no dock, no Engaged
+      // assert
       expect(find.text('Watched 1'), findsOneWidget);
       expect(find.textContaining('Engaged'), findsNothing);
       expect(find.byType(BattleDock), findsNothing);
@@ -148,7 +148,7 @@ void main() {
       // act
       await _pushCrawl(tester, game);
 
-      // assert - neither word
+      // assert
       expect(find.textContaining('Watched'), findsNothing);
       expect(find.textContaining('Engaged'), findsNothing);
     });

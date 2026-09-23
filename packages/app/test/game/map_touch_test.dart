@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
@@ -163,8 +165,9 @@ void main() {
         armedSpellId: 'bolt',
       );
       final geometry = _geometry();
-      // Exactly on the shared boundary: equidistant from both centres,
-      // but `positionAt` floors it onto `under`'s cell.
+
+      /// Exactly on the shared boundary: equidistant from both centres,
+      /// but `positionAt` floors it onto `under`'s cell.
       final local =
           geometry.centreOf(tieBreakWinner.position) +
           Offset(geometry.cellWidth / 2, 0);
@@ -222,6 +225,39 @@ void main() {
       expect(resolveMapTap(state, geometry, local), _inspect(monster.id));
     });
 
+    test('23.9 dp from a known monster in an empty cell resolves to '
+        'inspect', () {
+      final monster = _monsterAt(const Position(2, 2));
+      final state = _state(
+        hero: const Position(6, 6),
+        monsters: [monster],
+        visible: {const Position(2, 2), const Position(6, 6)},
+      );
+      final geometry = _geometry();
+      final local = geometry.centreOf(monster.position) + const Offset(23.9, 0);
+      final under = geometry.positionAt(local)!;
+      expect(under.isOrthogonallyAdjacentTo(const Position(6, 6)), isFalse);
+      expect(under, isNot(monster.position));
+
+      expect(resolveMapTap(state, geometry, local), _inspect(monster.id));
+    });
+
+    test('24.1 dp from a known monster resolves to the cell under the '
+        'finger, not inspect', () {
+      final monster = _monsterAt(const Position(2, 2));
+      final state = _state(
+        hero: const Position(6, 6),
+        monsters: [monster],
+        visible: {const Position(2, 2), const Position(6, 6)},
+      );
+      final geometry = _geometry();
+      final local = geometry.centreOf(monster.position) + const Offset(24.1, 0);
+      final under = geometry.positionAt(local)!;
+      expect(under.isOrthogonallyAdjacentTo(const Position(6, 6)), isFalse);
+
+      expect(resolveMapTap(state, geometry, local), _cell(under));
+    });
+
     test('a monster two cells east: touch on the east neighbour cell resolves '
         'to that cell (step-cell guard)', () {
       const hero = Position(4, 4);
@@ -256,6 +292,38 @@ void main() {
       );
     });
 
+    test('a touch 23.9 dp from the hero on the diagonal steps the dominant '
+        'axis', () {
+      const hero = Position(4, 4);
+      final state = _state(hero: hero, visible: {hero});
+      final geometry = _geometry();
+      final heroCentre = geometry.centreOf(hero);
+      final local = heroCentre + Offset.fromDirection(math.pi / 4, 23.9);
+      final under = geometry.positionAt(local)!;
+      expect(under.isOrthogonallyAdjacentTo(hero), isFalse);
+      expect((local - heroCentre).distance, lessThanOrEqualTo(mapTouchRadius));
+
+      expect(
+        resolveMapTap(state, geometry, local),
+        _cell(hero.step(Direction.east)),
+      );
+    });
+
+    test('a touch 24.1 dp from the hero on the same diagonal falls through '
+        'to the cell under the finger instead of stepping', () {
+      const hero = Position(4, 4);
+      final state = _state(hero: hero, visible: {hero});
+      final geometry = _geometry();
+      final heroCentre = geometry.centreOf(hero);
+      final local = heroCentre + Offset.fromDirection(math.pi / 4, 24.1);
+      final under = geometry.positionAt(local)!;
+      expect(under.isOrthogonallyAdjacentTo(hero), isFalse);
+      expect((local - heroCentre).distance, greaterThan(mapTouchRadius));
+      expect(under, isNot(hero.step(Direction.east)));
+
+      expect(resolveMapTap(state, geometry, local), _cell(under));
+    });
+
     test('the hero at the map west edge: a touch 15 dp west of it falls '
         'through instead of stepping out of bounds', () {
       const hero = Position(0, 5);
@@ -285,8 +353,9 @@ void main() {
       final state = _state(
         hero: hero,
         monsters: [unknown],
-        // The monster's own tile is deliberately excluded, so it is not
-        // known even though it stands there.
+
+        /// The monster's own tile is deliberately excluded, so it is not
+        /// known even though it stands there.
         visible: {hero},
       );
       final geometry = _geometry();

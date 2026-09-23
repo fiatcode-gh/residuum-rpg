@@ -91,7 +91,7 @@ class LogPeek extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     SizedBox(
-                      height: 16,
+                      height: 16 * crawlScale(context),
                       child: Row(
                         children: [
                           const Expanded(
@@ -117,7 +117,7 @@ class LogPeek extends StatelessWidget {
                         children: [
                           for (var index = 0; index < shown.length; index++)
                             SizedBox(
-                              height: crawlLogLine,
+                              height: crawlLogLine * crawlScale(context),
                               child: Opacity(
                                 opacity: index == shown.length - 1 ? 1 : 0.72,
                                 child: Text(

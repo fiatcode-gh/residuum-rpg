@@ -4969,3 +4969,76 @@ request exists, and the integration choice is the user's.
   presence. If the package holds real data, back up both save slots
   (`app_flutter/save.json`, `save-previous.json`) byte-exact before installing.
   Re-measure G8 figures there; layout rules stay proportional.
+
+### U16.5 Task 08 — character panel accepted — 2026-09-23
+
+- `69cdf30`: `HeroPanel` (102 dp; 132.6 dp at 1.3× text), hero label passed in
+  from main.dart, G11 facts, `displayLabel` role added. The exploration map
+  bottom moves from 747.4 to 639.4 dp as designed. Full suite 1205/1205;
+  analyzer clean; core/content untouched.
+
+### U16.5 Task 09 — combat panel accepted — 2026-09-23
+
+- `e736f6d`: `CombatPanel` (124 dp) replaces `HeroPanel` in battle.
+  `GameViewState.targetActor` gives one target focus with a deterministic
+  tie-break. Added roles displayName and displayNameCold. The armed and
+  unarmed map rects are identical. Full suite 1223/1223; analyzer clean. Three
+  non-owned tests were rewritten to the new design. For the acceptance review:
+  a body comment added to crawl_layout_test must be checked against the
+  AGENTS.md comment rule.
+
+### U16.5 Task 10 — crawl header accepted — 2026-09-23
+
+- `b8c2356`: `CrawlHeader` (88 dp: wordmark, meta line with depth, place and
+  day, shape-mark chips) replaces `crawl_status.dart`. World day is a GameBloc
+  run constant; it cannot change while a crawl is open (world_bloc
+  `_onDayWalked` only runs while travelling). Map in the test fixture:
+  exploration 88→639.4 (551 dp), battle 186→617.4 (431 dp), above the
+  45%/35% floors. Full suite 1225/1225; analyzer clean.
+
+### U16.5 Task 11 — timeline and fixed-chrome proof accepted — 2026-09-23
+
+- `74ca6c8`: NOW/NEXT pill timeline (24 dp pills, 44 dp hit rows, gold current
+  frame) and the fixed-chrome proof on the 392.7×875.6 fixture with the
+  measured insets. The receipt's rects were mis-transcribed; the executor
+  re-measured on query. Global rects: exploration map 126.2→573.8 (447.6 dp,
+  51%), battle map 184.2→551.8 (367.6 dp, 42%). Both floors hold, and the
+  column fills the 819.6 dp safe height exactly. The map rect is identical
+  across armed/unarmed, 2 vs 12 actions, log extents, notes and inspect (1
+  action is unreachable in battle; the pair is 2 vs 12 with the battle held
+  constant). Full suite 1222/1222 (6 generated tests for the deleted
+  textGlyphDim role are gone).
+
+### U16.5 Task 12 — map callout accepted — 2026-09-23
+
+- `464b979`: an anchored `MapCallout` with a leader line replaces the
+  map-inspect sheet (the timeline token keeps the sheet). New events
+  `ActorInspected`/`InspectDismissed`; the callout clears on pan, actions,
+  arming, the log handle and blank taps. Edge flips are proven, and the map
+  rect is unchanged. Full suite 1242/1242; analyzer clean. Four non-owned
+  tests were migrated off the sheet design.
+
+### U16.5 Task 13 and Main final package gates — 2026-09-23
+
+- `41c83f0`: the design spec's Visuals row and the VISUAL-SYSTEM.md
+  supersessions, with A1 numbers. The stale-claim grep is clean and the CI type
+  gate passes.
+- Main at `41c83f0` from packages/app: `dart format` 132 files, 0 changed;
+  `flutter analyze` clean; `flutter test` **1242/1242**. `packages/core` and
+  `packages/content` have zero diff since `2c073b7`. Next: one
+  `flow-acceptance-reviewer` over `2c073b7..41c83f0`, then the new-phone device
+  gate.
+
+### U16.5 acceptance review — REJECT (changes) — 2026-09-23
+
+- `flow-acceptance-reviewer` over `2c073b7..41c83f0`: secrecy, determinism,
+  action ids and dispatch, LogCategory behaviour and mock-only facts all pass.
+  Three Important findings: I1 inspect and dismiss reset the camera pan
+  (confirmed by the architect: both handlers omit `pan`); I2 the callout stays
+  open on taps the bloc ignores; I3 fixed text slots clip at 1.3× text scale.
+  Minors M1–M7 (dead tokens, stale docs, added test body comments and
+  debugPrint, implementation-pinning asserts, per-frame paths, duplicate fact
+  formatting, missing radius-edge and fog tests) are batched. M8 (the
+  `frost-lance` id in the app) is parked.
+- A single correction round went to a `flow-implementer`. Then one scoped
+  closure review.

@@ -7,6 +7,7 @@ import 'crawl_action_row.dart' show readiedSpellCount;
 import 'crawl_style.dart';
 import 'game_bloc.dart';
 import 'hero_panel.dart' show hpMeterKey, manaMeterKey;
+import 'target_facts.dart';
 
 const combatPanelKey = Key('combat-panel');
 
@@ -59,7 +60,7 @@ class CombatPanel extends StatelessWidget {
                         : state.presentationOf(target.id)?.displayName,
                   ),
                 ),
-                const _ColumnDivider(),
+                const ColumnDivider(),
                 Expanded(
                   flex: 24,
                   child: _YouColumn(
@@ -76,7 +77,7 @@ class CombatPanel extends StatelessWidget {
                     caption: boltSpell != null ? 'spell' : 'melee',
                   ),
                 ),
-                const _ColumnDivider(),
+                const ColumnDivider(),
                 Expanded(
                   flex: 40,
                   child: _SpellColumn(spell: spell, armed: armedSpell != null),
@@ -88,19 +89,6 @@ class CombatPanel extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ColumnDivider extends StatelessWidget {
-  const _ColumnDivider();
-
-  @override
-  Widget build(BuildContext context) => const VerticalDivider(
-    width: 23,
-    thickness: hairline,
-    indent: 8,
-    endIndent: 8,
-    color: crawlDivider,
-  );
 }
 
 /// TARGET: the panel's own take on `showEnemyInfo`'s facts, compressed to
@@ -130,6 +118,7 @@ class _TargetColumn extends StatelessWidget {
     final fraction = target.maxHp == 0
         ? 0.0
         : (hp / target.maxHp).clamp(0, 1).toDouble();
+    final facts = targetFactLines(target);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -139,7 +128,7 @@ class _TargetColumn extends StatelessWidget {
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text(_capitalise(name), style: displayName, maxLines: 1),
+          child: Text(capitaliseFirst(name), style: displayName, maxLines: 1),
         ),
         const SizedBox(height: 4),
         Text('HP $hp/${target.maxHp}', style: monoData),
@@ -155,13 +144,13 @@ class _TargetColumn extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'ATK ${target.attackMin}–${target.attackMax}  SPD ${target.speed}',
+          facts[0],
           style: monoMeta,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         Text(
-          _factLineB(target),
+          facts.skip(1).join(' · '),
           style: monoMeta,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -169,19 +158,6 @@ class _TargetColumn extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Fact line B (PLAN.md G11): the target's stated reach or its adjacency,
-/// then every resistance and every vulnerability it carries — the same
-/// facts `showEnemyInfo`'s sheet lists, joined onto one line rather than
-/// stacked, because the panel has one line rather than a sheet's page.
-String _factLineB(Actor target) {
-  final parts = [
-    target.reach > 1 ? 'Reach ${target.reach}' : 'Adjacent',
-    for (final type in target.resists) 'Resists ${type.word}',
-    for (final type in target.vulnerableTo) 'Burns at ${type.word}',
-  ];
-  return parts.join(' · ');
 }
 
 /// Middle: the hero's own vitals (PLAN.md E5, keyed exactly as [HeroPanel]
@@ -335,7 +311,7 @@ String _effectOf(Spell spell) => switch (spell.kind) {
 List<String> _tagsOf(Spell spell) {
   final type = spell.type;
   return [
-    ?type == null ? null : _capitalise(type.word),
+    ?type == null ? null : capitaliseFirst(type.word),
     spell.school.schoolWord,
     switch (spell.kind) {
       SpellKind.bolt || SpellKind.bind || SpellKind.banish => 'Targeted',
@@ -343,9 +319,3 @@ List<String> _tagsOf(Spell spell) {
     },
   ];
 }
-
-/// Upper-cases the first letter only, leaving the rest of the word alone —
-/// PLAN.md G11's rule for a target's name and a bolt's damage type, neither
-/// of which is otherwise shouted.
-String _capitalise(String word) =>
-    word.replaceRange(0, 1, word[0].toUpperCase());

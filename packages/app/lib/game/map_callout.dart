@@ -6,6 +6,7 @@ import '../style/tokens.dart';
 import 'crawl_style.dart';
 import 'game_bloc.dart';
 import 'grid_geometry.dart';
+import 'target_facts.dart';
 
 const mapCalloutKey = Key('map-callout');
 
@@ -49,13 +50,14 @@ class MapCallout extends StatelessWidget {
     final resists = actor.resists;
     final vulnerable = actor.vulnerableTo;
     final lineCount = 2 + resists.length + vulnerable.length;
+    final scale = crawlScale(context);
     final height =
         crawlCalloutPadding * 2 +
-        crawlCalloutNameRow +
+        crawlCalloutNameRow * scale +
         crawlCalloutGap +
-        crawlCalloutHpRow +
+        crawlCalloutHpRow * scale +
         crawlCalloutGap +
-        crawlCalloutLineHeight * lineCount;
+        crawlCalloutLineHeight * scale * lineCount;
 
     var flipped = false;
     var left = cellRect.right + crawlCalloutMargin;
@@ -125,12 +127,12 @@ class MapCallout extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     SizedBox(
-                      height: crawlCalloutNameRow,
+                      height: crawlCalloutNameRow * scale,
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          _capitalised(name),
+                          capitaliseFirst(name),
                           style: displayName,
                           maxLines: 1,
                         ),
@@ -138,21 +140,11 @@ class MapCallout extends StatelessWidget {
                     ),
                     const SizedBox(height: crawlCalloutGap),
                     SizedBox(
-                      height: crawlCalloutHpRow,
+                      height: crawlCalloutHpRow * scale,
                       child: Text('HP $hp/${actor.maxHp}', style: monoData),
                     ),
                     const SizedBox(height: crawlCalloutGap),
-                    _MetaLine(
-                      'ATK ${actor.attackMin}–${actor.attackMax}  SPD '
-                      '${actor.speed}',
-                    ),
-                    _MetaLine(
-                      actor.reach > 1 ? 'Reach ${actor.reach}' : 'Adjacent',
-                    ),
-                    for (final type in resists)
-                      _MetaLine('Resists ${type.word}'),
-                    for (final type in vulnerable)
-                      _MetaLine('Burns at ${type.word}'),
+                    for (final line in targetFactLines(actor)) _MetaLine(line),
                   ],
                 ),
               ),
@@ -173,7 +165,7 @@ class _MetaLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-    height: crawlCalloutLineHeight,
+    height: crawlCalloutLineHeight * crawlScale(context),
     child: Text(
       text,
       style: monoMeta,
@@ -182,12 +174,6 @@ class _MetaLine extends StatelessWidget {
     ),
   );
 }
-
-/// Capitalises only the first letter, matching `combat_panel.dart`'s own
-/// target-name rule (PLAN.md G11): the rest of a monster's name is never
-/// shouted.
-String _capitalised(String text) =>
-    text.isEmpty ? text : '${text[0].toUpperCase()}${text.substring(1)}';
 
 /// The 1 dp gold leader (PLAN.md Task 12 decision 3): the cell's own corner
 /// on the card's side, to the card's nearest corner, with a 2.5 dp dot at

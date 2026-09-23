@@ -142,12 +142,10 @@ void main() {
       expect(iWidth, lessThan(mWidth));
     });
 
-    test('monoData advances a fixed 0.6 em per glyph', () {
+    test('monoData advances a fixed 0.6 em per glyph regardless of shape, '
+        'unlike the proportional faces above', () {
       final mWidth = _widthOf('MMMMMMMMMM', monoData);
       final iWidth = _widthOf('iiiiiiiiii', monoData);
-      // Under the Ahem fallback every glyph measures the full 11.5 dp em
-      // square: 115.0. IBM Plex Mono's fixed 0.6 em advance yields 69.0
-      // regardless of glyph shape, unlike the proportional faces above.
       expect(mWidth, closeTo(69.0, 0.5));
       expect(iWidth, closeTo(69.0, 0.5));
     });
@@ -208,8 +206,6 @@ void main() {
     };
 
     // Confirmed absent from both Spectral and EB Garamond (PLAN.md F3).
-    // Seven `const` markings in `packages/core`, which this unit may not
-    // touch — U16 retires them.
     const absent = {
       '※', // U+203B — core/lib/src/loot/rarity.dart, Epic
       '★', // U+2605 — core/lib/src/loot/rarity.dart, Legendary
@@ -239,9 +235,7 @@ void main() {
     final monoSemiBoldBytes = File('assets/fonts/IBMPlexMono-SemiBold.ttf')
         .readAsBytesSync();
 
-    // The crawl marks beyond printable ASCII that the mono role must carry:
-    // middle dot, en/em dash, multiplication sign, superscript digits,
-    // arrows, dagger, section mark and single guillemet.
+    // The crawl marks beyond printable ASCII the mono role must also carry.
     const extraMarks = [
       '·',
       '–',
@@ -303,9 +297,7 @@ void main() {
       'textLine': textLine,
       'textLineDim': textLineDim,
       'textLabel': textLabel,
-      'textLabelDim': textLabelDim,
       'textLabelStrong': textLabelStrong,
-      'textCaption': textCaption,
       'textDetail': textDetail,
       'textDetailDim': textDetailDim,
       'textGlyph': textGlyph,

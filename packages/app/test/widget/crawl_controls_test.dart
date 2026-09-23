@@ -162,15 +162,6 @@ Future<GameBloc> _openCrawl(WidgetTester tester, GameState game) async {
   return bloc;
 }
 
-/// The action bar's own no-squeeze proof: every slot label renders inside a
-/// single-line `FittedBox(scaleDown)` (PLAN.md G8), which scales a label
-/// down rather than wrapping or clipping it, so the only way a label could
-/// still break the bar is a render exception — an overflow, a NaN layout,
-/// anything `flutter_test` would otherwise swallow silently.
-void _expectNoSqueeze(WidgetTester tester) {
-  expect(tester.takeException(), isNull);
-}
-
 Finder _chip(String id) => find.byKey(ValueKey(id));
 
 void _expectAction(String id, {required String label, String? metadata}) {
@@ -253,7 +244,6 @@ void main() {
       _expectAction('ascend', label: 'Ascend <');
       _expectAction('leave-dungeon', label: doneControl);
       expect(tester.takeException(), isNull);
-      _expectNoSqueeze(tester);
     });
 
     testWidgets('the worst road density fits a phone un-ellipsised', (
@@ -272,7 +262,6 @@ void main() {
       _expectAction('wait', label: 'Wait');
       _expectAction('flee', label: 'Flee');
       expect(tester.takeException(), isNull);
-      _expectNoSqueeze(tester);
     });
   });
 
@@ -310,7 +299,6 @@ void main() {
       await _openCrawl(tester, descend);
 
       _expectIcon('descend', label: 'Descend >');
-      _expectNoSqueeze(tester);
     });
 
     testWidgets('an icon-bearing control announces itself', (tester) async {

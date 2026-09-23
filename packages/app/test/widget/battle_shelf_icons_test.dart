@@ -147,8 +147,7 @@ void main() {
         );
       }
 
-      // assert - frost lance has no shipped asset and draws a Material
-      // glyph mark instead (PLAN G9)
+      // assert
       final frostLance = _shelfButton('spell:frost-lance');
       expect(frostLance, findsOneWidget);
       expect(_shelfText('spell:frost-lance', '✳ Frost Lance'), findsOneWidget);
@@ -175,9 +174,7 @@ void main() {
       await tester.tap(firebolt);
       await tester.pumpAndSettle();
 
-      // assert - the metadata line switches to the armed caption, the
-      // border is heavier than an unarmed sibling's, and the mark is still
-      // there
+      // assert
       expect(_shelfText('spell:firebolt', '✳ Firebolt'), findsOneWidget);
       expect(_shelfMetadata('spell:firebolt', '— armed'), findsOneWidget);
       expect(_shelfMetadata('spell:firebolt', '2 mana'), findsNothing);

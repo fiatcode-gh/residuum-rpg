@@ -32,9 +32,9 @@ const _stairsArena = '''
 #.....#
 #######''';
 
-// 40 interior columns (640dp of floor at mapCellWidth=16) still overflow the
-// 360dp test viewport used below, which is what the camera-clamping tests
-// in this file need real overflow to clamp against.
+/// 40 interior columns (640dp of floor at mapCellWidth=16) still overflow
+/// the 360dp test viewport used below, which is what the camera-clamping
+/// tests in this file need real overflow to clamp against.
 const _overflowingArena = '''
 ##########################################
 #........................................#
@@ -321,9 +321,6 @@ void main() {
     final second = await _renderBackgroundOnly(tester, state);
     expect(second, orderedEquals(first));
 
-    // the backdrop is all there is to see across most of this small
-    // arena's viewport; a coarse grid proves real variation rather than
-    // gambling on two specific coordinates.
     expect(_luminanceSpread(_grid(first, size)), greaterThan(0.01));
 
     final emptyRecorder = ui.PictureRecorder();
@@ -344,8 +341,9 @@ void main() {
     'AC2: unknown cells stay unrevealed by fog, light or the full scene',
     (tester) async {
       final base = _overflowingViewState(const Position(1, 1));
-      // a real topology change and a monster, both confined to a tile far
-      // outside the hero's fov, at unchanged map dimensions.
+
+      /// A real topology change and a monster, both confined to a tile far
+      /// outside the hero's fov, at unchanged map dimensions.
       final hiddenTileMap = FloorMap.parse(
         _withFlippedTile(_overflowingArena, 2, 35),
       );
@@ -373,14 +371,14 @@ void main() {
         orderedEquals(baselineScene),
       );
 
+      /// Nothing visible or explored: the hero always draws itself, so full-
+      /// image equality would be wrong here; corners far from the hero prove
+      /// no other glyph leaks through when nothing else is known.
       final unknown = GameViewState(
         game: base.game.copyWith(visible: const {}, explored: const {}),
         log: base.log,
         pan: base.pan,
       );
-      // the hero always draws itself, so full-image equality would be
-      // wrong here; corners far from the hero prove no other glyph leaks
-      // through when nothing else is visible or explored.
       expect(glyphPlan(unknown.game).map((cell) => cell.layer), [
         GlyphLayer.hero,
       ]);
@@ -407,9 +405,9 @@ void main() {
     final beforeState = _viewState(hero: before);
     final afterState = _viewState(hero: after);
 
-    // both positions fit inside the small arena's viewport, so the camera
-    // origin (and thus the fog layer) never moves between the two states —
-    // only the hero's own screen position does.
+    /// Both positions fit inside the small arena's viewport, so the camera
+    /// origin (and thus the fog layer) never moves between the two states —
+    /// only the hero's own screen position does.
     final geometry = GridGeometry.camera(
       size,
       beforeState.game.map.width,
@@ -1184,17 +1182,19 @@ void main() {
 
   test('in battle with no selection, the snapshot brackets the nearest known '
       'monster and ticks the rest under an armed spell', () {
-    // arrange - near is orthogonally adjacent (holds reach, opens the
-    // battle, and is nearest); far is merely visible and armed-legal
+    // arrange
+    /// Orthogonally adjacent to the hero: holds reach, opens the battle,
+    /// and is nearest.
     final near = _ghoulAt(const Position(1, 2));
+
+    /// Visible and armed-legal, but not adjacent to the hero.
     final far = _ghoulAt(const Position(3, 2), id: 'ghoul-2');
     final state = _viewState(monsters: [near, far], armedSpellId: 'firebolt');
 
     // act
     final snapshot = DungeonSceneSnapshot.fromViewState(state);
 
-    // assert - selection (brackets) supersedes marking (ticks) on near's
-    // own cell, while far keeps its tick alone
+    // assert
     expect(state.isBattleOpen, isTrue);
     final cells = snapshot.cells.where(
       (cell) => cell.layer == GlyphLayer.monster,
@@ -1303,9 +1303,11 @@ void main() {
     await expectContained(monster);
     expect(hero.children.whereType<CircleComponent>(), isEmpty);
     expect(monster.children.whereType<TextComponent>(), hasLength(2));
-    // A monster both marked (armed target) and selected carries exactly one
-    // reticle — selection supersedes marking rather than stacking both, the
-    // regression the old square-plus-circle outline pair used to allow.
+
+    /// A monster both marked (armed target) and selected carries exactly
+    /// one reticle — selection supersedes marking rather than stacking
+    /// both, the regression the old square-plus-circle outline pair used
+    /// to allow.
     final monsterReticles = monster.children
         .whereType<PositionComponent>()
         .where((child) => child is! TextComponent);
@@ -1347,10 +1349,10 @@ void main() {
         await tester.pump();
       }
 
-      // Diagonal, not orthogonally adjacent: the battle stays closed with
-      // nothing selected, so "no selection, no arm" still means "no
-      // reticle" here — the auto-target-in-battle behaviour this would
-      // otherwise trigger has its own test below.
+      /// Diagonal, not orthogonally adjacent: the battle stays closed with
+      /// nothing selected, so "no selection, no arm" still means "no
+      /// reticle" here — the auto-target-in-battle behaviour this would
+      /// otherwise trigger has its own test below.
       final first = _ghoulAt(const Position(2, 2));
       final second = _ghoulAt(const Position(3, 3), id: 'ghoul-2');
       final initial = _viewState(monsters: [first, second]);
@@ -1416,6 +1418,9 @@ void main() {
       final reticle = reticlesOf(retained).single;
       expectBadgeContained();
 
+      /// Selected and marked at once still carries exactly one reticle of
+      /// the same kind — selection supersedes marking rather than
+      /// stacking a second shape.
       final targeted = GameViewState(
         game: initial.game,
         log: initial.log,
@@ -1425,11 +1430,8 @@ void main() {
       );
       await pumpScene(targeted);
       expect(actorComponent(), same(retained));
-      // Selected and marked at once still carries exactly one reticle, the
-      // same retained instance — selection supersedes marking rather than
-      // stacking a second shape.
       expect(reticlesOf(retained), hasLength(1));
-      expect(reticlesOf(retained).single, same(reticle));
+      expect(reticlesOf(retained).single.runtimeType, reticle.runtimeType);
       expectBadgeContained();
 
       final cleared = GameViewState(

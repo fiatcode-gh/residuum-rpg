@@ -411,32 +411,6 @@ void main() {
               reason: '$n actions, slot $index',
             );
           }
-          // Only a real slot paints a Material; an inert frame is a bare
-          // DecoratedBox, so this count is exactly the action count.
-          expect(
-            find
-                .descendant(
-                  of: find.byKey(actionRowKey),
-                  matching: find.byType(Material),
-                )
-                .evaluate()
-                .length,
-            n,
-            reason: '$n actions',
-          );
-          // Only a real slot wraps an InkWell, so an inert frame can never
-          // respond to a tap.
-          expect(
-            find
-                .descendant(
-                  of: find.byKey(actionRowKey),
-                  matching: find.byType(InkWell),
-                )
-                .evaluate()
-                .length,
-            n,
-            reason: '$n actions',
-          );
           // Only a real slot carries a button semantics node, so the
           // remaining 5 - n frames are invisible to assistive technology.
           final barNode = tester.getSemantics(find.byKey(actionRowKey));
@@ -457,6 +431,29 @@ void main() {
         semanticsHandle.dispose();
       },
     );
+
+    testWidgets('a tap on an inert frame dispatches nothing', (tester) async {
+      await onTheTargetPhone(tester);
+      var dispatched = false;
+      final actions = [
+        for (var index = 0; index < 3; index++)
+          _plainAction('a$index', onPressed: () => dispatched = true),
+      ];
+      await _pumpBar(tester, actions);
+
+      final inertFrames = find.descendant(
+        of: find.byKey(actionRowKey),
+        matching: find.byWidgetPredicate(
+          (widget) => widget.runtimeType.toString() == '_InertFrame',
+        ),
+      );
+      expect(inertFrames, findsNWidgets(2));
+
+      await tester.tapAt(tester.getCenter(inertFrames.first));
+      await tester.pumpAndSettle();
+
+      expect(dispatched, isFalse);
+    });
 
     testWidgets(
       'more than five actions scroll: the sixth peeks 18 dp, and dragging to '
@@ -497,15 +494,16 @@ void main() {
         final sixth = tester.getRect(find.byKey(const ValueKey('a5')));
         expect(barRect.right - sixth.left, closeTo(crawlSlotPeek, 0.5));
 
-        // act - drag the bar to its scroll end
+        // act
         await tester.drag(find.byKey(actionRowKey), const Offset(-4000, 0));
         await tester.pumpAndSettle();
 
+        // assert
         final last = tester.getRect(find.byKey(const ValueKey('a11')));
         expect(last.left, greaterThanOrEqualTo(barRect.left - 0.5));
         expect(last.right, lessThanOrEqualTo(barRect.right + 0.5));
 
-        // act - tap the now fully visible last slot
+        // act
         await tester.tap(find.byKey(const ValueKey('a11')));
         await tester.pumpAndSettle();
 
@@ -549,7 +547,7 @@ void main() {
         expect(armedBorder.width, greaterThan(unarmedBorder.width));
         expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRectBefore);
 
-        // act - tapping the armed slot again disarms it
+        // act
         await tester.tap(firebolt);
         await tester.pumpAndSettle();
 
@@ -638,16 +636,16 @@ void main() {
   testWidgets(
     'notes render inside the map rect, which never resizes for them',
     (tester) async {
-      // arrange + act - a scene with no notes at all
+      // act
       await onAPhone(tester);
       await _openCrawl(tester, _explorationScene());
       final mapRectNoNotes = tester.getRect(find.byKey(dungeonSceneSlotKey));
 
-      // arrange + act - a scene with two notes on screen at once
+      // act
       await _openCrawl(tester, _explorationWorstScene());
       final mapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
 
-      // assert - the map rect never moved for the notes appearing
+      // assert
       expect(mapRect, mapRectNoNotes);
 
       final note = find.descendant(

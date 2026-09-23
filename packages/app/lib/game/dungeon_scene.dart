@@ -434,13 +434,13 @@ class _ReticleComponent extends PositionComponent {
   void render(Canvas canvas) {
     switch (_mark) {
       case GlyphTargetMark.ticks:
-        canvas.drawPath(_ticksPath(), _ticksPaint);
+        canvas.drawPath(_ticksPath, _ticksPaint);
       case GlyphTargetMark.brackets:
-        canvas.drawPath(_bracketsPath(), _bracketsPaint);
+        canvas.drawPath(_bracketsPath, _bracketsPaint);
     }
   }
 
-  static Path _ticksPath() => Path()
+  static final Path _ticksPath = Path()
     ..moveTo(_rect.left, _rect.top + _armLength)
     ..lineTo(_rect.left, _rect.top)
     ..lineTo(_rect.left + _armLength, _rect.top)
@@ -454,7 +454,7 @@ class _ReticleComponent extends PositionComponent {
     ..lineTo(_rect.left, _rect.bottom)
     ..lineTo(_rect.left, _rect.bottom - _armLength);
 
-  static Path _bracketsPath() => Path()
+  static final Path _bracketsPath = Path()
     ..moveTo(_rect.left + _armLength, _rect.top)
     ..lineTo(_rect.left, _rect.top)
     ..lineTo(_rect.left, _rect.bottom)

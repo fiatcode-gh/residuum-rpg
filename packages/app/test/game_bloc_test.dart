@@ -1238,6 +1238,52 @@ void main() {
       expect(inspected.cameraFocus, before.cameraFocus);
     });
 
+    test('ActorInspected keeps the pan the player dragged to', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const MapPanned(Offset(4, 0)));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      final inspected = await next;
+
+      expect(inspected.pan, const Offset(4, 0));
+      expect(inspected.inspectedActorId, 'ghoul-1');
+    });
+
+    test('InspectDismissed keeps the pan the player dragged to', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const MapPanned(Offset(4, 0)));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const InspectDismissed());
+      final dismissed = await next;
+
+      expect(dismissed.pan, const Offset(4, 0));
+      expect(dismissed.inspectedActorId, isNull);
+    });
+
     blocTest<GameBloc, GameViewState>(
       'an unknown actor id is ignored',
       build: () => walker(
@@ -2618,8 +2664,7 @@ void _lootTests() {
 
   group('the combat panel target', () {
     test('a selection wins over the nearest-known guess', () {
-      // arrange - the far monster is explicitly selected; the near one
-      // would otherwise win the nearest-known guess
+      // arrange
       final near = ghoul(const Position(3, 1));
       final far = ghoul(const Position(5, 2), id: 'ghoul-2');
       final state = GameViewState(
@@ -2628,14 +2673,16 @@ void _lootTests() {
         selectedActorId: far.id,
       );
 
-      // act + assert
-      expect(state.targetActor?.id, far.id);
+      // act
+      final targetId = state.targetActor?.id;
+
+      // assert
+      expect(targetId, far.id);
     });
 
     test('in battle with no selection, the nearest known monster is the '
         'target, ties broken upper-left', () {
-      // arrange - two monsters tie at Chebyshev 1 above a third that
-      // merely holds reach and opens the battle from a row further down
+      // arrange
       final tieA = ghoul(const Position(2, 1));
       final tieB = ghoul(const Position(4, 1), id: 'ghoul-2');
       final reachHolder = ghoul(const Position(3, 3), id: 'ghoul-3');
@@ -2648,15 +2695,16 @@ void _lootTests() {
         log: const [],
       );
 
-      // act + assert
+      // act
+      final targetId = state.targetActor?.id;
+
+      // assert
       expect(state.isBattleOpen, isTrue);
-      expect(state.targetActor?.id, tieA.id);
+      expect(targetId, tieA.id);
     });
 
     test('an unknown or out-of-sight monster is never the guessed target', () {
-      // arrange - the reach holder opens the battle from range; the two
-      // nearer monsters are disqualified (one unknown, one out of sight),
-      // so the farther known monster is the only legal guess
+      // arrange
       const hero = Position(10, 2);
       final reachHolder = Actor(
         id: 'reach-holder',
@@ -2693,13 +2741,16 @@ void _lootTests() {
         actorIdentity: identity,
       );
 
-      // act + assert
+      // act
+      final targetId = state.targetActor?.id;
+
+      // assert
       expect(state.isBattleOpen, isTrue);
-      expect(state.targetActor?.id, 'known-far');
+      expect(targetId, 'known-far');
     });
 
     test('outside battle with no selection, there is nothing to guess at', () {
-      // arrange - visible but far enough that nothing holds reach
+      // arrange
       final state = GameViewState(
         game: arenaGame(
           heroAt: const Position(1, 1),
@@ -2708,9 +2759,12 @@ void _lootTests() {
         log: const [],
       );
 
-      // act + assert
+      // act
+      final target = state.targetActor;
+
+      // assert
       expect(state.isBattleOpen, isFalse);
-      expect(state.targetActor, isNull);
+      expect(target, isNull);
     });
   });
 

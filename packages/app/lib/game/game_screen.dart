@@ -231,8 +231,10 @@ class GameScreen extends StatelessWidget {
 
 /// Routes a map tap by intent (`map_touch.dart::resolveMapTap`): a cell means
 /// the bloc decides — move, bump or cast — and an inspect names the map
-/// callout's target, at no turn cost. A tap that resolves to nothing
-/// dismisses an open callout, exactly as PLAN.md Task 12 decision 2 says.
+/// callout's target, at no turn cost. A tap that resolves to a cell or to
+/// nothing dismisses an open callout first: the bloc's own no-op returns
+/// (an unexplored cell, a non-adjacent wall, no path) never emit, so the
+/// dismissal has to come from here, not from whatever `TileTapped` decides.
 void _onMapTap(
   GameBloc bloc,
   GameViewState state,
@@ -241,6 +243,9 @@ void _onMapTap(
 ) {
   switch (resolveMapTap(state, geometry, local)) {
     case MapTouchCell(:final position):
+      if (state.inspectedActorId != null) {
+        bloc.add(const InspectDismissed());
+      }
       bloc.add(TileTapped(position));
     case MapTouchInspect(:final actor):
       bloc.add(ActorInspected(actor.id));
@@ -252,6 +257,8 @@ void _onMapTap(
 }
 
 /// Names the map callout's target under the long-press, at no turn cost.
+/// A long-press that resolves to nothing dismisses an open callout too,
+/// the same rule [_onMapTap] applies.
 void _onMapLongPress(
   GameBloc bloc,
   GameViewState state,
@@ -263,7 +270,9 @@ void _onMapLongPress(
       bloc.add(ActorInspected(actor.id));
     case MapTouchCell():
     case MapTouchNothing():
-      break;
+      if (state.inspectedActorId != null) {
+        bloc.add(const InspectDismissed());
+      }
   }
 }
 

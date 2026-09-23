@@ -224,6 +224,34 @@ void main() {
     );
   });
 
+  testWidgets(
+    'the wrapped two-line weapon name box stays unclipped at 1.3x text '
+    'scale',
+    (tester) async {
+      // act
+      const scaler = TextScaler.linear(1.3);
+      await _pumpPanel(
+        tester,
+        _game(equipment: {EquipSlot.mainHand: _keenIronSwordOfEmbers}),
+        textScaler: scaler,
+      );
+
+      // assert
+      final finder = find.text('Rare Keen Iron Sword of Embers');
+      final text = tester.widget<Text>(finder);
+      final painter = TextPainter(
+        text: TextSpan(text: text.data, style: text.style),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+        maxLines: text.maxLines,
+      )..layout(maxWidth: tester.getSize(finder).width);
+      expect(
+        tester.getSize(finder).height,
+        greaterThanOrEqualTo(painter.height - 0.5),
+      );
+    },
+  );
+
   testWidgets('never renders content the contract keeps off the panel', (
     tester,
   ) async {

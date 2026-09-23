@@ -154,10 +154,9 @@ void main() {
       expect(geometry.origin, Offset.zero);
     });
 
-    test('each axis fits or overflows independently', () {
-      // arrange - width (5 cells * 16 = 80) fits the 400 dp viewport and
-      // centres; height (40 cells * 20 = 800) overflows the 200 dp viewport
-      // and follows the focus instead
+    test('each axis fits or overflows independently: width centres within '
+        'the viewport, height overflows and follows the focus', () {
+      // arrange
       const size = Size(400, 200);
 
       // act
@@ -180,21 +179,26 @@ void main() {
         const Position(17, 23),
         const Offset(13, -29),
       );
+      const tiles = [Position(0, 0), Position(19, 21), Position(39, 29)];
 
-      // act + assert
-      for (final tile in [
-        const Position(0, 0),
-        const Position(19, 21),
-        const Position(39, 29),
-      ]) {
-        final corner = geometry.topLeftOf(tile.x, tile.y);
-        expect(geometry.positionAt(corner + const Offset(1, 1)), tile);
-        expect(geometry.positionAt(geometry.centreOf(tile)), tile);
-      }
+      // act
+      final fromCorners = [
+        for (final tile in tiles)
+          geometry.positionAt(
+            geometry.topLeftOf(tile.x, tile.y) + const Offset(1, 1),
+          ),
+      ];
+      final fromCentres = [
+        for (final tile in tiles) geometry.positionAt(geometry.centreOf(tile)),
+      ];
+
+      // assert
+      expect(fromCorners, tiles);
+      expect(fromCentres, tiles);
     });
 
     test('a point one dp past the right or bottom edge is null', () {
-      // arrange - the last cell of a panned, clamped camera
+      // arrange
       final geometry = GridGeometry.camera(
         const Size(357, 411),
         40,
@@ -220,8 +224,7 @@ void main() {
 
   group('GridGeometry.topLeftOf', () {
     test('walks cells by the dense cell size from the origin', () {
-      // arrange - a camera whose grid exactly fills the viewport, so the
-      // origin is the known (0, 0)
+      // arrange
       final geometry = GridGeometry.camera(
         const Size(mapCellWidth * 20, mapCellHeight * 12),
         20,
@@ -247,9 +250,12 @@ void main() {
         const Position(0, 0),
       );
 
-      // act + assert
+      // act
+      final centre = geometry.centreOf(const Position(3, 2));
+
+      // assert
       expect(
-        geometry.centreOf(const Position(3, 2)),
+        centre,
         geometry.topLeftOf(3, 2) +
             const Offset(mapCellWidth / 2, mapCellHeight / 2),
       );
@@ -266,9 +272,12 @@ void main() {
         const Position(0, 0),
       );
 
-      // act + assert
+      // act
+      final rect = geometry.rectOf(const Position(3, 2));
+
+      // assert
       expect(
-        geometry.rectOf(const Position(3, 2)),
+        rect,
         geometry.topLeftOf(3, 2) & const Size(mapCellWidth, mapCellHeight),
       );
     });
@@ -310,8 +319,7 @@ void main() {
     });
 
     test('rejects a tap in the letterbox above the grid', () {
-      // arrange - a viewport far taller than a 5-row grid, so it centres
-      // with a wide letterbox above it
+      // arrange
       final geometry = GridGeometry.camera(
         const Size(200, 400),
         10,
@@ -344,9 +352,9 @@ void main() {
       expect(beyondY, isNull);
     });
 
-    test('rejects a tap on a collapsed layout', () {
-      // arrange - a hand-built degenerate geometry; GridGeometry.camera's
-      // dense cell never collapses on its own
+    test('rejects a tap on a hand-built collapsed geometry, since '
+        "GridGeometry.camera never collapses the dense cell on its own", () {
+      // arrange
       const geometry = GridGeometry(
         cellWidth: 0,
         cellHeight: 0,

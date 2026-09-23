@@ -1324,6 +1324,10 @@ void main() {
         startDungeonRunAt(seaCave, profile).map.toAscii(),
       );
       expect(find.text('The Sea-Cave'), findsOneWidget);
+      final atmosphere = tester.widget<DungeonAtmosphere>(
+        find.byType(DungeonAtmosphere),
+      );
+      expect(atmosphere.fog, paletteForDungeon(seaCave).fog);
       final bytes = (await tester.runAsync(
         () => _navigationTerrainGlyphs(tester),
       ))!;
@@ -1347,6 +1351,10 @@ void main() {
         startDungeonRunAt(ruinedKeep, profile).map.toAscii(),
       );
       expect(find.text('The Ruined Keep'), findsOneWidget);
+      final atmosphere = tester.widget<DungeonAtmosphere>(
+        find.byType(DungeonAtmosphere),
+      );
+      expect(atmosphere.fog, paletteForDungeon(ruinedKeep).fog);
       final bytes = (await tester.runAsync(
         () => _navigationTerrainGlyphs(tester),
       ))!;

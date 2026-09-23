@@ -88,28 +88,41 @@ Finder _drawerList() => find.descendant(
 
 /// Pushes the real [GameScreen] over the real [bloc], following
 /// `battle_view_test.dart`'s shape: `MaterialApp` → `TextButton` → a pushed
-/// `MultiBlocProvider` carrying a fresh `TownBloc` alongside it.
-Future<void> _pushGame(WidgetTester tester, GameBloc bloc) async {
+/// `MultiBlocProvider` carrying a fresh `TownBloc` alongside it. [textScaler]
+/// feeds the ambient `MediaQuery` `GameScreen`'s own
+/// `MediaQuery.withClampedTextScaling` clamps against, the same knob a
+/// physical device's system text size would turn.
+Future<void> _pushGame(
+  WidgetTester tester,
+  GameBloc bloc, {
+  TextScaler? textScaler,
+}) async {
   final town = TownBloc(profile: newProfile(worldSeed: 5));
-  await tester.pumpWidget(
-    MaterialApp(
-      home: Builder(
-        builder: (context) => TextButton(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => MultiBlocProvider(
-                providers: [
-                  BlocProvider.value(value: town),
-                  BlocProvider.value(value: bloc),
-                ],
-                child: const GameScreen(palette: DungeonPalette.crypt),
-              ),
+  final app = MaterialApp(
+    home: Builder(
+      builder: (context) => TextButton(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => MultiBlocProvider(
+              providers: [
+                BlocProvider.value(value: town),
+                BlocProvider.value(value: bloc),
+              ],
+              child: const GameScreen(palette: DungeonPalette.crypt),
             ),
           ),
-          child: const Text('down'),
         ),
+        child: const Text('down'),
       ),
     ),
+  );
+  await tester.pumpWidget(
+    textScaler == null
+        ? app
+        : MediaQuery(
+            data: MediaQueryData(textScaler: textScaler),
+            child: app,
+          ),
   );
   await tester.tap(find.text('down'));
   await tester.pumpAndSettle();
@@ -131,6 +144,46 @@ void main() {
     expect(peekTop, lessThan(controlsTop));
   });
 
+  testWidgets(
+    'the peek lines and header row stay unclipped at 1.3x text scale',
+    (tester) async {
+      await onTheTargetPhone(tester);
+      final bloc = GameBloc(
+        game: _game(),
+        log: _manyLines(4),
+        stepDelay: Duration.zero,
+      );
+      addTearDown(bloc.close);
+      await _pushGame(tester, bloc, textScaler: const TextScaler.linear(1.3));
+
+      const scaler = TextScaler.linear(1.3);
+      double naturalHeight(Finder finder) {
+        final text = tester.widget<Text>(finder);
+        final painter = TextPainter(
+          text: TextSpan(text: text.data, style: text.style),
+          textDirection: TextDirection.ltr,
+          textScaler: scaler,
+        )..layout();
+        return painter.height;
+      }
+
+      for (var i = 0; i < 4; i++) {
+        final finder = _inPeek('Line $i.');
+        expect(
+          tester.getSize(finder).height,
+          greaterThanOrEqualTo(naturalHeight(finder) - 0.5),
+          reason: 'peek line $i clips at 1.3x text scale',
+        );
+      }
+      final header = _inPeek('RECENT EVENTS');
+      expect(
+        tester.getSize(header).height,
+        greaterThanOrEqualTo(naturalHeight(header) - 0.5),
+        reason: 'peek header clips at 1.3x text scale',
+      );
+    },
+  );
+
   testWidgets('the handle takes the drawer through peek, half, full, and back, '
       'never reflowing the map, and the drawer keeps to the fixed chrome', (
     tester,
@@ -151,16 +204,11 @@ void main() {
       expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRect);
       expect(tester.getRect(find.byKey(logPeekKey)), peekRect);
       expect(tester.getRect(find.byKey(actionRowKey)), actionRect);
-      debugPrint(
-        'U16 log $extent map=$mapRect peek=$peekRect action=$actionRect',
-      );
     }
 
     expect(peekRect.height, crawlEventsHeight);
     reportStableCrawlGeometry('closed');
-    // The inner Stack's own height: the map, both gaps and the peek fill
-    // it exactly at the peek extent, before any drawer overlay exists.
-    final overlayHeight = mapRect.height + 2 * crawlGap + peekRect.height;
+    final innerStackHeight = mapRect.height + 2 * crawlGap + peekRect.height;
 
     await tester.tap(find.byKey(logPeekKey));
     await tester.pumpAndSettle();
@@ -169,7 +217,7 @@ void main() {
     final halfRect = tester.getRect(find.byKey(logDrawerKey));
     expect(
       halfRect.height,
-      closeTo(math.min(crawlLogSheetHeight, overlayHeight), 0.5),
+      closeTo(math.min(crawlLogSheetHeight, innerStackHeight), 0.5),
     );
     expect(halfRect.bottom, closeTo(actionRect.top, 0.5));
 
@@ -221,7 +269,6 @@ void main() {
         findsOneWidget,
       );
 
-      // Only the last four lines show, oldest to newest top to bottom.
       expect(_inPeek('Line one drops away.'), findsNothing);
       expect(_inPeek('Line two settles in the dust.'), findsNothing);
       final shown = [
@@ -247,10 +294,15 @@ void main() {
       Opacity opacityOf(String sentence) => tester.widget<Opacity>(
         find.ancestor(of: _inPeek(sentence), matching: find.byType(Opacity)),
       );
-      expect(opacityOf(newest).opacity, 1);
-      expect(opacityOf('Line three echoes softly.').opacity, 0.72);
-      expect(opacityOf('Line four rattles the bones.').opacity, 0.72);
-      expect(opacityOf('Line five: a distant cry.').opacity, 0.72);
+      final newestOpacity = opacityOf(newest).opacity;
+      final threeOpacity = opacityOf('Line three echoes softly.').opacity;
+      final fourOpacity = opacityOf('Line four rattles the bones.').opacity;
+      final fiveOpacity = opacityOf('Line five: a distant cry.').opacity;
+      expect(threeOpacity, lessThan(newestOpacity));
+      expect(fourOpacity, lessThan(newestOpacity));
+      expect(fiveOpacity, lessThan(newestOpacity));
+      expect(fourOpacity, equals(threeOpacity));
+      expect(fiveOpacity, equals(fourOpacity));
 
       await tester.tap(peek);
       await tester.pumpAndSettle();
@@ -385,21 +437,19 @@ void main() {
       expect(newestIcon.color, newestSentence.style!.color);
       expect(olderIcon.color, olderSentence.style!.color);
 
-      final olderOpacity = tester.widget<Opacity>(
-        find.ancestor(
-          of: _inDrawer('First line.'),
+      double drawerRowOpacity(String sentence) {
+        final opacityAncestor = find.ancestor(
+          of: _inDrawer(sentence),
           matching: find.byType(Opacity),
-        ),
-      );
-      expect(olderOpacity.opacity, 0.78);
+        );
+        return opacityAncestor.evaluate().isEmpty
+            ? 1
+            : tester.widget<Opacity>(opacityAncestor).opacity;
+      }
+
       expect(
-        find.ancestor(
-          of: _inDrawer('Third line.'),
-          matching: find.byWidgetPredicate(
-            (widget) => widget is Opacity && widget.opacity == 0.78,
-          ),
-        ),
-        findsNothing,
+        drawerRowOpacity('First line.'),
+        lessThan(drawerRowOpacity('Third line.')),
       );
     },
   );

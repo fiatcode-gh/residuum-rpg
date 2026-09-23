@@ -2,12 +2,12 @@ import 'package:flutter/material.dart' show Color;
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-import '../style/tokens.dart' show crawlCold;
+import '../style/tokens.dart' show crawlCold, crawlFog;
 
 class DungeonPalette {
   const DungeonPalette({required this.fog});
 
-  static const DungeonPalette crypt = DungeonPalette(fog: Color(0xFF1A2430));
+  static const DungeonPalette crypt = DungeonPalette(fog: crawlFog);
 
   static const DungeonPalette seaCave = DungeonPalette(fog: Color(0xFF152A3A));
 

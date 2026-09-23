@@ -8,7 +8,6 @@ const Color ground = Color(0xFF0E1014);
 const Color recessed = Color(0xFF11141A);
 const Color panel = Color(0xFF15181F);
 const Color raised = Color(0xFF1B1F27);
-const Color disabledRule = Color(0xFF1E222A);
 const Color armedFill = Color(0xFF262B35);
 const Color rule = Color(0xFF2A2E38);
 const Color dim = Color(0xFF8A919E);
@@ -223,8 +222,8 @@ const TextStyle displayNameCold = TextStyle(
 
 /// Every role's `height` is explicit because Spectral's own line box is
 /// 1.522 em — inherited, that is +15% on every text row in the application,
-/// enough on its own to put worst-legal-combat chrome over the 600 dp
-/// ceiling. Dropping a role's `height` to "simplify" it reopens that budget.
+/// enough on its own to push a fixed-chrome region (PLAN.md G8) past its
+/// own floor. Dropping a role's `height` to "simplify" it reopens that risk.
 const TextStyle textHeadline = TextStyle(
   inherit: false,
   fontFamily: textFace,
@@ -285,16 +284,6 @@ const TextStyle textLabel = TextStyle(
   color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
-const TextStyle textLabelDim = TextStyle(
-  inherit: false,
-  fontFamily: textFace,
-  fontSize: 13,
-  fontWeight: FontWeight.w400,
-  height: 1.20,
-  textBaseline: TextBaseline.alphabetic,
-  color: dim,
-  fontFeatures: [FontFeature.tabularFigures()],
-);
 const TextStyle textLabelStrong = TextStyle(
   inherit: false,
   fontFamily: textFace,
@@ -305,20 +294,10 @@ const TextStyle textLabelStrong = TextStyle(
   color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
-const TextStyle textCaption = TextStyle(
-  inherit: false,
-  fontFamily: textFace,
-  fontSize: 11,
-  fontWeight: FontWeight.w600,
-  height: 1.20,
-  textBaseline: TextBaseline.alphabetic,
-  color: ink,
-  fontFeatures: [FontFeature.tabularFigures()],
-);
 
-/// PLAN.md G2 slot roles (action bar, Task 06): Task 01 added every G2 role
-/// with no consumer yet except these three, whose only consumer is the
-/// action bar's own slot label. Same invariants as every role above.
+/// PLAN.md G2 slot roles (action bar, Task 06): the action bar's own slot
+/// label is these three roles' only consumer. Same invariants as every
+/// role above.
 const TextStyle textSlot = TextStyle(
   inherit: false,
   fontFamily: textFace,

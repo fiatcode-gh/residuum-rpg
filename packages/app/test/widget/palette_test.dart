@@ -60,8 +60,7 @@ void main() {
     });
 
     test('carries four distinct fog values, one per region', () {
-      // assert — the regional difference now lives only in fog (PLAN.md G3);
-      // terrain ink is the same warm stone everywhere.
+      // assert
       expect(DungeonPalette.crypt.fog, const Color(0xFF1A2430));
       expect(DungeonPalette.seaCave.fog, const Color(0xFF152A3A));
       expect(DungeonPalette.ruinedKeep.fog, const Color(0xFF221F2A));

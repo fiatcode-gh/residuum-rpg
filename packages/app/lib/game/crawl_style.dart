@@ -48,7 +48,7 @@ const double crawlPanelRadius = 6;
 const BoxDecoration crawlFrameDecoration = BoxDecoration(
   color: crawlPanelFill,
   border: Border.fromBorderSide(BorderSide(color: crawlFrame)),
-  borderRadius: BorderRadius.all(Radius.circular(6)),
+  borderRadius: BorderRadius.all(Radius.circular(crawlPanelRadius)),
 );
 
 /// The clamp that keeps every fixed chrome region within its PLAN.md G8
@@ -65,12 +65,17 @@ double crawlScale(BuildContext context) =>
 enum CrawlSlotState { available, disabled, armed }
 
 /// PLAN.md Task 12 map callout internals (decision 3): the card's fixed
-/// geometry in dp, independent of `crawlScale` — the callout sits over the
-/// dense map rather than the fixed chrome column, so text scale never
-/// grows it. Height is `crawlCalloutPadding * 2 + crawlCalloutNameRow +
-/// crawlCalloutGap + crawlCalloutHpRow + crawlCalloutGap +
-/// crawlCalloutLineHeight * k`, `k = 2 + resists.length +
-/// vulnerableTo.length`.
+/// geometry in dp. [crawlCalloutWidth] stays independent of `crawlScale` —
+/// the callout sits over the dense map rather than the fixed chrome
+/// column, so text scale never grows the card's width. Its text-row
+/// heights do scale (Unit 16.5 acceptance I3): a fixed height for a single
+/// line of text clips at a larger system text size, so `crawlCalloutNameRow`,
+/// `crawlCalloutHpRow` and `crawlCalloutLineHeight` each grow by
+/// `crawlScale` just as the fixed-chrome regions do; the padding and gaps
+/// around them do not. Height is `crawlCalloutPadding * 2 +
+/// (crawlCalloutNameRow + crawlCalloutHpRow) * crawlScale(context) +
+/// crawlCalloutGap * 2 + crawlCalloutLineHeight * crawlScale(context) * k`,
+/// `k = 2 + resists.length + vulnerableTo.length`.
 const double crawlCalloutWidth = 172;
 const double crawlCalloutPadding = 10;
 const double crawlCalloutNameRow = 17;
@@ -87,3 +92,19 @@ const double crawlCalloutEdgeClamp = 8;
 /// The leader line's stroke width and its dot's radius at the cell end.
 const double crawlCalloutLeaderWidth = 1;
 const double crawlCalloutDotRadius = 2.5;
+
+/// The vertical rule PLAN.md G8 draws between a fixed-chrome panel's stat
+/// columns — the hero panel and the combat panel both use it, sized
+/// identically wherever it appears.
+class ColumnDivider extends StatelessWidget {
+  const ColumnDivider({super.key});
+
+  @override
+  Widget build(BuildContext context) => const VerticalDivider(
+    width: 23,
+    thickness: hairline,
+    indent: 8,
+    endIndent: 8,
+    color: crawlDivider,
+  );
+}

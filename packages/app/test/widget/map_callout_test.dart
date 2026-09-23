@@ -166,23 +166,33 @@ Future<void> _longPressLocal(WidgetTester tester, Offset local) async {
 
 /// Pumps a standalone [MapCallout] over a fixed [size] box anchored at the
 /// surface's own origin, so [WidgetTester.getRect] reads in the same local
-/// space [GridGeometry] does.
+/// space [GridGeometry] does. [textScaler] feeds the ambient `MediaQuery`
+/// a physical device's system text size would turn — `MapCallout` itself
+/// is pumped outside `GameScreen`'s own clamp here, so the test supplies
+/// an already-clamped value directly.
 Future<Rect> _pumpCallout(
   WidgetTester tester,
   GameViewState state,
-  Size size,
-) async {
-  await tester.pumpWidget(
-    MaterialApp(
-      home: Align(
-        alignment: Alignment.topLeft,
-        child: SizedBox(
-          width: size.width,
-          height: size.height,
-          child: MapCallout(state: state, size: size),
-        ),
+  Size size, {
+  TextScaler? textScaler,
+}) async {
+  final callout = MaterialApp(
+    home: Align(
+      alignment: Alignment.topLeft,
+      child: SizedBox(
+        width: size.width,
+        height: size.height,
+        child: MapCallout(state: state, size: size),
       ),
     ),
+  );
+  await tester.pumpWidget(
+    textScaler == null
+        ? callout
+        : MediaQuery(
+            data: MediaQueryData(textScaler: textScaler),
+            child: callout,
+          ),
   );
   return tester.getRect(find.byKey(mapCalloutKey));
 }
@@ -331,6 +341,99 @@ void main() {
 
     expect(bloc.state.inspectedActorId, monster.id);
     expect(find.byKey(mapCalloutKey), findsOneWidget);
+  });
+
+  testWidgets(
+    'tapping a distant known wall dismisses the callout, without moving the '
+    'hero or touching the log',
+    (tester) async {
+      final monster = _ghoul(_wideFarMonster);
+      final bloc = await _openCrawl(
+        tester,
+        _gameState(
+          ascii: _wideRoomArena(14),
+          heroAt: _wideHero,
+          monsters: [monster],
+        ),
+      );
+      final geometry = _mapGeometry(tester, bloc.state);
+      await _tapLocal(
+        tester,
+        geometry.centreOf(_wideFarMonster) + const Offset(18, 0),
+      );
+      await tester.pumpAndSettle();
+      expect(bloc.state.inspectedActorId, monster.id);
+      final heroBefore = bloc.state.game.hero.position;
+      final logBefore = bloc.state.log;
+
+      const wall = Position(2, 0);
+      await _tapLocal(tester, geometry.centreOf(wall));
+      await tester.pumpAndSettle();
+
+      expect(bloc.state.inspectedActorId, isNull);
+      expect(find.byKey(mapCalloutKey), findsNothing);
+      expect(bloc.state.game.hero.position, heroBefore);
+      expect(bloc.state.log, logBefore);
+    },
+  );
+
+  testWidgets("tapping the hero's own cell dismisses an open callout", (
+    tester,
+  ) async {
+    final monster = _ghoul(_wideFarMonster);
+    final bloc = await _openCrawl(
+      tester,
+      _gameState(
+        ascii: _wideRoomArena(14),
+        heroAt: _wideHero,
+        monsters: [monster],
+      ),
+    );
+    final geometry = _mapGeometry(tester, bloc.state);
+    await _tapLocal(
+      tester,
+      geometry.centreOf(_wideFarMonster) + const Offset(18, 0),
+    );
+    await tester.pumpAndSettle();
+    expect(bloc.state.inspectedActorId, monster.id);
+    final heroBefore = bloc.state.game.hero.position;
+
+    await _tapLocal(tester, geometry.centreOf(_wideHero));
+    await tester.pumpAndSettle();
+
+    expect(bloc.state.inspectedActorId, isNull);
+    expect(find.byKey(mapCalloutKey), findsNothing);
+    expect(bloc.state.game.hero.position, heroBefore);
+  });
+
+  testWidgets('a long-press on empty ground dismisses an open callout', (
+    tester,
+  ) async {
+    final monster = _ghoul(_wideFarMonster);
+    final bloc = await _openCrawl(
+      tester,
+      _gameState(
+        ascii: _wideRoomArena(14),
+        heroAt: _wideHero,
+        monsters: [monster],
+      ),
+    );
+    final geometry = _mapGeometry(tester, bloc.state);
+    await _tapLocal(
+      tester,
+      geometry.centreOf(_wideFarMonster) + const Offset(18, 0),
+    );
+    await tester.pumpAndSettle();
+    expect(bloc.state.inspectedActorId, monster.id);
+    final heroBefore = bloc.state.game.hero.position;
+
+    const emptyGround = Position(2, 12);
+    await _longPressLocal(tester, geometry.centreOf(emptyGround));
+    await tester.pumpAndSettle();
+
+    expect(bloc.state.inspectedActorId, isNull);
+    expect(find.byKey(mapCalloutKey), findsNothing);
+    expect(bloc.state.game.hero.position, heroBefore);
   });
 
   testWidgets('a timeline actor tap still opens the sheet in battle', (
@@ -483,4 +586,52 @@ void main() {
 
     expect(find.byKey(mapCalloutKey), findsNothing);
   });
+
+  testWidgets(
+    "the callout's name, HP and fact rows stay unclipped at 1.3x text scale",
+    (tester) async {
+      const size = Size(392.7, 441.8);
+      const heroAt = Position(6, 5);
+      const monsterAt = Position(20, 5);
+      final game = _clampedGameState(
+        columns: 30,
+        rows: 12,
+        heroAt: heroAt,
+        monsterAt: monsterAt,
+      );
+      final state = GameViewState(
+        game: game,
+        log: const [],
+        inspectedActorId: 'ghoul-1',
+      );
+
+      const scaler = TextScaler.linear(1.3);
+      await _pumpCallout(tester, state, size, textScaler: scaler);
+
+      double naturalHeight(Finder finder) {
+        final text = tester.widget<Text>(finder);
+        final painter = TextPainter(
+          text: TextSpan(text: text.data, style: text.style),
+          textDirection: TextDirection.ltr,
+          textScaler: scaler,
+        )..layout();
+        return painter.height;
+      }
+
+      final callout = find.byKey(mapCalloutKey);
+      for (final label in [
+        'The ghoul',
+        'HP 10/10',
+        'ATK 3–3  SPD 10',
+        'Adjacent',
+      ]) {
+        final finder = find.descendant(of: callout, matching: find.text(label));
+        expect(
+          tester.getSize(finder).height,
+          greaterThanOrEqualTo(naturalHeight(finder) - 0.5),
+          reason: '"$label" clips at 1.3x text scale',
+        );
+      }
+    },
+  );
 }

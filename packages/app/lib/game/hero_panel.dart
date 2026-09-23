@@ -15,8 +15,8 @@ const manaMeterKey = Key('mana-meter');
 /// the hero's name, hit points and mana, combat stats, and what they are
 /// carrying in the two equipped slots and the two quick ones.
 ///
-/// A pure projection over [state], exactly like [CrawlStatus]: nothing here
-/// dispatches, so every fact comes in through the constructor. [heroLabel] is
+/// A pure projection over [state]: nothing here dispatches, so every fact
+/// comes in through the constructor. [heroLabel] is
 /// a separate parameter rather than read off [state] because it is app state,
 /// not crawl state (PLAN.md E4) — [GameBloc] carries it as a run constant
 /// beside `dungeon`.
@@ -65,13 +65,7 @@ class HeroPanel extends StatelessWidget {
                     gold: state.game.gold,
                   ),
                 ),
-                const VerticalDivider(
-                  width: 23,
-                  thickness: hairline,
-                  indent: 8,
-                  endIndent: 8,
-                  color: crawlDivider,
-                ),
+                const ColumnDivider(),
                 Expanded(
                   flex: 33,
                   child: Column(
@@ -95,13 +89,7 @@ class HeroPanel extends StatelessWidget {
                     ],
                   ),
                 ),
-                const VerticalDivider(
-                  width: 23,
-                  thickness: hairline,
-                  indent: 8,
-                  endIndent: 8,
-                  color: crawlDivider,
-                ),
+                const ColumnDivider(),
                 Expanded(
                   flex: 27,
                   child: Column(
@@ -280,7 +268,7 @@ class _LabelledMark extends StatelessWidget {
       Text(label, style: displayLabel),
       const SizedBox(height: 3),
       SizedBox(
-        height: 26,
+        height: 26 * crawlScale(context),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -175,10 +175,6 @@ void main() {
       final heroPanel = tester.getRect(find.byType(HeroPanel));
       final peek = tester.getRect(find.byKey(logPeekKey));
       final bar = tester.getRect(find.byKey(actionRowKey));
-      debugPrint(
-        'U16.5 Task 11 exploration header=$header map=$map '
-        'heroPanel=$heroPanel peek=$peek bar=$bar',
-      );
 
       expect(header.height, closeTo(88, 0.01));
       expect(heroPanel.height, closeTo(102, 0.01));
@@ -206,10 +202,6 @@ void main() {
       final combatPanel = tester.getRect(find.byType(CombatPanel));
       final peek = tester.getRect(find.byKey(logPeekKey));
       final bar = tester.getRect(find.byKey(actionRowKey));
-      debugPrint(
-        'U16.5 Task 11 battle header=$header dock=$dock map=$map '
-        'combatPanel=$combatPanel peek=$peek bar=$bar',
-      );
 
       expect(header.height, closeTo(88, 0.01));
       expect(dock.height, closeTo(58, 0.01));

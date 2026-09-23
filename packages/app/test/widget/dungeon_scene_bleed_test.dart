@@ -13,19 +13,20 @@ import 'package:residuum_core/core.dart';
 
 import '../support/phone.dart';
 
-// A room far taller and wider than any viewport this unit's chrome can leave
-// for the map: 34 floor columns (544dp of floor at mapCellWidth=16, wider
-// than the 411dp-logical-wide test phone) and 60 floor rows (960dp, taller
-// than the 923dp-logical-tall test phone). The point is not the room's
-// shape — it is that most of it always sits outside the camera's window, at
-// every chrome density, so a camera that paints the whole world rather than
-// clipping to its own box always has real tile content to leak.
 const _interiorWidth = 34;
 const _interiorHeight = 60;
 const _totalWidth = _interiorWidth + 2;
 const _heroAt = Position(8, 16);
 const _ghoulAt = Position(9, 16);
 
+/// A room far taller and wider than any viewport this unit's chrome can
+/// leave for the map: [_interiorWidth] floor columns (544dp of floor at
+/// mapCellWidth=16, wider than the 411dp-logical-wide test phone) and
+/// [_interiorHeight] floor rows (960dp, taller than the
+/// 923dp-logical-tall test phone). The point is not the room's shape — it
+/// is that most of it always sits outside the camera's window, at every
+/// chrome density, so a camera that paints the whole world rather than
+/// clipping to its own box always has real tile content to leak.
 String _bigArena() {
   final rows = <String>[
     '#' * _totalWidth,
@@ -170,9 +171,7 @@ void main() {
     'the dungeon canvas paints only inside the box the Column gives it, '
     'even at worst-legal-battle density on a floor taller than the viewport',
     (tester) async {
-      // arrange - the exact density the contract names: battle open, every
-      // spell known, the pack near its cap, on a floor that cannot fit in
-      // any viewport this chrome leaves.
+      // arrange
       await _openCrawl(tester, _worstLegalBattleOnATallFloor());
 
       expect(

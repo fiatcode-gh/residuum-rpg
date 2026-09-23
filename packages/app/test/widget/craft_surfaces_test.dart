@@ -86,15 +86,6 @@ void _expectChipLabel(String id, String label, {String? metadata}) {
   }
 }
 
-/// The action bar's own no-squeeze proof: every slot label renders inside a
-/// single-line `FittedBox(scaleDown)` (PLAN.md G8), which scales a label
-/// down rather than wrapping or clipping it, so the only way a label could
-/// still break the bar is a render exception — an overflow, a NaN layout,
-/// anything `flutter_test` would otherwise swallow silently.
-void _expectNoSqueeze(WidgetTester tester) {
-  expect(tester.takeException(), isNull);
-}
-
 void main() {
   group('the control on a node', () {
     testWidgets('is not offered anywhere else on the floor', (tester) async {
@@ -185,7 +176,6 @@ void main() {
       // 'Mine' is four letters for exactly this reason
       _expectChipLabel('pick-up', 'Pick up');
       _expectChipLabel('gather', 'Mine');
-      _expectNoSqueeze(tester);
       addTearDown(bloc.close);
     });
   });
