@@ -70,7 +70,6 @@ void main() {
       // assert — subtle scale hierarchy: hero above monster above litter
       expect(heroTreatment.scale, greaterThan(monsterTreatment.scale));
       expect(monsterTreatment.scale, greaterThan(litterTreatment.scale));
-      expect(heroTreatment.halo, isTrue);
     });
 
     test('uses ticks for a marked target', () {

@@ -12,20 +12,13 @@ enum GlyphTargetMark { ticks, brackets }
 ///
 /// The treatment decorates the cell's own glyph — it never replaces the
 /// semantic character, never invents ink, and never encodes state by hue.
-/// Value, reticle, and halo come from these decisions; actor identity stays
+/// Value and reticle come from these decisions; actor identity stays
 /// with the glyph and its shape.
 class GlyphMarkTreatment {
-  const GlyphMarkTreatment({
-    required this.scale,
-    required this.halo,
-    this.targetMark,
-  });
+  const GlyphMarkTreatment({required this.scale, this.targetMark});
 
   /// Relative draw scale for the subtle hierarchy between layers.
   final double scale;
-
-  /// Whether a very small halo backs the glyph (hero and significant marks).
-  final bool halo;
 
   /// Which reticle, if any, decorates this cell. Selection supersedes
   /// marking: a selected target never also carries the plain ticks.
@@ -35,19 +28,19 @@ class GlyphMarkTreatment {
   bool operator ==(Object other) =>
       other is GlyphMarkTreatment &&
       other.scale == scale &&
-      other.halo == halo &&
       other.targetMark == targetMark;
 
   @override
-  int get hashCode => Object.hash(scale, halo, targetMark);
+  int get hashCode => Object.hash(scale, targetMark);
 }
 
 /// Decides the graphical treatment for one glyph cell.
 ///
 /// Actors (nodes, litter, monsters, the hero) render as crisp marks with a
-/// subtle scale hierarchy — the hero carries the only halo, as the most
-/// significant mark on the floor. Every terrain character uses its native cell
-/// size; actor and selection treatments decorate their own glyphs.
+/// subtle scale hierarchy; the atmosphere's hero bloom
+/// (`dungeon_atmosphere.dart`) is the hero's only extra emphasis. Every
+/// terrain character uses its native cell size; actor and selection
+/// treatments decorate their own glyphs.
 GlyphMarkTreatment glyphMarkTreatment(GlyphCell cell) => GlyphMarkTreatment(
   scale: switch (cell.layer) {
     GlyphLayer.hero => 1.08,
@@ -55,7 +48,6 @@ GlyphMarkTreatment glyphMarkTreatment(GlyphCell cell) => GlyphMarkTreatment(
     GlyphLayer.terrain || GlyphLayer.node => 1.0,
     GlyphLayer.litter => 0.94,
   },
-  halo: cell.layer == GlyphLayer.hero,
   targetMark: cell.selected
       ? GlyphTargetMark.brackets
       : cell.marked

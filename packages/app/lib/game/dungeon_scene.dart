@@ -14,7 +14,7 @@ import 'game_bloc.dart';
 import 'glyph_marks.dart';
 import 'glyph_plan.dart';
 import 'grid_geometry.dart';
-import 'dungeon_depth.dart';
+import 'dungeon_atmosphere.dart';
 
 const dungeonSceneKey = Key('dungeon-scene');
 const dungeonSceneHostKey = Key('dungeon-scene-host');
@@ -151,15 +151,8 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
   Widget build(BuildContext context) => GameWidget(
     key: dungeonSceneKey,
     game: _scene,
-    backgroundBuilder: (_) => IgnorePointer(
-      ignoring: true,
-      child: ExcludeSemantics(
-        child: CustomPaint(
-          painter: const DungeonDepthPainter(),
-          child: const SizedBox.expand(),
-        ),
-      ),
-    ),
+    backgroundBuilder: (_) =>
+        DungeonAtmosphere(snapshot: _snapshot, fog: widget.palette.fog),
   );
 }
 
@@ -325,7 +318,6 @@ class _GlyphComponent extends PositionComponent {
     );
     _applyTreatment(treatment);
     _updateReticle(treatment);
-    if (treatment.halo) add(_halo);
     add(_text);
     _updateBadge(cell);
   }
@@ -335,17 +327,6 @@ class _GlyphComponent extends PositionComponent {
   late final TextComponent _text;
   TextComponent? _badge;
   _ReticleComponent? _reticle;
-
-  /// The hero's very small halo — a soft value contrast behind the mark so
-  /// the hero reads against the stone at a glance. Shape, not hue: the halo
-  /// is the cell's own ink at a whisper of alpha.
-  CircleComponent get _halo => CircleComponent(
-    radius: mapCellWidth * 0.5,
-    position: Vector2(mapCellWidth / 2, mapCellHeight / 2),
-    anchor: Anchor.center,
-    paint: Paint()
-      ..color = _cell.ink.withValues(alpha: 0.10 + 0.06 * _cell.opacity),
-  );
 
   void synchronize(GlyphCell cell, GlyphMarkTreatment treatment, Color ink) {
     final before = _cell;

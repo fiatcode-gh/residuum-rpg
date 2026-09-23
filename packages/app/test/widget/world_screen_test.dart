@@ -10,6 +10,7 @@ import 'package:residuum_app/game/crawl_status.dart';
 import 'package:residuum_app/game/glyph_marks.dart';
 import 'package:residuum_app/game/glyph_plan.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
+import 'package:residuum_app/game/dungeon_atmosphere.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
@@ -1266,6 +1267,24 @@ void main() {
       expect(find.text('Descend >'), findsNothing);
       expect(find.text('Ascend <'), findsNothing);
       expect(find.text('Leave'), findsNothing);
+    });
+
+    testWidgets('the backdrop fog matches the road\'s regional palette', (
+      tester,
+    ) async {
+      // arrange
+      final route = residuumWorld.routeBetween(stonebridge, cryptNode)!;
+      await _pushRoadFight(
+        tester,
+        profile: newProfile(worldSeed: 909),
+        road: route,
+      );
+
+      // assert
+      final atmosphere = tester.widget<DungeonAtmosphere>(
+        find.byType(DungeonAtmosphere),
+      );
+      expect(atmosphere.fog, paletteForRoad(route).fog);
     });
   });
 

@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -15,7 +16,7 @@ import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 import 'package:residuum_app/game/glyph_marks.dart';
-import 'package:residuum_app/game/dungeon_depth.dart';
+import 'package:residuum_app/game/dungeon_atmosphere.dart';
 
 const _arena = '''
 #######
@@ -72,14 +73,14 @@ GameViewState _viewState({
   String? armedSpellId,
   String? selectedActorId,
   List<Actor>? monsters,
+  Position hero = const Position(1, 1),
 }) {
-  const heroPosition = Position(1, 1);
   final map = FloorMap.parse(_arena);
-  final visible = computeFov(map, heroPosition, fovRadius);
+  final visible = computeFov(map, hero, fovRadius);
   return GameViewState(
     game: GameState(
       map: map,
-      hero: _heroAt(heroPosition),
+      hero: _heroAt(hero),
       monsters: monsters ?? [_ghoulAt(const Position(1, 2))],
       rng: Rng(1),
       lootRng: Rng(2),
@@ -134,6 +135,17 @@ GameViewState _overflowingViewState(Position hero, {Offset pan = Offset.zero}) {
   );
 }
 
+/// [arena] with the character at ([row], [col]) toggled between wall and
+/// floor — a real topology change confined to one tile, at the same map
+/// width and height, so the camera geometry it produces is unaffected.
+String _withFlippedTile(String arena, int row, int col) {
+  final lines = arena.split('\n');
+  final chars = lines[row].split('');
+  chars[col] = chars[col] == '#' ? '.' : '#';
+  lines[row] = chars.join();
+  return lines.join('\n');
+}
+
 ({Position position, String glyph, double opacity, bool marked}) _cell(
   GlyphCell cell,
 ) => (
@@ -143,26 +155,36 @@ GameViewState _overflowingViewState(Position hero, {Offset pan = Offset.zero}) {
   marked: cell.marked,
 );
 
-Future<Uint8List> _renderDepth(Size size) async {
-  final recorder = ui.PictureRecorder();
-  final canvas = ui.Canvas(recorder);
-  const DungeonDepthPainter().paint(canvas, size);
-  final picture = recorder.endRecording();
-  try {
-    final image = await picture.toImage(size.width.ceil(), size.height.ceil());
+Future<Uint8List> _renderPainter(
+  WidgetTester tester,
+  CustomPainter painter,
+  Size size,
+) async {
+  final bytes = await tester.runAsync(() async {
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder);
+    painter.paint(canvas, size);
+    final picture = recorder.endRecording();
     try {
-      return (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!
-          .buffer
-          .asUint8List();
+      final image = await picture.toImage(
+        size.width.ceil(),
+        size.height.ceil(),
+      );
+      try {
+        return (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!
+            .buffer
+            .asUint8List();
+      } finally {
+        image.dispose();
+      }
     } finally {
-      image.dispose();
+      picture.dispose();
     }
-  } finally {
-    picture.dispose();
-  }
+  });
+  return bytes!;
 }
 
-Color _depthPixel(Uint8List pixels, Size size, int x, int y) {
+Color _pixelAt(Uint8List pixels, Size size, int x, int y) {
   final offset = (y * size.width.toInt() + x) * 4;
   return Color.fromARGB(
     pixels[offset + 3],
@@ -170,6 +192,18 @@ Color _depthPixel(Uint8List pixels, Size size, int x, int y) {
     pixels[offset + 1],
     pixels[offset + 2],
   );
+}
+
+/// Samples pixels across [bytes] on a coarse grid, for variation checks that
+/// should not depend on any two specific coordinates happening to differ.
+List<Color> _grid(Uint8List bytes, Size size) => [
+  for (var x = 10; x < size.width; x += 30)
+    for (var y = 10; y < size.height; y += 30) _pixelAt(bytes, size, x, y),
+];
+
+double _luminanceSpread(Iterable<Color> colors) {
+  final luminances = colors.map((c) => c.computeLuminance()).toList();
+  return luminances.reduce(math.max) - luminances.reduce(math.min);
 }
 
 Future<Uint8List> _renderPixels(
@@ -193,8 +227,40 @@ Future<Uint8List> _renderScene(WidgetTester tester, GameViewState state) async {
   const key = Key('scene-depth-surface');
   await tester.pumpWidget(
     MaterialApp(
-      home: RepaintBoundary(
-        key: key,
+      home: Center(
+        child: RepaintBoundary(
+          key: key,
+          child: SizedBox(
+            width: 360,
+            height: 360,
+            child: DungeonSceneHost(
+              state: state,
+              palette: DungeonPalette.crypt,
+              onTap: (_) {},
+              onPan: (_) {},
+              onLongPress: (_) {},
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(key));
+  return _renderPixels(tester, boundary);
+}
+
+/// Renders the [DungeonSceneHost]'s `backgroundBuilder` in isolation, with
+/// [reducedMotion] driving `MediaQuery.disableAnimationsOf` for the
+/// atmosphere it mounts.
+Future<Uint8List> _renderBackgroundOnly(
+  WidgetTester tester,
+  GameViewState state, {
+  bool reducedMotion = false,
+}) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Center(
         child: SizedBox(
           width: 360,
           height: 360,
@@ -209,41 +275,22 @@ Future<Uint8List> _renderScene(WidgetTester tester, GameViewState state) async {
       ),
     ),
   );
-  await tester.pump();
-  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(key));
-  return _renderPixels(tester, boundary);
-}
-
-Future<Uint8List> _renderBackgroundOnly(
-  WidgetTester tester,
-  GameViewState state,
-) async {
-  await tester.pumpWidget(
-    MaterialApp(
-      home: SizedBox(
-        width: 360,
-        height: 360,
-        child: DungeonSceneHost(
-          state: state,
-          palette: DungeonPalette.crypt,
-          onTap: (_) {},
-          onPan: (_) {},
-          onLongPress: (_) {},
-        ),
-      ),
-    ),
-  );
   final builder = tester
       .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
       .backgroundBuilder!;
   await tester.pumpWidget(
     MaterialApp(
-      home: RepaintBoundary(
-        key: const Key('background-only-surface'),
-        child: SizedBox(
-          width: 360,
-          height: 360,
-          child: Builder(builder: builder),
+      home: Center(
+        child: RepaintBoundary(
+          key: const Key('background-only-surface'),
+          child: SizedBox(
+            width: 360,
+            height: 360,
+            child: MediaQuery(
+              data: MediaQueryData(disableAnimations: reducedMotion),
+              child: Builder(builder: builder),
+            ),
+          ),
         ),
       ),
     ),
@@ -256,103 +303,268 @@ Future<Uint8List> _renderBackgroundOnly(
 }
 
 void main() {
-  testWidgets(
-    'the viewport depth has broad variation and exact repeatability',
-    (tester) async {
-      const size = Size(360, 360);
-      final first = await tester.runAsync(() => _renderDepth(size));
-      final second = await tester.runAsync(() => _renderDepth(size));
-
-      expect(second!, orderedEquals(first!));
-      expect(
-        _depthPixel(first, size, 90, 90),
-        isNot(_depthPixel(first, size, 270, 270)),
-      );
-      expect(
-        DungeonDepthPainter().shouldRepaint(const DungeonDepthPainter()),
-        isFalse,
-      );
-    },
-  );
-
-  testWidgets(
-    'background-only pixels ignore hidden topology and view-state changes',
-    (tester) async {
-      final original = _overflowingViewState(const Position(1, 1));
-      final hiddenWallMap = FloorMap.parse(
-        '######################\n'
-        '#....................#\n'
-        '#....................#\n'
-        '#...................##\n'
-        '######################',
-      );
-      final alternateTopology = GameViewState(
-        game: original.game.copyWith(map: hiddenWallMap),
-        log: original.log,
-        pan: original.pan,
-      );
-      expect(
-        glyphPlan(original.game).map(_cell),
-        orderedEquals(glyphPlan(alternateTopology.game).map(_cell)),
-      );
-      final movedHero = _overflowingViewState(const Position(2, 1));
-      final panned = GameViewState(
-        game: original.game,
-        log: original.log,
-        pan: const Offset(72, -36),
-      );
-      final selectedActor = _viewState(selectedActorId: 'ghoul-1');
-
-      final baseline = await _renderBackgroundOnly(tester, original);
-      expect(
-        await _renderBackgroundOnly(tester, alternateTopology),
-        orderedEquals(baseline),
-      );
-      expect(
-        await _renderBackgroundOnly(tester, movedHero),
-        orderedEquals(baseline),
-      );
-      expect(
-        await _renderBackgroundOnly(tester, panned),
-        orderedEquals(baseline),
-      );
-      expect(
-        await _renderBackgroundOnly(tester, selectedActor),
-        orderedEquals(baseline),
-      );
-
-      const size = Size(360, 360);
-      expect(
-        _depthPixel(baseline, size, 90, 90),
-        isNot(_depthPixel(baseline, size, 270, 270)),
-      );
-    },
-  );
-
-  testWidgets('Flame keeps the atmosphere visible beneath unknown map cells', (
-    tester,
-  ) async {
-    final state = _overflowingViewState(const Position(1, 1));
-    final unknown = GameViewState(
-      game: state.game.copyWith(visible: const {}, explored: const {}),
-      log: state.log,
-      pan: state.pan,
-    );
-    final background = await _renderBackgroundOnly(tester, unknown);
-    final scene = await _renderScene(tester, unknown);
-
+  testWidgets('the backdrop has broad fog variation, exact repeatability and a '
+      'vignette', (tester) async {
     const size = Size(360, 360);
-    for (final point in [(10, 10), (350, 10), (10, 350), (350, 350)]) {
-      expect(
-        _depthPixel(scene, size, point.$1, point.$2),
-        _depthPixel(background, size, point.$1, point.$2),
-      );
-    }
+    final state = _viewState();
+    final first = await _renderBackgroundOnly(tester, state);
+    final second = await _renderBackgroundOnly(tester, state);
+    expect(second, orderedEquals(first));
+
+    // the backdrop is all there is to see across most of this small
+    // arena's viewport; a coarse grid proves real variation rather than
+    // gambling on two specific coordinates.
+    expect(_luminanceSpread(_grid(first, size)), greaterThan(0.01));
+
+    final emptyRecorder = ui.PictureRecorder();
+    ui.Canvas(emptyRecorder);
+    final emptyFog = emptyRecorder.endRecording();
+    final vignetted = await _renderPainter(
+      tester,
+      DungeonBackdropPainter(fogField: emptyFog, drift: Offset.zero),
+      size,
+    );
     expect(
-      _depthPixel(scene, size, 10, 10),
-      isNot(_depthPixel(scene, size, 350, 350)),
+      _pixelAt(vignetted, size, 10, 10).computeLuminance(),
+      lessThan(_pixelAt(vignetted, size, 180, 180).computeLuminance()),
     );
   });
+
+  testWidgets(
+    'AC2: unknown cells stay unrevealed by fog, light or the full scene',
+    (tester) async {
+      final base = _overflowingViewState(const Position(1, 1));
+      // a real topology change and a monster, both confined to a tile far
+      // outside the hero's fov, at unchanged map dimensions.
+      final hiddenTileMap = FloorMap.parse(
+        _withFlippedTile(_overflowingArena, 2, 35),
+      );
+      final alternateTopology = GameViewState(
+        game: base.game.copyWith(
+          map: hiddenTileMap,
+          monsters: [_ghoulAt(const Position(35, 2), id: 'unseen')],
+        ),
+        log: base.log,
+        pan: base.pan,
+      );
+      expect(
+        glyphPlan(base.game).map(_cell),
+        orderedEquals(glyphPlan(alternateTopology.game).map(_cell)),
+      );
+
+      final baselineBackground = await _renderBackgroundOnly(tester, base);
+      expect(
+        await _renderBackgroundOnly(tester, alternateTopology),
+        orderedEquals(baselineBackground),
+      );
+      final baselineScene = await _renderScene(tester, base);
+      expect(
+        await _renderScene(tester, alternateTopology),
+        orderedEquals(baselineScene),
+      );
+
+      final unknown = GameViewState(
+        game: base.game.copyWith(visible: const {}, explored: const {}),
+        log: base.log,
+        pan: base.pan,
+      );
+      // the hero always draws itself, so full-image equality would be
+      // wrong here; corners far from the hero prove no other glyph leaks
+      // through when nothing else is visible or explored.
+      expect(glyphPlan(unknown.game).map((cell) => cell.layer), [
+        GlyphLayer.hero,
+      ]);
+      final unknownBackground = await _renderBackgroundOnly(tester, unknown);
+      final unknownScene = await _renderScene(tester, unknown);
+      const size = Size(360, 360);
+      for (final point in [(10, 10), (350, 10), (10, 350), (350, 350)]) {
+        expect(
+          _pixelAt(unknownScene, size, point.$1, point.$2),
+          _pixelAt(unknownBackground, size, point.$1, point.$2),
+        );
+      }
+      expect(
+        _luminanceSpread(_grid(unknownBackground, size)),
+        greaterThan(0.01),
+      );
+    },
+  );
+
+  testWidgets('the torch pool and hero bloom follow the hero', (tester) async {
+    const size = Size(360, 360);
+    const before = Position(1, 1);
+    const after = Position(2, 1);
+    final beforeState = _viewState(hero: before);
+    final afterState = _viewState(hero: after);
+
+    // both positions fit inside the small arena's viewport, so the camera
+    // origin (and thus the fog layer) never moves between the two states —
+    // only the hero's own screen position does.
+    final geometry = GridGeometry.camera(
+      size,
+      beforeState.game.map.width,
+      beforeState.game.map.height,
+      beforeState.cameraFocus,
+      beforeState.pan,
+    );
+    final beforeCentre = geometry.centreOf(before);
+    final afterCentre = geometry.centreOf(after);
+    final beforeBytes = await _renderBackgroundOnly(tester, beforeState);
+    final afterBytes = await _renderBackgroundOnly(tester, afterState);
+
+    Color at(Uint8List bytes, Offset point) =>
+        _pixelAt(bytes, size, point.dx.round(), point.dy.round());
+
+    expect(at(afterBytes, beforeCentre), isNot(at(beforeBytes, beforeCentre)));
+    expect(at(afterBytes, afterCentre), isNot(at(beforeBytes, afterCentre)));
+
+    final warm = at(afterBytes, afterCentre);
+    final cool = at(afterBytes, afterCentre + const Offset(120, 0));
+    expect(warm.r - warm.b, greaterThan(cool.r - cool.b));
+  });
+
+  testWidgets(
+    'AC3: parallax moves only the backdrop, is bounded, and is off under '
+    'reduced motion',
+    (tester) async {
+      const size = Size(360, 360);
+      const hero = Position(20, 2);
+      final unpanned = _overflowingViewState(hero);
+      final panned = _overflowingViewState(hero, pan: const Offset(120, 0));
+
+      GridGeometry geometryFor(GameViewState state) => GridGeometry.camera(
+        size,
+        state.game.map.width,
+        state.game.map.height,
+        state.cameraFocus,
+        state.pan,
+      );
+      final unpannedGeometry = geometryFor(unpanned);
+      final pannedGeometry = geometryFor(panned);
+      final unpannedCentre = unpannedGeometry.centreOf(hero);
+      final pannedCentre = pannedGeometry.centreOf(hero);
+      expect(unpannedGeometry.origin, isNot(pannedGeometry.origin));
+
+      bool farFromBothCentres(Offset point) =>
+          (point - unpannedCentre).distance > 80 &&
+          (point - pannedCentre).distance > 80;
+      final farPoints = [
+        for (var x = 20; x < 360; x += 40)
+          for (var y = 20; y < 360; y += 40) Offset(x.toDouble(), y.toDouble()),
+      ].where(farFromBothCentres).toList();
+      expect(farPoints, isNotEmpty);
+
+      Color at(Uint8List bytes, Offset point) =>
+          _pixelAt(bytes, size, point.dx.round(), point.dy.round());
+
+      final unpannedBytes = await _renderBackgroundOnly(tester, unpanned);
+      final pannedBytes = await _renderBackgroundOnly(tester, panned);
+      expect(
+        farPoints.any(
+          (point) => at(pannedBytes, point) != at(unpannedBytes, point),
+        ),
+        isTrue,
+      );
+
+      final reducedUnpanned = await _renderBackgroundOnly(
+        tester,
+        unpanned,
+        reducedMotion: true,
+      );
+      final reducedPanned = await _renderBackgroundOnly(
+        tester,
+        panned,
+        reducedMotion: true,
+      );
+      for (final point in farPoints) {
+        expect(at(reducedPanned, point), at(reducedUnpanned, point));
+      }
+
+      expect(
+        backdropDrift(const Offset(1000, 1000)),
+        const Offset(parallaxLimit, parallaxLimit),
+      );
+      expect(
+        backdropDrift(const Offset(-1000, -1000)),
+        const Offset(-parallaxLimit, -parallaxLimit),
+      );
+    },
+  );
+
+  testWidgets(
+    'AC3: the atmosphere never moves projection, hit-testing or glyph '
+    'placement',
+    (tester) async {
+      Future<(Position? tapped, Set<String> glyphs)> renderAndTap({
+        required Offset pan,
+        required bool reducedMotion,
+      }) async {
+        Position? tapped;
+        final state = _overflowingViewState(const Position(1, 1), pan: pan);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Center(
+              child: MediaQuery(
+                data: MediaQueryData(disableAnimations: reducedMotion),
+                child: SizedBox(
+                  width: 360,
+                  height: 360,
+                  child: DungeonSceneHost(
+                    state: state,
+                    palette: DungeonPalette.crypt,
+                    onTap: (position) => tapped = position,
+                    onPan: (_) {},
+                    onLongPress: (_) {},
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        const size = Size(360, 360);
+        final geometry = GridGeometry.camera(
+          size,
+          state.game.map.width,
+          state.game.map.height,
+          state.cameraFocus,
+          state.pan,
+        );
+        const target = Position(5, 2);
+        final gameWidgetFinder = find.byKey(dungeonSceneKey);
+        await tester.tapAt(
+          tester.getTopLeft(gameWidgetFinder) + geometry.centreOf(target),
+        );
+        await tester.pump(const Duration(milliseconds: 50));
+
+        final world = tester
+            .widget<GameWidget<FlameGame>>(gameWidgetFinder)
+            .game!
+            .world;
+        final glyphs = {
+          for (final component in world.children.whereType<PositionComponent>())
+            '${component.priority}:${component.position.x}:'
+                '${component.position.y}',
+        };
+        return (tapped, glyphs);
+      }
+
+      (Position?, Set<String>)? baseline;
+      for (final pan in [Offset.zero, const Offset(96, 0)]) {
+        for (final reducedMotion in [false, true]) {
+          final result = await renderAndTap(
+            pan: pan,
+            reducedMotion: reducedMotion,
+          );
+          expect(result.$1, const Position(5, 2));
+          baseline ??= result;
+          expect(result.$2, baseline.$2);
+        }
+      }
+    },
+  );
+
   testWidgets('the scene installs a non-semantic viewport backdrop', (
     tester,
   ) async {
@@ -975,7 +1187,7 @@ void main() {
     expect(panned.pan, const Offset(12, -8));
   });
 
-  testWidgets('keeps glyph text, halo, badge and reticle inside their cells', (
+  testWidgets('keeps glyph text, badge and reticle inside their cells', (
     tester,
   ) async {
     Rect childBounds(PositionComponent child) {
@@ -1053,11 +1265,7 @@ void main() {
     final monster = glyphAt(world, GlyphLayer.monster, const Position(1, 2));
     await expectContained(hero);
     await expectContained(monster);
-    expect(hero.children.whereType<CircleComponent>(), hasLength(1));
-    expect(
-      hero.children.whereType<CircleComponent>().single.radius,
-      closeTo(mapCellWidth * 0.5, 0.0001),
-    );
+    expect(hero.children.whereType<CircleComponent>(), isEmpty);
     expect(monster.children.whereType<TextComponent>(), hasLength(2));
     // A monster both marked (armed target) and selected carries exactly one
     // reticle — selection supersedes marking rather than stacking both, the
