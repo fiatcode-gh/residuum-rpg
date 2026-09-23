@@ -161,6 +161,22 @@ const TextStyle displaySheetTitle = TextStyle(
   fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
 );
 
+/// PLAN.md G2 display role added on demand (Task 08): the hero panel's
+/// column captions (`WEAPON`, `ARMOUR`, `QUICK`, `PACK`) are this unit's
+/// first consumer.
+const TextStyle displayLabel = TextStyle(
+  inherit: false,
+  fontFamily: displayFace,
+  fontSize: 9.5,
+  letterSpacing: 2,
+  fontWeight: FontWeight.w500,
+  fontVariations: [FontVariation('wght', 500)],
+  height: 1.16,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlTextDim,
+  fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
+);
+
 /// Every role's `height` is explicit because Spectral's own line box is
 /// 1.522 em — inherited, that is +15% on every text row in the application,
 /// enough on its own to put worst-legal-combat chrome over the 600 dp

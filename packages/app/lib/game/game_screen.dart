@@ -17,6 +17,7 @@ import 'crawl_surfaces.dart';
 import 'dungeon_palette.dart';
 import 'dungeon_scene.dart';
 import 'game_bloc.dart';
+import 'hero_panel.dart';
 import 'log_drawer.dart';
 import 'log_line.dart';
 import 'grid_geometry.dart';
@@ -151,6 +152,11 @@ class GameScreen extends StatelessWidget {
                                               );
                                             },
                                           ),
+                                        ),
+                                        const SizedBox(height: crawlPanelGap),
+                                        HeroPanel(
+                                          state: state,
+                                          heroLabel: bloc.heroLabel,
                                         ),
                                         const SizedBox(height: crawlGap),
                                         LogPeek(

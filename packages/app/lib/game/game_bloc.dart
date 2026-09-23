@@ -583,6 +583,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     int worldSeed = 1,
     List<LogLine> log = const [],
     this.dungeon,
+    this.heroLabel,
     this.stepDelay = const Duration(milliseconds: 90),
   }) : super(
          GameViewState(
@@ -628,6 +629,13 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   /// one that forgot would quietly rename the place on the screen. A run
   /// constant belongs beside [stepDelay].
   final NodeId? dungeon;
+
+  /// The hero's own name, or null when the app has none to give.
+  ///
+  /// **A run constant beside [dungeon], for the same reason.** `main.dart`
+  /// reads it once from the save document at the two places every crawl is
+  /// opened; nothing in the crawl itself ever changes it (PLAN.md E4).
+  final String? heroLabel;
 
   /// Decides what a map tap means, in exactly one place.
   ///

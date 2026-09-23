@@ -82,6 +82,9 @@ class _HeaderRow extends StatelessWidget {
   );
 }
 
+/// A temporary duplicate display (PLAN.md U16.5 Task 08 decision 5): the
+/// hero panel now owns [hpMeterKey] and [manaMeterKey] on its own meters,
+/// so these render the same facts unkeyed until Task 10 deletes this row.
 class _ResourceRow extends StatelessWidget {
   const _ResourceRow({required this.state});
 
@@ -97,7 +100,6 @@ class _ResourceRow extends StatelessWidget {
       children: [
         Expanded(
           child: ResourceMeter(
-            key: hpMeterKey,
             label: 'HP',
             value: shown,
             ceiling: ceiling,
@@ -109,7 +111,6 @@ class _ResourceRow extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: ResourceMeter(
-              key: manaMeterKey,
               label: 'Mana',
               value: state.mana,
               ceiling: state.maxMana,

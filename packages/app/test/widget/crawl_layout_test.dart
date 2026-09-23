@@ -7,6 +7,7 @@ import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/game/hero_panel.dart';
 import 'package:residuum_app/game/log_drawer.dart';
 import 'package:residuum_app/style/tokens.dart';
 import 'package:residuum_core/core.dart';
@@ -140,7 +141,10 @@ void main() {
       );
       expect(frame, findsOneWidget);
       expect(
-        find.descendant(of: frame, matching: find.byKey(hpMeterKey)),
+        find.descendant(
+          of: find.byType(HeroPanel),
+          matching: find.byKey(hpMeterKey),
+        ),
         findsOneWidget,
       );
       expect(
@@ -149,7 +153,7 @@ void main() {
       );
       expect(explorationStatus.height, 49);
       expect(explorationMap.top, 49);
-      expect(explorationMap.bottom, closeTo(747.4, 0.1));
+      expect(explorationMap.bottom, closeTo(639.4, 0.1));
 
       await _openCrawl(tester, _battleGame());
       final battleStatus = tester.getRect(find.byType(CrawlStatus));
@@ -175,7 +179,7 @@ void main() {
       );
       expect(battleStatus.height, 49);
       expect(battleMap.top, 147);
-      expect(battleMap.bottom, closeTo(747.4, 0.1));
+      expect(battleMap.bottom, closeTo(639.4, 0.1));
       await _openCrawl(tester, _watchedGame());
       final watchedStatus = tester.getRect(find.byType(CrawlStatus));
       final watchedMap = tester.getRect(find.byKey(dungeonSceneSlotKey));
@@ -199,7 +203,7 @@ void main() {
       );
       expect(watchedStatus.height, 49);
       expect(watchedMap.top, 49);
-      expect(watchedMap.bottom, closeTo(747.4, 0.1));
+      expect(watchedMap.bottom, closeTo(639.4, 0.1));
     },
   );
 

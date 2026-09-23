@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../style/tokens.dart';
+
 const double crawlPanelPadding = 8;
 const double crawlTokenCell = 36;
 const double crawlTokenWidth = 76;
@@ -23,6 +25,18 @@ const double crawlActionBarHeight = 60;
 const double crawlSlotGap = 7;
 const double crawlSlotPeek = 18;
 const double crawlSlotMark = 22;
+
+/// PLAN.md G8 hero panel internals (Task 08): the panel's own fixed height,
+/// the gap it sits in between the map and the log peek, its corner radius,
+/// and the frame every fixed-chrome panel this unit draws shares.
+const double crawlHeroPanelHeight = 102;
+const double crawlPanelGap = 6;
+const double crawlPanelRadius = 6;
+const BoxDecoration crawlFrameDecoration = BoxDecoration(
+  color: crawlPanelFill,
+  border: Border.fromBorderSide(BorderSide(color: crawlFrame)),
+  borderRadius: BorderRadius.all(Radius.circular(6)),
+);
 
 /// The clamp that keeps every fixed chrome region within its PLAN.md G8
 /// floor even as the ambient text scale grows, matching
