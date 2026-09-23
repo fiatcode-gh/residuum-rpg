@@ -4955,3 +4955,17 @@ request exists, and the integration choice is the user's.
 - Device: the app stays installed on the phone (APK `4471552…`, pre-Task-05
   build), the hero Wounded 6/20 at Crypt depth 1. Recovery checkpoint
   `.flow/checkpoints/206bc97.md`.
+
+### U16/U16.5 vivo phone restored — 2026-09-23
+
+- The user is switching to a different phone for future evidence. Test saves
+  on the vivo were our own throwaway data (the original baseline was absent),
+  so no backup was taken. With the user's approval, the app was uninstalled.
+  Absence is verified with the same signals as the pre-U16 baseline: RESTORE
+  MATCH (`.flow/evidence/visual-reboot/unit-16.5-device/restore-receipt.md`).
+  The vivo device debt is closed.
+- The new phone is unknown. Before its first ADB action: write a checkpoint,
+  then run a read-only discovery of size, density, insets and package
+  presence. If the package holds real data, back up both save slots
+  (`app_flutter/save.json`, `save-previous.json`) byte-exact before installing.
+  Re-measure G8 figures there; layout rules stay proportional.

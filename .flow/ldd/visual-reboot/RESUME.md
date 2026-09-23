@@ -27,10 +27,12 @@ targets). Plan: `units/unit-16.5/PLAN.md` (read "Amendment A1" first).
   `91aa6db`.
 - Sign-off notes to judge: Plex Mono's slanted `#` against the mock's upright
   `#`; an item glyph peeking beside `@` when the hero stands on an item.
-- Phone: the app is installed (APK `4471552…`, built before Task 05). The hero
-  is Wounded 6/20 with 0 potions at Crypt depth 1. Test saves exist and are
-  unread. Recovery checkpoint: `.flow/checkpoints/206bc97.md`. The original
-  baseline is package absent.
+- Phone: the vivo I2219 was restored to never-installed (uninstall verified,
+  RESTORE MATCH). **The user will use a different phone** for the final gate.
+  Before its first ADB action: write a checkpoint, run a read-only discovery
+  (size, density, insets, package presence), and back up both save slots
+  byte-exact if the app already holds real data there. Re-measure the G8
+  figures on it.
 - U16 is not accepted; it is accepted together with U16.5.
 
 ## Historical U16 detail
