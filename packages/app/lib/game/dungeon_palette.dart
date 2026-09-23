@@ -48,11 +48,11 @@ DungeonPalette paletteForRoad(Route route) {
 /// fog. `Lit` is the cell's base `ink` (bright, near the hero); `Shade` is
 /// its `shade` (dim, at the edge of sight or once only remembered).
 const Color stoneWallLit = Color(0xFFDCC08A);
-const Color stoneWallShade = Color(0xFF8F8C82);
+const Color stoneWallShade = Color(0xFF8A7552);
 const Color stoneFloorLit = Color(0xFFB39B6C);
-const Color stoneFloorShade = Color(0xFF6B665B);
+const Color stoneFloorShade = Color(0xFF6B5B40);
 const Color stoneStairsLit = Color(0xFFFFE3A0);
-const Color stoneStairsShade = Color(0xFFB8B09A);
+const Color stoneStairsShade = Color(0xFFB39A6A);
 
 /// The old teal sat next to enemy red — a red-vs-green-adjacent pair. Cold
 /// blue carries litter instead.

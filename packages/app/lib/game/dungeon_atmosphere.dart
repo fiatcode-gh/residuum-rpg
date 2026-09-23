@@ -44,7 +44,7 @@ double fogHash(int ix, int iy, int channel) {
 }
 
 const double _fogLatticeSpacing = 56;
-const double _fogDiscRadius = 72.8;
+const double _fogDiscRadius = 96;
 const double _torchPoolRadius = 6 * mapCellWidth;
 const double _heroBloomRadius = 1.6 * mapCellWidth;
 const Color _vignetteColor = Color(0xFF020406);
@@ -150,7 +150,7 @@ ui.Picture _recordFogField(Size size, Color fog) {
       final jx = (fogHash(ix, iy, 1) - 0.5) * 0.8 * s;
       final jy = (fogHash(ix, iy, 2) - 0.5) * 0.8 * s;
       final centre = Offset(ix * s + jx, iy * s + jy);
-      final alpha = 0.10 + 0.30 * (k - 0.35) / 0.65;
+      final alpha = 0.22 + 0.48 * (k - 0.35) / 0.65;
       final shader = ui.Gradient.radial(centre, r, [
         fog.withValues(alpha: alpha),
         fog.withValues(alpha: 0),

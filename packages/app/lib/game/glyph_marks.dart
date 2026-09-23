@@ -63,12 +63,12 @@ Color glyphInk(GlyphCell cell, Position hero) {
     final dy = cell.position.y - hero.y;
     final distance = math.sqrt((dx * dx + dy * dy).toDouble());
     final t = (distance / fovRadius).clamp(0.0, 1.0);
-    final light = (1 - t) * (1 - t);
+    final light = 1 - t;
     return Color.lerp(
       cell.shade,
       cell.ink,
       light,
-    )!.withValues(alpha: 0.55 + 0.45 * light);
+    )!.withValues(alpha: 0.60 + 0.40 * light);
   }
   if ((cell.layer == GlyphLayer.terrain || cell.layer == GlyphLayer.node) &&
       cell.opacity != fullOpacity) {

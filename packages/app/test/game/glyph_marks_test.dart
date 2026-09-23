@@ -134,23 +134,23 @@ void main() {
         expect(glyphInk(wallAt(0), hero), stoneWallLit.withValues(alpha: 1.0));
       });
 
-      test('a visible wall at the edge of sight is shade stone at 0.55', () {
+      test('a visible wall at the edge of sight is shade stone at 0.60', () {
         expect(
           glyphInk(wallAt(fovRadius), hero),
-          stoneWallShade.withValues(alpha: 0.55),
+          stoneWallShade.withValues(alpha: 0.60),
         );
       });
 
-      test('a visible wall halfway to the edge lerps at 0.6625 alpha', () {
+      test('a visible wall halfway to the edge lerps at 0.8 alpha', () {
         final ink = glyphInk(wallAt(4), hero);
         final expected = Color.lerp(
           stoneWallShade,
           stoneWallLit,
-          0.25,
-        )!.withValues(alpha: 0.55 + 0.45 * 0.25);
+          0.5,
+        )!.withValues(alpha: 0.60 + 0.40 * 0.5);
 
         expect(ink, expected);
-        expect(ink.a, closeTo(0.6625, 0.0001));
+        expect(ink.a, closeTo(0.8, 0.0001));
       });
 
       test('value strictly decreases with distance along a row', () {
