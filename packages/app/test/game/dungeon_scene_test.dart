@@ -1,12 +1,12 @@
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/rendering.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/dungeon_material.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
-import 'package:residuum_app/game/dungeon_scene_material.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/glyph_plan.dart';
@@ -14,6 +14,8 @@ import 'package:residuum_app/game/grid_geometry.dart';
 import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
+import 'package:residuum_app/game/glyph_marks.dart';
+import 'package:residuum_app/game/dungeon_depth.dart';
 
 const _arena = '''
 #######
@@ -138,33 +140,268 @@ GameViewState _overflowingViewState(Position hero, {Offset pan = Offset.zero}) {
   marked: cell.marked,
 );
 
-Future<Color> _materialPixel(
-  MaterialComponent component,
-  GameViewState state,
-  Offset point,
-) async {
+Future<Uint8List> _renderDepth(Size size) async {
   final recorder = ui.PictureRecorder();
-  final canvas = ui.Canvas(recorder)..drawColor(dungeonVoid, ui.BlendMode.src);
-  component.render(canvas);
-  final image = await recorder.endRecording().toImage(
-    (state.game.map.width * cameraCellSize).round(),
-    (state.game.map.height * cameraCellSize).round(),
-  );
+  final canvas = ui.Canvas(recorder);
+  const DungeonDepthPainter().paint(canvas, size);
+  final picture = recorder.endRecording();
   try {
-    final rgba = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-    final offset = (point.dy.round() * image.width + point.dx.round()) * 4;
-    return Color.fromARGB(
-      rgba!.getUint8(offset + 3),
-      rgba.getUint8(offset),
-      rgba.getUint8(offset + 1),
-      rgba.getUint8(offset + 2),
-    );
+    final image = await picture.toImage(size.width.ceil(), size.height.ceil());
+    try {
+      return (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!
+          .buffer
+          .asUint8List();
+    } finally {
+      image.dispose();
+    }
   } finally {
-    image.dispose();
+    picture.dispose();
   }
 }
 
+Color _depthPixel(Uint8List pixels, Size size, int x, int y) {
+  final offset = (y * size.width.toInt() + x) * 4;
+  return Color.fromARGB(
+    pixels[offset + 3],
+    pixels[offset],
+    pixels[offset + 1],
+    pixels[offset + 2],
+  );
+}
+
+Future<Uint8List> _renderPixels(
+  WidgetTester tester,
+  RenderRepaintBoundary boundary,
+) async {
+  final pixels = await tester.runAsync(() async {
+    final image = await boundary.toImage();
+    try {
+      return (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!
+          .buffer
+          .asUint8List();
+    } finally {
+      image.dispose();
+    }
+  });
+  return pixels!;
+}
+
+Future<Uint8List> _renderScene(WidgetTester tester, GameViewState state) async {
+  const key = Key('scene-depth-surface');
+  await tester.pumpWidget(
+    MaterialApp(
+      home: RepaintBoundary(
+        key: key,
+        child: SizedBox(
+          width: 360,
+          height: 360,
+          child: DungeonSceneHost(
+            state: state,
+            palette: DungeonPalette.crypt,
+            onTap: (_) {},
+            onPan: (_) {},
+            onLongPress: (_) {},
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  final boundary = tester.renderObject<RenderRepaintBoundary>(find.byKey(key));
+  return _renderPixels(tester, boundary);
+}
+
+Future<Uint8List> _renderBackgroundOnly(
+  WidgetTester tester,
+  GameViewState state,
+) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      home: SizedBox(
+        width: 360,
+        height: 360,
+        child: DungeonSceneHost(
+          state: state,
+          palette: DungeonPalette.crypt,
+          onTap: (_) {},
+          onPan: (_) {},
+          onLongPress: (_) {},
+        ),
+      ),
+    ),
+  );
+  final builder = tester
+      .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+      .backgroundBuilder!;
+  await tester.pumpWidget(
+    MaterialApp(
+      home: RepaintBoundary(
+        key: const Key('background-only-surface'),
+        child: SizedBox(
+          width: 360,
+          height: 360,
+          child: Builder(builder: builder),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  final boundary = tester.renderObject<RenderRepaintBoundary>(
+    find.byKey(const Key('background-only-surface')),
+  );
+  return _renderPixels(tester, boundary);
+}
+
 void main() {
+  testWidgets(
+    'the viewport depth has broad variation and exact repeatability',
+    (tester) async {
+      const size = Size(360, 360);
+      final first = await tester.runAsync(() => _renderDepth(size));
+      final second = await tester.runAsync(() => _renderDepth(size));
+
+      expect(second!, orderedEquals(first!));
+      expect(
+        _depthPixel(first, size, 90, 90),
+        isNot(_depthPixel(first, size, 270, 270)),
+      );
+      expect(
+        DungeonDepthPainter().shouldRepaint(const DungeonDepthPainter()),
+        isFalse,
+      );
+    },
+  );
+
+  testWidgets(
+    'background-only pixels ignore hidden topology and view-state changes',
+    (tester) async {
+      final original = _overflowingViewState(const Position(1, 1));
+      final hiddenWallMap = FloorMap.parse(
+        '######################\n'
+        '#....................#\n'
+        '#....................#\n'
+        '#...................##\n'
+        '######################',
+      );
+      final alternateTopology = GameViewState(
+        game: original.game.copyWith(map: hiddenWallMap),
+        log: original.log,
+        pan: original.pan,
+      );
+      expect(
+        glyphPlan(original.game, DungeonPalette.crypt).map(_cell),
+        orderedEquals(
+          glyphPlan(alternateTopology.game, DungeonPalette.crypt).map(_cell),
+        ),
+      );
+      final movedHero = _overflowingViewState(const Position(2, 1));
+      final panned = GameViewState(
+        game: original.game,
+        log: original.log,
+        pan: const Offset(72, -36),
+      );
+      final selectedActor = _viewState(selectedActorId: 'ghoul-1');
+
+      final baseline = await _renderBackgroundOnly(tester, original);
+      expect(
+        await _renderBackgroundOnly(tester, alternateTopology),
+        orderedEquals(baseline),
+      );
+      expect(
+        await _renderBackgroundOnly(tester, movedHero),
+        orderedEquals(baseline),
+      );
+      expect(
+        await _renderBackgroundOnly(tester, panned),
+        orderedEquals(baseline),
+      );
+      expect(
+        await _renderBackgroundOnly(tester, selectedActor),
+        orderedEquals(baseline),
+      );
+
+      const size = Size(360, 360);
+      expect(
+        _depthPixel(baseline, size, 90, 90),
+        isNot(_depthPixel(baseline, size, 270, 270)),
+      );
+    },
+  );
+
+  testWidgets('Flame keeps the atmosphere visible beneath unknown map cells', (
+    tester,
+  ) async {
+    final state = _overflowingViewState(const Position(1, 1));
+    final unknown = GameViewState(
+      game: state.game.copyWith(visible: const {}, explored: const {}),
+      log: state.log,
+      pan: state.pan,
+    );
+    final background = await _renderBackgroundOnly(tester, unknown);
+    final scene = await _renderScene(tester, unknown);
+
+    const size = Size(360, 360);
+    for (final point in [(10, 10), (350, 10), (10, 350), (350, 350)]) {
+      expect(
+        _depthPixel(scene, size, point.$1, point.$2),
+        _depthPixel(background, size, point.$1, point.$2),
+      );
+    }
+    expect(
+      _depthPixel(scene, size, 10, 10),
+      isNot(_depthPixel(scene, size, 350, 350)),
+    );
+  });
+  testWidgets('the scene installs a non-semantic viewport backdrop', (
+    tester,
+  ) async {
+    final taps = <Position>[];
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 360,
+          height: 360,
+          child: DungeonSceneHost(
+            state: _viewState(),
+            palette: DungeonPalette.crypt,
+            onTap: taps.add,
+            onPan: (_) {},
+            onLongPress: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final gameWidgetFinder = find.byKey(dungeonSceneKey);
+    final gameWidget = tester.widget<GameWidget<FlameGame>>(gameWidgetFinder);
+    expect(gameWidget.backgroundBuilder, isNotNull);
+    final backgroundPointer = find.descendant(
+      of: gameWidgetFinder,
+      matching: find.byType(IgnorePointer),
+    );
+    final backgroundSemantics = find.descendant(
+      of: gameWidgetFinder,
+      matching: find.byType(ExcludeSemantics),
+    );
+    expect(backgroundPointer, findsOneWidget);
+    expect(tester.widget<IgnorePointer>(backgroundPointer).ignoring, isTrue);
+    expect(backgroundSemantics, findsOneWidget);
+    expect(
+      tester.widget<ExcludeSemantics>(backgroundSemantics).excluding,
+      isTrue,
+    );
+    final paint = find.descendant(
+      of: gameWidgetFinder,
+      matching: find.byType(CustomPaint),
+    );
+    expect(paint, findsOneWidget);
+    expect(tester.getRect(paint), tester.getRect(gameWidgetFinder));
+
+    await tester.tapAt(tester.getCenter(gameWidgetFinder));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(taps, isNotEmpty);
+  });
   test('the scene snapshot preserves glyph projection and camera facts', () {
     final state = _viewState(
       pan: const Offset(12, -8),
@@ -178,7 +415,8 @@ void main() {
 
     expect(snapshot.columns, 7);
     expect(snapshot.rows, 5);
-    expect(snapshot.focus, const Position(1, 1));
+    expect(snapshot.focus, state.cameraFocus);
+    expect(snapshot.heroPosition, state.game.hero.position);
     expect(snapshot.pan, const Offset(12, -8));
     expect(
       snapshot.cells.map(_cell),
@@ -212,90 +450,193 @@ void main() {
     expect(identical(panned.cells, snapshot.cells), isTrue);
   });
 
-  testWidgets(
-    'synchronizes retained material for a new projection but not a pan',
-    (tester) async {
-      const hostKey = Key('material-synchronization-scene');
-
-      Future<void> pumpScene(GameViewState state) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: SizedBox(
-              width: 360,
-              height: 360,
-              child: DungeonSceneHost(
-                key: hostKey,
-                state: state,
-                palette: DungeonPalette.crypt,
-                onTap: (_) {},
-                onPan: (_) {},
-                onLongPress: (_) {},
-              ),
-            ),
-          ),
-        );
-        await tester.pump();
-      }
-
-      final sampledFloor = Offset(11.5 * cameraCellSize, 1.94 * cameraCellSize);
-      var state = _overflowingViewState(const Position(10, 1));
-      await pumpScene(state);
-      final materialBefore = tester
-          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
-          .game!
-          .world
-          .children
-          .whereType<MaterialComponent>()
-          .single;
-      final planBefore = materialBefore.plan;
-      final outputBefore = (await tester.runAsync(
-        () => _materialPixel(materialBefore, state, sampledFloor),
-      ))!;
-
-      state = _overflowingViewState(const Position(18, 1));
-      await pumpScene(state);
-      final materialAfterProjection = tester
-          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
-          .game!
-          .world
-          .children
-          .whereType<MaterialComponent>()
-          .single;
-      final planAfterProjection = materialAfterProjection.plan;
-      final outputAfterProjection = (await tester.runAsync(
-        () => _materialPixel(materialAfterProjection, state, sampledFloor),
-      ))!;
-
-      expect(materialAfterProjection, same(materialBefore));
-      expect(planAfterProjection, isNot(same(planBefore)));
-      expect(planAfterProjection.heroPosition, const Position(18, 1));
-      expect(outputAfterProjection, isNot(outputBefore));
-
-      state = GameViewState(
-        game: state.game,
-        log: state.log,
-        pan: const Offset(1000, 0),
-        armedSpellId: state.armedSpellId,
-        actorIdentity: state.actorIdentity,
-        selectedActorId: state.selectedActorId,
+  test(
+    'hero light origin is independent of camera focus and survives pan reuse',
+    () {
+      final selected = _ghoulAt(const Position(2, 2));
+      final state = _viewState(
+        selectedActorId: selected.id,
+        monsters: [selected],
       );
-      await pumpScene(state);
-      final materialAfterPan = tester
-          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
-          .game!
-          .world
-          .children
-          .whereType<MaterialComponent>()
-          .single;
-      final outputAfterPan = (await tester.runAsync(
-        () => _materialPixel(materialAfterPan, state, sampledFloor),
-      ))!;
+      final snapshot = DungeonSceneSnapshot.fromViewState(
+        state,
+        DungeonPalette.crypt,
+      );
+      final panned = snapshot.withViewport(
+        columns: snapshot.columns,
+        rows: snapshot.rows,
+        focus: state.cameraFocus,
+        pan: const Offset(12, -8),
+      );
 
-      expect(materialAfterPan, same(materialBefore));
-      expect(materialAfterPan.plan, same(planAfterProjection));
-      expect(outputAfterPan, outputAfterProjection);
+      expect(snapshot.focus, selected.position);
+      final terrainAtHero = snapshot.cells.singleWhere(
+        (cell) =>
+            cell.layer == GlyphLayer.terrain &&
+            cell.position == state.game.hero.position,
+      );
+      expect(
+        terrainPresentationInk(terrainAtHero, snapshot.heroPosition),
+        isNot(terrainPresentationInk(terrainAtHero, snapshot.focus)),
+      );
+      expect(snapshot.heroPosition, state.game.hero.position);
+      expect(panned.heroPosition, state.game.hero.position);
+      expect(identical(panned.cells, snapshot.cells), isTrue);
     },
   );
+
+  testWidgets('renders known terrain glyphs as live scene text', (
+    tester,
+  ) async {
+    final source = _stairsViewState();
+    final visible = {
+      const Position(0, 0),
+      const Position(1, 1),
+      const Position(3, 2),
+    };
+    final remembered = const Position(5, 3);
+    final state = GameViewState(
+      game: source.game.copyWith(
+        visible: visible,
+        explored: {...visible, remembered},
+      ),
+      log: const [],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 360,
+          height: 360,
+          child: DungeonSceneHost(
+            state: state,
+            palette: DungeonPalette.crypt,
+            onTap: (_) {},
+            onPan: (_) {},
+            onLongPress: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final world = tester
+        .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+        .game!
+        .world;
+    PositionComponent terrainAt(Position position) =>
+        world.children.whereType<PositionComponent>().singleWhere(
+          (component) =>
+              component.priority == GlyphLayer.terrain.index &&
+              component.position ==
+                  Vector2(
+                    position.x * cameraCellSize,
+                    position.y * cameraCellSize,
+                  ),
+        );
+    TextComponent textAt(Position position) =>
+        terrainAt(position).children.whereType<TextComponent>().single;
+
+    expect(textAt(const Position(0, 0)).text, '#');
+    expect(textAt(const Position(1, 1)).text, '.');
+    expect(textAt(const Position(3, 2)).text, '>');
+    expect(
+      (textAt(const Position(1, 1)).textRenderer as TextPaint).style.color,
+      terrainPresentationInk(
+        glyphPlan(state.game, DungeonPalette.crypt).singleWhere(
+          (cell) =>
+              cell.layer == GlyphLayer.terrain &&
+              cell.position == const Position(1, 1),
+        ),
+        state.game.hero.position,
+      ),
+    );
+    expect(textAt(remembered).text, '.');
+    expect(
+      (textAt(remembered).textRenderer as TextPaint).style.color!.a,
+      closeTo(rememberedOpacity, 0.001),
+    );
+    expect(
+      world.children.whereType<PositionComponent>().where(
+        (component) =>
+            component.position == Vector2(5 * cameraCellSize, cameraCellSize),
+      ),
+      isEmpty,
+    );
+
+    final hero = world.children.whereType<PositionComponent>().singleWhere(
+      (component) =>
+          component.priority == GlyphLayer.hero.index &&
+          component.position == Vector2(cameraCellSize, cameraCellSize),
+    );
+    expect(
+      world.children.toList().indexOf(terrainAt(const Position(1, 1))),
+      lessThan(world.children.toList().indexOf(hero)),
+    );
+    expect(hero.children.whereType<TextComponent>().single.text, '@');
+  });
+  testWidgets('retained terrain recolours for hero movement, not pan', (
+    tester,
+  ) async {
+    Future<void> pumpScene(GameViewState state) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SizedBox(
+            width: 360,
+            height: 360,
+            child: DungeonSceneHost(
+              state: state,
+              palette: DungeonPalette.crypt,
+              onTap: (_) {},
+              onPan: (_) {},
+              onLongPress: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    PositionComponent terrainAt(World world, Position position) =>
+        world.children.whereType<PositionComponent>().singleWhere(
+          (component) =>
+              component.priority == GlyphLayer.terrain.index &&
+              component.position ==
+                  Vector2(
+                    position.x * cameraCellSize,
+                    position.y * cameraCellSize,
+                  ),
+        );
+    Color inkOf(PositionComponent component) =>
+        (component.children.whereType<TextComponent>().single.textRenderer
+                as TextPaint)
+            .style
+            .color!;
+
+    final firstState = _overflowingViewState(const Position(1, 1));
+    await pumpScene(firstState);
+    final world = tester
+        .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+        .game!
+        .world;
+    final terrain = terrainAt(world, const Position(3, 1));
+    final originalInk = inkOf(terrain);
+
+    final movedState = _overflowingViewState(const Position(2, 1));
+    await pumpScene(movedState);
+    final movedInk = inkOf(terrain);
+    expect(terrainAt(world, const Position(3, 1)), same(terrain));
+    expect(movedInk, isNot(originalInk));
+
+    final pannedState = GameViewState(
+      game: movedState.game,
+      log: movedState.log,
+      pan: const Offset(12, -8),
+    );
+    await pumpScene(pannedState);
+    expect(terrainAt(world, const Position(3, 1)), same(terrain));
+    expect(inkOf(terrain), movedInk);
+  });
 
   testWidgets(
     'does not rebuild the Flame scene when only the log drawer extent '
@@ -328,14 +669,15 @@ void main() {
       final gameBefore = tester
           .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
           .game;
-      final materialBefore = tester
+      final heroBefore = tester
           .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
           .game!
           .world
           .children
-          .whereType<MaterialComponent>()
-          .single;
-      final planBefore = materialBefore.plan;
+          .whereType<PositionComponent>()
+          .singleWhere(
+            (component) => component.priority == GlyphLayer.hero.index,
+          );
 
       final withDrawerOpen = GameViewState(
         game: state.game,
@@ -350,118 +692,17 @@ void main() {
       final gameAfter = tester
           .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
           .game;
-      final materialAfter = tester
-          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
-          .game!
-          .world
-          .children
-          .whereType<MaterialComponent>()
-          .single;
-
       expect(gameAfter, same(gameBefore));
-      expect(materialAfter, same(materialBefore));
-      expect(materialAfter.plan, same(planBefore));
+      expect(
+        tester
+            .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+            .game!
+            .world
+            .children,
+        contains(same(heroBefore)),
+      );
     },
   );
-
-  test('selects stair glyphs from material facts, not terrain characters', () {
-    // arrange — material and glyph characters deliberately disagree. Both
-    // stair kinds must be retained, while terminal-looking terrain in floor
-    // and wall facts remains suppressed.
-    const down = Position(1, 1);
-    const up = Position(2, 1);
-    const floor = Position(3, 1);
-    const wall = Position(4, 1);
-    const hero = Position(5, 1);
-    final material = MaterialPlan(
-      cells: [
-        MaterialCell(
-          position: down,
-          kind: MaterialTileKind.stairsDown,
-          knowledge: MaterialKnowledge.visible,
-        ),
-        MaterialCell(
-          position: up,
-          kind: MaterialTileKind.stairsUp,
-          knowledge: MaterialKnowledge.visible,
-        ),
-        MaterialCell(
-          position: floor,
-          kind: MaterialTileKind.floor,
-          knowledge: MaterialKnowledge.visible,
-        ),
-        MaterialCell(
-          position: wall,
-          kind: MaterialTileKind.wall,
-          knowledge: MaterialKnowledge.visible,
-        ),
-      ],
-      marks: {},
-      masonry: {},
-      heroPosition: hero,
-      palette: DungeonPalette.crypt,
-    );
-    const glyphs = [
-      GlyphCell(down, '#', Colors.white, fullOpacity),
-      GlyphCell(up, '.', Colors.white, fullOpacity),
-      GlyphCell(floor, '>', Colors.white, fullOpacity),
-      GlyphCell(wall, '<', Colors.white, fullOpacity),
-      GlyphCell(hero, '@', Colors.white, fullOpacity, layer: GlyphLayer.hero),
-    ];
-
-    // act
-    final selected = glyphCellsAboveMaterial(glyphs, material);
-
-    // assert — stair identity comes from the down/up material facts; floor
-    // and wall glyph characters never bypass the material layer.
-    expect(selected.map((cell) => cell.position), [down, up, hero]);
-    expect(selected.map((cell) => cell.glyph), ['#', '.', '@']);
-  });
-
-  testWidgets('draws semantic stairs above continuous material', (
-    tester,
-  ) async {
-    // arrange
-    final state = _stairsViewState();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: SizedBox(
-          width: 360,
-          height: 360,
-          child: DungeonSceneHost(
-            state: state,
-            palette: DungeonPalette.crypt,
-            onTap: (_) {},
-            onPan: (_) {},
-            onLongPress: (_) {},
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-
-    // act — terrain components are only present where an explicit material
-    // fact says the terrain is a semantic stair, never merely from its glyph.
-    final world = tester
-        .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
-        .game!
-        .world;
-    Iterable<PositionComponent> terrainAt(Position position) =>
-        world.children.whereType<PositionComponent>().where(
-          (component) =>
-              component.priority == GlyphLayer.terrain.index &&
-              component.position ==
-                  Vector2(
-                    position.x * cameraCellSize,
-                    position.y * cameraCellSize,
-                  ),
-        );
-
-    // assert — the exit stays a final glyph above the material while plain
-    // floor text remains absent.
-    expect(terrainAt(const Position(3, 2)), hasLength(1));
-    expect(terrainAt(const Position(2, 2)), isEmpty);
-  });
 
   testWidgets(
     'the Flame scene projects taps and pans as presentation intents',
@@ -597,9 +838,6 @@ void main() {
           .children
           .toList(growable: false);
       final heroBeforeFocus = glyphsBeforeFocus.last as PositionComponent;
-      final materialBeforeFocus = glyphsBeforeFocus
-          .whereType<MaterialComponent>()
-          .single;
 
       state = _overflowingViewState(const Position(18, 1));
       await pumpScene(state);
@@ -609,7 +847,6 @@ void main() {
           .world
           .children;
       expect(glyphsAfterFocus, contains(same(heroBeforeFocus)));
-      expect(glyphsAfterFocus, contains(same(materialBeforeFocus)));
       expect(
         heroBeforeFocus.position,
         Vector2(18 * cameraCellSize, cameraCellSize),
@@ -619,13 +856,6 @@ void main() {
         closeTo(-432, 0.001),
       );
 
-      final materialBeforePan = tester
-          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
-          .game!
-          .world
-          .children
-          .whereType<MaterialComponent>()
-          .single;
       final glyphsBeforePan = tester
           .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
           .game!
@@ -638,14 +868,6 @@ void main() {
         pan: const Offset(1000, 0),
       );
       await pumpScene(state);
-      final materialAfterPan = tester
-          .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
-          .game!
-          .world
-          .children
-          .whereType<MaterialComponent>()
-          .single;
-      expect(materialAfterPan, same(materialBeforePan));
       expect(
         tester
             .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
@@ -958,6 +1180,11 @@ void main() {
       expect(actorComponent(), same(retained));
       expect(retained.children.whereType<CircleComponent>(), hasLength(1));
       expect(retained.children.whereType<RectangleComponent>(), hasLength(1));
+      final square = retained.children.whereType<RectangleComponent>().single;
+      expect(square.position, Vector2.all(1));
+      expect(square.size, Vector2.all(cameraCellSize - 2));
+      expect(square.paint.strokeWidth, 2);
+      expect(square.paint.color.toARGB32(), const Color(0xFFE87C70).toARGB32());
       expectBadgeContained();
 
       final cleared = GameViewState(

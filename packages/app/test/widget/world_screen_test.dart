@@ -1,16 +1,16 @@
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flame/game.dart' hide Route;
+import 'package:flame/components.dart';
 import 'package:flutter/material.dart' hide Route;
 import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/crawl_status.dart';
-import 'package:residuum_app/game/dungeon_material.dart';
+import 'package:residuum_app/game/glyph_marks.dart';
+import 'package:residuum_app/game/glyph_plan.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
-import 'package:residuum_app/game/dungeon_scene_material.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
@@ -87,81 +87,70 @@ Whereabouts _atNorthgate() =>
 GameBloc _fightOnScreen(WidgetTester tester) =>
     BlocProvider.of<GameBloc>(tester.element(find.byType(GameScreen)));
 
-Future<Uint8List> _renderComponentBytes(
-  MaterialComponent component, {
-  required int width,
-  required int height,
-}) async {
-  final recorder = ui.PictureRecorder();
-  final canvas = ui.Canvas(recorder)..drawColor(dungeonVoid, ui.BlendMode.src);
-  component.render(canvas);
-  final image = await recorder.endRecording().toImage(width, height);
-  try {
-    final rgba = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-    return Uint8List.fromList(
-      rgba!.buffer.asUint8List(rgba.offsetInBytes, rgba.lengthInBytes),
-    );
-  } finally {
-    image.dispose();
-  }
-}
+typedef _TerrainGlyph = ({
+  Position position,
+  String glyph,
+  Color ink,
+  double opacity,
+});
 
-/// Renders the expectation side: a fresh component built from [plan], never
-/// the live scene component under test.
-Future<Uint8List> _renderMaterialBytes(
-  MaterialPlan plan, {
-  required int width,
-  required int height,
-}) => _renderComponentBytes(
-  MaterialComponent(plan),
-  width: width,
-  height: height,
-);
-
-Future<Uint8List> _renderCurrentMaterial(
-  WidgetTester tester,
-  DungeonPalette palette,
-) async {
-  final state = _fightOnScreen(tester).state;
-  final width = (state.game.map.width * cameraCellSize).round();
-  final height = (state.game.map.height * cameraCellSize).round();
-  return _renderMaterialBytes(
-    materialPlan(state.game, palette),
-    width: width,
-    height: height,
+Map<Position, _TerrainGlyph> _liveTerrainGlyphs(WidgetTester tester) {
+  final game = tester
+      .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
+      .game!;
+  final terrain = game.world.children.whereType<PositionComponent>().where(
+    (component) => component.priority == GlyphLayer.terrain.index,
+  );
+  return Map.fromEntries(
+    terrain.map((component) {
+      final text = component.children.whereType<TextComponent>().single;
+      final colour = (text.textRenderer as TextPaint).style.color!;
+      final position = Position(
+        (component.position.x / cameraCellSize).round(),
+        (component.position.y / cameraCellSize).round(),
+      );
+      return MapEntry(position, (
+        position: position,
+        glyph: text.text,
+        ink: colour.withValues(alpha: 1),
+        opacity: colour.a,
+      ));
+    }),
   );
 }
 
-Future<({Uint8List actual, Uint8List expected, Uint8List wrong})>
-_navigationMaterialBytes(
+Map<Position, _TerrainGlyph> _plannedTerrainGlyphs(
+  GameViewState state,
+  DungeonPalette palette,
+) => {
+  for (final cell in glyphPlan(state.game, palette))
+    if (cell.layer == GlyphLayer.terrain)
+      cell.position: (
+        position: cell.position,
+        glyph: cell.glyph,
+        ink: terrainPresentationInk(cell, state.game.hero.position),
+        opacity: cell.opacity,
+      ),
+};
+
+Future<
+  ({
+    Map<Position, _TerrainGlyph> actual,
+    Map<Position, _TerrainGlyph> expected,
+    Map<Position, _TerrainGlyph> wrong,
+  })
+>
+_navigationTerrainGlyphs(
   WidgetTester tester, {
   required DungeonPalette expectedPalette,
   required DungeonPalette wrongPalette,
 }) async {
   final state = _fightOnScreen(tester).state;
-  final gameWidget = tester.widget<GameWidget<FlameGame>>(
-    find.byKey(dungeonSceneKey),
+  return (
+    actual: _liveTerrainGlyphs(tester),
+    expected: _plannedTerrainGlyphs(state, expectedPalette),
+    wrong: _plannedTerrainGlyphs(state, wrongPalette),
   );
-  final scene = gameWidget.game!;
-  final material = scene.world.children.whereType<MaterialComponent>().single;
-  final width = (state.game.map.width * cameraCellSize).round();
-  final height = (state.game.map.height * cameraCellSize).round();
-  final actual = await _renderComponentBytes(
-    material,
-    width: width,
-    height: height,
-  );
-  final expected = await _renderMaterialBytes(
-    materialPlan(state.game, expectedPalette),
-    width: width,
-    height: height,
-  );
-  final wrong = await _renderMaterialBytes(
-    materialPlan(state.game, wrongPalette),
-    width: width,
-    height: height,
-  );
-  return (actual: actual, expected: expected, wrong: wrong);
 }
 
 /// A road fight already in progress, pushed over a world exactly as the session
@@ -1030,20 +1019,20 @@ void main() {
       expect(find.text('THE ROAD'), findsOneWidget);
       expect(find.byKey(depthPairKey), findsNothing);
       final bytes = (await tester.runAsync(
-        () => _navigationMaterialBytes(
+        () => _navigationTerrainGlyphs(
           tester,
           expectedPalette: DungeonPalette.lowlandRoad,
           wrongPalette: DungeonPalette.crypt,
         ),
       ))!;
-      expect(bytes.actual, orderedEquals(bytes.expected));
-      expect(bytes.actual, isNot(orderedEquals(bytes.wrong)));
+      expect(bytes.actual, equals(bytes.expected));
+      expect(bytes.actual, isNot(equals(bytes.wrong)));
       expect(app.saved!.world.journey, isNotNull);
       expect(app.saved!.run, isNull);
       expect(app.saved!.inside, isFalse);
     });
 
-    testWidgets('a sea-cave spur fight inherits its route material', (
+    testWidgets('a sea-cave spur fight inherits its route palette', (
       tester,
     ) async {
       // arrange
@@ -1062,19 +1051,17 @@ void main() {
       expect(app.saved!.run, isNull);
       expect(app.saved!.inside, isFalse);
       final bytes = (await tester.runAsync(
-        () => _navigationMaterialBytes(
+        () => _navigationTerrainGlyphs(
           tester,
           expectedPalette: DungeonPalette.seaCave,
           wrongPalette: DungeonPalette.crypt,
         ),
       ))!;
-      expect(bytes.actual, orderedEquals(bytes.expected));
-      expect(bytes.actual, isNot(orderedEquals(bytes.wrong)));
+      expect(bytes.actual, equals(bytes.expected));
+      expect(bytes.actual, isNot(equals(bytes.wrong)));
     });
 
-    testWidgets('a keep spur fight inherits its route material', (
-      tester,
-    ) async {
+    testWidgets('a keep spur fight inherits its route palette', (tester) async {
       // arrange
       final profile = newProfile(worldSeed: _dangerousKeepWorld);
       final app = PumpedApp(_oneHero(profile, world: _atNorthgate()));
@@ -1091,18 +1078,19 @@ void main() {
       expect(app.saved!.run, isNull);
       expect(app.saved!.inside, isFalse);
       final bytes = (await tester.runAsync(
-        () => _navigationMaterialBytes(
+        () => _navigationTerrainGlyphs(
           tester,
           expectedPalette: DungeonPalette.ruinedKeep,
           wrongPalette: DungeonPalette.seaCave,
         ),
       ))!;
-      expect(bytes.actual, orderedEquals(bytes.expected));
-      expect(bytes.actual, isNot(orderedEquals(bytes.wrong)));
-      final crypt = (await tester.runAsync(
-        () => _renderCurrentMaterial(tester, DungeonPalette.crypt),
-      ))!;
-      expect(bytes.actual, isNot(orderedEquals(crypt)));
+      expect(bytes.actual, equals(bytes.expected));
+      expect(bytes.actual, isNot(equals(bytes.wrong)));
+      final crypt = _plannedTerrainGlyphs(
+        _fightOnScreen(tester).state,
+        DungeonPalette.crypt,
+      );
+      expect(bytes.actual, isNot(equals(crypt)));
     });
 
     testWidgets('writes nothing at all to disk while it is in flight', (
@@ -1347,14 +1335,14 @@ void main() {
       );
       expect(find.text('THE SEA-CAVE'), findsOneWidget);
       final bytes = (await tester.runAsync(
-        () => _navigationMaterialBytes(
+        () => _navigationTerrainGlyphs(
           tester,
           expectedPalette: DungeonPalette.seaCave,
           wrongPalette: DungeonPalette.crypt,
         ),
       ))!;
-      expect(bytes.actual, orderedEquals(bytes.expected));
-      expect(bytes.actual, isNot(orderedEquals(bytes.wrong)));
+      expect(bytes.actual, equals(bytes.expected));
+      expect(bytes.actual, isNot(equals(bytes.wrong)));
     });
 
     testWidgets('the keep is its own dungeon, not the cave\'s', (tester) async {
@@ -1375,18 +1363,19 @@ void main() {
       );
       expect(find.text('THE RUINED KEEP'), findsOneWidget);
       final bytes = (await tester.runAsync(
-        () => _navigationMaterialBytes(
+        () => _navigationTerrainGlyphs(
           tester,
           expectedPalette: DungeonPalette.ruinedKeep,
           wrongPalette: DungeonPalette.seaCave,
         ),
       ))!;
-      expect(bytes.actual, orderedEquals(bytes.expected));
-      expect(bytes.actual, isNot(orderedEquals(bytes.wrong)));
-      final crypt = (await tester.runAsync(
-        () => _renderCurrentMaterial(tester, DungeonPalette.crypt),
-      ))!;
-      expect(bytes.actual, isNot(orderedEquals(crypt)));
+      expect(bytes.actual, equals(bytes.expected));
+      expect(bytes.actual, isNot(equals(bytes.wrong)));
+      final crypt = _plannedTerrainGlyphs(
+        _fightOnScreen(tester).state,
+        DungeonPalette.crypt,
+      );
+      expect(bytes.actual, isNot(equals(crypt)));
     });
 
     testWidgets('a camp at this node is the resume-or-delve fork', (
@@ -1658,14 +1647,14 @@ void main() {
       expect(app.saved!.dungeon, seaCave);
       expect(find.text('The crawl resumes.'), findsOneWidget);
       final bytes = (await tester.runAsync(
-        () => _navigationMaterialBytes(
+        () => _navigationTerrainGlyphs(
           tester,
           expectedPalette: DungeonPalette.seaCave,
           wrongPalette: DungeonPalette.crypt,
         ),
       ))!;
-      expect(bytes.actual, orderedEquals(bytes.expected));
-      expect(bytes.actual, isNot(orderedEquals(bytes.wrong)));
+      expect(bytes.actual, equals(bytes.expected));
+      expect(bytes.actual, isNot(equals(bytes.wrong)));
     });
   });
 

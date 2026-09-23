@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-import 'art/dungeon_art.dart';
+import 'art/warm_up.dart';
 import 'game/dungeon_palette.dart';
 import 'game/game_bloc.dart';
 import 'game/game_screen.dart';

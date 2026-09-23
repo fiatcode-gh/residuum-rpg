@@ -35,64 +35,6 @@ void main() {
         expect(treatment.scale, greaterThan(0.0));
       }
     });
-    test('uses the locked relative hierarchy and nominal cell envelope', () {
-      const hero = GlyphCell(
-        Position(1, 1),
-        '@',
-        Color(0xFFFFFFFF),
-        1.0,
-        layer: GlyphLayer.hero,
-      );
-      const monster = GlyphCell(
-        Position(1, 2),
-        'g',
-        Color(0xFFD9A227),
-        1.0,
-        layer: GlyphLayer.monster,
-      );
-      const stairs = GlyphCell(
-        Position(1, 3),
-        '>',
-        Color(0xFFE8ECF2),
-        1.0,
-        layer: GlyphLayer.terrain,
-      );
-      const node = GlyphCell(
-        Position(1, 4),
-        'v',
-        Color(0xFFD9A227),
-        1.0,
-        layer: GlyphLayer.node,
-      );
-      const litter = GlyphCell(
-        Position(1, 5),
-        '!',
-        Color(0xFF7FC8B8),
-        1.0,
-        layer: GlyphLayer.litter,
-      );
-
-      final heroScale = glyphMarkTreatment(hero).scale;
-      final monsterScale = glyphMarkTreatment(monster).scale;
-      final stairsScale = glyphMarkTreatment(
-        stairs,
-        semanticTerrain: true,
-      ).scale;
-      final nodeScale = glyphMarkTreatment(node).scale;
-      final litterScale = glyphMarkTreatment(litter).scale;
-
-      expect(glyphBaseFontScale, 0.73);
-      expect(heroScale, 1.08);
-      expect(monsterScale, 1.04);
-      expect(stairsScale, 1.02);
-      expect(nodeScale, 1.0);
-      expect(litterScale, 0.94);
-      expect(glyphBaseFontScale * heroScale, lessThan(1.0));
-      expect(glyphBaseFontScale * monsterScale, lessThan(1.0));
-      expect(glyphBaseFontScale * stairsScale, lessThan(1.0));
-      expect(glyphBaseFontScale * nodeScale, lessThan(1.0));
-      expect(glyphBaseFontScale * litterScale, lessThan(1.0));
-    });
 
     test('give the hero the strongest presence in the hierarchy', () {
       // arrange
@@ -127,83 +69,6 @@ void main() {
       expect(heroTreatment.scale, greaterThan(monsterTreatment.scale));
       expect(monsterTreatment.scale, greaterThan(litterTreatment.scale));
       expect(heroTreatment.halo, isTrue);
-    });
-
-    test('leave terrain glyphs untouched by the actor treatment', () {
-      // arrange
-      const terrain = GlyphCell(
-        Position(1, 1),
-        '.',
-        Color(0xFF5B6270),
-        1.0,
-        layer: GlyphLayer.terrain,
-      );
-
-      // act
-      final treatment = glyphMarkTreatment(terrain);
-
-      // assert — terrain gets no actor-grade mark; the material layer owns
-      // the visible terrain
-      expect(treatment.scale, 1.0);
-      expect(treatment.halo, isFalse);
-    });
-
-    test('do not infer terrain semantics from a glyph character', () {
-      // arrange — glyph-plan characters are a characterization boundary, not
-      // terrain facts the Flame layer may parse back into game semantics.
-      const terrainCharacter = GlyphCell(
-        Position(1, 1),
-        '>',
-        Color(0xFFE8ECF2),
-        1.0,
-        layer: GlyphLayer.terrain,
-      );
-
-      // act
-      final treatment = glyphMarkTreatment(terrainCharacter);
-
-      // assert — without the material-plan feature, this terrain cell stays
-      expect(treatment.scale, 1.0);
-    });
-
-    test('mark stairs as semantic glyphs above the material', () {
-      // arrange — stairs carry a terrain-layer cell, but unlike wall/floor
-      // text they must survive as a drawn mark: the exit is a semantic
-      // feature, not stone texture
-      const stairsDown = GlyphCell(
-        Position(1, 1),
-        '>',
-        Color(0xFFE8ECF2),
-        1.0,
-        layer: GlyphLayer.terrain,
-      );
-      const stairsUp = GlyphCell(
-        Position(2, 1),
-        '<',
-        Color(0xFFE8ECF2),
-        1.0,
-        layer: GlyphLayer.terrain,
-      );
-      const floor = GlyphCell(
-        Position(3, 1),
-        '.',
-        Color(0xFF5B6270),
-        1.0,
-        layer: GlyphLayer.terrain,
-      );
-
-      // act
-      final downTreatment = glyphMarkTreatment(
-        stairsDown,
-        semanticTerrain: true,
-      );
-      final upTreatment = glyphMarkTreatment(stairsUp, semanticTerrain: true);
-
-      // assert — stairs render as deliberate marks with a slight presence
-      // lift, while floor text does not.
-      expect(downTreatment.scale, greaterThan(1.0));
-      expect(upTreatment.scale, greaterThan(1.0));
-      expect(glyphMarkTreatment(floor).scale, 1.0);
     });
 
     test('uses a square outline for a marked target', () {
@@ -253,6 +118,82 @@ void main() {
 
       expect(treatment.targetOutline, GlyphOutlineShape.square);
       expect(treatment.selectedOutline, GlyphOutlineShape.circle);
+    });
+
+    test('lights only visible terrain by deterministic hero distance', () {
+      const terrain = GlyphCell(
+        Position(3, 1),
+        '.',
+        Color(0xFF38424A),
+        fullOpacity,
+        layer: GlyphLayer.terrain,
+      );
+      const remembered = GlyphCell(
+        Position(2, 1),
+        '.',
+        Color(0xFF38424A),
+        0.45,
+        layer: GlyphLayer.terrain,
+      );
+      const node = GlyphCell(
+        Position(2, 1),
+        '⌂',
+        Color(0xFF789ABC),
+        fullOpacity,
+        layer: GlyphLayer.node,
+      );
+      const rememberedNode = GlyphCell(
+        Position(2, 1),
+        '⌂',
+        Color(0xFF789ABC),
+        0.45,
+        layer: GlyphLayer.node,
+      );
+      const monster = GlyphCell(
+        Position(2, 1),
+        'g',
+        Color(0xFF789ABC),
+        fullOpacity,
+        layer: GlyphLayer.monster,
+      );
+      const hero = Position(1, 1);
+      const terrainAtHero = GlyphCell(
+        Position(1, 1),
+        '.',
+        Color(0xFF38424A),
+        fullOpacity,
+        layer: GlyphLayer.terrain,
+      );
+
+      final nearInk = terrainPresentationInk(terrain, hero);
+      final repeatedInk = terrainPresentationInk(terrain, hero);
+      final outsideRadius = terrainPresentationInk(
+        const GlyphCell(
+          Position(7, 1),
+          '.',
+          Color(0xFF38424A),
+          fullOpacity,
+          layer: GlyphLayer.terrain,
+        ),
+        hero,
+      );
+
+      expect(
+        nearInk,
+        Color.lerp(terrain.ink, const Color(0xFFE8C58A), 0.38 * (1 - 4 / 25)),
+      );
+      expect(nearInk, repeatedInk);
+      expect(
+        terrainPresentationInk(terrainAtHero, hero),
+        Color.lerp(terrainAtHero.ink, const Color(0xFFE8C58A), 0.38),
+      );
+      expect(outsideRadius, terrain.ink);
+      expect(nearInk, isNot(outsideRadius));
+      expect(terrainPresentationInk(remembered, hero), remembered.ink);
+      expect(remembered.opacity, 0.45);
+      expect(terrainPresentationInk(node, hero), node.ink);
+      expect(terrainPresentationInk(rememberedNode, hero), rememberedNode.ink);
+      expect(terrainPresentationInk(monster, hero), monster.ink);
     });
 
     test('uses no outline for an ordinary actor', () {

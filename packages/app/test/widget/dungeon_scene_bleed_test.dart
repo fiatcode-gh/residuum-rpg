@@ -214,6 +214,12 @@ void main() {
       );
 
       final mapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
+      final depthPaint = find.descendant(
+        of: find.byKey(dungeonSceneKey),
+        matching: find.byType(CustomPaint),
+      );
+      expect(depthPaint, findsOneWidget);
+      expect(tester.getRect(depthPaint), mapRect);
       final game = tester
           .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
           .game!;

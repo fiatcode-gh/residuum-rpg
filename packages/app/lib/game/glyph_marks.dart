@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'package:residuum_core/core.dart';
+
 import 'glyph_plan.dart';
 
 /// Base font size as a fraction of the owning camera cell.
@@ -45,29 +48,29 @@ class GlyphMarkTreatment {
 ///
 /// Actors (nodes, litter, monsters, the hero) render as crisp marks with a
 /// subtle scale hierarchy — the hero carries the only halo, as the most
-/// significant mark on the floor. A caller may mark
-/// explicit terrain facts (such as stairs from the material plan) as semantic
-/// features so they remain findable above the stone. Wall and floor glyphs get
-/// no treatment here — the material layer owns them, and this function never
-/// parses glyph characters back into terrain semantics.
-GlyphMarkTreatment glyphMarkTreatment(
-  GlyphCell cell, {
-  bool semanticTerrain = false,
-}) {
-  if (cell.layer == GlyphLayer.terrain && !semanticTerrain) {
-    return const GlyphMarkTreatment(scale: 1.0, halo: false);
+/// significant mark on the floor. Every terrain character uses its native cell
+/// size; actor and selection treatments decorate their own glyphs.
+GlyphMarkTreatment glyphMarkTreatment(GlyphCell cell) => GlyphMarkTreatment(
+  scale: switch (cell.layer) {
+    GlyphLayer.hero => 1.08,
+    GlyphLayer.monster => 1.04,
+    GlyphLayer.terrain || GlyphLayer.node => 1.0,
+    GlyphLayer.litter => 0.94,
+  },
+  halo: cell.layer == GlyphLayer.hero,
+  targetOutline: cell.marked ? GlyphOutlineShape.square : null,
+  selectedOutline: cell.selected ? GlyphOutlineShape.circle : null,
+);
+
+/// Resolves the presentation ink for one glyph without changing its projection.
+Color terrainPresentationInk(GlyphCell cell, Position hero) {
+  if (cell.layer != GlyphLayer.terrain || cell.opacity != fullOpacity) {
+    return cell.ink;
   }
 
-  return GlyphMarkTreatment(
-    scale: switch (cell.layer) {
-      GlyphLayer.hero => 1.08,
-      GlyphLayer.monster => 1.04,
-      GlyphLayer.terrain => 1.02,
-      GlyphLayer.node => 1.0,
-      GlyphLayer.litter => 0.94,
-    },
-    halo: cell.layer == GlyphLayer.hero,
-    targetOutline: cell.marked ? GlyphOutlineShape.square : null,
-    selectedOutline: cell.selected ? GlyphOutlineShape.circle : null,
-  );
+  final dx = cell.position.x - hero.x;
+  final dy = cell.position.y - hero.y;
+  final distanceSquared = dx * dx + dy * dy;
+  final strength = (1 - distanceSquared / 25).clamp(0.0, 1.0);
+  return Color.lerp(cell.ink, const Color(0xFFE8C58A), 0.38 * strength)!;
 }

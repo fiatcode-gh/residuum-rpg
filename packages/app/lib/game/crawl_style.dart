@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../style/tokens.dart';
 
 const double crawlPanelPadding = 8;
-const double crawlTokenCell = 44;
+const double crawlTokenCell = 36;
 const double crawlTokenWidth = 76;
 const double crawlLogPeekHeight = 104;
 const double crawlMarkColumn = 24;

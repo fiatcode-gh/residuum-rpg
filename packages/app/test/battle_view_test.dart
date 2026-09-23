@@ -1,7 +1,9 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/battle_view.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
@@ -444,6 +446,50 @@ void main() {
       );
       expect(find.textContaining('IN '), findsNothing);
     });
+    testWidgets('the current hero ring has more weight than future tokens', (
+      tester,
+    ) async {
+      await _pushGame(
+        tester,
+        battleGame(monsters: [ghoulAt(const Position(1, 2))]),
+      );
+
+      Finder ring(Key key) => find.descendant(
+        of: find.byKey(key),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget is DecoratedBox &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration as BoxDecoration).shape == BoxShape.circle,
+        ),
+      );
+      final currentRing = tester.widget<DecoratedBox>(
+        ring(const Key('timeline-current-hero')),
+      );
+      final futureRing = tester.widget<DecoratedBox>(
+        ring(const Key('timeline-actor-ghoul-1-1')),
+      );
+      final currentDecoration = currentRing.decoration as BoxDecoration;
+      final futureDecoration = futureRing.decoration as BoxDecoration;
+
+      expect(
+        currentDecoration.border!.dimensions.horizontal,
+        greaterThan(futureDecoration.border!.dimensions.horizontal),
+      );
+      expect(currentDecoration.color, isNot(futureDecoration.color));
+      expect(
+        tester.getSize(ring(const Key('timeline-current-hero'))),
+        const Size(36, 36),
+      );
+      expect(
+        tester
+            .getSize(find.byKey(const Key('timeline-actor-ghoul-1-1')))
+            .height,
+        greaterThanOrEqualTo(44),
+      );
+      expect(crawlTokenWidth, 76);
+    });
+
     testWidgets(
       'the NEXT caption sits over the token it labels, not a guessed gap',
       (tester) async {
@@ -607,13 +653,33 @@ void main() {
       );
 
       // act
-      final bloc = await _pushGame(tester, game);
+      final bloc = await _pushGame(
+        tester,
+        game,
+        textScaler: TextScaler.linear(2),
+      );
       final dock = find.byKey(const Key('dock-backing'));
       final scrollable = find.descendant(
         of: dock,
         matching: find.byType(Scrollable),
       );
       final laterToken = find.byKey(const Key('timeline-actor-ghoul-6-12'));
+      final laterName = find.descendant(
+        of: laterToken,
+        matching: find.text('the ghoul⁶'),
+      );
+      expect(laterName, findsOneWidget);
+      final fitting = find.ancestor(
+        of: laterName,
+        matching: find.byType(FittedBox),
+      );
+      expect(fitting, findsOneWidget);
+      expect(tester.getSize(fitting).width, crawlTokenWidth);
+      expect(tester.widget<FittedBox>(fitting).fit, BoxFit.scaleDown);
+      expect(
+        tester.renderObject<RenderParagraph>(laterName).didExceedMaxLines,
+        isFalse,
+      );
       final currentHero = find.byKey(const Key('timeline-current-hero'));
       final currentHeroRectBefore = tester.getRect(currentHero);
 

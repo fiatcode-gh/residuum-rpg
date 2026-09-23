@@ -26,9 +26,21 @@ class CrawlStatus extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _HeaderRow(state: state, dungeon: dungeon),
-        const SizedBox(height: rhythm),
-        _ResourceRow(state: state),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: panel,
+            border: Border.all(color: rule, width: hairline),
+            borderRadius: BorderRadius.circular(radius),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _HeaderRow(state: state, dungeon: dungeon),
+              const SizedBox(height: rhythm),
+              _ResourceRow(state: state),
+            ],
+          ),
+        ),
         const Divider(height: hairline, thickness: hairline, color: rule),
       ],
     ),

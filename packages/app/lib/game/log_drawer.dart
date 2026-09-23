@@ -68,13 +68,23 @@ class LogPeek extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: ListView.builder(
-                    reverse: true,
-                    itemCount: state.log.length,
-                    itemBuilder: (context, index) => Text(
-                      state.log[state.log.length - 1 - index].sentence,
-                      style: _rowStyle(index == 0),
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text('RECENT EVENTS', style: displayCaption),
+                      const SizedBox(height: rhythm / 2),
+                      Container(height: hairline, color: rule),
+                      Expanded(
+                        child: ListView.builder(
+                          reverse: true,
+                          itemCount: state.log.length,
+                          itemBuilder: (context, index) => Text(
+                            state.log[state.log.length - 1 - index].sentence,
+                            style: _rowStyle(index == 0),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: rhythm),
@@ -231,8 +241,18 @@ class _LogDrawerState extends State<LogDrawer> {
               padding: const EdgeInsets.symmetric(horizontal: gutter),
               child: Row(
                 children: [
-                  const Text('MESSAGE LOG', style: displayPanel),
-                  const Spacer(),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('RECENT EVENTS', style: displayPanel),
+                        Text(
+                          '${widget.state.log.length} entries',
+                          style: textCaption,
+                        ),
+                      ],
+                    ),
+                  ),
                   CrawlPill(
                     key: logCloseKey,
                     label: 'Close the message log',

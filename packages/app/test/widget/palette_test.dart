@@ -19,20 +19,10 @@ const Map<String, DungeonPalette> _palettes = {
 
 void main() {
   group('the terrain palettes', () {
-    test('the crypt keeps the exact Unit 2 anchors', () {
-      // assert
+    test('the crypt keeps its terrain glyph anchors', () {
       expect(DungeonPalette.crypt.wall, const Color(0xFFB9BEC6));
       expect(DungeonPalette.crypt.floor, const Color(0xFF5B6270));
       expect(DungeonPalette.crypt.stairs, const Color(0xFFE8ECF2));
-      expect(DungeonPalette.crypt.rememberedStone, const Color(0xFF1A1E20));
-      expect(DungeonPalette.crypt.visibleStone, const Color(0xFF292A27));
-      expect(DungeonPalette.crypt.edgeInk, const Color(0xFF48463F));
-      expect(DungeonPalette.crypt.detailInk, const Color(0xFFD4B77B));
-      expect(DungeonPalette.crypt.lightInk, const Color(0xFFE8C58A));
-      expect(DungeonPalette.crypt.maxLightLift, 0.30);
-      expect(DungeonPalette.crypt.maxTintMix, 0.12);
-      expect(DungeonPalette.crypt.themeSalt, 0x0C7);
-      expect(DungeonPalette.crypt.material, RegionMaterial.cryptStone);
     });
 
     test('maps exactly the three dungeon ids and rejects towns', () {
@@ -76,7 +66,7 @@ void main() {
       );
     });
 
-    test('keeps the glyph and material value ladders readable', () {
+    test('keeps the glyph value ladders readable', () {
       // assert
       for (final entry in _palettes.entries) {
         final palette = entry.value;
@@ -88,11 +78,6 @@ void main() {
         expect(
           _value(palette.wall),
           lessThan(_value(palette.stairs)),
-          reason: entry.key,
-        );
-        expect(
-          _value(palette.rememberedStone),
-          lessThan(_value(palette.visibleStone)),
           reason: entry.key,
         );
         expect(
@@ -121,22 +106,16 @@ void main() {
       );
     });
 
-    test('gives each context its material, anchors, and salt', () {
-      // act
-      final materials = _palettes.values.map((palette) => palette.material);
-      final salts = _palettes.values.map((palette) => palette.themeSalt);
-      final visible = _palettes.values.map((palette) => palette.visibleStone);
-      final remembered = _palettes.values.map(
-        (palette) => palette.rememberedStone,
-      );
-      final edges = _palettes.values.map((palette) => palette.edgeInk);
+    test('keeps every regional terrain palette distinct', () {
+      final glyphColours = [
+        for (final palette in _palettes.values) ...[
+          palette.wall,
+          palette.floor,
+          palette.stairs,
+        ],
+      ];
 
-      // assert
-      expect(materials.toSet(), hasLength(4));
-      expect(salts.toSet(), hasLength(4));
-      expect(visible.toSet(), hasLength(4));
-      expect(remembered.toSet(), hasLength(4));
-      expect(edges.toSet(), hasLength(4));
+      expect(glyphColours.toSet(), hasLength(12));
       expect(litterInk, const Color(0xFF7FC8B8));
       expect(nodeInk, const Color(0xFFA87BC0));
     });

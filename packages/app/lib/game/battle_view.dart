@@ -103,10 +103,16 @@ class BattleDock extends StatelessWidget {
 /// One timeline cell: a ringed glyph over the actor's word, both fitted
 /// rather than ellipsised so no label can silently truncate.
 class _TimelineCell extends StatelessWidget {
-  const _TimelineCell({required this.glyph, required this.word, super.key});
+  const _TimelineCell({
+    required this.glyph,
+    required this.word,
+    this.current = false,
+    super.key,
+  });
 
   final String glyph;
   final String word;
+  final bool current;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -120,8 +126,11 @@ class _TimelineCell extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: raised,
-            border: Border.all(color: rule, width: hairline),
+            color: current ? raised : recessed,
+            border: Border.all(
+              color: current ? ink : rule,
+              width: current ? hairline * 2 : hairline,
+            ),
           ),
           child: Text(glyph, style: textGlyph),
         ),
@@ -164,6 +173,7 @@ class _TimelineToken extends StatelessWidget {
           ),
           glyph: '@',
           word: 'You',
+          current: hero.isCurrent,
         ),
       );
     }

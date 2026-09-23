@@ -112,7 +112,10 @@ const _worstArena = '''
 /// The contract's worst case: the longest name, the bottom floor, two
 /// monsters in sight with one holding reach, a warded caster hurt down to
 /// critical — at phone width, where nothing may squeeze.
-Future<void> _pumpWorstCase(WidgetTester tester) async {
+Future<void> _pumpWorstCase(
+  WidgetTester tester, {
+  TextScaler? textScaler,
+}) async {
   await onAPhone(tester);
   final map = FloorMap.parse(_worstArena);
   const heroAt = Position(1, 1);
@@ -175,18 +178,23 @@ Future<void> _pumpWorstCase(WidgetTester tester) async {
     dungeon: ruinedKeep,
     stepDelay: Duration.zero,
   );
-  await tester.pumpWidget(
-    MaterialApp(
-      home: MultiBlocProvider(
-        providers: [
-          BlocProvider.value(value: town),
-          BlocProvider.value(value: bloc),
-        ],
-        child: const GameScreen(palette: DungeonPalette.ruinedKeep),
-      ),
+  final app = MaterialApp(
+    home: MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: town),
+        BlocProvider.value(value: bloc),
+      ],
+      child: const GameScreen(palette: DungeonPalette.ruinedKeep),
     ),
   );
-  await tester.pumpAndSettle();
+  await tester.pumpWidget(
+    textScaler == null
+        ? app
+        : MediaQuery(
+            data: MediaQueryData(textScaler: textScaler),
+            child: app,
+          ),
+  );
 }
 
 void main() {
@@ -279,6 +287,15 @@ void main() {
       );
       expect(indicator.value, 0.2);
     });
+    testWidgets('a dead hero is named without changing the meter contract', (
+      tester,
+    ) async {
+      await _pumpCrawlAt(tester, cryptNode, hp: 0);
+
+      expect(find.byKey(hpMeterKey), findsOneWidget);
+      expect(find.text('HP 0 / 20'), findsOneWidget);
+      expect(find.text('Dead'), findsOneWidget);
+    });
 
     testWidgets('no mana meter until the hero knows a spell', (tester) async {
       // act
@@ -353,6 +370,34 @@ void main() {
       expect(find.text('Engaged 2'), findsOneWidget);
       expect(find.text('HP 4 / 20'), findsOneWidget);
       expect(find.text('Critical'), findsOneWidget);
+      expect(find.text('Ward 2'), findsOneWidget);
+
+      final paragraphs = tester.renderObjectList<RenderParagraph>(
+        find.descendant(
+          of: find.byType(CrawlStatus),
+          matching: find.byType(Text),
+        ),
+      );
+      for (final paragraph in paragraphs) {
+        expect(
+          paragraph.size.width + 0.5,
+          greaterThanOrEqualTo(paragraph.getMaxIntrinsicWidth(double.infinity)),
+        );
+      }
+    });
+    testWidgets('keeps the longest factual row legible at 1.3x text scale', (
+      tester,
+    ) async {
+      await _pumpWorstCase(tester, textScaler: TextScaler.linear(1.3));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('THE RUINED KEEP'), findsOneWidget);
+      expect(find.text('✖'), findsOneWidget);
+      expect(find.text('Engaged 2'), findsOneWidget);
+      expect(find.byKey(depthPairKey), findsOneWidget);
+      expect(find.text('HP 4 / 20'), findsOneWidget);
+      expect(find.text('Critical'), findsOneWidget);
+      expect(find.text('Mana 2 / 4'), findsOneWidget);
       expect(find.text('Ward 2'), findsOneWidget);
 
       final paragraphs = tester.renderObjectList<RenderParagraph>(
