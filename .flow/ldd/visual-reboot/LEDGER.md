@@ -34,22 +34,20 @@ The epic was opened from an approved external planning handoff:
 
 ## Current state
 
-- **Units 1–11 are accepted and present on `main`.** On 2026-09-17, local
-  `main` resolves to Unit 11's PR #21 merge commit
-  `60909e60ec3150cf9b590e6641a8ae51efca775c`.
-- **Unit 8's deferred device gate remains closed** and Unit 9's accepted
-  crawl-HUD contract remains unchanged.
-- **Unit 11 (dungeon scene recomposition) is merged and closed.** Its
-  renderer is an accepted dependency, not an implementation surface. Unit 10's
-  authored-art pipeline, determinism and one-time decode ownership stand.
-- **Unit 12 (crawl interface visual grammar) is locally accepted on suite
-  evidence and uncommitted** on `residuum-visual-reboot-12`. Final gate: 120
-  files formatted 0 changed, analyzer clean, **906 tests** against 884 before
-  the unit. The next gate is the user's integration decision.
-- **Unit 12.5 (crawl device gate) carries Unit 12's deferred device debt** —
-  AC5 greyscale, AC12 by eye, AC14 device figures, AC16 in full and AC17 —
-  plus three appearance findings the closure review could only defer. Its
-  contract is drafted and unapproved.
+- **Units 1–15 are on `main`.** Unit 12 merged by PR #22 (`907a4a8`), Units
+  13–14 by PR #23 (`4033de5`), and Unit 15 by PR #24 (`374ee77`, current
+  `main`).
+- **Unit 16 (ASCII atmospheric crawl parity)** is implemented on
+  `residuum-visual-reboot-16` (`b301f27`, pushed, no pull request) and is
+  **not accepted**: device exploration evidence showed it far from the
+  references.
+- **Unit 16.5 (ASCII crawl full parity)** has an approved contract
+  (`units/unit-16.5/CONTRACT.md`, 2026-09-23) on the same branch, and planning
+  is in progress. It supersedes the 36 dp cell, the monospace retirement, the
+  600 dp action-driven chrome ceiling, U15's chip-fit search and the textured
+  or material dungeon direction. U16 and U16.5 are accepted together.
+- The test app is installed on the user's physical phone with U16 test
+  saves. U16.5 ends by uninstalling it and verifying absence.
 
 ## Epic status
 
@@ -67,8 +65,10 @@ The epic was opened from an approved external planning handoff:
 | Unit 9 — crawl HUD chrome | Unit 8 | **merged** to `main` | 834 app tests, `dart format` 101 files/0 changed, analyzer clean; integrated acceptance review PASS with zero findings; `Medium_Phone` colour/greyscale device gate across five status scenes, measured one-row (52 px) map cost, both save slots restored byte-identically | merged by PR #19 at `4bf865c` (code `92fd4aa`); contract: `units/unit-9/CONTRACT.md`; plan: `units/unit-9/PLAN.md`; two-row `crawl_status.dart`; red/blue meter fills rejected, icon control chips deferred |
 | Unit 10 — authored art integration | Unit 9 | **merged** to `main` | final app gate, integrated acceptance review and five `Medium_Phone` colour/greyscale capsules passed; save restoration MATCH | merged by PR #20 at `0692bbc`; contract: `units/unit-10/CONTRACT.md`; approved masters remain LFS-backed |
 | Unit 11 — dungeon scene recomposition | Unit 10 | **merged** to `main` | `dart format` clean, `flutter analyze` clean, full app 884 tests; `Medium_Phone` colour/greyscale capsules; both save slots restored SHA-256 MATCH | merged by PR #21 at `60909e6` (code `824f53f`); contract: `units/unit-11/CONTRACT.md`; plan: `units/unit-11/PLAN.md`; later task receipts and acceptance were never written to this ledger — the PR record is the surviving evidence |
-| Unit 12 — crawl interface visual grammar | Unit 11 | **locally accepted, uncommitted; device gate deferred** | `dart format` 120 files/0 changed, `flutter analyze` clean, full app **906 tests** (884 before the unit); integrated acceptance review ACCEPT WITH FINDINGS then scoped closure ACCEPT WITH FINDINGS, no must-fix outstanding; **no device evidence** | on `residuum-visual-reboot-12`; contract: `units/unit-12/CONTRACT.md`; plan + Correction C1: `units/unit-12/PLAN.md`; one chip action row, crawl style seam, mock column order; O3 chip-keying deferred |
-| Unit 12.5 — crawl device gate | Unit 12 | **contract drafted, awaiting approval** | none yet | seven `Medium_Phone` capsules A–G, colour and greyscale, save backup and byte-identical restore; settles AC5/AC12/AC14/AC16/AC17 and closure findings OPT-1/2/3; contract: `units/unit-12.5/CONTRACT.md` |
+| Unit 12 — crawl interface visual grammar | Unit 11 | **merged** to `main` | see decision log | merged by PR #22 at `907a4a8` |
+| Units 12.5–15 | see decision log | code of Units 13–14 merged by PR #23 `4033de5`, Unit 15 by PR #24 `374ee77`; Unit 12.5 was a device gate (see decision log) | see decision log and RESUME | U13 visual system and U14 type authority are partly superseded by U16.5 |
+| Unit 16 — ASCII atmospheric crawl parity | Unit 15 | **implemented, not accepted** | package gates passed; one exploration device capsule; parity failed | `b301f27` on `residuum-visual-reboot-16`; contract: `units/unit-16/CONTRACT.md` |
+| Unit 16.5 — ASCII crawl full parity | Unit 16 | **contract approved; planning** | pending | contract: `units/unit-16.5/CONTRACT.md`; accepted together with U16 |
 
 Completed units are ordered **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11**.
 Unit 12 follows Unit 11 and consumes its renderer as a closed dependency.
@@ -79,8 +79,10 @@ log drawer; no unit reordering is needed.
 
 - Phone-first; tablet later. Flame only for the dungeon scene — never the
   whole app, and **Flame is never authoritative game state**.
-- Graphical-glyph dungeon (not sprite-tile), procedural deterministic
-  terrain texture, smooth lighting over rules-driven FOV.
+- Pure-ASCII glyph dungeon (not sprite-tile, no terrain textures), with a
+  deterministic torchlight pool, visible-terrain falloff, and non-semantic fog
+  or parallax over rules-driven FOV (U16.5 supersedes the procedural terrain
+  texture).
 - Four-region responsibility rule: map = space/targets, timeline = time,
   log = causality, action shelf = verbs. No concern duplicated across
   regions.
@@ -95,8 +97,8 @@ log drawer; no unit reordering is needed.
 - Activation queue replaces `NOW`/`IN n` prose; repeated fast-actor
   activations shown literally; duplicate enemies get stable encounter-local
   labels used consistently across map/timeline/targeting/inspect/log.
-- 3-line scrollable log peek + half/full overlay history; auto-follow with
-  `↓ N new` return affordance.
+- Four-line log peek + overlay history; auto-follow with an unread/new
+  return affordance (U16.5 composition).
 - No pinch zoom in the first pass; no decorative interactable-looking props
   unsupported by rules; non-dungeon UI quiet and subordinate to the map.
 - Accessibility non-negotiable (AGENTS.md + handoff 3.5): no important state
@@ -4784,3 +4786,53 @@ request exists, and the integration choice is the user's.
   work for Unit 16.5.
 - U16 is not accepted. Unit 16.5 must decide how to continue visual evidence
   and restore the phone to the user-authorized prior absent-package state.
+
+## Unit 16.5 intake — 2026-09-23
+
+- Architect review of U16's exploration capture against the four approved
+  references: the result is far from parity. Root causes were the plan's
+  locks, not execution: the 36 dp cell (about 11×17 cells against the mock's
+  about 30 columns), Spectral map glyphs where the bible's typography panel
+  specifies mono for map and UI, an ink-only 0.38 tint in place of a light
+  pool, a gradient-only backdrop with no fog, vignette or parallax, and the
+  unchanged status band and action row. The log peek heading also clips its
+  first line on device. Criterion 5 ("materially closer") was never a gate
+  before `b301f27` was pushed.
+- The user delegated four decisions to the architect and asked for full
+  parity with the art bible and mocks on the same branch
+  `residuum-visual-reboot-16`. Decided: (1) a dense mono character cell of
+  about 13×16 dp, with intent-based touch resolution (22 dp radius) in place
+  of the fixed 36 dp cell; (2) IBM Plex Mono as a third type role for the map
+  and data, superseding the Unit 14 monospace retirement; (3) fixed chrome per
+  mode with a horizontally scrolling five-slot action bar, retiring the 600 dp
+  action-driven ceiling and U15's chip-fit search, with a new map-share floor
+  of 45% in exploration and 35% in battle; (4) a real torchlight pool,
+  terrain falloff, fog, vignette and camera-relative parallax, with
+  knowledge secrecy kept.
+- The user authorized updates to any repo doc that contradicts the new
+  direction.
+- Draft contract: `units/unit-16.5/CONTRACT.md`, awaiting explicit user
+  approval. U16 remains unaccepted and is accepted together with U16.5.
+
+### U16.5 contract approval — 2026-09-23
+
+- The user explicitly approved `units/unit-16.5/CONTRACT.md` and authorized
+  local commits on `residuum-visual-reboot-16` during execution. Push, pull
+  request and merge remain separately gated. The plan still needs explicit
+  approval before any production-writing worker. Next: dispatch
+  `flow-planner`.
+
+### U16.5 plan approval — 2026-09-23
+
+- `flow-planner` produced `units/unit-16.5/PLAN.md` and 13 task briefs
+  (execution-grade; COR/TTC/CRF PASS, SEC skip). The architect accepted
+  escalations E1–E6: 4-way step (core `Direction` is 4-way); a cell-under-finger
+  guard and an orthogonal step guard ahead of the 22 dp monster rule; peek shows
+  `N entries` because peek forces unread to 0; hero name and world day passed
+  in as app-side run constants; hero HP/mana kept in the combat panel; map
+  floors asserted at text scale 1.0.
+- The user explicitly approved the plan and authorized use of the attached
+  physical phone over wireless ADB for Checkpoint A and the final gate
+  (install over the U16 test build; uninstall and verify absence at the end).
+- Next: Task 01 (`plan-tasks/01-mono-type-role.md`), with a fresh
+  `flow-plan-executor`.

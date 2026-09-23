@@ -1,7 +1,11 @@
 # Resume Visual Reboot
 
-**U15 is integrated on `main`. U16 — ASCII Atmospheric Crawl Parity — is
-in implementation on `residuum-visual-reboot-16`.**
+**Unit 16.5 — ASCII Crawl Full Parity — contract + plan approved; executing
+** (`units/unit-16.5/PLAN.md`), on the same branch
+`residuum-visual-reboot-16`. It supersedes U16's plan locks: 36 dp cell,
+monospace ban, 600 dp chrome ceiling, ink-only light. See the ledger's
+"Unit 16.5" ledger entries. Next: the active task in the ledger tail;
+Checkpoint A (phone) after Task 04. U16 is below, not accepted.
 
 ## Exact state
 
