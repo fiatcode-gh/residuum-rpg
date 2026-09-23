@@ -31,12 +31,15 @@ const _stairsArena = '''
 #.....#
 #######''';
 
+// 40 interior columns (520dp of floor at mapCellWidth=13) still overflow the
+// 360dp test viewport used below, which is what the camera-clamping tests
+// in this file need real overflow to clamp against.
 const _overflowingArena = '''
-######################
-#....................#
-#....................#
-#....................#
-######################''';
+##########################################
+#........................................#
+#........................................#
+#........................................#
+##########################################''';
 
 Actor _heroAt(Position position) => Actor(
   id: 'hero',
@@ -530,15 +533,15 @@ void main() {
               component.priority == GlyphLayer.terrain.index &&
               component.position ==
                   Vector2(
-                    position.x * cameraCellSize,
-                    position.y * cameraCellSize,
+                    position.x * mapCellWidth,
+                    position.y * mapCellHeight,
                   ),
         );
     TextComponent textAt(Position position) =>
         terrainAt(position).children.whereType<TextComponent>().single;
 
     expect(textAt(const Position(0, 0)).text, '#');
-    expect(textAt(const Position(1, 1)).text, '.');
+    expect(textAt(const Position(1, 1)).text, '·');
     expect(textAt(const Position(3, 2)).text, '>');
     expect(
       (textAt(const Position(1, 1)).textRenderer as TextPaint).style.color,
@@ -551,7 +554,7 @@ void main() {
         state.game.hero.position,
       ),
     );
-    expect(textAt(remembered).text, '.');
+    expect(textAt(remembered).text, '·');
     expect(
       (textAt(remembered).textRenderer as TextPaint).style.color!.a,
       closeTo(rememberedOpacity, 0.001),
@@ -559,7 +562,7 @@ void main() {
     expect(
       world.children.whereType<PositionComponent>().where(
         (component) =>
-            component.position == Vector2(5 * cameraCellSize, cameraCellSize),
+            component.position == Vector2(5 * mapCellWidth, mapCellHeight),
       ),
       isEmpty,
     );
@@ -567,7 +570,7 @@ void main() {
     final hero = world.children.whereType<PositionComponent>().singleWhere(
       (component) =>
           component.priority == GlyphLayer.hero.index &&
-          component.position == Vector2(cameraCellSize, cameraCellSize),
+          component.position == Vector2(mapCellWidth, mapCellHeight),
     );
     expect(
       world.children.toList().indexOf(terrainAt(const Position(1, 1))),
@@ -603,8 +606,8 @@ void main() {
               component.priority == GlyphLayer.terrain.index &&
               component.position ==
                   Vector2(
-                    position.x * cameraCellSize,
-                    position.y * cameraCellSize,
+                    position.x * mapCellWidth,
+                    position.y * mapCellHeight,
                   ),
         );
     Color inkOf(PositionComponent component) =>
@@ -738,9 +741,7 @@ void main() {
         state.game.map.height,
         state.game.hero.position,
       );
-      final local =
-          geometry.topLeftOf(2, 1) +
-          Offset(geometry.cellSize / 2, geometry.cellSize / 2);
+      final local = geometry.centreOf(const Position(2, 1));
 
       await tester.tapAt(tester.getTopLeft(scene) + local);
       await tester.dragFrom(
@@ -801,9 +802,7 @@ void main() {
           state.game.hero.position,
           state.pan,
         );
-        final local =
-            geometry.topLeftOf(tile.x, tile.y) +
-            Offset(geometry.cellSize / 2, geometry.cellSize / 2);
+        final local = geometry.centreOf(tile);
         final game = tester.widget<GameWidget<FlameGame>>(scene).game!;
         final worldPoint = game.camera.globalToLocal(
           Vector2(local.dx, local.dy),
@@ -811,11 +810,11 @@ void main() {
 
         expect(
           worldPoint.x,
-          closeTo((tile.x + 0.5) * geometry.cellSize, 0.001),
+          closeTo((tile.x + 0.5) * geometry.cellWidth, 0.001),
         );
         expect(
           worldPoint.y,
-          closeTo((tile.y + 0.5) * geometry.cellSize, 0.001),
+          closeTo((tile.y + 0.5) * geometry.cellHeight, 0.001),
         );
 
         await tester.tapAt(tester.getTopLeft(scene) + local);
@@ -824,11 +823,16 @@ void main() {
         return geometry;
       }
 
-      var state = _overflowingViewState(const Position(10, 1));
+      // The overflow arena's 40 interior columns give the 360dp viewport
+      // (extent 42 * 13 = 546dp) 186dp of scrollable range: column 20 sits
+      // comfortably mid-scroll, unclamped; column 38 sits two columns from
+      // the far wall, past the scrollable range, so the camera clamps at
+      // its far bound (360 - 546 = -186) instead of centring on it exactly.
+      var state = _overflowingViewState(const Position(20, 1));
       await pumpScene(state);
       expect(
-        (await tapProjectedTile(state, const Position(11, 1))).origin.dx,
-        closeTo(-198, 0.001),
+        (await tapProjectedTile(state, const Position(21, 1))).origin.dx,
+        closeTo(-86.5, 0.001),
       );
 
       final glyphsBeforeFocus = tester
@@ -839,7 +843,7 @@ void main() {
           .toList(growable: false);
       final heroBeforeFocus = glyphsBeforeFocus.last as PositionComponent;
 
-      state = _overflowingViewState(const Position(18, 1));
+      state = _overflowingViewState(const Position(38, 1));
       await pumpScene(state);
       final glyphsAfterFocus = tester
           .widget<GameWidget<FlameGame>>(find.byKey(dungeonSceneKey))
@@ -849,11 +853,11 @@ void main() {
       expect(glyphsAfterFocus, contains(same(heroBeforeFocus)));
       expect(
         heroBeforeFocus.position,
-        Vector2(18 * cameraCellSize, cameraCellSize),
+        Vector2(38 * mapCellWidth, mapCellHeight),
       );
       expect(
-        (await tapProjectedTile(state, const Position(18, 1))).origin.dx,
-        closeTo(-432, 0.001),
+        (await tapProjectedTile(state, const Position(38, 1))).origin.dx,
+        closeTo(-186, 0.001),
       );
 
       final glyphsBeforePan = tester
@@ -864,7 +868,7 @@ void main() {
           .toList(growable: false);
 
       state = _overflowingViewState(
-        const Position(18, 1),
+        const Position(38, 1),
         pan: const Offset(1000, 0),
       );
       await pumpScene(state);
@@ -881,18 +885,18 @@ void main() {
         0,
       );
 
-      state = _overflowingViewState(const Position(10, 1));
+      state = _overflowingViewState(const Position(20, 1));
       await pumpScene(state);
       expect(
-        (await tapProjectedTile(state, const Position(11, 1))).origin.dx,
-        closeTo(-198, 0.001),
+        (await tapProjectedTile(state, const Position(21, 1))).origin.dx,
+        closeTo(-86.5, 0.001),
       );
 
       expect(taps, const [
-        Position(11, 1),
-        Position(18, 1),
+        Position(21, 1),
+        Position(38, 1),
         Position(5, 1),
-        Position(11, 1),
+        Position(21, 1),
       ]);
     },
   );
@@ -931,9 +935,7 @@ void main() {
         state.game.map.height,
         state.game.hero.position,
       );
-      final local =
-          geometry.topLeftOf(2, 1) +
-          Offset(geometry.cellSize / 2, geometry.cellSize / 2);
+      final local = geometry.centreOf(const Position(2, 1));
 
       await tester.longPressAt(tester.getTopLeft(scene) + local);
       await tester.pump(const Duration(milliseconds: 50));
@@ -994,7 +996,7 @@ void main() {
     expect(panned.pan, const Offset(12, -8));
   });
 
-  testWidgets('keeps glyph text, halo, badge and outlines inside their cells', (
+  testWidgets('keeps glyph text, halo, badge and reticle inside their cells', (
     tester,
   ) async {
     Rect childBounds(PositionComponent child) {
@@ -1035,17 +1037,22 @@ void main() {
       (component) =>
           component.priority == layer.index &&
           component.position ==
-              Vector2(position.x * cameraCellSize, position.y * cameraCellSize),
+              Vector2(position.x * mapCellWidth, position.y * mapCellHeight),
     );
 
     Future<void> expectContained(PositionComponent glyph) async {
-      expect(glyph.size, Vector2.all(cameraCellSize));
+      expect(glyph.size, Vector2(mapCellWidth, mapCellHeight));
       for (final child in glyph.children.whereType<PositionComponent>()) {
         final bounds = childBounds(child);
-        expect(bounds.left, greaterThan(0));
-        expect(bounds.top, greaterThan(0));
-        expect(bounds.right, lessThan(cameraCellSize));
-        expect(bounds.bottom, lessThan(cameraCellSize));
+        expect(bounds.left, greaterThanOrEqualTo(0));
+        expect(bounds.right, lessThanOrEqualTo(mapCellWidth));
+        if (child is TextComponent && child.anchor == Anchor.center) {
+          expect(bounds.top, greaterThanOrEqualTo(-1.2));
+          expect(bounds.bottom, lessThanOrEqualTo(mapCellHeight + 1.2));
+        } else {
+          expect(bounds.top, greaterThanOrEqualTo(0));
+          expect(bounds.bottom, lessThanOrEqualTo(mapCellHeight));
+        }
       }
     }
 
@@ -1070,11 +1077,16 @@ void main() {
     expect(hero.children.whereType<CircleComponent>(), hasLength(1));
     expect(
       hero.children.whereType<CircleComponent>().single.radius,
-      closeTo(cameraCellSize * 0.32, 0.0001),
+      closeTo(mapCellWidth * 0.5, 0.0001),
     );
-    expect(monster.children.whereType<RectangleComponent>(), hasLength(1));
-    expect(monster.children.whereType<CircleComponent>(), hasLength(1));
     expect(monster.children.whereType<TextComponent>(), hasLength(2));
+    // A monster both marked (armed target) and selected carries exactly one
+    // reticle — selection supersedes marking rather than stacking both, the
+    // regression the old square-plus-circle outline pair used to allow.
+    final monsterReticles = monster.children
+        .whereType<PositionComponent>()
+        .where((child) => child is! TextComponent);
+    expect(monsterReticles, hasLength(1));
 
     await pumpScene(_stairsViewState());
     final stairsWorld = tester
@@ -1090,7 +1102,8 @@ void main() {
   });
 
   testWidgets(
-    'retained actor component synchronizes badge and both outline shapes',
+    'retained actor component synchronizes badge and reticle, superseding '
+    'marking with selection instead of stacking both',
     (tester) async {
       Future<void> pumpScene(GameViewState state) async {
         await tester.pumpWidget(
@@ -1126,8 +1139,8 @@ void main() {
                 component.priority == GlyphLayer.monster.index &&
                 component.position ==
                     Vector2(
-                      first.position.x * cameraCellSize,
-                      first.position.y * cameraCellSize,
+                      first.position.x * mapCellWidth,
+                      first.position.y * mapCellHeight,
                     ),
           );
 
@@ -1148,15 +1161,21 @@ void main() {
         final bounds = badgeBounds();
         expect(bounds.left, greaterThan(0));
         expect(bounds.top, greaterThan(0));
-        expect(bounds.right, lessThan(cameraCellSize));
-        expect(bounds.bottom, lessThan(cameraCellSize));
+        expect(bounds.right, lessThan(mapCellWidth));
+        expect(bounds.bottom, lessThan(mapCellHeight));
       }
+
+      Iterable<PositionComponent> reticlesOf(PositionComponent actor) => actor
+          .children
+          .whereType<PositionComponent>()
+          .where((child) => child is! TextComponent);
 
       expectBadgeContained();
       expect(
         retained.children.whereType<TextComponent>().map((child) => child.text),
         ['g', '¹'],
       );
+      expect(reticlesOf(retained), isEmpty);
 
       final selected = GameViewState(
         game: initial.game,
@@ -1166,7 +1185,8 @@ void main() {
       );
       await pumpScene(selected);
       expect(actorComponent(), same(retained));
-      expect(retained.children.whereType<CircleComponent>(), hasLength(1));
+      expect(reticlesOf(retained), hasLength(1));
+      final reticle = reticlesOf(retained).single;
       expectBadgeContained();
 
       final targeted = GameViewState(
@@ -1178,13 +1198,11 @@ void main() {
       );
       await pumpScene(targeted);
       expect(actorComponent(), same(retained));
-      expect(retained.children.whereType<CircleComponent>(), hasLength(1));
-      expect(retained.children.whereType<RectangleComponent>(), hasLength(1));
-      final square = retained.children.whereType<RectangleComponent>().single;
-      expect(square.position, Vector2.all(1));
-      expect(square.size, Vector2.all(cameraCellSize - 2));
-      expect(square.paint.strokeWidth, 2);
-      expect(square.paint.color.toARGB32(), const Color(0xFFE87C70).toARGB32());
+      // Selected and marked at once still carries exactly one reticle, the
+      // same retained instance — selection supersedes marking rather than
+      // stacking a second shape.
+      expect(reticlesOf(retained), hasLength(1));
+      expect(reticlesOf(retained).single, same(reticle));
       expectBadgeContained();
 
       final cleared = GameViewState(
@@ -1194,8 +1212,7 @@ void main() {
       );
       await pumpScene(cleared);
       expect(actorComponent(), same(retained));
-      expect(retained.children.whereType<CircleComponent>(), isEmpty);
-      expect(retained.children.whereType<RectangleComponent>(), isEmpty);
+      expect(reticlesOf(retained), isEmpty);
       expectBadgeContained();
       expect(
         retained.children.whereType<TextComponent>().map((child) => child.text),

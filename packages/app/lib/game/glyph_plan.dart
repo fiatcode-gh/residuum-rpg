@@ -166,7 +166,7 @@ List<GlyphCell> glyphPlan(
 /// The glyph a terrain tile draws as.
 String terrainGlyph(Tile tile) => switch (tile) {
   Tile.wall => '#',
-  Tile.floor => '.',
+  Tile.floor => '·',
   Tile.stairsDown => '>',
   Tile.stairsUp => '<',
 };

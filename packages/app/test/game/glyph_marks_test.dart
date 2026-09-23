@@ -71,7 +71,7 @@ void main() {
       expect(heroTreatment.halo, isTrue);
     });
 
-    test('uses a square outline for a marked target', () {
+    test('uses ticks for a marked target', () {
       const cell = GlyphCell(
         Position(1, 1),
         'g',
@@ -83,11 +83,10 @@ void main() {
 
       final treatment = glyphMarkTreatment(cell);
 
-      expect(treatment.targetOutline, GlyphOutlineShape.square);
-      expect(treatment.selectedOutline, isNull);
+      expect(treatment.targetMark, GlyphTargetMark.ticks);
     });
 
-    test('uses a circle outline for a selected actor', () {
+    test('uses brackets for a selected actor', () {
       const cell = GlyphCell(
         Position(1, 1),
         'g',
@@ -99,11 +98,10 @@ void main() {
 
       final treatment = glyphMarkTreatment(cell);
 
-      expect(treatment.targetOutline, isNull);
-      expect(treatment.selectedOutline, GlyphOutlineShape.circle);
+      expect(treatment.targetMark, GlyphTargetMark.brackets);
     });
 
-    test('keeps target and selection outlines together', () {
+    test('selection supersedes marking on the same cell', () {
       const cell = GlyphCell(
         Position(1, 1),
         'g',
@@ -116,8 +114,7 @@ void main() {
 
       final treatment = glyphMarkTreatment(cell);
 
-      expect(treatment.targetOutline, GlyphOutlineShape.square);
-      expect(treatment.selectedOutline, GlyphOutlineShape.circle);
+      expect(treatment.targetMark, GlyphTargetMark.brackets);
     });
 
     test('lights only visible terrain by deterministic hero distance', () {
@@ -196,7 +193,7 @@ void main() {
       expect(terrainPresentationInk(monster, hero), monster.ink);
     });
 
-    test('uses no outline for an ordinary actor', () {
+    test('carries no target mark for an ordinary actor', () {
       const cell = GlyphCell(
         Position(1, 1),
         'g',
@@ -207,8 +204,7 @@ void main() {
 
       final treatment = glyphMarkTreatment(cell);
 
-      expect(treatment.targetOutline, isNull);
-      expect(treatment.selectedOutline, isNull);
+      expect(treatment.targetMark, isNull);
     });
   });
 }

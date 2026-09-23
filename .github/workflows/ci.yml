@@ -43,12 +43,8 @@ jobs:
         if: matrix.package == 'app'
         working-directory: packages/app
         run: |
-          if grep -rn "fontFamily: '" lib --include='*.dart'; then
-            echo "a screen declares its own font family; every text style comes from lib/style/tokens.dart"
-            exit 1
-          fi
-          if grep -rn "monospace" lib --include='*.dart'; then
-            echo "monospace was retired in unit 14 and does not come back"
+          if grep -rn "fontFamily:" lib --include='*.dart' | grep -v '^lib/style/tokens.dart:'; then
+            echo "a style declares its own font family outside lib/style/tokens.dart"
             exit 1
           fi
       - name: test

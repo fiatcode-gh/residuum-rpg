@@ -106,8 +106,8 @@ Map<Position, _TerrainGlyph> _liveTerrainGlyphs(WidgetTester tester) {
       final text = component.children.whereType<TextComponent>().single;
       final colour = (text.textRenderer as TextPaint).style.color!;
       final position = Position(
-        (component.position.x / cameraCellSize).round(),
-        (component.position.y / cameraCellSize).round(),
+        (component.position.x / mapCellWidth).round(),
+        (component.position.y / mapCellHeight).round(),
       );
       return MapEntry(position, (
         position: position,

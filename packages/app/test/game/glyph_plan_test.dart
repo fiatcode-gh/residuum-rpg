@@ -44,7 +44,7 @@ GameState _game({
 );
 
 GlyphCell? _terrainCellAt(List<GlyphCell> plan, Position position) => plan
-    .where((cell) => cell.position == position && cell.glyph == '.')
+    .where((cell) => cell.position == position && cell.glyph == '·')
     .firstOrNull;
 
 GlyphCell? _nodeCellAt(List<GlyphCell> plan, Position position) => plan
@@ -145,7 +145,7 @@ void main() {
       // assert
       final cell = _terrainCellAt(plan, _remembered);
       expect(cell, isNotNull);
-      expect(cell!.glyph, '.');
+      expect(cell!.glyph, '·');
       expect(cell.ink, DungeonPalette.crypt.floor);
       expect(cell.opacity, rememberedOpacity);
       expect(cell.opacity, 0.4);

@@ -173,9 +173,7 @@ Future<void> _tapTile(WidgetTester tester, Position tile) async {
   final scene = find.byKey(dungeonSceneKey);
   final size = tester.getSize(scene);
   final geometry = GridGeometry.camera(size, 7, 5, const Position(1, 1));
-  final local =
-      geometry.topLeftOf(tile.x, tile.y) +
-      Offset(geometry.cellSize / 2, geometry.cellSize / 2);
+  final local = geometry.centreOf(tile);
   await tester.tapAt(tester.getTopLeft(scene) + local);
 }
 
@@ -1149,9 +1147,7 @@ void main() {
       final scene = find.byKey(dungeonSceneKey);
       final size = tester.getSize(scene);
       final geometry = GridGeometry.camera(size, 7, 5, const Position(1, 1));
-      final local =
-          geometry.topLeftOf(4, 1) +
-          Offset(geometry.cellSize / 2, geometry.cellSize / 2);
+      final local = geometry.centreOf(const Position(4, 1));
       await tester.longPressAt(tester.getTopLeft(scene) + local);
       await tester.pumpAndSettle();
 
@@ -1162,10 +1158,12 @@ void main() {
     testWidgets('the recenter affordance resets the pan', (tester) async {
       // arrange - a floor wider than the default test surface, panned so the
       // hero has been dragged off the right edge of the glass
+      // 70 columns (910dp of floor at mapCellWidth=13) still overflow the
+      // 800dp default test surface's full-width map slot.
       const wideArena = '''
-##############################
-#............................#
-##############################''';
+######################################################################
+#....................................................................#
+######################################################################''';
       final map = FloorMap.parse(wideArena);
       final seen = computeFov(map, const Position(1, 1), fovRadius);
       final game = GameState(
@@ -1204,12 +1202,12 @@ void main() {
       'a distant selected actor makes recenter return focus to the hero',
       (tester) async {
         const wideArena = '''
-########################################
-#......................................#
-########################################''';
+######################################################################
+#....................................................................#
+######################################################################''';
         final map = FloorMap.parse(wideArena);
         const heroPosition = Position(1, 1);
-        const actorPosition = Position(18, 1);
+        const actorPosition = Position(60, 1);
         final monster = ghoulAt(actorPosition);
         final seen = {heroPosition, actorPosition};
         final game = GameState(

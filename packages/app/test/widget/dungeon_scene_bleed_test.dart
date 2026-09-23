@@ -15,13 +15,14 @@ import 'package:residuum_core/core.dart';
 import '../support/phone.dart';
 
 // A room far taller and wider than any viewport this unit's chrome can leave
-// for the map: 14 floor columns (504dp of floor at cameraCellSize=36, wider
-// than a phone) and 30 floor rows (1080dp tall). The point is not the room's
+// for the map: 34 floor columns (442dp of floor at mapCellWidth=13, wider
+// than the 411dp-logical-wide test phone) and 60 floor rows (960dp, taller
+// than the 923dp-logical-tall test phone). The point is not the room's
 // shape — it is that most of it always sits outside the camera's window, at
 // every chrome density, so a camera that paints the whole world rather than
 // clipping to its own box always has real tile content to leak.
-const _interiorWidth = 14;
-const _interiorHeight = 30;
+const _interiorWidth = 34;
+const _interiorHeight = 60;
 const _totalWidth = _interiorWidth + 2;
 const _heroAt = Position(8, 16);
 const _ghoulAt = Position(9, 16);

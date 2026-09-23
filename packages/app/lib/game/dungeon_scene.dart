@@ -2,11 +2,11 @@ import 'package:flame/camera.dart' show MaxViewport;
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
-import 'package:flame/text.dart';
 import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 
-import '../style/tokens.dart' show textFace;
+import '../style/tokens.dart'
+    show crawlBackground, crawlEnemyHigh, mapBadgeStyle, mapGlyphStyle;
 import 'actor_presentation.dart';
 import 'dungeon_palette.dart';
 
@@ -15,8 +15,6 @@ import 'glyph_marks.dart';
 import 'glyph_plan.dart';
 import 'grid_geometry.dart';
 import 'dungeon_depth.dart';
-
-const Color dungeonVoid = Color(0xFF050607);
 
 const dungeonSceneKey = Key('dungeon-scene');
 const dungeonSceneHostKey = Key('dungeon-scene-host');
@@ -215,7 +213,7 @@ class _DungeonScene extends FlameGame
   final Map<GlyphRenderId, _GlyphComponent> _glyphs = {};
 
   @override
-  Color backgroundColor() => dungeonVoid;
+  Color backgroundColor() => crawlBackground;
 
   @override
   Future<void> onLoad() async {
@@ -325,17 +323,17 @@ class _GlyphComponent extends PositionComponent {
       _ink = ink,
       super(
         position: _mapPosition(cell),
-        size: Vector2.all(cameraCellSize),
+        size: Vector2(mapCellWidth, mapCellHeight),
         priority: cell.layer.index,
       ) {
     _text = TextComponent(
       text: cell.glyph,
       textRenderer: _textPaint(cell, ink),
       anchor: Anchor.center,
-      position: Vector2.all(cameraCellSize / 2),
+      position: Vector2(mapCellWidth / 2, mapCellHeight / 2),
     );
     _applyTreatment(treatment);
-    _updateOutlines(cell, treatment);
+    _updateReticle(treatment);
     if (treatment.halo) add(_halo);
     add(_text);
     _updateBadge(cell);
@@ -345,15 +343,14 @@ class _GlyphComponent extends PositionComponent {
   Color _ink;
   late final TextComponent _text;
   TextComponent? _badge;
-  RectangleComponent? _targetOutline;
-  CircleComponent? _selectedOutline;
+  _ReticleComponent? _reticle;
 
   /// The hero's very small halo — a soft value contrast behind the mark so
   /// the hero reads against the stone at a glance. Shape, not hue: the halo
   /// is the cell's own ink at a whisper of alpha.
   CircleComponent get _halo => CircleComponent(
-    radius: cameraCellSize * 0.32,
-    position: Vector2.all(cameraCellSize / 2),
+    radius: mapCellWidth * 0.5,
+    position: Vector2(mapCellWidth / 2, mapCellHeight / 2),
     anchor: Anchor.center,
     paint: Paint()
       ..color = _cell.ink.withValues(alpha: 0.10 + 0.06 * _cell.opacity),
@@ -378,11 +375,8 @@ class _GlyphComponent extends PositionComponent {
         before.opacity != cell.opacity) {
       _updateBadge(cell);
     }
-    if (before.marked != cell.marked ||
-        before.selected != cell.selected ||
-        beforeInk != ink ||
-        before.opacity != cell.opacity) {
-      _updateOutlines(cell, treatment);
+    if (before.marked != cell.marked || before.selected != cell.selected) {
+      _updateReticle(treatment);
     }
   }
 
@@ -390,28 +384,14 @@ class _GlyphComponent extends PositionComponent {
     _text.scale = Vector2.all(treatment.scale);
   }
 
-  static Vector2 _mapPosition(GlyphCell cell) => Vector2(
-    cell.position.x * cameraCellSize,
-    cell.position.y * cameraCellSize,
-  );
+  static Vector2 _mapPosition(GlyphCell cell) =>
+      Vector2(cell.position.x * mapCellWidth, cell.position.y * mapCellHeight);
 
-  static TextPaint _textPaint(GlyphCell cell, Color ink) => TextPaint(
-    style: TextStyle(
-      color: ink.withValues(alpha: cell.opacity),
-      fontSize: cameraCellSize * glyphBaseFontScale,
-      fontFamily: textFace,
-      height: 1,
-    ),
-  );
+  static TextPaint _textPaint(GlyphCell cell, Color ink) =>
+      TextPaint(style: mapGlyphStyle(ink.withValues(alpha: cell.opacity)));
 
-  static TextPaint _badgePaint(GlyphCell cell, Color ink) => TextPaint(
-    style: TextStyle(
-      color: ink.withValues(alpha: cell.opacity),
-      fontSize: cameraCellSize * 0.30,
-      fontFamily: textFace,
-      height: 1,
-    ),
-  );
+  static TextPaint _badgePaint(GlyphCell cell, Color ink) =>
+      TextPaint(style: mapBadgeStyle(ink.withValues(alpha: cell.opacity)));
 
   void _updateBadge(GlyphCell cell) {
     final badge = cell.badge;
@@ -424,7 +404,7 @@ class _GlyphComponent extends PositionComponent {
       text: badge,
       textRenderer: _badgePaint(cell, _ink),
       anchor: Anchor.topRight,
-      position: Vector2(cameraCellSize - 1, 1),
+      position: Vector2(mapCellWidth - 0.5, 0.5),
     );
     _badge!
       ..text = badge
@@ -432,36 +412,80 @@ class _GlyphComponent extends PositionComponent {
     if (_badge!.parent == null) add(_badge!);
   }
 
-  void _updateOutlines(GlyphCell cell, GlyphMarkTreatment treatment) {
-    if (treatment.targetOutline == GlyphOutlineShape.square) {
-      _targetOutline ??= RectangleComponent(
-        position: Vector2.all(1),
-        size: Vector2.all(cameraCellSize - 2),
-        paint: Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2,
-      );
-      _targetOutline!.paint.color = const Color(0xFFE87C70);
-      if (_targetOutline!.parent == null) add(_targetOutline!);
-    } else {
-      _targetOutline?.removeFromParent();
-      _targetOutline = null;
+  void _updateReticle(GlyphMarkTreatment treatment) {
+    final mark = treatment.targetMark;
+    if (mark == null) {
+      _reticle?.removeFromParent();
+      _reticle = null;
+      return;
     }
-
-    if (treatment.selectedOutline == GlyphOutlineShape.circle) {
-      _selectedOutline ??= CircleComponent(
-        radius: cameraCellSize * 0.46,
-        position: Vector2.all(cameraCellSize / 2),
-        anchor: Anchor.center,
-        paint: Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1,
-      );
-      _selectedOutline!.paint.color = cell.ink.withValues(alpha: cell.opacity);
-      if (_selectedOutline!.parent == null) add(_selectedOutline!);
+    if (_reticle == null) {
+      _reticle = _ReticleComponent(mark);
+      add(_reticle!);
     } else {
-      _selectedOutline?.removeFromParent();
-      _selectedOutline = null;
+      _reticle!.synchronize(mark);
     }
   }
+}
+
+/// Draws the corner-tick or bracket reticle PLAN.md G6 defines, inside the
+/// cell so its arms never bleed into the neighbour.
+///
+/// One component handles both shapes: ticks and brackets never coexist on
+/// the same cell (selection supersedes marking), so switching [_mark] is
+/// cheaper than swapping components in and out.
+class _ReticleComponent extends PositionComponent {
+  _ReticleComponent(GlyphTargetMark mark)
+    : _mark = mark,
+      super(size: Vector2(mapCellWidth, mapCellHeight));
+
+  GlyphTargetMark _mark;
+
+  static const Rect _rect = Rect.fromLTWH(0.75, 0.75, 11.5, 14.5);
+  static const double _armLength = 3.5;
+
+  static final Paint _ticksPaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.0
+    ..color = crawlEnemyHigh;
+  static final Paint _bracketsPaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.75
+    ..color = crawlEnemyHigh;
+
+  void synchronize(GlyphTargetMark mark) => _mark = mark;
+
+  @override
+  void render(Canvas canvas) {
+    switch (_mark) {
+      case GlyphTargetMark.ticks:
+        canvas.drawPath(_ticksPath(), _ticksPaint);
+      case GlyphTargetMark.brackets:
+        canvas.drawPath(_bracketsPath(), _bracketsPaint);
+    }
+  }
+
+  static Path _ticksPath() => Path()
+    ..moveTo(_rect.left, _rect.top + _armLength)
+    ..lineTo(_rect.left, _rect.top)
+    ..lineTo(_rect.left + _armLength, _rect.top)
+    ..moveTo(_rect.right - _armLength, _rect.top)
+    ..lineTo(_rect.right, _rect.top)
+    ..lineTo(_rect.right, _rect.top + _armLength)
+    ..moveTo(_rect.right, _rect.bottom - _armLength)
+    ..lineTo(_rect.right, _rect.bottom)
+    ..lineTo(_rect.right - _armLength, _rect.bottom)
+    ..moveTo(_rect.left + _armLength, _rect.bottom)
+    ..lineTo(_rect.left, _rect.bottom)
+    ..lineTo(_rect.left, _rect.bottom - _armLength);
+
+  static Path _bracketsPath() => Path()
+    ..moveTo(_rect.left + _armLength, _rect.top)
+    ..lineTo(_rect.left, _rect.top)
+    ..lineTo(_rect.left, _rect.bottom)
+    ..lineTo(_rect.left + _armLength, _rect.bottom)
+    ..moveTo(_rect.right - _armLength, _rect.top)
+    ..lineTo(_rect.right, _rect.top)
+    ..lineTo(_rect.right, _rect.bottom)
+    ..lineTo(_rect.right - _armLength, _rect.bottom);
 }
