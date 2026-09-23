@@ -84,3 +84,9 @@ flutter:
       fonts:
         - asset: assets/fonts/EBGaramond-Variable.ttf
           weight: 500
+    - family: IBM Plex Mono
+      fonts:
+        - asset: assets/fonts/IBMPlexMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexMono-SemiBold.ttf
+          weight: 600

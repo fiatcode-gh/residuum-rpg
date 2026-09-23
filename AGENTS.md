@@ -40,10 +40,13 @@ backups, and audit/build reports are untracked evidence in `.flow/evidence/`.
 - YAGNI: build for the current milestone only. No premature abstraction; duplicate twice
   before extracting.
 - **Type:** `fontFamily` appears only in `packages/app/lib/style/tokens.dart`.
-  Every text style is a role from that module. A role needing a second colour
-  gets a `const` sibling there; `copyWith` of a token is prohibited, because
-  its consumers are `const`. Monospace was retired in Unit 14 and does not
-  come back.
+  Every text style is a role from that module: EB Garamond for display,
+  Spectral for body prose and control labels, IBM Plex Mono for map glyphs,
+  log sentences, numbers and data values (Unit 16.5). A role needing a
+  second colour gets a `const` sibling there; `copyWith` of a token is
+  prohibited, because its consumers are `const`. The only non-`const`
+  styles are `mapGlyphStyle` and `mapBadgeStyle`, whose ink is continuous;
+  they are built in `tokens.dart` too.
 
 ## Testing
 

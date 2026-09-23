@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 const String textFace = 'Spectral';
 const String displayFace = 'EB Garamond';
+const String monoFace = 'IBM Plex Mono';
 
 const Color ground = Color(0xFF0E1014);
 const Color recessed = Color(0xFF11141A);
@@ -27,6 +28,27 @@ const Color scrim = Color(0xCC0E1014);
 /// permitted register for light, fire and gold instead.
 const Color meterHealthFill = Color(0xFFD99A3D);
 const Color meterManaFill = Color(0xFF7FA8D9);
+
+/// Unit 16.5's crawl palette (contract "In scope" item 1, PLAN.md G3): the
+/// art bible's colours, bundled as tokens rather than inlined per call site.
+const Color crawlTorch = Color(0xFFFFD27A);
+const Color crawlHero = Color(0xFFFFF4D6);
+const Color crawlEnemy = Color(0xFFFF5B5B);
+const Color crawlEnemyHigh = Color(0xFFFF3B3B);
+const Color crawlCold = Color(0xFF4FC3FF);
+const Color crawlGold = Color(0xFFD6C280);
+const Color crawlText = Color(0xFFE6E1D6);
+const Color crawlTextDim = Color(0xFF9CA3AF);
+const Color crawlBackground = Color(0xFF0A0F14);
+const Color crawlFog = Color(0xFF1A2430);
+const Color crawlPanelFill = Color(0xFF0B1215);
+const Color crawlSlotFill = Color(0xFF10181B);
+const Color crawlFrame = Color(0xFF2E3A3F);
+const Color crawlDivider = Color(0xFF1F272C);
+const Color crawlChipBorder = Color(0xFF4A5054);
+const Color crawlMeterTrack = Color(0xFF131C1E);
+const Color crawlGoldRule = Color(0x47D6C280);
+const Color crawlCalloutFill = Color(0xF00B1215);
 
 const double gutter = 12;
 const double rhythm = 4;
@@ -262,6 +284,203 @@ const TextStyle textMicroDim = TextStyle(
   height: 1.15,
   textBaseline: TextBaseline.alphabetic,
   color: dim,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+
+/// The mono roles (PLAN.md G2): map glyphs, log sentences, numbers and data
+/// values. Unlike the display and text roles, none of these carry
+/// [FontFeature.liningFigures] or `fontVariations` — IBM Plex Mono ships as
+/// two static weights, matching how the text role above already handles
+/// Spectral's two static weights.
+const TextStyle monoMeta = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 11,
+  letterSpacing: 0.3,
+  fontWeight: FontWeight.w400,
+  height: 1.27,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlTextDim,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle monoMetaCold = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 11,
+  letterSpacing: 0.3,
+  fontWeight: FontWeight.w400,
+  height: 1.27,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlCold,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle monoChip = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 11,
+  letterSpacing: 0.2,
+  fontWeight: FontWeight.w400,
+  height: 1.0,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlText,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle monoData = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 11.5,
+  letterSpacing: 0,
+  fontWeight: FontWeight.w400,
+  height: 1.13,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlText,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle monoDataDim = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 11.5,
+  letterSpacing: 0,
+  fontWeight: FontWeight.w400,
+  height: 1.13,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlTextDim,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle monoItem = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 10.5,
+  letterSpacing: 0,
+  fontWeight: FontWeight.w400,
+  height: 1.24,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlText,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle monoLog = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 10.5,
+  letterSpacing: 0,
+  fontWeight: FontWeight.w400,
+  height: 1.43,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlText,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle monoLogHostile = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 10.5,
+  letterSpacing: 0,
+  fontWeight: FontWeight.w400,
+  height: 1.43,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlEnemy,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle monoLogCold = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 10.5,
+  letterSpacing: 0,
+  fontWeight: FontWeight.w400,
+  height: 1.43,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlCold,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle monoLogTorch = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 10.5,
+  letterSpacing: 0,
+  fontWeight: FontWeight.w400,
+  height: 1.43,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlTorch,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle monoFigure = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 20,
+  letterSpacing: 0,
+  fontWeight: FontWeight.w600,
+  height: 1.1,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlHero,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle monoFigureCold = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 20,
+  letterSpacing: 0,
+  fontWeight: FontWeight.w600,
+  height: 1.1,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlCold,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle monoToken = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 11,
+  letterSpacing: 0,
+  fontWeight: FontWeight.w400,
+  height: 1.0,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlHero,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle monoTokenHostile = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 11,
+  letterSpacing: 0,
+  fontWeight: FontWeight.w400,
+  height: 1.0,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlEnemy,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle monoSlotMeta = TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 9,
+  letterSpacing: 0,
+  fontWeight: FontWeight.w400,
+  height: 1.11,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlTextDim,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+
+/// The only two non-`const` styles: map glyph ink is continuous (light and
+/// value falloff, G4), so it cannot be a fixed token. Same invariants as
+/// every role above; `color` is the caller's [ink] instead of a token.
+TextStyle mapGlyphStyle(Color ink) => TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 17,
+  letterSpacing: 0,
+  fontWeight: FontWeight.w400,
+  height: 1.0,
+  textBaseline: TextBaseline.alphabetic,
+  color: ink,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+TextStyle mapBadgeStyle(Color ink) => TextStyle(
+  inherit: false,
+  fontFamily: monoFace,
+  fontSize: 8,
+  letterSpacing: 0,
+  fontWeight: FontWeight.w400,
+  height: 1.0,
+  textBaseline: TextBaseline.alphabetic,
+  color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
 
