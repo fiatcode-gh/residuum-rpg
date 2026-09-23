@@ -1093,7 +1093,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert - every spell is reachable from the sheet, cost-free
-      expect(find.text('Firebolt'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.text('Firebolt'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Mend'), findsOneWidget);
       expect(find.text('Ward'), findsOneWidget);
       expect(find.text('Bind'), findsOneWidget);

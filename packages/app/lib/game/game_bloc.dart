@@ -312,6 +312,45 @@ class GameViewState {
 
   Position get cameraFocus => selectedActor?.position ?? game.hero.position;
 
+  /// The actor the combat panel names: an inspected or timeline-selected
+  /// actor's own choice always wins over a guess, and failing that, in
+  /// battle, the nearest monster the hero can currently inspect — ties
+  /// broken reading order and then id, so two identical crawls point the
+  /// panel at the same ghoul (PLAN.md U16.5 Task 09 decision 1).
+  ///
+  /// Outside battle with nothing selected there is nothing to guess at, so
+  /// this is null rather than falling back to whatever the hero last saw.
+  Actor? get targetActor =>
+      selectedActor ?? (isBattleOpen ? _nearestKnownVisible : null);
+
+  /// The known, visible monster nearest the hero by Chebyshev distance —
+  /// [inspectTargetAt]'s own visibility and identity rule, so the panel
+  /// never names a monster the map itself would refuse to open. Ties break
+  /// on [byRowThenColumn] and then on id, matching `nearestVisibleEnemy`'s
+  /// tie-break so a targeted cast and the panel agree on the same monster.
+  Actor? get _nearestKnownVisible {
+    Actor? nearest;
+    var shortest = 0;
+    for (final monster in game.monsters) {
+      if (inspectTargetAt(monster.position) == null) continue;
+      final distance = monster.position.chebyshevTo(game.hero.position);
+      final better =
+          nearest == null ||
+          distance < shortest ||
+          (distance == shortest && _byReadingOrder(monster, nearest) < 0);
+      if (better) {
+        nearest = monster;
+        shortest = distance;
+      }
+    }
+    return nearest;
+  }
+
+  int _byReadingOrder(Actor first, Actor second) {
+    final byPosition = byRowThenColumn(first.position, second.position);
+    return byPosition != 0 ? byPosition : first.id.compareTo(second.id);
+  }
+
   List<ActivationToken> get activationQueue {
     final visibleKnownActorIds = {
       for (final monster in game.monsters)

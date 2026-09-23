@@ -179,7 +179,11 @@ void main() {
       );
       expect(battleStatus.height, 49);
       expect(battleMap.top, 147);
-      expect(battleMap.bottom, closeTo(639.4, 0.1));
+      // U16.5 Task 09: the combat panel (124 dp) replaces the hero panel
+      // (102 dp) while a battle is open, so the map's own Expanded region
+      // gives up exactly that 22 dp difference — the battle floor this unit
+      // adds, not a regression of the exploration baseline above.
+      expect(battleMap.bottom, closeTo(617.4, 0.1));
       await _openCrawl(tester, _watchedGame());
       final watchedStatus = tester.getRect(find.byType(CrawlStatus));
       final watchedMap = tester.getRect(find.byKey(dungeonSceneSlotKey));

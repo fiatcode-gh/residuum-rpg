@@ -1182,6 +1182,28 @@ void main() {
     expect(cells.map((cell) => cell.selected), [false, true]);
   });
 
+  test('in battle with no selection, the snapshot brackets the nearest known '
+      'monster and ticks the rest under an armed spell', () {
+    // arrange - near is orthogonally adjacent (holds reach, opens the
+    // battle, and is nearest); far is merely visible and armed-legal
+    final near = _ghoulAt(const Position(1, 2));
+    final far = _ghoulAt(const Position(3, 2), id: 'ghoul-2');
+    final state = _viewState(monsters: [near, far], armedSpellId: 'firebolt');
+
+    // act
+    final snapshot = DungeonSceneSnapshot.fromViewState(state);
+
+    // assert - selection (brackets) supersedes marking (ticks) on near's
+    // own cell, while far keeps its tick alone
+    expect(state.isBattleOpen, isTrue);
+    final cells = snapshot.cells.where(
+      (cell) => cell.layer == GlyphLayer.monster,
+    );
+    expect(cells.map((cell) => cell.entity), ['ghoul-1', 'ghoul-2']);
+    expect(cells.map((cell) => cell.marked), [true, true]);
+    expect(cells.map((cell) => cell.selected), [true, false]);
+  });
+
   test('pan-only viewport reuse preserves selected projection and focus', () {
     final state = _viewState(selectedActorId: 'ghoul-1');
     final snapshot = DungeonSceneSnapshot.fromViewState(state);
@@ -1325,8 +1347,12 @@ void main() {
         await tester.pump();
       }
 
-      final first = _ghoulAt(const Position(1, 2));
-      final second = _ghoulAt(const Position(2, 2), id: 'ghoul-2');
+      // Diagonal, not orthogonally adjacent: the battle stays closed with
+      // nothing selected, so "no selection, no arm" still means "no
+      // reticle" here — the auto-target-in-battle behaviour this would
+      // otherwise trigger has its own test below.
+      final first = _ghoulAt(const Position(2, 2));
+      final second = _ghoulAt(const Position(3, 3), id: 'ghoul-2');
       final initial = _viewState(monsters: [first, second]);
       await pumpScene(initial);
 

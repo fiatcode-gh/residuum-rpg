@@ -44,7 +44,7 @@ class DungeonSceneSnapshot {
             state.game,
             markedIds: state.armedTargets,
             actorPresentations: state.actorIdentity.knownActors,
-            selectedActorId: state.selectedActor?.id,
+            selectedActorId: state.targetActor?.id,
           ),
         ),
 
@@ -104,7 +104,7 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
   late DungeonSceneSnapshot _snapshot;
   late GameState _projectionGame;
   late ActorIdentityContext _projectionActorIdentity;
-  late String? _projectionSelectedActorId;
+  late String? _projectionTargetActorId;
   late String? _projectionArmedSpellId;
 
   @override
@@ -144,12 +144,12 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
       identical(_projectionGame, widget.state.game) &&
       _projectionArmedSpellId == widget.state.armedSpellId &&
       identical(_projectionActorIdentity, widget.state.actorIdentity) &&
-      _projectionSelectedActorId == widget.state.selectedActorId;
+      _projectionTargetActorId == widget.state.targetActor?.id;
 
   void _rememberProjectionInputs() {
     _projectionGame = widget.state.game;
     _projectionActorIdentity = widget.state.actorIdentity;
-    _projectionSelectedActorId = widget.state.selectedActorId;
+    _projectionTargetActorId = widget.state.targetActor?.id;
     _projectionArmedSpellId = widget.state.armedSpellId;
   }
 

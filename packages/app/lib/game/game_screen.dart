@@ -10,6 +10,7 @@ import '../town/town_bloc.dart';
 import '../world/world_bloc.dart';
 import 'action_icon.dart';
 import 'battle_view.dart';
+import 'combat_panel.dart';
 import 'crawl_action_row.dart';
 import 'crawl_status.dart';
 import 'crawl_style.dart';
@@ -154,10 +155,12 @@ class GameScreen extends StatelessWidget {
                                           ),
                                         ),
                                         const SizedBox(height: crawlPanelGap),
-                                        HeroPanel(
-                                          state: state,
-                                          heroLabel: bloc.heroLabel,
-                                        ),
+                                        state.isBattleOpen
+                                            ? CombatPanel(state: state)
+                                            : HeroPanel(
+                                                state: state,
+                                                heroLabel: bloc.heroLabel,
+                                              ),
                                         const SizedBox(height: crawlGap),
                                         LogPeek(
                                           key: logPeekKey,

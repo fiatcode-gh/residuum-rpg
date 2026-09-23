@@ -30,6 +30,11 @@ const double crawlSlotMark = 22;
 /// the gap it sits in between the map and the log peek, its corner radius,
 /// and the frame every fixed-chrome panel this unit draws shares.
 const double crawlHeroPanelHeight = 102;
+
+/// PLAN.md G8 combat panel internals (Task 09): the panel's own fixed
+/// height, replacing [crawlHeroPanelHeight] for exactly as long as
+/// `GameViewState.isBattleOpen` holds.
+const double crawlCombatPanelHeight = 124;
 const double crawlPanelGap = 6;
 const double crawlPanelRadius = 6;
 const BoxDecoration crawlFrameDecoration = BoxDecoration(

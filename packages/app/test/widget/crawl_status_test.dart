@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/combat_panel.dart';
 import 'package:residuum_app/game/crawl_status.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/game/hero_panel.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
@@ -412,6 +414,32 @@ void main() {
           greaterThanOrEqualTo(paragraph.getMaxIntrinsicWidth(double.infinity)),
         );
       }
+    });
+  });
+
+  group('the battle meter keys move to the combat panel', () {
+    testWidgets('the combat panel, not the hero panel, carries hpMeterKey and '
+        'manaMeterKey while a battle is open', (tester) async {
+      // act - the worst case's ghoul-1 stands adjacent, so battle is open
+      await _pumpWorstCase(tester);
+
+      // assert
+      expect(find.byType(HeroPanel), findsNothing);
+      expect(find.byType(CombatPanel), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(CombatPanel),
+          matching: find.byKey(hpMeterKey),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(CombatPanel),
+          matching: find.byKey(manaMeterKey),
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

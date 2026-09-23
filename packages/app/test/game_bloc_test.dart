@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/actor_presentation.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_app/game/activation_timeline.dart';
@@ -2408,6 +2409,104 @@ void _lootTests() {
       // assert
       expect(open, isTrue);
       expect(closed, isFalse);
+    });
+  });
+
+  group('the combat panel target', () {
+    test('a selection wins over the nearest-known guess', () {
+      // arrange - the far monster is explicitly selected; the near one
+      // would otherwise win the nearest-known guess
+      final near = ghoul(const Position(3, 1));
+      final far = ghoul(const Position(5, 2), id: 'ghoul-2');
+      final state = GameViewState(
+        game: arenaGame(heroAt: const Position(3, 2), monsters: [near, far]),
+        log: const [],
+        selectedActorId: far.id,
+      );
+
+      // act + assert
+      expect(state.targetActor?.id, far.id);
+    });
+
+    test('in battle with no selection, the nearest known monster is the '
+        'target, ties broken upper-left', () {
+      // arrange - two monsters tie at Chebyshev 1 above a third that
+      // merely holds reach and opens the battle from a row further down
+      final tieA = ghoul(const Position(2, 1));
+      final tieB = ghoul(const Position(4, 1), id: 'ghoul-2');
+      final reachHolder = ghoul(const Position(3, 3), id: 'ghoul-3');
+      final state = GameViewState(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [tieA, tieB, reachHolder],
+          ascii: wideArena,
+        ),
+        log: const [],
+      );
+
+      // act + assert
+      expect(state.isBattleOpen, isTrue);
+      expect(state.targetActor?.id, tieA.id);
+    });
+
+    test('an unknown or out-of-sight monster is never the guessed target', () {
+      // arrange - the reach holder opens the battle from range; the two
+      // nearer monsters are disqualified (one unknown, one out of sight),
+      // so the farther known monster is the only legal guess
+      const hero = Position(10, 2);
+      final reachHolder = Actor(
+        id: 'reach-holder',
+        name: 'the reach holder',
+        glyph: 'p',
+        position: const Position(13, 2),
+        hp: 4,
+        maxHp: 4,
+        attackMin: 2,
+        attackMax: 3,
+        speed: 5,
+        energy: actThreshold,
+        reach: 3,
+      );
+      final known = ghoul(const Position(12, 2), id: 'known-far');
+      final unknownNear = ghoul(const Position(9, 1), id: 'unknown-near');
+      final hiddenNear = ghoul(const Position(11, 1), id: 'hidden-near');
+      final baseGame = arenaGame(
+        heroAt: hero,
+        monsters: [reachHolder, known],
+        ascii: wideArena,
+      );
+      final identity = ActorIdentityContext.fromGame(baseGame);
+      final game = baseGame.copyWith(
+        monsters: [reachHolder, known, unknownNear, hiddenNear],
+        visible: {
+          for (final position in baseGame.visible)
+            if (position != hiddenNear.position) position,
+        },
+      );
+      final state = GameViewState(
+        game: game,
+        log: const [],
+        actorIdentity: identity,
+      );
+
+      // act + assert
+      expect(state.isBattleOpen, isTrue);
+      expect(state.targetActor?.id, 'known-far');
+    });
+
+    test('outside battle with no selection, there is nothing to guess at', () {
+      // arrange - visible but far enough that nothing holds reach
+      final state = GameViewState(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(5, 3))],
+        ),
+        log: const [],
+      );
+
+      // act + assert
+      expect(state.isBattleOpen, isFalse);
+      expect(state.targetActor, isNull);
     });
   });
 

@@ -177,6 +177,34 @@ const TextStyle displayLabel = TextStyle(
   fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
 );
 
+/// PLAN.md G2 display role added on demand (Task 09): the combat panel's
+/// target name, warm for the common case and cold for the callout Task 12
+/// gives an inspected-but-not-selected actor.
+const TextStyle displayName = TextStyle(
+  inherit: false,
+  fontFamily: displayFace,
+  fontSize: 15,
+  letterSpacing: 0.3,
+  fontWeight: FontWeight.w500,
+  fontVariations: [FontVariation('wght', 500)],
+  height: 1.13,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlEnemy,
+  fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
+);
+const TextStyle displayNameCold = TextStyle(
+  inherit: false,
+  fontFamily: displayFace,
+  fontSize: 15,
+  letterSpacing: 0.3,
+  fontWeight: FontWeight.w500,
+  fontVariations: [FontVariation('wght', 500)],
+  height: 1.13,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlCold,
+  fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
+);
+
 /// Every role's `height` is explicit because Spectral's own line box is
 /// 1.522 em — inherited, that is +15% on every text row in the application,
 /// enough on its own to put worst-legal-combat chrome over the 600 dp
