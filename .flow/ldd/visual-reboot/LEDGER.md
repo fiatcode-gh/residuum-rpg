@@ -4772,3 +4772,15 @@ request exists, and the integration choice is the user's.
 - Unit 16 remains unaccepted. The new unit must decide how to continue device
   evidence and restore the prior absent-package state. No further device
   actions in this session.
+
+### U16 paused branch publication — 2026-09-23
+
+- Commit `b301f27d70db5c5c09ca7274b81fa1f44983162c` (`feat: add ASCII crawl
+  presentation`) was pushed to `origin/residuum-visual-reboot-16` at the user's
+  request. No pull request was created.
+- The branch contains the implementation and shared U16 LDD records. Local
+  device receipts and screenshots remain under ignored `.flow/evidence/`;
+  `.flow/checkpoints/` retains the exact phone state and remaining acceptance
+  work for Unit 16.5.
+- U16 is not accepted. Unit 16.5 must decide how to continue visual evidence
+  and restore the phone to the user-authorized prior absent-package state.

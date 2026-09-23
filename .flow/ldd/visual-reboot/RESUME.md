@@ -58,8 +58,10 @@ The Crypt exploration with the new `save.json` (4790 bytes) and
 pre-capture absent-package receipt is retained; Unit 16 is not accepted. Unit
 16.5 must decide how to continue and restore the prior absent-package state.
 
-Next: commit and push the current implementation and shared LDD handoff
-records, as explicitly requested. No more ADB actions; do not use an emulator.
+Current feature branch `residuum-visual-reboot-16` was committed as
+`b301f27d70db5c5c09ca7274b81fa1f44983162c` and pushed to
+`origin/residuum-visual-reboot-16`. No pull request was created. The user will
+create Unit 16.5; do not continue device work in this session.
 
 ## U16 inherited locks
 
