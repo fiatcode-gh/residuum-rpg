@@ -30,26 +30,23 @@ class DungeonSceneSnapshot {
     required this.heroPosition,
   });
 
-  factory DungeonSceneSnapshot.fromViewState(
-    GameViewState state,
-    DungeonPalette palette,
-  ) => DungeonSceneSnapshot._(
-    columns: state.game.map.width,
-    rows: state.game.map.height,
-    cells: List.unmodifiable(
-      glyphPlan(
-        state.game,
-        palette,
-        markedIds: state.armedTargets,
-        actorPresentations: state.actorIdentity.knownActors,
-        selectedActorId: state.selectedActor?.id,
-      ),
-    ),
+  factory DungeonSceneSnapshot.fromViewState(GameViewState state) =>
+      DungeonSceneSnapshot._(
+        columns: state.game.map.width,
+        rows: state.game.map.height,
+        cells: List.unmodifiable(
+          glyphPlan(
+            state.game,
+            markedIds: state.armedTargets,
+            actorPresentations: state.actorIdentity.knownActors,
+            selectedActorId: state.selectedActor?.id,
+          ),
+        ),
 
-    focus: state.cameraFocus,
-    heroPosition: state.game.hero.position,
-    pan: state.pan,
-  );
+        focus: state.cameraFocus,
+        heroPosition: state.game.hero.position,
+        pan: state.pan,
+      );
 
   DungeonSceneSnapshot withViewport({
     required int columns,
@@ -100,7 +97,6 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
   late final _DungeonScene _scene;
   late DungeonSceneSnapshot _snapshot;
   late GameState _projectionGame;
-  late DungeonPalette _projectionPalette;
   late ActorIdentityContext _projectionActorIdentity;
   late String? _projectionSelectedActorId;
   late String? _projectionArmedSpellId;
@@ -108,10 +104,7 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
   @override
   void initState() {
     super.initState();
-    _snapshot = DungeonSceneSnapshot.fromViewState(
-      widget.state,
-      widget.palette,
-    );
+    _snapshot = DungeonSceneSnapshot.fromViewState(widget.state);
     _rememberProjectionInputs();
     _scene = _DungeonScene(
       snapshot: _snapshot,
@@ -131,7 +124,7 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
             focus: widget.state.cameraFocus,
             pan: widget.state.pan,
           )
-        : DungeonSceneSnapshot.fromViewState(widget.state, widget.palette);
+        : DungeonSceneSnapshot.fromViewState(widget.state);
     _rememberProjectionInputs();
     _scene.synchronize(
       _snapshot,
@@ -143,14 +136,12 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
 
   bool get _reusesProjection =>
       identical(_projectionGame, widget.state.game) &&
-      _projectionPalette == widget.palette &&
       _projectionArmedSpellId == widget.state.armedSpellId &&
       identical(_projectionActorIdentity, widget.state.actorIdentity) &&
       _projectionSelectedActorId == widget.state.selectedActorId;
 
   void _rememberProjectionInputs() {
     _projectionGame = widget.state.game;
-    _projectionPalette = widget.palette;
     _projectionActorIdentity = widget.state.actorIdentity;
     _projectionSelectedActorId = widget.state.selectedActorId;
     _projectionArmedSpellId = widget.state.armedSpellId;
@@ -295,7 +286,7 @@ class _DungeonScene extends FlameGame
     final added = <_GlyphComponent>[];
     for (final cell in cellsById.values) {
       final treatment = glyphMarkTreatment(cell);
-      final ink = terrainPresentationInk(cell, _snapshot.heroPosition);
+      final ink = glyphInk(cell, _snapshot.heroPosition);
       final existing = _glyphs[cell.renderId];
       if (existing == null) {
         final component = _GlyphComponent(cell, treatment, ink);
@@ -328,7 +319,7 @@ class _GlyphComponent extends PositionComponent {
       ) {
     _text = TextComponent(
       text: cell.glyph,
-      textRenderer: _textPaint(cell, ink),
+      textRenderer: _textPaint(ink),
       anchor: Anchor.center,
       position: Vector2(mapCellWidth / 2, mapCellHeight / 2),
     );
@@ -367,7 +358,7 @@ class _GlyphComponent extends PositionComponent {
         before.opacity != cell.opacity) {
       _text
         ..text = cell.glyph
-        ..textRenderer = _textPaint(cell, ink);
+        ..textRenderer = _textPaint(ink);
     }
     _applyTreatment(treatment);
     if (before.badge != cell.badge ||
@@ -387,11 +378,11 @@ class _GlyphComponent extends PositionComponent {
   static Vector2 _mapPosition(GlyphCell cell) =>
       Vector2(cell.position.x * mapCellWidth, cell.position.y * mapCellHeight);
 
-  static TextPaint _textPaint(GlyphCell cell, Color ink) =>
-      TextPaint(style: mapGlyphStyle(ink.withValues(alpha: cell.opacity)));
+  static TextPaint _textPaint(Color ink) =>
+      TextPaint(style: mapGlyphStyle(ink));
 
-  static TextPaint _badgePaint(GlyphCell cell, Color ink) =>
-      TextPaint(style: mapBadgeStyle(ink.withValues(alpha: cell.opacity)));
+  static TextPaint _badgePaint(Color ink) =>
+      TextPaint(style: mapBadgeStyle(ink));
 
   void _updateBadge(GlyphCell cell) {
     final badge = cell.badge;
@@ -402,13 +393,13 @@ class _GlyphComponent extends PositionComponent {
     }
     _badge ??= TextComponent(
       text: badge,
-      textRenderer: _badgePaint(cell, _ink),
+      textRenderer: _badgePaint(_ink),
       anchor: Anchor.topRight,
       position: Vector2(mapCellWidth - 0.5, 0.5),
     );
     _badge!
       ..text = badge
-      ..textRenderer = _badgePaint(cell, _ink);
+      ..textRenderer = _badgePaint(_ink);
     if (_badge!.parent == null) add(_badge!);
   }
 

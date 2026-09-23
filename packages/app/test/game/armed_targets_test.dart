@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
-import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/glyph_plan.dart';
 import 'package:residuum_core/core.dart';
 import 'package:residuum_content/content.dart';
@@ -115,11 +114,7 @@ void main() {
       final game = battleGame(monsters: [ghoulAt(const Position(1, 2))]);
 
       // act
-      final plan = glyphPlan(
-        game,
-        DungeonPalette.crypt,
-        markedIds: {'ghoul-1'},
-      );
+      final plan = glyphPlan(game, markedIds: {'ghoul-1'});
 
       // assert
       final cell = plan
@@ -139,11 +134,7 @@ void main() {
       );
 
       // act
-      final plan = glyphPlan(
-        game,
-        DungeonPalette.crypt,
-        markedIds: {'ghoul-1'},
-      );
+      final plan = glyphPlan(game, markedIds: {'ghoul-1'});
 
       // assert
       expect(
@@ -161,7 +152,7 @@ void main() {
       final game = battleGame(monsters: [ghoulAt(const Position(1, 2))]);
 
       // act
-      final plan = glyphPlan(game, DungeonPalette.crypt);
+      final plan = glyphPlan(game);
 
       // assert
       expect(plan.where((cell) => cell.marked), isEmpty);
@@ -184,7 +175,6 @@ void main() {
         final cell =
             glyphPlan(
               state.game,
-              DungeonPalette.crypt,
               markedIds: state.armedTargets,
               actorPresentations: state.actorIdentity.knownActors,
               selectedActorId: state.selectedActor?.id,

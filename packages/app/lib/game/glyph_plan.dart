@@ -5,13 +5,14 @@ import 'actor_presentation.dart';
 import 'package:residuum_core/core.dart';
 
 import 'dungeon_palette.dart';
+import '../style/tokens.dart' show crawlHero, crawlEnemy;
 
 /// What every glyph paints at when the cell is remembered rather than seen.
 ///
 /// One constant for terrain and veins alike, because the two fade together or
 /// not at all — a remembered floor and the vein that stood on it are the same
 /// kind of fact about the place.
-const double rememberedOpacity = 0.4;
+const double rememberedOpacity = 0.24;
 
 /// What a cell the hero can see right now paints at.
 const double fullOpacity = 1.0;
@@ -38,11 +39,18 @@ class GlyphCell {
     this.entity,
     this.badge,
     this.selected = false,
-  });
+    Color? shade,
+  }) : shade = shade ?? ink;
 
   final Position position;
   final String glyph;
   final Color ink;
+
+  /// What a remembered or edge-of-sight cell fades toward — the same colour
+  /// as [ink] unless the cell is terrain, which carries its own dim stone
+  /// tone (PLAN.md G4). Defaulting to [ink] keeps every other layer's single
+  /// colour exactly what it always was.
+  final Color shade;
 
   /// 1.0 for everything the hero is looking at, [rememberedOpacity] for
   /// anything only the map remembers.
@@ -65,12 +73,6 @@ class GlyphCell {
   GlyphRenderId get renderId => (layer: layer, entity: entity ?? position);
 }
 
-/// What the hero's own glyph is drawn in.
-const Color _heroInk = Color(0xFFFFFFFF);
-
-/// What a monster is drawn in.
-const Color _monsterInk = Color(0xFFD9A227);
-
 /// Everything one crawl projects, in draw order.
 ///
 /// Terrain first — every explored cell, full where the hero is looking and
@@ -85,8 +87,7 @@ const Color _monsterInk = Color(0xFFD9A227);
 /// [rememberedOpacity]. Litter and monsters are events: they exist only where
 /// the hero is looking, and a remembered map says nothing about them.
 List<GlyphCell> glyphPlan(
-  GameState game,
-  DungeonPalette palette, {
+  GameState game, {
   Set<String> markedIds = const {},
   Map<String, ActorPresentation> actorPresentations = const {},
   String? selectedActorId,
@@ -97,12 +98,14 @@ List<GlyphCell> glyphPlan(
       final position = Position(x, y);
       final visible = game.visible.contains(position);
       if (!visible && !game.explored.contains(position)) continue;
+      final tile = game.map.tileAt(position);
       cells.add(
         GlyphCell(
           position,
-          terrainGlyph(game.map.tileAt(position)),
-          terrainInk(game.map.tileAt(position), palette),
+          terrainGlyph(tile),
+          terrainInk(tile),
           visible ? fullOpacity : rememberedOpacity,
+          shade: terrainShade(tile),
           layer: GlyphLayer.terrain,
         ),
       );
@@ -140,7 +143,7 @@ List<GlyphCell> glyphPlan(
       GlyphCell(
         monster.position,
         monster.glyph,
-        _monsterInk,
+        crawlEnemy,
         fullOpacity,
         marked: markedIds.contains(monster.id),
         layer: GlyphLayer.monster,
@@ -154,7 +157,7 @@ List<GlyphCell> glyphPlan(
     GlyphCell(
       game.hero.position,
       game.hero.glyph,
-      _heroInk,
+      crawlHero,
       fullOpacity,
       layer: GlyphLayer.hero,
       entity: game.hero.id,
@@ -171,10 +174,20 @@ String terrainGlyph(Tile tile) => switch (tile) {
   Tile.stairsUp => '<',
 };
 
-/// The ink a terrain tile is tinted with, by this dungeon's palette.
-Color terrainInk(Tile tile, DungeonPalette palette) => switch (tile) {
-  Tile.wall => palette.wall,
-  Tile.floor => palette.floor,
-  Tile.stairsDown => palette.stairs,
-  Tile.stairsUp => palette.stairs,
+/// The lit ink a terrain tile is tinted with — warm stone, identical in
+/// every region (PLAN.md G3).
+Color terrainInk(Tile tile) => switch (tile) {
+  Tile.wall => stoneWallLit,
+  Tile.floor => stoneFloorLit,
+  Tile.stairsDown => stoneStairsLit,
+  Tile.stairsUp => stoneStairsLit,
+};
+
+/// The dim ink a terrain tile fades toward at the edge of sight or once
+/// remembered (PLAN.md G4).
+Color terrainShade(Tile tile) => switch (tile) {
+  Tile.wall => stoneWallShade,
+  Tile.floor => stoneFloorShade,
+  Tile.stairsDown => stoneStairsShade,
+  Tile.stairsUp => stoneStairsShade,
 };

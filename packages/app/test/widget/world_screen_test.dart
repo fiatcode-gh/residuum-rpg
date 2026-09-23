@@ -119,37 +119,28 @@ Map<Position, _TerrainGlyph> _liveTerrainGlyphs(WidgetTester tester) {
   );
 }
 
-Map<Position, _TerrainGlyph> _plannedTerrainGlyphs(
-  GameViewState state,
-  DungeonPalette palette,
-) => {
-  for (final cell in glyphPlan(state.game, palette))
+Map<Position, _TerrainGlyph> _plannedTerrainGlyphs(GameViewState state) => {
+  for (final cell in glyphPlan(state.game))
     if (cell.layer == GlyphLayer.terrain)
       cell.position: (
         position: cell.position,
         glyph: cell.glyph,
-        ink: terrainPresentationInk(cell, state.game.hero.position),
-        opacity: cell.opacity,
+        ink: glyphInk(cell, state.game.hero.position).withValues(alpha: 1),
+        opacity: glyphInk(cell, state.game.hero.position).a,
       ),
 };
 
+/// Road-fight terrain ink is the same warm stone everywhere now (PLAN.md
+/// G3); the regional difference moved to fog (Task 04). This only proves the
+/// live scene renders exactly the planned glyph projection.
 Future<
-  ({
-    Map<Position, _TerrainGlyph> actual,
-    Map<Position, _TerrainGlyph> expected,
-    Map<Position, _TerrainGlyph> wrong,
-  })
+  ({Map<Position, _TerrainGlyph> actual, Map<Position, _TerrainGlyph> expected})
 >
-_navigationTerrainGlyphs(
-  WidgetTester tester, {
-  required DungeonPalette expectedPalette,
-  required DungeonPalette wrongPalette,
-}) async {
+_navigationTerrainGlyphs(WidgetTester tester) async {
   final state = _fightOnScreen(tester).state;
   return (
     actual: _liveTerrainGlyphs(tester),
-    expected: _plannedTerrainGlyphs(state, expectedPalette),
-    wrong: _plannedTerrainGlyphs(state, wrongPalette),
+    expected: _plannedTerrainGlyphs(state),
   );
 }
 
@@ -1019,14 +1010,9 @@ void main() {
       expect(find.text('THE ROAD'), findsOneWidget);
       expect(find.byKey(depthPairKey), findsNothing);
       final bytes = (await tester.runAsync(
-        () => _navigationTerrainGlyphs(
-          tester,
-          expectedPalette: DungeonPalette.lowlandRoad,
-          wrongPalette: DungeonPalette.crypt,
-        ),
+        () => _navigationTerrainGlyphs(tester),
       ))!;
       expect(bytes.actual, equals(bytes.expected));
-      expect(bytes.actual, isNot(equals(bytes.wrong)));
       expect(app.saved!.world.journey, isNotNull);
       expect(app.saved!.run, isNull);
       expect(app.saved!.inside, isFalse);
@@ -1051,14 +1037,9 @@ void main() {
       expect(app.saved!.run, isNull);
       expect(app.saved!.inside, isFalse);
       final bytes = (await tester.runAsync(
-        () => _navigationTerrainGlyphs(
-          tester,
-          expectedPalette: DungeonPalette.seaCave,
-          wrongPalette: DungeonPalette.crypt,
-        ),
+        () => _navigationTerrainGlyphs(tester),
       ))!;
       expect(bytes.actual, equals(bytes.expected));
-      expect(bytes.actual, isNot(equals(bytes.wrong)));
     });
 
     testWidgets('a keep spur fight inherits its route palette', (tester) async {
@@ -1078,19 +1059,9 @@ void main() {
       expect(app.saved!.run, isNull);
       expect(app.saved!.inside, isFalse);
       final bytes = (await tester.runAsync(
-        () => _navigationTerrainGlyphs(
-          tester,
-          expectedPalette: DungeonPalette.ruinedKeep,
-          wrongPalette: DungeonPalette.seaCave,
-        ),
+        () => _navigationTerrainGlyphs(tester),
       ))!;
       expect(bytes.actual, equals(bytes.expected));
-      expect(bytes.actual, isNot(equals(bytes.wrong)));
-      final crypt = _plannedTerrainGlyphs(
-        _fightOnScreen(tester).state,
-        DungeonPalette.crypt,
-      );
-      expect(bytes.actual, isNot(equals(crypt)));
     });
 
     testWidgets('writes nothing at all to disk while it is in flight', (
@@ -1335,14 +1306,9 @@ void main() {
       );
       expect(find.text('THE SEA-CAVE'), findsOneWidget);
       final bytes = (await tester.runAsync(
-        () => _navigationTerrainGlyphs(
-          tester,
-          expectedPalette: DungeonPalette.seaCave,
-          wrongPalette: DungeonPalette.crypt,
-        ),
+        () => _navigationTerrainGlyphs(tester),
       ))!;
       expect(bytes.actual, equals(bytes.expected));
-      expect(bytes.actual, isNot(equals(bytes.wrong)));
     });
 
     testWidgets('the keep is its own dungeon, not the cave\'s', (tester) async {
@@ -1363,19 +1329,9 @@ void main() {
       );
       expect(find.text('THE RUINED KEEP'), findsOneWidget);
       final bytes = (await tester.runAsync(
-        () => _navigationTerrainGlyphs(
-          tester,
-          expectedPalette: DungeonPalette.ruinedKeep,
-          wrongPalette: DungeonPalette.seaCave,
-        ),
+        () => _navigationTerrainGlyphs(tester),
       ))!;
       expect(bytes.actual, equals(bytes.expected));
-      expect(bytes.actual, isNot(equals(bytes.wrong)));
-      final crypt = _plannedTerrainGlyphs(
-        _fightOnScreen(tester).state,
-        DungeonPalette.crypt,
-      );
-      expect(bytes.actual, isNot(equals(crypt)));
     });
 
     testWidgets('a camp at this node is the resume-or-delve fork', (
@@ -1647,14 +1603,9 @@ void main() {
       expect(app.saved!.dungeon, seaCave);
       expect(find.text('The crawl resumes.'), findsOneWidget);
       final bytes = (await tester.runAsync(
-        () => _navigationTerrainGlyphs(
-          tester,
-          expectedPalette: DungeonPalette.seaCave,
-          wrongPalette: DungeonPalette.crypt,
-        ),
+        () => _navigationTerrainGlyphs(tester),
       ))!;
       expect(bytes.actual, equals(bytes.expected));
-      expect(bytes.actual, isNot(equals(bytes.wrong)));
     });
   });
 

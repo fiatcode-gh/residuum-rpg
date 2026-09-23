@@ -63,7 +63,7 @@ void main() {
       );
 
       // act
-      final plan = glyphPlan(game, DungeonPalette.crypt);
+      final plan = glyphPlan(game);
 
       // assert
       final cell = _nodeCellAt(plan, _seen);
@@ -83,7 +83,7 @@ void main() {
       );
 
       // act
-      final plan = glyphPlan(game, DungeonPalette.crypt);
+      final plan = glyphPlan(game);
 
       // assert
       final cell = _nodeCellAt(plan, _remembered);
@@ -103,7 +103,7 @@ void main() {
       );
 
       // act
-      final plan = glyphPlan(game, DungeonPalette.crypt);
+      final plan = glyphPlan(game);
 
       // assert
       expect(_nodeCellAt(plan, _unseen), isNull);
@@ -119,7 +119,7 @@ void main() {
       );
 
       // act
-      final plan = glyphPlan(game, DungeonPalette.crypt);
+      final plan = glyphPlan(game);
 
       // assert — an item dropped on a vein has to be the glyph the player
       // sees, and the hero the glyph above both, so the node paints after
@@ -140,15 +140,16 @@ void main() {
       final game = _game(visible: seen, explored: {...seen, _remembered});
 
       // act
-      final plan = glyphPlan(game, DungeonPalette.crypt);
+      final plan = glyphPlan(game);
 
       // assert
       final cell = _terrainCellAt(plan, _remembered);
       expect(cell, isNotNull);
       expect(cell!.glyph, '·');
-      expect(cell.ink, DungeonPalette.crypt.floor);
+      expect(cell.ink, stoneFloorLit);
+      expect(cell.shade, stoneFloorShade);
       expect(cell.opacity, rememberedOpacity);
-      expect(cell.opacity, 0.4);
+      expect(cell.opacity, 0.24);
     });
 
     test('draws what the hero is looking at at full strength', () {
@@ -157,12 +158,14 @@ void main() {
       final game = _game(visible: seen, explored: seen);
 
       // act
-      final plan = glyphPlan(game, DungeonPalette.crypt);
+      final plan = glyphPlan(game);
 
       // assert
       final cell = _terrainCellAt(plan, _seen);
       expect(cell, isNotNull);
-      expect(cell!.opacity, fullOpacity);
+      expect(cell!.ink, stoneFloorLit);
+      expect(cell.shade, stoneFloorShade);
+      expect(cell.opacity, fullOpacity);
     });
 
     test('draws nothing where the hero has never looked', () {
@@ -171,7 +174,7 @@ void main() {
       final game = _game(visible: seen, explored: seen);
 
       // act
-      final plan = glyphPlan(game, DungeonPalette.crypt);
+      final plan = glyphPlan(game);
 
       // assert
       expect(_terrainCellAt(plan, _unseen), isNull);
@@ -214,7 +217,6 @@ void main() {
 
       final plan = glyphPlan(
         game,
-        DungeonPalette.crypt,
         actorPresentations: {
           first.id: const ActorPresentation(
             actorId: 'ghoul-1',
@@ -247,7 +249,6 @@ void main() {
 
       final plan = glyphPlan(
         game,
-        DungeonPalette.crypt,
         markedIds: {hidden.id},
         selectedActorId: hidden.id,
         actorPresentations: {
@@ -284,7 +285,6 @@ void main() {
 
       final plan = glyphPlan(
         game,
-        DungeonPalette.crypt,
         selectedActorId: second.id,
         actorPresentations: {
           first.id: const ActorPresentation(

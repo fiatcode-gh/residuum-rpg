@@ -292,10 +292,8 @@ void main() {
         pan: original.pan,
       );
       expect(
-        glyphPlan(original.game, DungeonPalette.crypt).map(_cell),
-        orderedEquals(
-          glyphPlan(alternateTopology.game, DungeonPalette.crypt).map(_cell),
-        ),
+        glyphPlan(original.game).map(_cell),
+        orderedEquals(glyphPlan(alternateTopology.game).map(_cell)),
       );
       final movedHero = _overflowingViewState(const Position(2, 1));
       final panned = GameViewState(
@@ -411,10 +409,7 @@ void main() {
       armedSpellId: 'firebolt',
     );
 
-    final snapshot = DungeonSceneSnapshot.fromViewState(
-      state,
-      DungeonPalette.crypt,
-    );
+    final snapshot = DungeonSceneSnapshot.fromViewState(state);
 
     expect(snapshot.columns, 7);
     expect(snapshot.rows, 5);
@@ -423,11 +418,7 @@ void main() {
     expect(snapshot.pan, const Offset(12, -8));
     expect(
       snapshot.cells.map(_cell),
-      glyphPlan(
-        state.game,
-        DungeonPalette.crypt,
-        markedIds: state.armedTargets,
-      ).map(_cell),
+      glyphPlan(state.game, markedIds: state.armedTargets).map(_cell),
     );
     expect(
       () => snapshot.cells.add(
@@ -439,10 +430,7 @@ void main() {
 
   test('the snapshot reuses a projection across a view-only pan', () {
     final state = _viewState();
-    final snapshot = DungeonSceneSnapshot.fromViewState(
-      state,
-      DungeonPalette.crypt,
-    );
+    final snapshot = DungeonSceneSnapshot.fromViewState(state);
     final panned = snapshot.withViewport(
       columns: state.game.map.width,
       rows: state.game.map.height,
@@ -461,10 +449,7 @@ void main() {
         selectedActorId: selected.id,
         monsters: [selected],
       );
-      final snapshot = DungeonSceneSnapshot.fromViewState(
-        state,
-        DungeonPalette.crypt,
-      );
+      final snapshot = DungeonSceneSnapshot.fromViewState(state);
       final panned = snapshot.withViewport(
         columns: snapshot.columns,
         rows: snapshot.rows,
@@ -479,8 +464,8 @@ void main() {
             cell.position == state.game.hero.position,
       );
       expect(
-        terrainPresentationInk(terrainAtHero, snapshot.heroPosition),
-        isNot(terrainPresentationInk(terrainAtHero, snapshot.focus)),
+        glyphInk(terrainAtHero, snapshot.heroPosition),
+        isNot(glyphInk(terrainAtHero, snapshot.focus)),
       );
       expect(snapshot.heroPosition, state.game.hero.position);
       expect(panned.heroPosition, state.game.hero.position);
@@ -545,8 +530,8 @@ void main() {
     expect(textAt(const Position(3, 2)).text, '>');
     expect(
       (textAt(const Position(1, 1)).textRenderer as TextPaint).style.color,
-      terrainPresentationInk(
-        glyphPlan(state.game, DungeonPalette.crypt).singleWhere(
+      glyphInk(
+        glyphPlan(state.game).singleWhere(
           (cell) =>
               cell.layer == GlyphLayer.terrain &&
               cell.position == const Position(1, 1),
@@ -962,10 +947,7 @@ void main() {
       selectedActorId: second.id,
     );
 
-    final snapshot = DungeonSceneSnapshot.fromViewState(
-      state,
-      DungeonPalette.crypt,
-    );
+    final snapshot = DungeonSceneSnapshot.fromViewState(state);
 
     expect(snapshot.focus, second.position);
     final cells = snapshot.cells.where(
@@ -979,10 +961,7 @@ void main() {
 
   test('pan-only viewport reuse preserves selected projection and focus', () {
     final state = _viewState(selectedActorId: 'ghoul-1');
-    final snapshot = DungeonSceneSnapshot.fromViewState(
-      state,
-      DungeonPalette.crypt,
-    );
+    final snapshot = DungeonSceneSnapshot.fromViewState(state);
 
     final panned = snapshot.withViewport(
       columns: snapshot.columns,

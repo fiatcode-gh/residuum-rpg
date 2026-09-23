@@ -2,40 +2,27 @@ import 'package:flutter/material.dart' show Color;
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import '../style/tokens.dart' show crawlCold;
+
 class DungeonPalette {
-  const DungeonPalette({
-    required this.wall,
-    required this.floor,
-    required this.stairs,
-  });
+  const DungeonPalette({required this.fog});
 
-  static const DungeonPalette crypt = DungeonPalette(
-    wall: Color(0xFFB9BEC6),
-    floor: Color(0xFF5B6270),
-    stairs: Color(0xFFE8ECF2),
-  );
+  static const DungeonPalette crypt = DungeonPalette(fog: Color(0xFF1A2430));
 
-  static const DungeonPalette seaCave = DungeonPalette(
-    wall: Color(0xFF9FC2C6),
-    floor: Color(0xFF44575E),
-    stairs: Color(0xFFE4F1F2),
-  );
+  static const DungeonPalette seaCave = DungeonPalette(fog: Color(0xFF152A3A));
 
   static const DungeonPalette ruinedKeep = DungeonPalette(
-    wall: Color(0xFFC8B79C),
-    floor: Color(0xFF64594A),
-    stairs: Color(0xFFF2EDE2),
+    fog: Color(0xFF221F2A),
   );
 
   static const DungeonPalette lowlandRoad = DungeonPalette(
-    wall: Color(0xFFB9B6A9),
-    floor: Color(0xFF57564F),
-    stairs: Color(0xFFE7E3D5),
+    fog: Color(0xFF1D2327),
   );
 
-  final Color wall;
-  final Color floor;
-  final Color stairs;
+  /// The region's fog tint (PLAN.md G5). Terrain ink no longer varies by
+  /// region — only the backdrop's fog hue distinguishes one place from
+  /// another now (PLAN.md G3).
+  final Color fog;
 }
 
 DungeonPalette paletteForDungeon(NodeId node) {
@@ -56,5 +43,18 @@ DungeonPalette paletteForRoad(Route route) {
   throw ArgumentError.value(route, 'route', 'has no regional palette');
 }
 
-const Color litterInk = Color(0xFF7FC8B8);
+/// Warm stone terrain ink (PLAN.md G3), identical in every region including
+/// road fights — the regional difference now lives only in [DungeonPalette]'s
+/// fog. `Lit` is the cell's base `ink` (bright, near the hero); `Shade` is
+/// its `shade` (dim, at the edge of sight or once only remembered).
+const Color stoneWallLit = Color(0xFFDCC08A);
+const Color stoneWallShade = Color(0xFF8F8C82);
+const Color stoneFloorLit = Color(0xFFB39B6C);
+const Color stoneFloorShade = Color(0xFF6B665B);
+const Color stoneStairsLit = Color(0xFFFFE3A0);
+const Color stoneStairsShade = Color(0xFFB8B09A);
+
+/// The old teal sat next to enemy red — a red-vs-green-adjacent pair. Cold
+/// blue carries litter instead.
+const Color litterInk = crawlCold;
 const Color nodeInk = Color(0xFFA87BC0);

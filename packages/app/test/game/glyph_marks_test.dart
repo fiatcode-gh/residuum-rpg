@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/glyph_plan.dart';
 import 'package:residuum_app/game/glyph_marks.dart';
+import 'package:residuum_app/style/tokens.dart';
 
 void main() {
   group('the graphical glyph marks', () {
@@ -117,80 +119,116 @@ void main() {
       expect(treatment.targetMark, GlyphTargetMark.brackets);
     });
 
-    test('lights only visible terrain by deterministic hero distance', () {
-      const terrain = GlyphCell(
-        Position(3, 1),
-        '.',
-        Color(0xFF38424A),
+    group('glyphInk (PLAN.md G4)', () {
+      const hero = Position(0, 0);
+
+      GlyphCell wallAt(int distance) => GlyphCell(
+        Position(distance, 0),
+        '#',
+        stoneWallLit,
         fullOpacity,
-        layer: GlyphLayer.terrain,
-      );
-      const remembered = GlyphCell(
-        Position(2, 1),
-        '.',
-        Color(0xFF38424A),
-        0.45,
-        layer: GlyphLayer.terrain,
-      );
-      const node = GlyphCell(
-        Position(2, 1),
-        '⌂',
-        Color(0xFF789ABC),
-        fullOpacity,
-        layer: GlyphLayer.node,
-      );
-      const rememberedNode = GlyphCell(
-        Position(2, 1),
-        '⌂',
-        Color(0xFF789ABC),
-        0.45,
-        layer: GlyphLayer.node,
-      );
-      const monster = GlyphCell(
-        Position(2, 1),
-        'g',
-        Color(0xFF789ABC),
-        fullOpacity,
-        layer: GlyphLayer.monster,
-      );
-      const hero = Position(1, 1);
-      const terrainAtHero = GlyphCell(
-        Position(1, 1),
-        '.',
-        Color(0xFF38424A),
-        fullOpacity,
+        shade: stoneWallShade,
         layer: GlyphLayer.terrain,
       );
 
-      final nearInk = terrainPresentationInk(terrain, hero);
-      final repeatedInk = terrainPresentationInk(terrain, hero);
-      final outsideRadius = terrainPresentationInk(
-        const GlyphCell(
-          Position(7, 1),
-          '.',
-          Color(0xFF38424A),
-          fullOpacity,
+      test('a visible wall at the hero is lit stone at full alpha', () {
+        expect(glyphInk(wallAt(0), hero), stoneWallLit.withValues(alpha: 1.0));
+      });
+
+      test('a visible wall at the edge of sight is shade stone at 0.55', () {
+        expect(
+          glyphInk(wallAt(fovRadius), hero),
+          stoneWallShade.withValues(alpha: 0.55),
+        );
+      });
+
+      test('a visible wall halfway to the edge lerps at 0.6625 alpha', () {
+        final ink = glyphInk(wallAt(4), hero);
+        final expected = Color.lerp(
+          stoneWallShade,
+          stoneWallLit,
+          0.25,
+        )!.withValues(alpha: 0.55 + 0.45 * 0.25);
+
+        expect(ink, expected);
+        expect(ink.a, closeTo(0.6625, 0.0001));
+      });
+
+      test('value strictly decreases with distance along a row', () {
+        double luminance(Color colour) =>
+            0.2126 * colour.r + 0.7152 * colour.g + 0.0722 * colour.b;
+        final values = [
+          for (var distance = 0; distance <= fovRadius; distance++)
+            luminance(glyphInk(wallAt(distance), hero)),
+        ];
+        for (var i = 1; i < values.length; i++) {
+          expect(values[i], lessThan(values[i - 1]));
+        }
+      });
+
+      test('a remembered wall is shade stone at the remembered opacity, '
+          'dimmer than the edge of sight', () {
+        const remembered = GlyphCell(
+          Position(4, 0),
+          '#',
+          stoneWallLit,
+          rememberedOpacity,
+          shade: stoneWallShade,
           layer: GlyphLayer.terrain,
-        ),
-        hero,
-      );
+        );
 
-      expect(
-        nearInk,
-        Color.lerp(terrain.ink, const Color(0xFFE8C58A), 0.38 * (1 - 4 / 25)),
-      );
-      expect(nearInk, repeatedInk);
-      expect(
-        terrainPresentationInk(terrainAtHero, hero),
-        Color.lerp(terrainAtHero.ink, const Color(0xFFE8C58A), 0.38),
-      );
-      expect(outsideRadius, terrain.ink);
-      expect(nearInk, isNot(outsideRadius));
-      expect(terrainPresentationInk(remembered, hero), remembered.ink);
-      expect(remembered.opacity, 0.45);
-      expect(terrainPresentationInk(node, hero), node.ink);
-      expect(terrainPresentationInk(rememberedNode, hero), rememberedNode.ink);
-      expect(terrainPresentationInk(monster, hero), monster.ink);
+        final ink = glyphInk(remembered, hero);
+        final edgeOfSight = glyphInk(wallAt(fovRadius), hero);
+
+        expect(ink, stoneWallShade.withValues(alpha: 0.24));
+        expect(ink.a, lessThan(edgeOfSight.a));
+      });
+
+      test('node, litter, monster and hero glyphs paint at their own ink '
+          'and opacity', () {
+        const node = GlyphCell(
+          Position(1, 1),
+          '⌂',
+          nodeInk,
+          fullOpacity,
+          layer: GlyphLayer.node,
+        );
+        const rememberedNode = GlyphCell(
+          Position(1, 1),
+          '⌂',
+          nodeInk,
+          rememberedOpacity,
+          layer: GlyphLayer.node,
+        );
+        const litter = GlyphCell(
+          Position(1, 1),
+          '!',
+          litterInk,
+          fullOpacity,
+          layer: GlyphLayer.litter,
+        );
+        const monster = GlyphCell(
+          Position(1, 2),
+          'g',
+          crawlEnemy,
+          fullOpacity,
+          layer: GlyphLayer.monster,
+        );
+        const heroCell = GlyphCell(
+          Position(0, 0),
+          '@',
+          crawlHero,
+          fullOpacity,
+          layer: GlyphLayer.hero,
+        );
+
+        for (final cell in [node, rememberedNode, litter, monster, heroCell]) {
+          expect(
+            glyphInk(cell, hero),
+            cell.ink.withValues(alpha: cell.opacity),
+          );
+        }
+      });
     });
 
     test('carries no target mark for an ordinary actor', () {

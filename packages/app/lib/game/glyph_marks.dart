@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 
@@ -61,15 +63,24 @@ GlyphMarkTreatment glyphMarkTreatment(GlyphCell cell) => GlyphMarkTreatment(
       : null,
 );
 
-/// Resolves the presentation ink for one glyph without changing its projection.
-Color terrainPresentationInk(GlyphCell cell, Position hero) {
-  if (cell.layer != GlyphLayer.terrain || cell.opacity != fullOpacity) {
-    return cell.ink;
+/// Resolves the presentation ink for one glyph without changing its
+/// projection (PLAN.md G4). The result already carries alpha.
+Color glyphInk(GlyphCell cell, Position hero) {
+  if (cell.layer == GlyphLayer.terrain && cell.opacity == fullOpacity) {
+    final dx = cell.position.x - hero.x;
+    final dy = cell.position.y - hero.y;
+    final distance = math.sqrt((dx * dx + dy * dy).toDouble());
+    final t = (distance / fovRadius).clamp(0.0, 1.0);
+    final light = (1 - t) * (1 - t);
+    return Color.lerp(
+      cell.shade,
+      cell.ink,
+      light,
+    )!.withValues(alpha: 0.55 + 0.45 * light);
   }
-
-  final dx = cell.position.x - hero.x;
-  final dy = cell.position.y - hero.y;
-  final distanceSquared = dx * dx + dy * dy;
-  final strength = (1 - distanceSquared / 25).clamp(0.0, 1.0);
-  return Color.lerp(cell.ink, const Color(0xFFE8C58A), 0.38 * strength)!;
+  if ((cell.layer == GlyphLayer.terrain || cell.layer == GlyphLayer.node) &&
+      cell.opacity != fullOpacity) {
+    return cell.shade.withValues(alpha: rememberedOpacity);
+  }
+  return cell.ink.withValues(alpha: cell.opacity);
 }
