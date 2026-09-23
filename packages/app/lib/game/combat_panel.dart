@@ -4,9 +4,9 @@ import 'package:residuum_core/core.dart';
 import '../style/tokens.dart';
 import 'action_icon.dart';
 import 'crawl_action_row.dart' show readiedSpellCount;
-import 'crawl_status.dart' show hpMeterKey, manaMeterKey;
 import 'crawl_style.dart';
 import 'game_bloc.dart';
+import 'hero_panel.dart' show hpMeterKey, manaMeterKey;
 
 const combatPanelKey = Key('combat-panel');
 

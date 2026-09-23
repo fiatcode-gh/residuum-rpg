@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/crawl_status.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/hero_panel.dart';
 import 'package:residuum_content/content.dart';

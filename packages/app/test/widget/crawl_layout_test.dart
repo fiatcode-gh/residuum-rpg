@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/crawl_action_row.dart';
-import 'package:residuum_app/game/crawl_status.dart';
+import 'package:residuum_app/game/crawl_header.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/hero_panel.dart';
 import 'package:residuum_app/game/log_drawer.dart';
-import 'package:residuum_app/style/tokens.dart';
 import 'package:residuum_core/core.dart';
 
 import '../support/phone.dart';
@@ -103,7 +102,7 @@ void main() {
     (tester) async {
       await _openCrawl(tester, _exploringGame());
 
-      final statusTop = tester.getTopLeft(find.byType(CrawlStatus)).dy;
+      final statusTop = tester.getTopLeft(find.byType(CrawlHeader)).dy;
       final mapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
       final peekTop = tester.getTopLeft(find.byKey(logPeekKey)).dy;
       final controlsTop = tester.getTopLeft(find.byKey(actionRowKey)).dy;
@@ -117,29 +116,16 @@ void main() {
     },
   );
   testWidgets(
-    'factual status frame fits its existing exploration and battle allocation',
+    'the crawl header is fixed height and its chips carry the battle fact',
     (tester) async {
       await _openCrawl(tester, _exploringGame());
-      final explorationStatus = tester.getRect(find.byType(CrawlStatus));
+      final explorationHeader = tester.getRect(find.byType(CrawlHeader));
       final explorationMap = tester.getRect(find.byKey(dungeonSceneSlotKey));
       debugPrint(
-        'U16 baseline exploration status=$explorationStatus map=$explorationMap',
+        'U16.5 header exploration header=$explorationHeader '
+        'map=$explorationMap',
       );
 
-      final frame = find.descendant(
-        of: find.byType(CrawlStatus),
-        matching: find.byWidgetPredicate(
-          (widget) =>
-              widget is DecoratedBox &&
-              widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).color == panel &&
-              (widget.decoration as BoxDecoration).border ==
-                  Border.all(color: rule, width: hairline) &&
-              (widget.decoration as BoxDecoration).borderRadius ==
-                  BorderRadius.circular(radius),
-        ),
-      );
-      expect(frame, findsOneWidget);
       expect(
         find.descendant(
           of: find.byType(HeroPanel),
@@ -147,66 +133,40 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(
-        find.descendant(of: frame, matching: find.text('HP 20 / 20')),
-        findsOneWidget,
-      );
-      expect(explorationStatus.height, 49);
-      expect(explorationMap.top, 49);
+      expect(explorationHeader.height, 88);
+      expect(explorationMap.top, 88);
       expect(explorationMap.bottom, closeTo(639.4, 0.1));
 
       await _openCrawl(tester, _battleGame());
-      final battleStatus = tester.getRect(find.byType(CrawlStatus));
+      final battleHeader = tester.getRect(find.byType(CrawlHeader));
       final battleMap = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      debugPrint('U16 baseline battle status=$battleStatus map=$battleMap');
-      final battleFrame = find.descendant(
-        of: find.byType(CrawlStatus),
-        matching: find.byWidgetPredicate(
-          (widget) =>
-              widget is DecoratedBox &&
-              widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).color == panel &&
-              (widget.decoration as BoxDecoration).border ==
-                  Border.all(color: rule, width: hairline) &&
-              (widget.decoration as BoxDecoration).borderRadius ==
-                  BorderRadius.circular(radius),
-        ),
-      );
-      expect(battleFrame, findsOneWidget);
+      debugPrint('U16.5 header battle header=$battleHeader map=$battleMap');
       expect(
-        find.descendant(of: battleFrame, matching: find.text('Engaged 1')),
+        find.descendant(
+          of: find.byType(CrawlHeader),
+          matching: find.text('Engaged 1'),
+        ),
         findsOneWidget,
       );
-      expect(battleStatus.height, 49);
-      expect(battleMap.top, 147);
+      expect(battleHeader.height, 88);
+      expect(battleMap.top, 186);
       // U16.5 Task 09: the combat panel (124 dp) replaces the hero panel
       // (102 dp) while a battle is open, so the map's own Expanded region
       // gives up exactly that 22 dp difference — the battle floor this unit
       // adds, not a regression of the exploration baseline above.
       expect(battleMap.bottom, closeTo(617.4, 0.1));
       await _openCrawl(tester, _watchedGame());
-      final watchedStatus = tester.getRect(find.byType(CrawlStatus));
+      final watchedHeader = tester.getRect(find.byType(CrawlHeader));
       final watchedMap = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      final watchedFrame = find.descendant(
-        of: find.byType(CrawlStatus),
-        matching: find.byWidgetPredicate(
-          (widget) =>
-              widget is DecoratedBox &&
-              widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).color == panel &&
-              (widget.decoration as BoxDecoration).border ==
-                  Border.all(color: rule, width: hairline) &&
-              (widget.decoration as BoxDecoration).borderRadius ==
-                  BorderRadius.circular(radius),
-        ),
-      );
-      expect(watchedFrame, findsOneWidget);
       expect(
-        find.descendant(of: watchedFrame, matching: find.text('Watched 1')),
+        find.descendant(
+          of: find.byType(CrawlHeader),
+          matching: find.text('Watched 1'),
+        ),
         findsOneWidget,
       );
-      expect(watchedStatus.height, 49);
-      expect(watchedMap.top, 49);
+      expect(watchedHeader.height, 88);
+      expect(watchedMap.top, 88);
       expect(watchedMap.bottom, closeTo(639.4, 0.1));
     },
   );
@@ -217,7 +177,7 @@ void main() {
     (tester) async {
       await _openCrawl(tester, _battleGame());
 
-      final statusTop = tester.getTopLeft(find.byType(CrawlStatus)).dy;
+      final statusTop = tester.getTopLeft(find.byType(CrawlHeader)).dy;
       final dockTop = tester
           .getTopLeft(find.byKey(const Key('dock-backing')))
           .dy;

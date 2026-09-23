@@ -419,6 +419,7 @@ class _SessionState extends State<_Session> {
         road: met.road,
       ),
       heroLabel: _saver.document.heroes[_saver.document.active]!.label,
+      day: _world.state.world.day,
       log: const [roadOpeningLog],
     );
     if (!mounted) return;
@@ -584,6 +585,7 @@ class _SessionState extends State<_Session> {
       game: run,
       dungeon: dungeon,
       heroLabel: _saver.document.heroes[_saver.document.active]!.label,
+      day: _world.state.world.day,
       log: resumed ? _openingLog() : const [],
     );
     _saver.watchGame(game);

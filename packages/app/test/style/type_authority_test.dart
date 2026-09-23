@@ -208,12 +208,9 @@ void main() {
     };
 
     // Confirmed absent from both Spectral and EB Garamond (PLAN.md F3).
-    // Two of the nine are `lib/game/crawl_status.dart` marks, staying until
-    // Task 10 retires that file; seven are `const` markings in
-    // `packages/core`, which this unit may not touch — U16 retires them.
+    // Seven `const` markings in `packages/core`, which this unit may not
+    // touch — U16 retires them.
     const absent = {
-      '✖', // U+2716 — lib/game/crawl_status.dart, engaged
-      '◉', // U+25C9 — lib/game/crawl_status.dart, watched
       '※', // U+203B — core/lib/src/loot/rarity.dart, Epic
       '★', // U+2605 — core/lib/src/loot/rarity.dart, Legendary
       '▮', // U+25AE — core/lib/src/craft/material.dart, ingot

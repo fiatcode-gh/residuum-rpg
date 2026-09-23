@@ -12,6 +12,10 @@ const double crawlLogSheetHeader = 40;
 const double crawlLogRowPadding = 1.5;
 const double crawlLogPictogram = 15;
 
+/// PLAN.md G8 header internals (Task 10): the crawl header's own fixed
+/// height, top of the fixed-chrome column.
+const double crawlHeaderHeight = 88;
+
 /// The opacity a disabled slot's mark renders at (PLAN.md G8).
 const double crawlDisabledIconOpacity = 0.45;
 

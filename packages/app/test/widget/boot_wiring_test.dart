@@ -73,7 +73,7 @@ void main() {
       await app.pump(tester);
 
       // assert
-      expect(find.text('THE CRYPT'), findsOneWidget);
+      expect(find.text('The Crypt'), findsOneWidget);
       expect(find.text('The crawl resumes.'), findsOneWidget);
       final crawl = BlocProvider.of<GameBloc>(
         tester.element(find.byType(GameScreen)),

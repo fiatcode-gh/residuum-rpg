@@ -623,6 +623,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     List<LogLine> log = const [],
     this.dungeon,
     this.heroLabel,
+    this.day,
     this.stepDelay = const Duration(milliseconds: 90),
   }) : super(
          GameViewState(
@@ -675,6 +676,18 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   /// reads it once from the save document at the two places every crawl is
   /// opened; nothing in the crawl itself ever changes it (PLAN.md E4).
   final String? heroLabel;
+
+  /// The in-world day this crawl opened on, or null when the app has none
+  /// to give.
+  ///
+  /// **A run constant beside [dungeon] and [heroLabel], for the same
+  /// reason (PLAN.md E4).** `main.dart` reads it once from `WorldBloc` at
+  /// the two places every crawl is opened; no `WorldBloc` handler can
+  /// change `world.day` while a crawl route sits on top of the world
+  /// screen — the one handler that advances it (`_onDayWalked`) only ever
+  /// runs while travelling, and travelling and a crawl route are mutually
+  /// exclusive on screen.
+  final int? day;
 
   /// Decides what a map tap means, in exactly one place.
   ///

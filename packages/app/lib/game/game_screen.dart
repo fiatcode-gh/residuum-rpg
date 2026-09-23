@@ -12,7 +12,7 @@ import 'action_icon.dart';
 import 'battle_view.dart';
 import 'combat_panel.dart';
 import 'crawl_action_row.dart';
-import 'crawl_status.dart';
+import 'crawl_header.dart';
 import 'crawl_style.dart';
 import 'crawl_surfaces.dart';
 import 'dungeon_palette.dart';
@@ -73,7 +73,11 @@ class GameScreen extends StatelessWidget {
                     children: [
                       Column(
                         children: [
-                          CrawlStatus(state: state, dungeon: bloc.dungeon),
+                          CrawlHeader(
+                            state: state,
+                            dungeon: bloc.dungeon,
+                            day: bloc.day,
+                          ),
                           if (state.isBattleOpen)
                             BattleDock(
                               state: state,

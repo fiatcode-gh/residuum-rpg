@@ -161,6 +161,22 @@ const TextStyle displaySheetTitle = TextStyle(
   fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
 );
 
+/// PLAN.md G2 display role added on demand (Task 10): the crawl header's
+/// `RESIDUUM` wordmark, the brand — excluded from semantics for that
+/// reason — rather than a fact the crawl reads off state.
+const TextStyle displayWordmark = TextStyle(
+  inherit: false,
+  fontFamily: displayFace,
+  fontSize: 23,
+  letterSpacing: 6,
+  fontWeight: FontWeight.w500,
+  fontVariations: [FontVariation('wght', 500)],
+  height: 1.0,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlHero,
+  fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
+);
+
 /// PLAN.md G2 display role added on demand (Task 08): the hero panel's
 /// column captions (`WEAPON`, `ARMOUR`, `QUICK`, `PACK`) are this unit's
 /// first consumer.

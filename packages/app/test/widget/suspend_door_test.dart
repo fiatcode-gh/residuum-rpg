@@ -265,7 +265,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.textContaining('20 / 20'), findsOneWidget);
+      expect(find.text('HP 20/20'), findsOneWidget);
       expect(app.saved!.run!.hero.hp, 20);
     });
 
@@ -302,8 +302,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.text('THE CRYPT'), findsOneWidget);
-      expect(find.text('2 / 5'), findsOneWidget);
+      expect(find.text('The Crypt'), findsOneWidget);
+      expect(find.text('Depth 2/5'), findsOneWidget);
       expect(app.saved!.run!.hero.position, camp.hero.position);
       expect(app.saved!.run!.visit, camp.visit);
     });
@@ -377,8 +377,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      expect(find.text('THE CRYPT'), findsOneWidget);
-      expect(find.text('1 / 5'), findsOneWidget);
+      expect(find.text('The Crypt'), findsOneWidget);
+      expect(find.text('Depth 1/5'), findsOneWidget);
       expect(app.saved!.run!.visit, camp.visit + 1);
       expect(app.saved!.run!.depth, 1);
       expect(app.saved!.inside, isTrue);

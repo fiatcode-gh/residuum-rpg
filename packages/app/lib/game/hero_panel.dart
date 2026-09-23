@@ -4,11 +4,12 @@ import 'package:residuum_core/core.dart';
 import '../art/art_assets.dart';
 import '../style/tokens.dart';
 import 'action_icon.dart';
-import 'crawl_status.dart' show hpMeterKey, manaMeterKey;
 import 'crawl_style.dart';
 import 'game_bloc.dart';
 
 const heroPanelKey = Key('hero-panel');
+const hpMeterKey = Key('hp-meter');
+const manaMeterKey = Key('mana-meter');
 
 /// The crawl's character panel (PLAN.md G8 "Hero panel internals", G9, G11):
 /// the hero's name, hit points and mana, combat stats, and what they are

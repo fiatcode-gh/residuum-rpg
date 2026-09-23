@@ -110,10 +110,8 @@ void main() {
       // act
       await _pushCrawl(tester, game);
 
-      // assert - engaged: the crossed mark and the word, its own cell on the
-      // header row
+      // assert - engaged: the word on its own chip in the header
       expect(find.byType(GameScreen), findsOneWidget);
-      expect(find.text('✖'), findsOneWidget);
       expect(find.text('Engaged 1'), findsOneWidget);
       expect(find.textContaining('Watched'), findsNothing);
       final pack = find.byKey(const ValueKey('pack'));
@@ -137,23 +135,20 @@ void main() {
       // act
       await _pushCrawl(tester, game);
 
-      // assert - watched: the eye mark and the word; no dock, no Engaged
-      expect(find.text('◉'), findsOneWidget);
+      // assert - watched: the word alone; no dock, no Engaged
       expect(find.text('Watched 1'), findsOneWidget);
       expect(find.textContaining('Engaged'), findsNothing);
       expect(find.byType(BattleDock), findsNothing);
     });
 
-    testWidgets('nothing in sight leaves the glyph cell empty', (tester) async {
+    testWidgets('nothing in sight leaves no battle chip', (tester) async {
       // arrange
       final game = _crawl();
 
       // act
       await _pushCrawl(tester, game);
 
-      // assert - neither mark, neither word
-      expect(find.text('◉'), findsNothing);
-      expect(find.text('✖'), findsNothing);
+      // assert - neither word
       expect(find.textContaining('Watched'), findsNothing);
       expect(find.textContaining('Engaged'), findsNothing);
     });

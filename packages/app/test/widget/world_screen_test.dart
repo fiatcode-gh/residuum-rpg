@@ -6,7 +6,7 @@ import 'package:flutter/material.dart' hide Route;
 import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/crawl_status.dart';
+import 'package:residuum_app/game/crawl_header.dart';
 import 'package:residuum_app/game/glyph_marks.dart';
 import 'package:residuum_app/game/glyph_plan.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
@@ -1008,7 +1008,7 @@ void main() {
 
       // assert
       expect(find.byType(GameScreen), findsOneWidget);
-      expect(find.text('THE ROAD'), findsOneWidget);
+      expect(find.text('The Road'), findsOneWidget);
       expect(find.byKey(depthPairKey), findsNothing);
       final bytes = (await tester.runAsync(
         () => _navigationTerrainGlyphs(tester),
@@ -1032,7 +1032,7 @@ void main() {
 
       // assert
       expect(find.byType(GameScreen), findsOneWidget);
-      expect(find.text('THE ROAD'), findsOneWidget);
+      expect(find.text('The Road'), findsOneWidget);
       expect(find.byKey(depthPairKey), findsNothing);
       expect(app.saved!.world.journey!.to, seaCave);
       expect(app.saved!.run, isNull);
@@ -1054,7 +1054,7 @@ void main() {
 
       // assert
       expect(find.byType(GameScreen), findsOneWidget);
-      expect(find.text('THE ROAD'), findsOneWidget);
+      expect(find.text('The Road'), findsOneWidget);
       expect(find.byKey(depthPairKey), findsNothing);
       expect(app.saved!.world.journey!.to, ruinedKeep);
       expect(app.saved!.run, isNull);
@@ -1323,7 +1323,7 @@ void main() {
         app.saved!.run!.map.toAscii(),
         startDungeonRunAt(seaCave, profile).map.toAscii(),
       );
-      expect(find.text('THE SEA-CAVE'), findsOneWidget);
+      expect(find.text('The Sea-Cave'), findsOneWidget);
       final bytes = (await tester.runAsync(
         () => _navigationTerrainGlyphs(tester),
       ))!;
@@ -1346,7 +1346,7 @@ void main() {
         app.saved!.run!.map.toAscii(),
         startDungeonRunAt(ruinedKeep, profile).map.toAscii(),
       );
-      expect(find.text('THE RUINED KEEP'), findsOneWidget);
+      expect(find.text('The Ruined Keep'), findsOneWidget);
       final bytes = (await tester.runAsync(
         () => _navigationTerrainGlyphs(tester),
       ))!;
@@ -1595,7 +1595,7 @@ void main() {
       expect(app.saved!.run!.depth, 1);
       expect(app.saved!.run!.visit, camp.visit + 1);
       expect(app.saved!.inside, isTrue);
-      expect(find.text('THE SEA-CAVE'), findsOneWidget);
+      expect(find.text('The Sea-Cave'), findsOneWidget);
     });
 
     testWidgets('booting inside a sea-cave crawl lands back in the sea-cave', (
@@ -1618,7 +1618,7 @@ void main() {
       await app.pump(tester);
 
       // assert
-      expect(find.text('THE SEA-CAVE'), findsOneWidget);
+      expect(find.text('The Sea-Cave'), findsOneWidget);
       expect(app.saved!.dungeon, seaCave);
       expect(find.text('The crawl resumes.'), findsOneWidget);
       final bytes = (await tester.runAsync(
@@ -1651,7 +1651,7 @@ void main() {
       await app.pump(tester);
 
       // assert
-      expect(find.text('THE RUINED KEEP'), findsOneWidget);
+      expect(find.text('The Ruined Keep'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -1689,7 +1689,7 @@ void main() {
       // straight in would never reach `loadRun`, and the total the codec
       // recomputes is exactly what this test is about
       expect(delveDepth(seaCave, worldSeed, camp.visit), 6);
-      expect(find.text('2 / 6'), findsOneWidget);
+      expect(find.text('Depth 2/6'), findsOneWidget);
     });
 
     testWidgets('shows the hit points, the condition and the place at once', (
@@ -1712,10 +1712,10 @@ void main() {
       await app.pump(tester);
 
       // assert
-      expect(find.text('HP 20 / 20'), findsOneWidget);
+      expect(find.text('HP 20/20'), findsOneWidget);
       expect(find.text('Steady'), findsOneWidget);
-      expect(find.text('THE SEA-CAVE'), findsOneWidget);
-      expect(find.text('1 / 4'), findsOneWidget);
+      expect(find.text('The Sea-Cave'), findsOneWidget);
+      expect(find.text('Depth 1/4'), findsOneWidget);
       expect(delveDepth(seaCave, 909, 1), 4);
     });
   });
