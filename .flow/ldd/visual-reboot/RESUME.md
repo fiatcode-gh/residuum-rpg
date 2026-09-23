@@ -1,11 +1,39 @@
 # Resume Visual Reboot
 
-**Unit 16.5 — ASCII Crawl Full Parity — contract + plan approved; executing
-** (`units/unit-16.5/PLAN.md`), on the same branch
-`residuum-visual-reboot-16`. It supersedes U16's plan locks: 36 dp cell,
-monospace ban, 600 dp chrome ceiling, ink-only light. See the ledger's
-"Unit 16.5" ledger entries. Next: the active task in the ledger tail;
-Checkpoint A (phone) after Task 04. U16 is below, not accepted.
+**Unit 16.5 — ASCII Crawl Full Parity — PAUSED after Task 07 by the user
+(2026-09-23).** Branch `residuum-visual-reboot-16`, pushed. Contract:
+`units/unit-16.5/CONTRACT.md` (amended A1: 16×20 dp cell, 48 dp touch
+targets). Plan: `units/unit-16.5/PLAN.md` (read "Amendment A1" first).
+
+## Next action on resume
+
+1. Dispatch **Task 08** (`plan-tasks/08-hero-panel.md`) with a fresh
+   `flow-plan-executor`. Carry the standing rulings: add any missing G2 role to
+   tokens.dart with the plan's values; migrate every caller of anything
+   deleted; rewrite, never re-pin, non-owned tests that assert the superseded
+   design; measured phone insets are top ≈38.2 dp and bottom ≈17.8 dp;
+   executors may commit their task and must run the full suite first.
+2. Tasks 09 → 13 in order, one fresh executor each.
+3. Main: full gates, one `flow-acceptance-reviewer`, refresh the checkpoint,
+   then device capsules (exploration, battle and timeline, armed targeting,
+   callout, peek, expanded log, road encounter, densest action state, recenter
+   on a large floor). Reviewer parity scoring against the four mocks, **user
+   visual sign-off**, uninstall the app and verify it is absent.
+
+## State at pause
+
+- Done: Tasks 01–07, A1, and the Checkpoint A tuning (warm shade inks, linear
+  light, stronger fog). Checkpoint A verdict: on track. Full suite 1200/1200 at
+  `91aa6db`.
+- Sign-off notes to judge: Plex Mono's slanted `#` against the mock's upright
+  `#`; an item glyph peeking beside `@` when the hero stands on an item.
+- Phone: the app is installed (APK `4471552…`, built before Task 05). The hero
+  is Wounded 6/20 with 0 potions at Crypt depth 1. Test saves exist and are
+  unread. Recovery checkpoint: `.flow/checkpoints/206bc97.md`. The original
+  baseline is package absent.
+- U16 is not accepted; it is accepted together with U16.5.
+
+## Historical U16 detail
 
 ## Exact state
 

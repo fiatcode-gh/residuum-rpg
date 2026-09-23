@@ -4836,3 +4836,122 @@ request exists, and the integration choice is the user's.
   (install over the U16 test build; uninstall and verify absence at the end).
 - Next: Task 01 (`plan-tasks/01-mono-type-role.md`), with a fresh
   `flow-plan-executor`.
+
+### U16.5 Task 01 — mono type role accepted — 2026-09-23
+
+- `9249e86`: IBM Plex Mono Regular/SemiBold + OFL (SHA-256 matched plan),
+  pubspec + test FontLoader, G2 mono roles, G3 crawl palette tokens, AGENTS.md
+  type rule. Red: Ahem width 115 vs 69; Green: type_authority 285 pass,
+  analyzer clean. Next: Task 02.
+
+### U16.5 Task 02 — dense glyph grid accepted — 2026-09-23
+
+- First executor stalled before any action; cancelled and redispatched.
+- Commit: 13×16 `GridGeometry` (`mapCellWidth`/`mapCellHeight`,
+  `centreOf`/`rectOf`, `fit` deleted), mono glyph rendering, `·` floor,
+  corner-tick/bracket reticles, and a CI gate that allows `fontFamily` only in
+  tokens.dart (the monospace grep is retired). 185 focused tests pass;
+  analyzer clean; core/content untouched.
+- Ruling: the 17 dp Plex line box exceeds the 16 dp cell by ≤1.2 dp per side
+  as empty ascender/descender space. Accepted; the test bounds it at 1.2 dp
+  per side.
+
+### U16.5 Task 03 — stone light values accepted — 2026-09-23
+
+- Commit: `glyphInk` per G4 (lit→shade by (1−t)², alpha 0.55–1.0, remembered
+  shade at 0.24), stone inks shared across regions, `DungeonPalette` reduced
+  to fog, hero `crawlHero`, monsters `crawlEnemy`, litter `crawlCold`. 136
+  focused tests pass; analyzer clean.
+
+### U16.5 Task 04 — atmosphere accepted; Checkpoint A started — 2026-09-23
+
+- `b6ff3fa`: `dungeon_atmosphere.dart` replaces `dungeon_depth.dart`: base,
+  hashed fog field, vignette, and parallax on fog only (0.12, ±40 dp, off
+  under reduced motion), plus the torch pool and hero bloom in place of the
+  per-glyph halo. 135 focused tests pass; analyzer clean; debug APK
+  `0f98cad2…` built.
+- The recovery checkpoint `.flow/checkpoints/b6ff3fa.md` was written before any
+  ADB command. Next: verifier capsule U165-CPA (install over the U16 build,
+  capture exploration), then the architect's on-track verdict.
+
+### U16.5 amendment A1 — 16×20 cell, 48 dp touch targets — 2026-09-23
+
+- The user saw the 13×16 dp map on the phone and judged it too small and hard
+  to tap, citing Android's minimum 48 dp touch target. Cause: the cell is small,
+  and Task 05 (intent-based touch resolution) had not landed, so taps needed an
+  exact cell hit.
+- The user chose 16×20 dp cells (about 24 columns) over 13×16 dp and 18×22 dp.
+  Touch radius goes from 22 to 24 dp (a 48 dp target). The contract and PLAN.md
+  were amended (A1). Map glyph 21 dp, badge 10 dp, reticle rect scaled; pool,
+  bloom and floors unchanged.
+- Next: a fresh correction executor applies A1 to Tasks 02–04's constants and
+  tests; then Checkpoint A is re-captured and Task 05 uses radius 24.
+
+### U16.5 amendment A1 applied — 2026-09-23
+
+- Commit: 16×20 cell, glyph 21 dp, badge 10 dp, reticle (0.75, 0.75,
+  14.5, 18.5) with 4.3 dp arms; pool and bloom derive to 96 / 25.6 dp. Ruling:
+  the line-box overflow bound becomes proportional, 0.075 × cell height
+  (1.5 dp), for every glyph layer (the hero at scale 1.08 is 1.34 dp).
+  478 focused tests pass; analyzer clean; APK `b5186d8f…`.
+
+### U16.5 Checkpoint A, first capture (13×16, superseded) — 2026-09-23
+
+- The U165-CPA capture of `0f98cad2…` stopped early because A1 superseded it.
+  The app is installed in Crypt exploration. Insets: top ≈38.2 dp, bottom
+  ≈17.8 dp.
+- Verdict: structurally on track: torch pool, mono stone glyphs, dimmer
+  remembered terrain, void unknown, no leak.
+- Tuning is off: terrain outside the pool reads neutral grey, and the fog is
+  nearly invisible. The architect locked a tuning correction to G3/G4/G5: warm
+  shade inks (#8A7552 / #6B5B40 / #B39A6A), linear light with alpha
+  0.60 + 0.40·light, fog alpha 0.22–0.70 with disc radius 96.
+- Pan was a no-op because the depth-1 floor (24×16) fits both axes. That is by
+  design. Parallax and recenter need a larger floor or a road fight in the
+  re-capture.
+
+- Tuning committed as `206bc97`; APK `4471552…`. Recovery checkpoint `.flow/checkpoints/206bc97.md`. Next: re-capture capsule U165-CPA2.
+
+### U16.5 Checkpoint A verdict and Task 05 — 2026-09-23
+
+- Re-capture at 16×20 on `4471552…` (U165-CPA2 frames 01–02): warm tan stone
+  across the lit room fading to dim brown, a visible torch pool, a clearly
+  dimmer remembered room, visible blue-grey fog masses, about 24 columns.
+  **Verdict: on track.** Chrome tasks may proceed. Final sign-off must judge
+  two notes: Plex Mono's slanted `#` against the mock's upright `#`, and an
+  item glyph showing at the edge of `@` when the hero stands on an item.
+- Task 05 committed: `map_touch.dart` (G7 with A1 radius 24) wired through
+  `GameScreen`. 17 resolver tests + 3 wiring tests, 450 focused tests pass;
+  analyzer clean.
+- U165-CPA2 complete: cell measured 16.0×20.0 dp; depth-2 pan moved the camera
+  64 px (the clamp limit). Fog parallax (≈8 px) was not measured on device and
+  stays proven by the automated test. Recenter was not exercised (23 dp pan
+  range); the final gate needs a larger floor. The hero was left Wounded
+  (6/20 HP, 0 potions) at depth 1. The app stays installed.
+
+### U16.5 Task 06 — five-slot action bar accepted — 2026-09-23
+
+- `ea7b682`: a fixed five-slot bar with horizontal scroll and peek replaces
+  `_fitFor` and the chip Wrap; `— armed` replaces metadata while armed; the
+  test phone fixture uses the measured insets. Rulings: Task 06 adds the missing
+  G2 textSlot roles (later tasks add their own missing G2 roles); the dialog
+  spacing constants migrated; two battle_view tests and the bleed-test
+  precondition were rewritten to the new bar. **Full suite 1202/1202**,
+  formatter and analyzer clean.
+
+### U16.5 Task 07 — recent events and expanded log accepted; paused — 2026-09-23
+
+- `91aa6db`: the peek is a fixed 96 dp, four-line mono column with `RECENT
+  EVENTS` and `N entries` (fixes the clipped first line). The expanded sheet has
+  per-category pictograms and tints, half extent 345 dp or full to the map top,
+  and bottoms on the action bar. Added G2 displaySection / displaySheetTitle.
+  Fixed a Container border-padding overflow. Two battle_view assertions were
+  rewritten off the old ListView. **Full suite 1200/1200**, formatter and
+  analyzer clean.
+- **User paused after Task 07** and authorized pushing the branch (no pull
+  request). Next on resume: Task 08 (`plan-tasks/08-hero-panel.md`) with a
+  fresh `flow-plan-executor`, then 09–13, then Main's final gates, acceptance
+  review, device gate, reviewer scoring, user sign-off and uninstall.
+- Device: the app stays installed on the phone (APK `4471552…`, pre-Task-05
+  build), the hero Wounded 6/20 at Crypt depth 1. Recovery checkpoint
+  `.flow/checkpoints/206bc97.md`.
