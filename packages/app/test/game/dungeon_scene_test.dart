@@ -68,6 +68,16 @@ Actor _ghoulAt(Position position, {String id = 'ghoul-1'}) => Actor(
   energy: actThreshold,
 );
 
+/// Wraps a plain [Position] sink as a [MapTouchCallback]: what the scene
+/// itself resolved before `map_touch.dart` existed, kept here only for the
+/// tests below this file owns that assert on the scene's raw hit-test
+/// projection rather than on tap intent.
+void Function(Offset, GridGeometry) _capturing(void Function(Position) sink) =>
+    (local, geometry) {
+      final position = geometry.positionAt(local);
+      if (position != null) sink(position);
+    };
+
 GameViewState _viewState({
   Offset pan = Offset.zero,
   String? armedSpellId,
@@ -236,9 +246,9 @@ Future<Uint8List> _renderScene(WidgetTester tester, GameViewState state) async {
             child: DungeonSceneHost(
               state: state,
               palette: DungeonPalette.crypt,
-              onTap: (_) {},
+              onTap: (_, _) {},
               onPan: (_) {},
-              onLongPress: (_) {},
+              onLongPress: (_, _) {},
             ),
           ),
         ),
@@ -267,9 +277,9 @@ Future<Uint8List> _renderBackgroundOnly(
           child: DungeonSceneHost(
             state: state,
             palette: DungeonPalette.crypt,
-            onTap: (_) {},
+            onTap: (_, _) {},
             onPan: (_) {},
-            onLongPress: (_) {},
+            onLongPress: (_, _) {},
           ),
         ),
       ),
@@ -512,9 +522,10 @@ void main() {
                   child: DungeonSceneHost(
                     state: state,
                     palette: DungeonPalette.crypt,
-                    onTap: (position) => tapped = position,
+                    onTap: (local, geometry) =>
+                        tapped = geometry.positionAt(local),
                     onPan: (_) {},
-                    onLongPress: (_) {},
+                    onLongPress: (_, _) {},
                   ),
                 ),
               ),
@@ -568,7 +579,7 @@ void main() {
   testWidgets('the scene installs a non-semantic viewport backdrop', (
     tester,
   ) async {
-    final taps = <Position>[];
+    final taps = <Offset>[];
     await tester.pumpWidget(
       MaterialApp(
         home: SizedBox(
@@ -577,9 +588,9 @@ void main() {
           child: DungeonSceneHost(
             state: _viewState(),
             palette: DungeonPalette.crypt,
-            onTap: taps.add,
+            onTap: (local, _) => taps.add(local),
             onPan: (_) {},
-            onLongPress: (_) {},
+            onLongPress: (_, _) {},
           ),
         ),
       ),
@@ -711,9 +722,9 @@ void main() {
           child: DungeonSceneHost(
             state: state,
             palette: DungeonPalette.crypt,
-            onTap: (_) {},
+            onTap: (_, _) {},
             onPan: (_) {},
-            onLongPress: (_) {},
+            onLongPress: (_, _) {},
           ),
         ),
       ),
@@ -787,9 +798,9 @@ void main() {
             child: DungeonSceneHost(
               state: state,
               palette: DungeonPalette.crypt,
-              onTap: (_) {},
+              onTap: (_, _) {},
               onPan: (_) {},
-              onLongPress: (_) {},
+              onLongPress: (_, _) {},
             ),
           ),
         ),
@@ -854,9 +865,9 @@ void main() {
                 key: hostKey,
                 state: state,
                 palette: DungeonPalette.crypt,
-                onTap: (_) {},
+                onTap: (_, _) {},
                 onPan: (_) {},
-                onLongPress: (_) {},
+                onLongPress: (_, _) {},
               ),
             ),
           ),
@@ -920,9 +931,9 @@ void main() {
               child: DungeonSceneHost(
                 state: state,
                 palette: DungeonPalette.crypt,
-                onTap: taps.add,
+                onTap: _capturing(taps.add),
                 onPan: pans.add,
-                onLongPress: (_) {},
+                onLongPress: (_, _) {},
               ),
             ),
           ),
@@ -975,9 +986,9 @@ void main() {
                   key: hostKey,
                   state: state,
                   palette: DungeonPalette.crypt,
-                  onTap: taps.add,
+                  onTap: _capturing(taps.add),
                   onPan: (_) {},
-                  onLongPress: (_) {},
+                  onLongPress: (_, _) {},
                 ),
               ),
             ),
@@ -1114,9 +1125,9 @@ void main() {
               child: DungeonSceneHost(
                 state: state,
                 palette: DungeonPalette.crypt,
-                onTap: taps.add,
+                onTap: _capturing(taps.add),
                 onPan: (_) {},
-                onLongPress: longPresses.add,
+                onLongPress: _capturing(longPresses.add),
               ),
             ),
           ),
@@ -1210,9 +1221,9 @@ void main() {
             child: DungeonSceneHost(
               state: state,
               palette: DungeonPalette.crypt,
-              onTap: (_) {},
+              onTap: (_, _) {},
               onPan: (_) {},
-              onLongPress: (_) {},
+              onLongPress: (_, _) {},
             ),
           ),
         ),
@@ -1304,9 +1315,9 @@ void main() {
               child: DungeonSceneHost(
                 state: state,
                 palette: DungeonPalette.crypt,
-                onTap: (_) {},
+                onTap: (_, _) {},
                 onPan: (_) {},
-                onLongPress: (_) {},
+                onLongPress: (_, _) {},
               ),
             ),
           ),

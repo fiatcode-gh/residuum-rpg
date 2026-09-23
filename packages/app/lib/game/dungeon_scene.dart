@@ -20,6 +20,11 @@ const dungeonSceneKey = Key('dungeon-scene');
 const dungeonSceneHostKey = Key('dungeon-scene-host');
 const dungeonSceneSlotKey = Key('dungeon-scene-slot');
 
+/// A map tap or long-press, passed through raw: the canvas-local point and
+/// the scene's own projection, so `map_touch.dart` resolves what it meant
+/// without the scene filtering or interpreting anything itself.
+typedef MapTouchCallback = void Function(Offset local, GridGeometry geometry);
+
 class DungeonSceneSnapshot {
   DungeonSceneSnapshot._({
     required this.columns,
@@ -83,11 +88,12 @@ class DungeonSceneHost extends StatefulWidget {
 
   final GameViewState state;
   final DungeonPalette palette;
-  final ValueChanged<Position> onTap;
+  final MapTouchCallback onTap;
   final ValueChanged<Offset> onPan;
 
-  /// The tile a completed long-press landed on: the inspect gesture.
-  final ValueChanged<Position> onLongPress;
+  /// The canvas-local point and projection a completed long-press landed
+  /// on: the inspect gesture.
+  final MapTouchCallback onLongPress;
 
   @override
   State<DungeonSceneHost> createState() => _DungeonSceneHostState();
@@ -191,9 +197,9 @@ class _DungeonScene extends FlameGame
   }) : super(camera: CameraComponent(viewport: _ClippedMaxViewport()));
 
   DungeonSceneSnapshot _snapshot;
-  ValueChanged<Position> _onTap;
+  MapTouchCallback _onTap;
   ValueChanged<Offset> _onPan;
-  ValueChanged<Position> _onLongPress;
+  MapTouchCallback _onLongPress;
   final Map<GlyphRenderId, _GlyphComponent> _glyphs = {};
 
   @override
@@ -220,9 +226,9 @@ class _DungeonScene extends FlameGame
 
   void synchronize(
     DungeonSceneSnapshot snapshot, {
-    required ValueChanged<Position> onTap,
+    required MapTouchCallback onTap,
     required ValueChanged<Offset> onPan,
-    required ValueChanged<Position> onLongPress,
+    required MapTouchCallback onLongPress,
   }) {
     final projectionChanged = !identical(_snapshot.cells, snapshot.cells);
     final lightOriginChanged = _snapshot.heroPosition != snapshot.heroPosition;
@@ -239,10 +245,7 @@ class _DungeonScene extends FlameGame
 
   @override
   void onTapUp(TapUpEvent event) {
-    final position = _geometry.positionAt(
-      Offset(event.canvasPosition.x, event.canvasPosition.y),
-    );
-    if (position != null) _onTap(position);
+    _onTap(Offset(event.canvasPosition.x, event.canvasPosition.y), _geometry);
   }
 
   @override
@@ -253,10 +256,10 @@ class _DungeonScene extends FlameGame
   @override
   void onLongPressStart(LongPressStartEvent event) {
     super.onLongPressStart(event);
-    final position = _geometry.positionAt(
+    _onLongPress(
       Offset(event.canvasPosition.x, event.canvasPosition.y),
+      _geometry,
     );
-    if (position != null) _onLongPress(position);
   }
 
   GridGeometry get _geometry => GridGeometry.camera(

@@ -17,6 +17,7 @@ import 'game_bloc.dart';
 import 'log_drawer.dart';
 import 'log_line.dart';
 import 'grid_geometry.dart';
+import 'map_touch.dart';
 import 'pack_screen.dart';
 import 'spell_row.dart';
 
@@ -100,19 +101,21 @@ class GameScreen extends StatelessWidget {
                                       key: dungeonSceneHostKey,
                                       state: state,
                                       palette: palette,
-                                      onTap: (position) => _onMapTap(
+                                      onTap: (local, geometry) => _onMapTap(
                                         context,
                                         bloc,
                                         state,
-                                        position,
+                                        geometry,
+                                        local,
                                       ),
                                       onPan: (delta) =>
                                           bloc.add(MapPanned(delta)),
-                                      onLongPress: (position) =>
+                                      onLongPress: (local, geometry) =>
                                           _onMapLongPress(
                                             context,
                                             state,
-                                            position,
+                                            geometry,
+                                            local,
                                           ),
                                     ),
                                     if (_heroOffScreen(state, size))
@@ -155,45 +158,39 @@ class GameScreen extends StatelessWidget {
   );
 }
 
-/// Routes a map tap: all meaning stays in the bloc; only inspection is routed
-/// here, because it is presentation-only.
-///
-/// Armed, the tap is the bloc's to decide — cast at a marked monster or
-/// disarm. Bare, a tap on a monster beyond one orthogonal step is the enemy's
-/// numbers, and a tap on an adjacent monster is the bump the bloc answers.
+/// Routes a map tap by intent (`map_touch.dart::resolveMapTap`): a cell means
+/// the bloc decides — move, bump or cast — and an inspect means the enemy's
+/// numbers, presentation-only and at no turn cost.
 void _onMapTap(
   BuildContext context,
   GameBloc bloc,
   GameViewState state,
-  Position position,
+  GridGeometry geometry,
+  Offset local,
 ) {
-  if (state.armedSpellId != null) {
-    bloc.add(TileTapped(position));
-    return;
+  switch (resolveMapTap(state, geometry, local)) {
+    case MapTouchCell(:final position):
+      bloc.add(TileTapped(position));
+    case MapTouchInspect(:final actor):
+      showEnemyInfo(context, actor, state.presentationOf(actor.id)!);
+    case MapTouchNothing():
+      break;
   }
-  final monster = state.inspectTargetAt(position);
-  final adjacent = state.game.hero.position.isOrthogonallyAdjacentTo(position);
-  if (monster != null && !adjacent) {
-    final presentation = state.presentationOf(monster.id);
-    if (presentation != null) {
-      showEnemyInfo(context, monster, presentation);
-    }
-    return;
-  }
-  bloc.add(TileTapped(position));
 }
 
 /// Opens the enemy's numbers under the long-press, at no turn cost.
 void _onMapLongPress(
   BuildContext context,
   GameViewState state,
-  Position position,
+  GridGeometry geometry,
+  Offset local,
 ) {
-  if (state.inspectTargetAt(position) case final Actor monster) {
-    final presentation = state.presentationOf(monster.id);
-    if (presentation != null) {
-      showEnemyInfo(context, monster, presentation);
-    }
+  switch (resolveMapLongPress(state, geometry, local)) {
+    case MapTouchInspect(:final actor):
+      showEnemyInfo(context, actor, state.presentationOf(actor.id)!);
+    case MapTouchCell():
+    case MapTouchNothing():
+      break;
   }
 }
 
