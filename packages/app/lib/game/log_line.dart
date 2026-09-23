@@ -2,21 +2,18 @@ import 'package:equatable/equatable.dart';
 
 /// What kind of thing one line of the message log reports.
 enum LogCategory {
-  struck('←', 'struck'),
-  hit('→', 'hit'),
-  died('†', 'died'),
-  noticed('◎', 'noticed'),
-  moved('⇅', 'moved'),
-  refused('✕', 'refused'),
-  item('■', 'item'),
-  raised('▲', 'raised'),
-  gathered('◆', 'gathered'),
-  reported('§', 'reported');
+  struck('struck'),
+  hit('hit'),
+  died('died'),
+  noticed('noticed'),
+  moved('moved'),
+  refused('refused'),
+  item('item'),
+  raised('raised'),
+  gathered('gathered'),
+  reported('reported');
 
-  const LogCategory(this.mark, this.word);
-
-  /// The non-hue mark the expanded log draws in its leading column.
-  final String mark;
+  const LogCategory(this.word);
 
   /// What the category is called out loud, for the accessibility label.
   final String word;

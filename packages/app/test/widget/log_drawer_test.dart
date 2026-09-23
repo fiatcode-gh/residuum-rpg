@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -76,6 +78,9 @@ List<LogLine> _manyLines(int count) => [
 Finder _inDrawer(String text) =>
     find.descendant(of: find.byKey(logDrawerKey), matching: find.text(text));
 
+Finder _inPeek(String text) =>
+    find.descendant(of: find.byKey(logPeekKey), matching: find.text(text));
+
 Finder _drawerList() => find.descendant(
   of: find.byKey(logDrawerKey),
   matching: find.byType(ListView),
@@ -112,7 +117,7 @@ Future<void> _pushGame(WidgetTester tester, GameBloc bloc) async {
 
 void main() {
   testWidgets('the peek renders above the controls', (tester) async {
-    await onAPhone(tester);
+    await onTheTargetPhone(tester);
     final bloc = GameBloc(
       game: _game(),
       log: const [LogLine('Something is on the road.', LogCategory.noticed)],
@@ -127,8 +132,10 @@ void main() {
   });
 
   testWidgets('the handle takes the drawer through peek, half, full, and back, '
-      'without ever reflowing the map', (tester) async {
-    await onAPhone(tester);
+      'never reflowing the map, and the drawer keeps to the fixed chrome', (
+    tester,
+  ) async {
+    await onTheTargetPhone(tester);
     final bloc = GameBloc(
       game: _game(),
       log: _manyLines(2),
@@ -149,21 +156,31 @@ void main() {
       );
     }
 
-    expect(peekRect.height, crawlLogPeekHeight);
+    expect(peekRect.height, crawlEventsHeight);
     reportStableCrawlGeometry('closed');
+    // The inner Stack's own height: the map, both gaps and the peek fill
+    // it exactly at the peek extent, before any drawer overlay exists.
+    final overlayHeight = mapRect.height + 2 * crawlGap + peekRect.height;
 
     await tester.tap(find.byKey(logPeekKey));
     await tester.pumpAndSettle();
     expect(find.byKey(logDrawerKey), findsOneWidget);
     reportStableCrawlGeometry('half');
-    final halfHandleTop = tester.getTopLeft(find.byKey(logHandleKey)).dy;
+    final halfRect = tester.getRect(find.byKey(logDrawerKey));
+    expect(
+      halfRect.height,
+      closeTo(math.min(crawlLogSheetHeight, overlayHeight), 0.5),
+    );
+    expect(halfRect.bottom, closeTo(actionRect.top, 0.5));
 
     await tester.tap(find.byKey(logHandleKey));
     await tester.pumpAndSettle();
     expect(find.byKey(logDrawerKey), findsOneWidget);
     reportStableCrawlGeometry('full');
-    final fullHandleTop = tester.getTopLeft(find.byKey(logHandleKey)).dy;
-    expect(fullHandleTop, lessThan(halfHandleTop));
+    final fullRect = tester.getRect(find.byKey(logDrawerKey));
+    expect(fullRect.top, closeTo(mapRect.top, 0.5));
+    expect(fullRect.bottom, closeTo(actionRect.top, 0.5));
+    expect(fullRect.top, lessThan(halfRect.top));
 
     await tester.tap(find.byKey(logHandleKey));
     await tester.pumpAndSettle();
@@ -172,18 +189,20 @@ void main() {
   });
 
   testWidgets(
-    'recent events keep a real latest sentence visible and the drawer '
-    'reports its chronological entry count',
+    'recent events keep a real latest sentence visible, oldest to newest, '
+    'and both the peek and the drawer report the true entry count',
     (tester) async {
-      await onAPhone(tester);
-      final newest =
-          'The narrow stair opens into a passage where cold air stirs '
-          'the dust.\nSomething moves beyond the torchlight.';
+      await onTheTargetPhone(tester);
+      const newest = 'The narrow stair opens into cold air and settles shut.';
+      expect(newest.length, 54);
       final bloc = GameBloc(
         game: _game(),
-        log: [
-          const LogLine('The door settles shut.', LogCategory.moved),
-          const LogLine('A distant cry echoes.', LogCategory.noticed),
+        log: const [
+          LogLine('Line one drops away.', LogCategory.moved),
+          LogLine('Line two settles in the dust.', LogCategory.moved),
+          LogLine('Line three echoes softly.', LogCategory.noticed),
+          LogLine('Line four rattles the bones.', LogCategory.hit),
+          LogLine('Line five: a distant cry.', LogCategory.noticed),
           LogLine(newest, LogCategory.hit),
         ],
         stepDelay: Duration.zero,
@@ -192,43 +211,67 @@ void main() {
       await _pushGame(tester, bloc);
 
       final peek = find.byKey(logPeekKey);
-      expect(tester.getRect(peek).height, crawlLogPeekHeight);
+      expect(tester.getRect(peek).height, crawlEventsHeight);
       expect(
         find.descendant(of: peek, matching: find.text('RECENT EVENTS')),
         findsOneWidget,
       );
-      final peekSentence = find.descendant(
-        of: peek,
-        matching: find.text(newest),
+      expect(
+        find.descendant(of: peek, matching: find.text('6 entries')),
+        findsOneWidget,
       );
-      expect(peekSentence, findsOneWidget);
-      final sentenceRect = tester.getRect(peekSentence);
+
+      // Only the last four lines show, oldest to newest top to bottom.
+      expect(_inPeek('Line one drops away.'), findsNothing);
+      expect(_inPeek('Line two settles in the dust.'), findsNothing);
+      final shown = [
+        'Line three echoes softly.',
+        'Line four rattles the bones.',
+        'Line five: a distant cry.',
+        newest,
+      ];
+      final tops = [
+        for (final sentence in shown) tester.getTopLeft(_inPeek(sentence)).dy,
+      ];
+      for (var i = 1; i < tops.length; i++) {
+        expect(tops[i], greaterThan(tops[i - 1]));
+      }
       final peekRect = tester.getRect(peek);
-      expect(sentenceRect.top, greaterThanOrEqualTo(peekRect.top));
-      expect(sentenceRect.bottom, lessThanOrEqualTo(peekRect.bottom));
+      for (final sentence in shown) {
+        final text = tester.widget<Text>(_inPeek(sentence));
+        expect(text.maxLines, 1);
+        final rect = tester.getRect(_inPeek(sentence));
+        expect(rect.top, greaterThanOrEqualTo(peekRect.top));
+        expect(rect.bottom, lessThanOrEqualTo(peekRect.bottom));
+      }
+      Opacity opacityOf(String sentence) => tester.widget<Opacity>(
+        find.ancestor(of: _inPeek(sentence), matching: find.byType(Opacity)),
+      );
+      expect(opacityOf(newest).opacity, 1);
+      expect(opacityOf('Line three echoes softly.').opacity, 0.72);
+      expect(opacityOf('Line four rattles the bones.').opacity, 0.72);
+      expect(opacityOf('Line five: a distant cry.').opacity, 0.72);
+
       await tester.tap(peek);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(logHandleKey));
       await tester.pumpAndSettle();
       expect(_inDrawer('RECENT EVENTS'), findsOneWidget);
-      expect(_inDrawer('3 entries'), findsOneWidget);
+      expect(_inDrawer('6 entries'), findsOneWidget);
 
       final drawerRect = tester.getRect(find.byKey(logDrawerKey));
-      final first = tester.getTopLeft(_inDrawer('The door settles shut.'));
-      final second = tester.getTopLeft(_inDrawer('A distant cry echoes.'));
-      final newestFinder = _inDrawer(newest);
-      final third = tester.getTopLeft(newestFinder);
-      final newestRect = tester.getRect(newestFinder);
-      expect(first.dy, lessThan(second.dy));
-      expect(second.dy, lessThan(third.dy));
-      expect(newestRect.top, greaterThanOrEqualTo(drawerRect.top));
-      expect(newestRect.bottom, lessThanOrEqualTo(drawerRect.bottom));
+      final first = tester.getTopLeft(_inDrawer('Line one drops away.'));
+      final last = tester.getTopLeft(_inDrawer(newest));
+      final lastRect = tester.getRect(_inDrawer(newest));
+      expect(first.dy, lessThan(last.dy));
+      expect(lastRect.top, greaterThanOrEqualTo(drawerRect.top));
+      expect(lastRect.bottom, lessThanOrEqualTo(drawerRect.bottom));
       expect(tester.takeException(), isNull);
     },
   );
 
   testWidgets('the close affordance collapses from full', (tester) async {
-    await onAPhone(tester);
+    await onTheTargetPhone(tester);
     final bloc = GameBloc(game: _game(), stepDelay: Duration.zero);
     addTearDown(bloc.close);
     await _pushGame(tester, bloc);
@@ -245,11 +288,11 @@ void main() {
     expect(find.byKey(logPeekKey), findsOneWidget);
   });
 
-  testWidgets('the expanded log shows every category glyph and word, and '
-      'the peek shows none', (tester) async {
+  testWidgets('the expanded log shows every category pictogram and word, '
+      'and the peek shows none', (tester) async {
     final handle = tester.ensureSemantics();
     try {
-      await onAPhone(tester);
+      await onTheTargetPhone(tester);
       final seeded = [
         for (final category in LogCategory.values)
           LogLine('${category.name} happened.', category),
@@ -262,7 +305,16 @@ void main() {
       addTearDown(bloc.close);
       await _pushGame(tester, bloc);
 
-      expect(find.text(LogCategory.struck.mark), findsNothing);
+      for (final category in LogCategory.values) {
+        expect(
+          find.descendant(
+            of: find.byKey(logPeekKey),
+            matching: find.byIcon(logPictogram(category)),
+          ),
+          findsNothing,
+          reason: 'no pictogram for ${category.name} in the peek',
+        );
+      }
 
       await tester.tap(find.byKey(logPeekKey));
       await tester.pumpAndSettle();
@@ -274,9 +326,12 @@ void main() {
 
       for (final category in LogCategory.values) {
         expect(
-          find.text(category.mark),
+          find.descendant(
+            of: find.byKey(logDrawerKey),
+            matching: find.byIcon(logPictogram(category)),
+          ),
           findsWidgets,
-          reason: 'mark for ${category.name}',
+          reason: 'pictogram for ${category.name}',
         );
         expect(
           find.bySemanticsLabel(RegExp('^${RegExp.escape(category.word)}\\. ')),
@@ -290,10 +345,10 @@ void main() {
   });
 
   testWidgets(
-    'the newest line reads brighter than older lines, and each mark shares '
-    "its sentence's colour",
+    "each row's pictogram shares its sentence's tint, and only older rows "
+    'dim',
     (tester) async {
-      await onAPhone(tester);
+      await onTheTargetPhone(tester);
       const seeded = [
         LogLine('First line.', LogCategory.moved),
         LogLine('Second line.', LogCategory.hit),
@@ -313,25 +368,46 @@ void main() {
       await tester.pumpAndSettle();
 
       final newestSentence = tester.widget<Text>(_inDrawer('Third line.'));
-      final newestMark = tester.widget<Text>(
-        find.text(LogCategory.struck.mark),
+      final newestIcon = tester.widget<Icon>(
+        find.descendant(
+          of: find.byKey(logDrawerKey),
+          matching: find.byIcon(logPictogram(LogCategory.struck)),
+        ),
       );
       final olderSentence = tester.widget<Text>(_inDrawer('First line.'));
-      final olderMark = tester.widget<Text>(find.text(LogCategory.moved.mark));
-
-      expect(
-        newestSentence.style!.color!.computeLuminance(),
-        greaterThan(olderSentence.style!.color!.computeLuminance()),
+      final olderIcon = tester.widget<Icon>(
+        find.descendant(
+          of: find.byKey(logDrawerKey),
+          matching: find.byIcon(logPictogram(LogCategory.moved)),
+        ),
       );
-      expect(newestMark.style!.color, newestSentence.style!.color);
-      expect(olderMark.style!.color, olderSentence.style!.color);
+
+      expect(newestIcon.color, newestSentence.style!.color);
+      expect(olderIcon.color, olderSentence.style!.color);
+
+      final olderOpacity = tester.widget<Opacity>(
+        find.ancestor(
+          of: _inDrawer('First line.'),
+          matching: find.byType(Opacity),
+        ),
+      );
+      expect(olderOpacity.opacity, 0.78);
+      expect(
+        find.ancestor(
+          of: _inDrawer('Third line.'),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Opacity && widget.opacity == 0.78,
+          ),
+        ),
+        findsNothing,
+      );
     },
   );
 
   testWidgets(
-    'the peek renders an expand affordance and shows no category mark',
+    'the peek renders an expand affordance and shows no category pictogram',
     (tester) async {
-      await onAPhone(tester);
+      await onTheTargetPhone(tester);
       final bloc = GameBloc(
         game: _game(),
         log: const [LogLine('Something is on the road.', LogCategory.noticed)],
@@ -341,23 +417,25 @@ void main() {
       await _pushGame(tester, bloc);
 
       expect(
-        find.descendant(of: find.byKey(logPeekKey), matching: find.text('›')),
+        find.descendant(
+          of: find.byKey(logPeekKey),
+          matching: find.byIcon(Icons.unfold_more),
+        ),
         findsOneWidget,
       );
       expect(
         find.descendant(
           of: find.byKey(logPeekKey),
-          matching: find.text(LogCategory.noticed.mark),
+          matching: find.byIcon(logPictogram(LogCategory.noticed)),
         ),
         findsNothing,
       );
     },
   );
 
-  testWidgets("a row's mark sits left of its sentence, inside the gutter", (
-    tester,
-  ) async {
-    await onAPhone(tester);
+  testWidgets("a row's pictogram sits left of its sentence, inside the "
+      'sheet', (tester) async {
+    await onTheTargetPhone(tester);
     final bloc = GameBloc(
       game: _game(),
       log: const [LogLine('Something is on the road.', LogCategory.noticed)],
@@ -371,14 +449,42 @@ void main() {
     await tester.tap(find.byKey(logHandleKey));
     await tester.pumpAndSettle();
 
-    final markRect = tester.getRect(find.text(LogCategory.noticed.mark));
+    final iconRect = tester.getRect(
+      find.descendant(
+        of: find.byKey(logDrawerKey),
+        matching: find.byIcon(logPictogram(LogCategory.noticed)),
+      ),
+    );
     final sentenceRect = tester.getRect(_inDrawer('Something is on the road.'));
-    expect(markRect.right, lessThanOrEqualTo(sentenceRect.left));
-    expect(markRect.width, lessThanOrEqualTo(crawlMarkColumn));
+    final drawerRect = tester.getRect(find.byKey(logDrawerKey));
+    expect(iconRect.right, lessThanOrEqualTo(sentenceRect.left));
+    expect(iconRect.left, greaterThanOrEqualTo(drawerRect.left));
+  });
+
+  testWidgets('the action bar stays hit-testable while the drawer is open', (
+    tester,
+  ) async {
+    await onTheTargetPhone(tester);
+    final bloc = GameBloc(
+      game: _game(monsters: [_ghoul(_adjacentToHero)]),
+      stepDelay: Duration.zero,
+    );
+    addTearDown(bloc.close);
+    await _pushGame(tester, bloc);
+    expect(find.text('Wait'), findsOneWidget);
+
+    await tester.tap(find.byKey(logPeekKey));
+    await tester.pumpAndSettle();
+    expect(bloc.state.logDrawerExtent, LogDrawerExtent.half);
+
+    await tester.tap(find.text('Wait'));
+    await tester.pumpAndSettle();
+
+    expect(_inDrawer('You hold your ground.'), findsOneWidget);
   });
 
   testWidgets('follow holds the reader at newest while active', (tester) async {
-    await onAPhone(tester);
+    await onTheTargetPhone(tester);
     final bloc = GameBloc(
       game: _game(),
       log: _manyLines(60),
@@ -406,7 +512,7 @@ void main() {
     'scrolling away breaks follow, the unread count is exact, and the '
     'viewport does not move',
     (tester) async {
-      await onAPhone(tester);
+      await onTheTargetPhone(tester);
       final bloc = GameBloc(
         game: _game(),
         log: _manyLines(60),
@@ -448,7 +554,7 @@ void main() {
   testWidgets('the unread affordance returns to newest and resumes follow', (
     tester,
   ) async {
-    await onAPhone(tester);
+    await onTheTargetPhone(tester);
     final bloc = GameBloc(
       game: _game(),
       log: _manyLines(60),
@@ -479,7 +585,7 @@ void main() {
     'scrolling back to newest resumes follow without the affordance being '
     'used',
     (tester) async {
-      await onAPhone(tester);
+      await onTheTargetPhone(tester);
       final bloc = GameBloc(
         game: _game(),
         log: _manyLines(60),
@@ -509,7 +615,7 @@ void main() {
   testWidgets('an empty log renders at phone size without exception', (
     tester,
   ) async {
-    await onAPhone(tester);
+    await onTheTargetPhone(tester);
     final bloc = GameBloc(game: _game(), stepDelay: Duration.zero);
     addTearDown(bloc.close);
     await _pushGame(tester, bloc);
@@ -521,7 +627,7 @@ void main() {
     );
     expect(
       find.descendant(of: peek, matching: find.text('0 entries')),
-      findsNothing,
+      findsOneWidget,
     );
     await tester.tap(peek);
     await tester.pumpAndSettle();
@@ -539,7 +645,7 @@ void main() {
   testWidgets('a one-line log renders at phone size without exception', (
     tester,
   ) async {
-    await onAPhone(tester);
+    await onTheTargetPhone(tester);
     final bloc = GameBloc(
       game: _game(),
       log: const [LogLine('Something is on the road.', LogCategory.noticed)],
@@ -565,7 +671,7 @@ void main() {
     'death collapses the drawer, inerts the peek, and the death overlay '
     'stays reachable',
     (tester) async {
-      await onAPhone(tester);
+      await onTheTargetPhone(tester);
       final bloc = GameBloc(
         game: _game(heroHp: 2, monsters: [_ghoul(_adjacentToHero)]),
         stepDelay: Duration.zero,

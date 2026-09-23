@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 const double crawlPanelPadding = 8;
 const double crawlTokenCell = 36;
 const double crawlTokenWidth = 76;
-const double crawlLogPeekHeight = 104;
-const double crawlMarkColumn = 24;
-const double crawlMarkWell = 20;
-const double crawlLogRowRhythm = 3;
+const double crawlEventsHeight = 96;
+const double crawlLogLine = 15;
+const double crawlLogSheetHeight = 345;
+const double crawlLogSheetHeader = 40;
+const double crawlLogRowPadding = 1.5;
+const double crawlLogPictogram = 15;
 
 /// The opacity a disabled slot's mark renders at (PLAN.md G8).
 const double crawlDisabledIconOpacity = 0.45;

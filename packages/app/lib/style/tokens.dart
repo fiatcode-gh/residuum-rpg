@@ -132,6 +132,35 @@ const TextStyle displayCaption = TextStyle(
   fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
 );
 
+/// PLAN.md G2 display roles (recent events and the expanded log, Task 07):
+/// Task 01 added every G2 role with no consumer yet except the mono roles
+/// (Task 06's slot labels); these are the first two G2 display roles this
+/// unit actually draws.
+const TextStyle displaySection = TextStyle(
+  inherit: false,
+  fontFamily: displayFace,
+  fontSize: 12.5,
+  letterSpacing: 3,
+  fontWeight: FontWeight.w500,
+  fontVariations: [FontVariation('wght', 500)],
+  height: 1.12,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlGold,
+  fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
+);
+const TextStyle displaySheetTitle = TextStyle(
+  inherit: false,
+  fontFamily: displayFace,
+  fontSize: 15,
+  letterSpacing: 4,
+  fontWeight: FontWeight.w500,
+  fontVariations: [FontVariation('wght', 500)],
+  height: 1.1,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlGold,
+  fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
+);
+
 /// Every role's `height` is explicit because Spectral's own line box is
 /// 1.522 em — inherited, that is +15% on every text row in the application,
 /// enough on its own to put worst-legal-combat chrome over the 600 dp

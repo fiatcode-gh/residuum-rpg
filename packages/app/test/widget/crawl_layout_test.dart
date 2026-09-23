@@ -149,7 +149,7 @@ void main() {
       );
       expect(explorationStatus.height, 49);
       expect(explorationMap.top, 49);
-      expect(explorationMap.bottom, closeTo(739.4, 0.1));
+      expect(explorationMap.bottom, closeTo(747.4, 0.1));
 
       await _openCrawl(tester, _battleGame());
       final battleStatus = tester.getRect(find.byType(CrawlStatus));
@@ -175,7 +175,7 @@ void main() {
       );
       expect(battleStatus.height, 49);
       expect(battleMap.top, 147);
-      expect(battleMap.bottom, closeTo(739.4, 0.1));
+      expect(battleMap.bottom, closeTo(747.4, 0.1));
       await _openCrawl(tester, _watchedGame());
       final watchedStatus = tester.getRect(find.byType(CrawlStatus));
       final watchedMap = tester.getRect(find.byKey(dungeonSceneSlotKey));
@@ -199,7 +199,7 @@ void main() {
       );
       expect(watchedStatus.height, 49);
       expect(watchedMap.top, 49);
-      expect(watchedMap.bottom, closeTo(739.4, 0.1));
+      expect(watchedMap.bottom, closeTo(747.4, 0.1));
     },
   );
 

@@ -7,6 +7,7 @@ import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/battle_view.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/game/log_drawer.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
@@ -332,7 +333,7 @@ void main() {
       expect(find.byType(BattleDock), findsNothing);
       expect(find.text('Wait'), findsNothing);
       expect(find.byType(DungeonSceneHost), findsOneWidget);
-      expect(find.byType(ListView), findsOneWidget);
+      expect(find.byKey(logPeekKey), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -709,7 +710,7 @@ void main() {
       expect(find.byType(DungeonSceneHost), findsOneWidget);
       expect(find.text('Wait'), findsOneWidget);
       expect(find.textContaining('Engaged'), findsOneWidget);
-      expect(find.byType(ListView), findsOneWidget);
+      expect(find.byKey(logPeekKey), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

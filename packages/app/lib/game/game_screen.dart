@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
@@ -83,80 +85,111 @@ class GameScreen extends StatelessWidget {
                               },
                             ),
                           Expanded(
-                            child: Stack(
-                              children: [
-                                Column(
+                            child: LayoutBuilder(
+                              builder: (overlayContext, overlayConstraints) {
+                                final overlayHeight =
+                                    overlayConstraints.maxHeight;
+                                final fullDrawer =
+                                    state.logDrawerExtent ==
+                                    LogDrawerExtent.full;
+                                return Stack(
                                   children: [
-                                    Expanded(
-                                      key: dungeonSceneSlotKey,
-                                      child: LayoutBuilder(
-                                        builder: (mapContext, constraints) {
-                                          final size = constraints.biggest;
-                                          return Stack(
-                                            children: [
-                                              DungeonSceneHost(
-                                                key: dungeonSceneHostKey,
-                                                state: state,
-                                                palette: palette,
-                                                onTap: (local, geometry) =>
-                                                    _onMapTap(
-                                                      context,
-                                                      bloc,
-                                                      state,
-                                                      geometry,
-                                                      local,
-                                                    ),
-                                                onPan: (delta) =>
-                                                    bloc.add(MapPanned(delta)),
-                                                onLongPress:
-                                                    (local, geometry) =>
-                                                        _onMapLongPress(
+                                    Column(
+                                      children: [
+                                        Expanded(
+                                          key: dungeonSceneSlotKey,
+                                          child: LayoutBuilder(
+                                            builder: (mapContext, constraints) {
+                                              final size = constraints.biggest;
+                                              return Stack(
+                                                children: [
+                                                  DungeonSceneHost(
+                                                    key: dungeonSceneHostKey,
+                                                    state: state,
+                                                    palette: palette,
+                                                    onTap: (local, geometry) =>
+                                                        _onMapTap(
                                                           context,
+                                                          bloc,
                                                           state,
                                                           geometry,
                                                           local,
                                                         ),
-                                              ),
-                                              _NotesOverlay(
-                                                notes: _notesFor(state),
-                                              ),
-                                              if (_heroOffScreen(state, size))
-                                                Positioned(
-                                                  top: 8,
-                                                  right: 8,
-                                                  child: CrawlPill(
-                                                    key: recenterKey,
-                                                    label:
-                                                        'Recenter on the hero',
-                                                    icon: Icons
-                                                        .center_focus_strong,
-                                                    onPressed: () => bloc.add(
-                                                      const RecenterPressed(),
+                                                    onPan: (delta) => bloc.add(
+                                                      MapPanned(delta),
                                                     ),
+                                                    onLongPress:
+                                                        (local, geometry) =>
+                                                            _onMapLongPress(
+                                                              context,
+                                                              state,
+                                                              geometry,
+                                                              local,
+                                                            ),
                                                   ),
+                                                  _NotesOverlay(
+                                                    notes: _notesFor(state),
+                                                  ),
+                                                  if (_heroOffScreen(
+                                                    state,
+                                                    size,
+                                                  ))
+                                                    Positioned(
+                                                      top: 8,
+                                                      right: 8,
+                                                      child: CrawlPill(
+                                                        key: recenterKey,
+                                                        label: 'Recenter on the hero',
+                                                        icon: Icons
+                                                            .center_focus_strong,
+                                                        onPressed: () => bloc.add(
+                                                          const RecenterPressed(),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(height: crawlGap),
+                                        LogPeek(
+                                          key: logPeekKey,
+                                          state: state,
+                                          bloc: bloc,
+                                        ),
+                                        const SizedBox(height: crawlGap),
+                                      ],
+                                    ),
+                                    if (state.logDrawerExtent !=
+                                        LogDrawerExtent.peek)
+                                      Positioned(
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        top: fullDrawer ? 0 : null,
+                                        child: fullDrawer
+                                            ? LogDrawer(
+                                                key: logDrawerKey,
+                                                state: state,
+                                                bloc: bloc,
+                                              )
+                                            : SizedBox(
+                                                height: math.min(
+                                                  crawlLogSheetHeight *
+                                                      crawlScale(context),
+                                                  overlayHeight,
                                                 ),
-                                            ],
-                                          );
-                                        },
+                                                child: LogDrawer(
+                                                  key: logDrawerKey,
+                                                  state: state,
+                                                  bloc: bloc,
+                                                ),
+                                              ),
                                       ),
-                                    ),
-                                    const SizedBox(height: crawlGap),
-                                    LogPeek(
-                                      key: logPeekKey,
-                                      state: state,
-                                      bloc: bloc,
-                                    ),
-                                    const SizedBox(height: crawlGap),
                                   ],
-                                ),
-                                if (state.logDrawerExtent !=
-                                    LogDrawerExtent.peek)
-                                  LogDrawer(
-                                    key: logDrawerKey,
-                                    state: state,
-                                    bloc: bloc,
-                                  ),
-                              ],
+                                );
+                              },
                             ),
                           ),
                           CrawlActionBar(
