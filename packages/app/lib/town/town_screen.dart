@@ -6,7 +6,7 @@ import 'package:residuum_core/core.dart';
 import '../art/art_assets.dart';
 import '../style/surfaces.dart';
 import '../style/tokens.dart'
-    show displayPlace, ink, panel, residuumTheme, rule, textBody, textLineDim;
+    show displayPlace, ink, panel, residuumTheme, rule, textLineDim;
 import '../world/world_bloc.dart';
 import 'alchemist_screen.dart';
 import 'bank_screen.dart';
@@ -112,48 +112,61 @@ class TownScreen extends StatelessWidget {
                             key: townIllustrationKey,
                           ),
                         const Spacer(),
-                        _Door(
+                        FramedRow(
                           key: const Key('town-door-merchant'),
-                          label: 'Merchant',
-                          purpose: 'Buy, sell, and buy back',
+                          title: 'Merchant',
+                          details: const ['Buy, sell, and buy back'],
+                          medallionKey: const Key(
+                            'town-door-merchant-medallion',
+                          ),
                           onPressed: () =>
                               _open(context, const MerchantScreen()),
                         ),
-                        _Door(
+                        FramedRow(
                           key: const Key('town-door-bank'),
-                          label: 'Bank',
-                          purpose: 'Gold and gear, safe from death',
+                          title: 'Bank',
+                          details: const ['Gold and gear, safe from death'],
+                          medallionKey: const Key('town-door-bank-medallion'),
                           onPressed: () => _open(context, const BankScreen()),
                         ),
-                        _Door(
+                        FramedRow(
                           key: const Key('town-door-inn'),
-                          label: 'Inn',
-                          purpose: 'A bed for the night',
+                          title: 'Inn',
+                          details: const ['A bed for the night'],
+                          medallionKey: const Key('town-door-inn-medallion'),
                           onPressed: () => _open(context, const InnScreen()),
                         ),
-                        _Door(
+                        FramedRow(
                           key: const Key('town-door-character'),
-                          label: 'Character',
-                          purpose: 'Gear, spells, skills, and pack',
+                          title: 'Character',
+                          details: const ['Gear, spells, skills, and pack'],
+                          medallionKey: const Key(
+                            'town-door-character-medallion',
+                          ),
                           onPressed: () =>
                               _open(context, const CharacterScreen()),
                         ),
-                        _Door(
+                        FramedRow(
                           key: const Key('town-door-tavern'),
-                          label: 'Tavern',
-                          purpose: 'Ask about the roads',
+                          title: 'Tavern',
+                          details: const ['Ask about the roads'],
+                          medallionKey: const Key('town-door-tavern-medallion'),
                           onPressed: () => _open(context, const TavernScreen()),
                         ),
-                        _Door(
+                        FramedRow(
                           key: const Key('town-door-forge'),
-                          label: 'Forge',
-                          purpose: 'Smelt ore, temper steel',
+                          title: 'Forge',
+                          details: const ['Smelt ore, temper steel'],
+                          medallionKey: const Key('town-door-forge-medallion'),
                           onPressed: () => _open(context, const ForgeScreen()),
                         ),
-                        _Door(
+                        FramedRow(
                           key: const Key('town-door-alchemist'),
-                          label: 'Alchemist',
-                          purpose: 'Brew herbs into potions',
+                          title: 'Alchemist',
+                          details: const ['Brew herbs into potions'],
+                          medallionKey: const Key(
+                            'town-door-alchemist-medallion',
+                          ),
                           onPressed: () =>
                               _open(context, const AlchemistScreen()),
                         ),
@@ -203,41 +216,4 @@ class TownScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Door extends StatelessWidget {
-  const _Door({
-    required this.label,
-    required this.purpose,
-    required this.onPressed,
-    super.key,
-  });
-
-  final String label;
-  final String purpose;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      const Divider(color: rule, height: 1),
-      TextButton(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(label, style: textBody),
-            const SizedBox(height: 2),
-            Text(purpose, style: textLineDim),
-          ],
-        ),
-      ),
-    ],
-  );
 }

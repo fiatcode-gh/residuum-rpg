@@ -58,7 +58,9 @@ backups, and audit/build reports are untracked evidence in `.flow/evidence/`.
   verified manually on device.
 - Determinism is tested: same seed must produce identical floors, identical rolls.
 
-## Accessibility (non-negotiable)
+## Accessibility
 
 - Author is deuteranomalous. Encode state, rarity, and categories by shape, marking,
-  position, or a word — never hue alone. Every screen must read in greyscale.
+  position, or a word — never hue alone.
+- OS-level greyscale capture is not a required acceptance gate. Visual review remains
+  colour-first and manual on device.

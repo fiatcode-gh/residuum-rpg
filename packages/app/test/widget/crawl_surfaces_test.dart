@@ -226,7 +226,7 @@ void main() {
 
       // act - open the crawl's own overflow sheet
       await _openCrawl(tester, _battleWithOverflowScene());
-      await tester.tap(find.byKey(const ValueKey('+1')));
+      await tester.tap(find.byKey(const ValueKey('spells-overflow')));
       await tester.pumpAndSettle();
 
       // assert
@@ -287,7 +287,7 @@ void main() {
     (tester) async {
       // act
       await _openCrawl(tester, _bareScene());
-      await tester.tap(find.byKey(const ValueKey('Pack (0)')));
+      await tester.tap(find.byKey(const ValueKey('pack')));
       await tester.pumpAndSettle();
 
       // assert - the pack route pushed from the crawl is inside a theme at all

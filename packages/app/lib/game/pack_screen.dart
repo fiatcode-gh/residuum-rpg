@@ -3,8 +3,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
+import '../style/surfaces.dart';
 import '../style/tokens.dart'
-    show ink, panel, residuumTheme, textBody, textLineDim;
+    show
+        armedFill,
+        hairline,
+        ink,
+        panel,
+        radius,
+        raised,
+        residuumTheme,
+        rule,
+        tapTarget,
+        textBody,
+        textLabel,
+        textLabelStrong;
 import '../town/town_style.dart' show Heading, MaterialRows, NothingHere;
 import 'game_bloc.dart';
 import 'item_presentation.dart';
@@ -90,6 +103,56 @@ enum _PackFilter {
   final PackSection? section;
 }
 
+class _PackFilterControl extends StatelessWidget {
+  const _PackFilterControl({
+    required this.label,
+    required this.selected,
+    required this.onPressed,
+    super.key,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(radius),
+      side: BorderSide(
+        color: selected ? ink : rule,
+        width: selected ? 2 : hairline,
+      ),
+    );
+    return Semantics(
+      container: true,
+      button: true,
+      enabled: true,
+      selected: selected,
+      child: Material(
+        color: selected ? armedFill : raised,
+        shape: shape,
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: shape,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: tapTarget),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Center(
+                child: Text(
+                  selected ? '✓ $label' : label,
+                  style: selected ? textLabelStrong : textLabel,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _PackContentsState extends State<PackContents> {
   _PackFilter _filter = _PackFilter.all;
 
@@ -104,12 +167,11 @@ class _PackContentsState extends State<PackContents> {
           runSpacing: 2,
           children: [
             for (final filter in _PackFilter.values)
-              ChoiceChip(
+              _PackFilterControl(
                 key: Key('pack-filter-${filter.name}'),
-                label: Text(filter.label),
+                label: filter.label,
                 selected: _filter == filter,
-                showCheckmark: true,
-                onSelected: (_) {
+                onPressed: () {
                   if (filter == _filter) return;
                   setState(() => _filter = filter);
                 },
@@ -128,13 +190,11 @@ class _PackContentsState extends State<PackContents> {
   }
 
   List<Widget> _allSections(Map<PackSection, List<ItemStack>> sections) => [
-    for (final section in PackSection.values) ...[
-      Heading(section.title),
-      if (sections[section]!.isEmpty)
-        NothingHere(_emptySentence(section))
-      else
+    for (final section in PackSection.values)
+      if (sections[section]!.isNotEmpty) ...[
+        Heading(section.title),
         for (final stack in sections[section]!) _itemRow(stack),
-    ],
+      ],
     ..._materials(),
   ];
 
@@ -231,55 +291,36 @@ class _PackItemRow extends StatelessWidget {
         onPressed: wearRefusal == null ? () => onWear!(item.id) : null,
       );
     }
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 28,
-                child: Text(item.rarity.marking, style: textBody),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(stack.label, style: textBody),
-                    if (stats.isNotEmpty) Text(stats, style: textLineDim),
-                    if (showBookTeaching && item.base.isSpellBook)
-                      Text(_teachingLine(item), style: textLineDim),
-                    if (slot != null)
-                      Text(
-                        deltaLine(wornDeltas(item, equipment[slot])),
-                        style: textLineDim,
-                      ),
-                    if (refusal != null) Text(refusal, style: textLineDim),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (primaryButton != null || onDrop != null)
-            Align(
-              alignment: Alignment.centerRight,
-              child: Wrap(
-                spacing: 4,
-                children: [
-                  ?primaryButton,
-                  if (onDrop != null)
-                    _actionButton(
-                      key: Key('pack-drop-${item.id}'),
-                      label: 'Drop',
-                      onPressed: () => onDrop!(item.id),
-                    ),
-                ],
-              ),
+    final details = <String>[
+      if (stats.isNotEmpty) stats,
+      if (showBookTeaching && item.base.isSpellBook) _teachingLine(item),
+      if (slot != null) deltaLine(wornDeltas(item, equipment[slot])),
+      ?refusal,
+    ];
+    final trailing = primaryButton == null && onDrop == null
+        ? null
+        : SizedBox(
+            width: 104,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ?primaryButton,
+                if (onDrop != null)
+                  _actionButton(
+                    key: Key('pack-drop-${item.id}'),
+                    label: 'Drop',
+                    onPressed: () => onDrop!(item.id),
+                  ),
+              ],
             ),
-        ],
-      ),
+          );
+    return FramedRow(
+      title: stack.label,
+      details: details,
+      medallionKey: Key('pack-stack-${item.id}-medallion'),
+      medallion: Text(item.rarity.marking, style: textBody),
+      trailing: trailing,
     );
   }
 

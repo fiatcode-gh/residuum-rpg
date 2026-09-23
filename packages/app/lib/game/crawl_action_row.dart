@@ -15,16 +15,23 @@ import 'crawl_style.dart';
 /// narrower than that, such as being dead.
 class CrawlAction {
   const CrawlAction({
+    required this.id,
     required this.label,
     required this.onPressed,
+    this.metadata = '',
     this.icon,
     this.armable = false,
     this.armed = false,
   });
 
-  /// What the chip says. Every action in one row must carry a distinct
-  /// label — [CrawlActionRow] asserts it.
+  /// Stable identity for this action, independent of its display fields.
+  final String id;
+
+  /// What the chip says. Labels may change while [id] remains stable.
   final String label;
+
+  /// Secondary changing information rendered below [label].
+  final String metadata;
 
   /// What tapping the chip dispatches, or null when the verb is offered but
   /// cannot be taken right now.
@@ -60,8 +67,8 @@ class CrawlActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     assert(
-      actions.map((action) => action.label).toSet().length == actions.length,
-      'a verb must appear once',
+      actions.map((action) => action.id).toSet().length == actions.length,
+      'an action id must appear once',
     );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: gutter, vertical: rhythm),
@@ -86,10 +93,11 @@ class CrawlActionRow extends StatelessWidget {
                 children: [
                   for (final action in actions)
                     _ActionChip(
-                      key: ValueKey(action.label),
+                      key: ValueKey(action.id),
                       action: action,
                       width: fit.width,
                       height: fit.chipHeight,
+                      metadataHeight: fit.metadataHeight,
                       captionHeight: fit.captionHeight,
                     ),
                 ],
@@ -102,7 +110,7 @@ class CrawlActionRow extends StatelessWidget {
   }
 }
 
-/// The action row's only test handle — chips are keyed by their own label,
+/// The action row's only test handle — chips are keyed by their own stable id,
 /// which [CrawlActionRow]'s assert guarantees is unique.
 const actionRowKey = Key('crawl-action-row');
 
@@ -114,6 +122,11 @@ const int readiedSpellCount = 3;
 /// measuring pass and the render so the two can never drift.
 const String _armedCaption = '— armed';
 
+/// Metadata and the armed caption add two measured lines to a chip. Keep the
+/// existing token's outer rhythm while reserving the extra lines within the
+/// phone chrome caps.
+const double _chipVerticalPadding = crawlChipVerticalPadding - 5;
+
 /// One candidate layout: the width every chip in the row takes, the height
 /// every chip must stand — measured, never guessed — and the reserve the
 /// armed word needs.
@@ -121,11 +134,15 @@ class _RowFit {
   const _RowFit({
     required this.width,
     required this.chipHeight,
+    required this.metadataHeight,
     required this.captionHeight,
   });
 
   final double width;
   final double chipHeight;
+
+  /// 0 when no action in the row has metadata.
+  final double metadataHeight;
 
   /// 0 when no action in the row is armable.
   final double captionHeight;
@@ -161,6 +178,16 @@ _RowFit _fitFor(
         textScaler: textScaler,
       )..layout(),
   ];
+  final metadataPainters = [
+    for (final action in actions)
+      if (action.metadata.isNotEmpty)
+        TextPainter(
+          text: TextSpan(text: action.metadata, style: crawlCaption),
+          textAlign: TextAlign.center,
+          textDirection: TextDirection.ltr,
+          textScaler: textScaler,
+        )..layout(),
+  ];
   final anyArmable = actions.any((action) => action.armable);
   final captionPainter = anyArmable
       ? (TextPainter(
@@ -176,8 +203,12 @@ _RowFit _fitFor(
     // the widest whole word.
     final widestWord = [
       for (final painter in labelPainters) painter.minIntrinsicWidth,
+      for (final painter in metadataPainters) painter.minIntrinsicWidth,
       if (captionPainter != null) captionPainter.width,
     ].reduce(math.max);
+    final metadataHeight = metadataPainters.isEmpty
+        ? 0.0
+        : metadataPainters.map((painter) => painter.height).reduce(math.max);
     final captionHeight = captionPainter?.height ?? 0.0;
 
     _RowFit? best;
@@ -186,7 +217,7 @@ _RowFit _fitFor(
       final width = (available - crawlChipSpacing * (columns - 1)) / columns;
       final content = width - crawlChipPadding * 2;
       if (content <= 0) continue;
-      // A candidate that would break a word or wrap the caption is not a
+      // A candidate that would break a word or wrap metadata/caption is not a
       // candidate.
       if (content + 0.5 < widestWord) continue;
       var labelBlock = 0.0;
@@ -200,11 +231,25 @@ _RowFit _fitFor(
         labelBlock = math.max(labelBlock, painter.height);
       }
       if (!everyLabelFits) continue;
+      var everyMetadataFits = true;
+      for (final painter in metadataPainters) {
+        painter.layout(maxWidth: content);
+        if (painter.computeLineMetrics().length > 1) {
+          everyMetadataFits = false;
+          break;
+        }
+      }
+      if (!everyMetadataFits) continue;
+      if (captionPainter != null) {
+        captionPainter.layout(maxWidth: content);
+        if (captionPainter.computeLineMetrics().length > 1) continue;
+      }
       final chipHeight =
-          crawlChipVerticalPadding * 2 +
+          _chipVerticalPadding * 2 +
           actionIconSize +
           rhythm +
           labelBlock +
+          metadataHeight +
           captionHeight;
       final runs = (actions.length / columns).ceil();
       final total = runs * chipHeight + (runs - 1) * crawlChipRunSpacing;
@@ -215,6 +260,7 @@ _RowFit _fitFor(
         best = _RowFit(
           width: width,
           chipHeight: chipHeight,
+          metadataHeight: metadataHeight,
           captionHeight: captionHeight,
         );
       }
@@ -231,18 +277,23 @@ _RowFit _fitFor(
       labelBlock = math.max(labelBlock, painter.height);
     }
     final chipHeight =
-        crawlChipVerticalPadding * 2 +
+        _chipVerticalPadding * 2 +
         actionIconSize +
         rhythm +
         labelBlock +
+        metadataHeight +
         captionHeight;
     return _RowFit(
       width: available,
       chipHeight: chipHeight,
+      metadataHeight: metadataHeight,
       captionHeight: captionHeight,
     );
   } finally {
     for (final painter in labelPainters) {
+      painter.dispose();
+    }
+    for (final painter in metadataPainters) {
       painter.dispose();
     }
     captionPainter?.dispose();
@@ -256,6 +307,7 @@ class _ActionChip extends StatelessWidget {
     required this.action,
     required this.width,
     required this.height,
+    required this.metadataHeight,
     required this.captionHeight,
     super.key,
   });
@@ -263,6 +315,9 @@ class _ActionChip extends StatelessWidget {
   final CrawlAction action;
   final double width;
   final double height;
+
+  /// 0 when no action in the row has metadata.
+  final double metadataHeight;
 
   /// 0 when no action in the row is armable.
   final double captionHeight;
@@ -283,10 +338,13 @@ class _ActionChip extends StatelessWidget {
     final icon = state == CrawlChipState.disabled
         ? Opacity(opacity: skin.iconOpacity, child: iconSlot)
         : iconSlot;
+    final semanticsLabel = action.metadata.isEmpty
+        ? action.label
+        : '${action.label} ${action.metadata}';
     return Semantics(
       button: true,
       enabled: action.onPressed != null,
-      label: action.label,
+      label: semanticsLabel,
       onTap: action.onPressed,
       child: ExcludeSemantics(
         child: SizedBox(
@@ -317,6 +375,19 @@ class _ActionChip extends StatelessWidget {
                       style: skin.label,
                     ),
                   ),
+                  if (metadataHeight > 0)
+                    action.metadata.isEmpty
+                        ? SizedBox(height: metadataHeight)
+                        : Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: crawlChipPadding,
+                            ),
+                            child: Text(
+                              action.metadata,
+                              textAlign: TextAlign.center,
+                              style: crawlCaption,
+                            ),
+                          ),
                   if (captionHeight > 0)
                     action.armed
                         ? Padding(

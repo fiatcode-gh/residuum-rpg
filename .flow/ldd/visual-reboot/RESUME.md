@@ -1,73 +1,48 @@
 # Resume Visual Reboot
 
-**Units 1–12 are merged to `main`, Unit 12.5 is closed, Units 13 and 13.1 are
-closed, and Unit 14 is complete and locally accepted — implementation, Gate A,
-Gate B and the thirteen-capsule device pass all done. The only thing left is
-the user's integration choice.**
+**Units 1–14 are integrated on `main`. Unit 15 — Row, Control and Chip
+Grammar — is the active unit.**
 
 ## Exact state
 
-- `main` is `907a4a83e7c592d4f6dd0c55e6f30c3b1b8bc49b`, the PR #22 merge.
-- Branch **`residuum-visual-reboot-13`**, HEAD **`68d0d96`** for code;
-  architect records sit on top. `packages/app` clean, **nothing pushed, no
-  pull request.**
-- **Package gates at `68d0d96`**: `dart format` 0 changed, `flutter analyze`
-  no issues, full `flutter test` **1114 passing** (1114, not 1113 — the
-  closure review caught a receipt figure that had been predicted rather than
-  observed).
-- **Gate A**: 331.0 / 429.0 / 578.0 dp, widget-test.
-- **Gate B closed**: acceptance review ACCEPT WITH FINDINGS (zero Critical,
-  zero Important, seven Minor), five corrected in `68d0d96`, scoped closure
-  CLOSED WITH FINDINGS.
-- **Gate C closed**: fifteen sessions on `emulator-5554`, 174 artefacts under
-  `.flow/evidence/68d0d96/`. Device chrome **332.95 / 432.00 / 582.86 dp**
-  post-`SafeArea`, **17.14 dp under the 600 dp ceiling**. **U13.1 is
-  hardware-confirmed.** Both save slots restored and architect-re-verified
-  byte-identical.
-- **All eleven acceptance criteria are closed.**
+- `main` is `4033de53f96470bfc75dabba6b28bc0ae67816a6`, the PR #23 merge.
+- U14's code, automated gates, acceptance review and thirteen-capsule device
+  pass are integrated. Its U15 follow-ups are the Character mana presentation
+  and the Tavern affordability cue.
+- The `unit-15-chatgpt-handoff` bundle is an untracked, user-owned external
+  planning artifact. Its v1 manifest and SHA-256 receipts validated locally;
+  it observes this exact `main` revision, settles U15 WHAT, carries only a
+  partial implementation strategy, and carries no authorization.
+- Unit 15 implementation, automated gates, scoped acceptance, and all required
+  target-device evidence are complete. Every device capsule restored both
+  canonical save slots with SHA-256 plus `cmp` MATCH.
+- The final crawl correction reduced private chip padding only. Fresh package
+  proof passed: formatter-clean, analyzer-clean, and 1,127 tests. Corrected
+  worst legal target-device chrome is 591.238 dp, strictly below the locked
+  600 dp ceiling. Corrected armed spell evidence preserved the exact
+  `Rect.fromLTRB(0,470,1080,1192)` map slot and the fixed 36 dp camera.
 
-## Exact next action — the merge gate, which is the user's
+## Exact next action — integration decision
 
-**PR #23 is open and unmerged**: https://github.com/fiatcode-gh/residuum-rpg/pull/23,
-24 commits against `main`, `MERGEABLE`, verified at source after creation.
-The branch is pushed and tracking `origin/residuum-visual-reboot-13`.
+Unit 15 is locally complete. Present the user with the concrete keep, commit,
+or publish/PR integration choices. Do not commit, push, or open/update a pull
+request until the user explicitly chooses that action.
 
-**Merge is its own gate and has not been given.** Choosing to open a pull
-request was not authorisation to merge it. Unit 12 is the standing lesson,
-and `--admin` is never reached for on the architect's own judgement.
+## Unit 15 inherited locks
 
-Once the user reports it merged: re-verify `main` at source with a fetch
-rather than trusting the report, then run the `flow-artifacts` lifecycle —
-`.flow/checkpoints/68d0d96.md` and `.flow/evidence/68d0d96/` (174 artefacts,
-17 MB) are removable once integration is confirmed, while the tracked ledger
-is never touched.
+- Preserve current game vocabulary, transactions, action dispatch and
+  information boundaries. The mock cannot create Craft, Tavern Rest/Listen/
+  Leave, a current-mana town fact, or undiscovered spell identities.
+- U15 creates no authored production art. Its medallion hosts are measured,
+  empty-ready consumers for U16.
+- The action shelf retains measure-all-candidates / shortest-legal-layout,
+  the eleven-action ceiling, fixed 36 dp cells and an `Expanded` map.
+- No important state relies on hue; every changed surface must remain legible
+  in greyscale. The target device gate uses actual device measurements, never
+  widget-test dp figures.
+- Run formatter, analyzer and tests from `packages/app`; no root pubspec.
 
-After integration, the roadmap's next unit is **U15, row, control and chip
-grammar**, which depends on U14.
-
-## What U15 inherits, beyond the roadmap
-
-- **M5 — the character screen's mana meter states capacity, not a pool.** It
-  renders `value == ceiling`, so the bar is always full; with a crawl
-  suspended at 2/8 the screen still reads `Mana 8 / 8`. True as capacity, but
-  a stronger claim than the unlabelled number it replaced. Render capacity
-  without a fill bar. **Do not add a mana getter to `TownViewState`** — the
-  town genuinely does not have that information.
-- **The Tavern's `Ask` carries no affordability cue**; the refusal is only
-  the notice sentence afterwards. Capsule E measured the control as
-  pixel-identical before and after a refusal.
-- **F2 — the bare `expect(tester.takeException(), isNull)` pattern** appears
-  about twenty-five times across the suite. One was deleted as a Gate B
-  finding; its twin survives at `character_screen_test.dart:369`. Several
-  occurrences **are** load-bearing — they carry a `reason:` or sit in tests
-  named for overflow-freedom — so this needs a judgement pass, not a sweep.
-- **F3 — import order is convention only.** `analysis_options.yaml` includes
-  `flutter_lints` and adds nothing; `directives_ordering` is in neither
-  installed package, so the order will drift again. Enabling it is a separate
-  decision.
-- **No test pins the meter's rendered fill colour anywhere**, so a regression
-  in `surfaces.dart`'s tint mapping would be caught only by device evidence.
-  Pre-existing, not introduced by this unit.
+## Historical Unit 14 detail
 
 ## What Unit 14 landed, task by task
 

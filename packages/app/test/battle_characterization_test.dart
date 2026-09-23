@@ -116,7 +116,16 @@ void main() {
       expect(find.text('✖'), findsOneWidget);
       expect(find.text('Engaged 1'), findsOneWidget);
       expect(find.textContaining('Watched'), findsNothing);
-      expect(find.textContaining('Pack (0)'), findsOneWidget);
+      final pack = find.byKey(const ValueKey('pack'));
+      expect(pack, findsOneWidget);
+      expect(
+        find.descendant(of: pack, matching: find.text('Pack')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: pack, matching: find.text('×0')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('a monster in sight beyond reach reads as watched', (

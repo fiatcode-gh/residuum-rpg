@@ -79,17 +79,27 @@ Future<GameBloc> _openBattle(WidgetTester tester, GameState game) async {
   return bloc;
 }
 
-/// A [label] on the action row itself — never a crawl overlay, which could
-/// carry the same word in a different surface.
-Finder _shelfText(String label) =>
-    find.descendant(of: find.byKey(actionRowKey), matching: find.text(label));
+/// A [label] rendered inside the keyed action chip.
+Finder _shelfText(String id, String label) =>
+    find.descendant(of: _shelfButton(id), matching: find.text(label));
 
-/// The chip carrying [label], scoped to the action row so a same-worded
-/// surface elsewhere never satisfies this finder by accident.
-Finder _shelfButton(String label) => find.descendant(
+/// The chip carrying [id], scoped to the action row so a same-worded surface
+/// elsewhere never satisfies this finder by accident.
+Finder _shelfButton(String id) => find.descendant(
   of: find.byKey(actionRowKey),
-  matching: find.byKey(ValueKey(label)),
+  matching: find.byKey(ValueKey(id)),
 );
+
+Finder _shelfMetadata(String id, String metadata) =>
+    find.descendant(of: _shelfButton(id), matching: find.text(metadata));
+
+void _expectShelfAction(String id, {required String label, String? metadata}) {
+  expect(_shelfButton(id), findsOneWidget, reason: id);
+  expect(_shelfText(id, label), findsOneWidget, reason: label);
+  if (metadata != null) {
+    expect(_shelfMetadata(id, metadata), findsOneWidget, reason: metadata);
+  }
+}
 
 /// The rendered border a chip's [Material] currently carries — read from the
 /// widget the crawl actually painted, never a hex literal.
@@ -116,33 +126,32 @@ void main() {
       // act
       await _openBattle(tester, game);
 
-      // assert - every word, count and marking survives
-      expect(_shelfText('Drink (1)'), findsOneWidget);
-      expect(_shelfText('Wait'), findsOneWidget);
-      expect(_shelfText('+1'), findsOneWidget);
-      expect(_shelfText('✳ Firebolt 2'), findsOneWidget);
-      expect(_shelfText('✚ Mend 3'), findsOneWidget);
+      // assert - every verb, count and marking survives as separate fields
+      _expectShelfAction('drink', label: 'Drink', metadata: '×1');
+      _expectShelfAction('wait', label: 'Wait');
+      _expectShelfAction('spells-overflow', label: '+1');
+      _expectShelfAction(
+        'spell:firebolt',
+        label: '✳ Firebolt',
+        metadata: '2 mana',
+      );
+      _expectShelfAction('spell:mend', label: '✚ Mend', metadata: '3 mana');
 
       // assert - the five with an exact asset each carry one icon
-      for (final label in [
-        'Drink (1)',
-        'Wait',
-        '+1',
-        '✳ Firebolt 2',
-        '✚ Mend 3',
-      ]) {
-        final button = _shelfButton(label);
-        expect(button, findsOneWidget, reason: label);
+      for (final id in ['drink', 'wait', 'spell:firebolt', 'spell:mend']) {
+        final button = _shelfButton(id);
         expect(
           find.descendant(of: button, matching: find.byType(Image)),
           findsOneWidget,
-          reason: label,
+          reason: id,
         );
       }
 
       // assert - frost lance has no exact asset and stays text-only
-      final frostLance = find.byKey(const ValueKey('✳ Frost Lance 4'));
+      final frostLance = _shelfButton('spell:frost-lance');
       expect(frostLance, findsOneWidget);
+      expect(_shelfText('spell:frost-lance', '✳ Frost Lance'), findsOneWidget);
+      expect(_shelfMetadata('spell:frost-lance', '4 mana'), findsOneWidget);
       expect(
         find.descendant(of: frostLance, matching: find.byType(Image)),
         findsNothing,
@@ -153,8 +162,8 @@ void main() {
       // arrange
       final game = _battleGame(knownSpells: const {'firebolt'});
       await _openBattle(tester, game);
-      final firebolt = find.byKey(const ValueKey('✳ Firebolt 2'));
-      final wait = find.byKey(const ValueKey('Wait'));
+      final firebolt = _shelfButton('spell:firebolt');
+      final wait = _shelfButton('wait');
       final unarmedBorder = _borderOf(tester, wait);
 
       // act
@@ -163,7 +172,11 @@ void main() {
 
       // assert - the word gains its own armed line, the border is heavier
       // than an unarmed sibling's, and the icon is still there
-      expect(find.text('✳ Firebolt 2'), findsOneWidget);
+      _expectShelfAction(
+        'spell:firebolt',
+        label: '✳ Firebolt',
+        metadata: '2 mana',
+      );
       expect(find.text('— armed'), findsOneWidget);
       expect(
         _borderOf(tester, firebolt).width,
@@ -185,7 +198,7 @@ void main() {
       await _openBattle(tester, game);
 
       // act
-      await tester.tap(find.byKey(const ValueKey('+1')));
+      await tester.tap(_shelfButton('spells-overflow'));
       await tester.pumpAndSettle();
 
       // assert - not even the two spells with an exact asset carry an icon

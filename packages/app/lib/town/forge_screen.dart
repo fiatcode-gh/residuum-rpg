@@ -4,6 +4,7 @@ import 'package:residuum_core/core.dart';
 
 import '../art/art_assets.dart';
 import '../game/item_presentation.dart';
+import '../style/surfaces.dart';
 import '../style/tokens.dart';
 import 'illustration.dart';
 import 'town_bloc.dart';
@@ -33,14 +34,55 @@ import 'town_style.dart';
 /// with its dial can corrupt no save and no resume. Committing calls the one
 /// existing core transaction once per unit of work, and the dial re-clamps
 /// whenever the state changes: anything that shrinks the ore pulls it down.
-class ForgeScreen extends StatefulWidget {
+class ForgeScreen extends StatelessWidget {
   const ForgeScreen({super.key});
 
   @override
-  State<ForgeScreen> createState() => _ForgeScreenState();
+  Widget build(BuildContext context) => BlocBuilder<TownBloc, TownViewState>(
+    builder: (context, state) => TownRoom(
+      title: 'Forge',
+      children: [
+        Purse(carried: state.gold, banked: state.bankedGold),
+        Notice(state.notice),
+        const Illustration(
+          EnvironmentArt.forge,
+          height: roomIllustrationHeight,
+          key: forgeIllustrationKey,
+        ),
+        FramedRow(
+          key: const ValueKey('forge-route-smelt'),
+          title: 'Smelt',
+          details: const ['Turn ore into ingots.'],
+          onPressed: () => _open(context, const _SmeltingScreen()),
+        ),
+        FramedRow(
+          key: const ValueKey('forge-route-temper'),
+          title: 'Temper',
+          details: const ['Work carried or worn steel.'],
+          onPressed: () => _open(context, const _TemperingScreen()),
+        ),
+      ],
+    ),
+  );
+
+  static void _open(BuildContext context, Widget screen) {
+    final town = context.read<TownBloc>();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => BlocProvider.value(value: town, child: screen),
+      ),
+    );
+  }
 }
 
-class _ForgeScreenState extends State<ForgeScreen> {
+class _SmeltingScreen extends StatefulWidget {
+  const _SmeltingScreen();
+
+  @override
+  State<_SmeltingScreen> createState() => _SmeltingScreenState();
+}
+
+class _SmeltingScreenState extends State<_SmeltingScreen> {
   int _pending = 0;
 
   @override
@@ -48,20 +90,14 @@ class _ForgeScreenState extends State<ForgeScreen> {
     final bloc = context.read<TownBloc>();
     return BlocBuilder<TownBloc, TownViewState>(
       builder: (context, state) {
-        final workable = state.temperable;
         final cap =
             countOf(state.profile.materials, MaterialId.ore) ~/ smeltCost;
         final pending = _pending.clamp(0, cap);
         return TownRoom(
-          title: 'Forge',
+          title: 'Smelting',
           children: [
             Purse(carried: state.gold, banked: state.bankedGold),
             Notice(state.notice),
-            const Illustration(
-              EnvironmentArt.forge,
-              height: roomIllustrationHeight,
-              key: forgeIllustrationKey,
-            ),
             const Heading('Materials'),
             MaterialRows(materials: state.materials),
             const Heading('Smelting'),
@@ -88,29 +124,6 @@ class _ForgeScreenState extends State<ForgeScreen> {
                   : _capitalised(state.smeltReason!),
               style: textLineDim,
             ),
-            const Heading('The bench'),
-            if (workable.isEmpty)
-              const NothingHere('You have no steel for the bench.')
-            else ...[
-              const Heading('Worn steel'),
-              if (state.wornSteel.isEmpty)
-                const NothingHere('You are wearing no steel.'),
-              for (final item in state.wornSteel)
-                _TemperRow(
-                  item: item,
-                  reason: state.temperReason(item.id),
-                  onTemper: () => bloc.add(TemperPressed(item.id)),
-                ),
-              const Heading('Carried steel'),
-              if (state.carriedSteel.isEmpty)
-                const NothingHere('You are carrying no steel.'),
-              for (final item in state.carriedSteel)
-                _TemperRow(
-                  item: item,
-                  reason: state.temperReason(item.id),
-                  onTemper: () => bloc.add(TemperPressed(item.id)),
-                ),
-            ],
           ],
         );
       },
@@ -119,6 +132,51 @@ class _ForgeScreenState extends State<ForgeScreen> {
 
   static String _capitalised(String text) =>
       '${text[0].toUpperCase()}${text.substring(1)}.';
+}
+
+class _TemperingScreen extends StatelessWidget {
+  const _TemperingScreen();
+
+  @override
+  Widget build(BuildContext context) => BlocBuilder<TownBloc, TownViewState>(
+    builder: (context, state) {
+      final bloc = context.read<TownBloc>();
+      final workable = state.temperable;
+      return TownRoom(
+        title: 'Tempering',
+        children: [
+          Purse(carried: state.gold, banked: state.bankedGold),
+          Notice(state.notice),
+          const Heading('Materials'),
+          MaterialRows(materials: state.materials),
+          const Heading('Tempering'),
+          const Heading('The bench'),
+          if (workable.isEmpty)
+            const NothingHere('You have no steel for the bench.')
+          else ...[
+            const Heading('Worn steel'),
+            if (state.wornSteel.isEmpty)
+              const NothingHere('You are wearing no steel.'),
+            for (final item in state.wornSteel)
+              _TemperRow(
+                item: item,
+                reason: state.temperReason(item.id),
+                onTemper: () => bloc.add(TemperPressed(item.id)),
+              ),
+            const Heading('Carried steel'),
+            if (state.carriedSteel.isEmpty)
+              const NothingHere('You are carrying no steel.'),
+            for (final item in state.carriedSteel)
+              _TemperRow(
+                item: item,
+                reason: state.temperReason(item.id),
+                onTemper: () => bloc.add(TemperPressed(item.id)),
+              ),
+          ],
+        ],
+      );
+    },
+  );
 }
 
 /// One piece of steel the bench could work, and what the next tier costs.
@@ -147,43 +205,21 @@ class _TemperRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final price = item.temper < maxTemper ? temperPriceFrom(item.temper) : null;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              SizedBox(
-                width: markColumn,
-                child: Text(item.rarity.marking, style: textBody),
-              ),
-              Expanded(child: Text(item.displayName, style: textBody)),
-              TextButton(
-                onPressed: reason == null ? onTemper : null,
-                child: const Text('Temper'),
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: markColumn),
-            child: Text(statLine(item), style: textLineDim),
-          ),
-          if (reason != null)
-            Padding(
-              padding: const EdgeInsets.only(left: markColumn),
-              child: Text(reason!, style: textLineDim),
-            ),
-          if (price != null)
-            Padding(
-              padding: const EdgeInsets.only(left: markColumn),
-              child: Text(
-                'Next tier: ${price.ingots} '
-                '${price.ingots == 1 ? 'ingot' : 'ingots'}.',
-                style: textLineDim,
-              ),
-            ),
-        ],
+    final refusal = reason;
+    final details = <String>[
+      statLine(item),
+      ...?(refusal == null ? null : <String>[refusal]),
+      if (price != null)
+        'Next tier: ${price.ingots} '
+            '${price.ingots == 1 ? 'ingot' : 'ingots'}.',
+    ];
+    return FramedRow(
+      title: item.displayName,
+      details: details,
+      medallion: Text(item.rarity.marking, style: textBody),
+      trailing: TextButton(
+        onPressed: reason == null ? onTemper : null,
+        child: const Text('Temper'),
       ),
     );
   }

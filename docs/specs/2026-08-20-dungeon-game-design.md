@@ -162,8 +162,9 @@ per-weapon-type track. Per-weapon-type mastery can be an additive later ring.
   +3 fire"). Base items and affixes are content; the generator combines them, so a small
   content file yields thousands of distinct drops.
 - **Color-blind accessibility (author is deuteranomalous):** rarity is encoded by border
-  shape/marking plus a prefix word, never by hue alone. Every screen must stay legible in
-  greyscale. This applies to all state and category encodings in the UI, not just rarity.
+  shape/marking plus a prefix word, never by hue alone. This applies to all state and
+  category encodings in the UI, not just rarity. OS-level greyscale capture is not an
+  acceptance requirement.
 - **Slots:** head, chest, hands, feet, main hand, off hand, amulet, two rings.
   Off hand holds a shield, a torch (extends light radius — light versus a free hand is a
   real decision under fog of war), or nothing.
