@@ -5042,3 +5042,53 @@ request exists, and the integration choice is the user's.
   `frost-lance` id in the app) is parked.
 - A single correction round went to a `flow-implementer`. Then one scoped
   closure review.
+
+### U16.5 correction closed — ACCEPT WITH FINDINGS — 2026-09-23
+
+- `73deabc` (two workers: the first stopped on its request budget after I1–I3,
+  M1 and M2; a fresh executor finished M3–M7 on top). Scoped closure review:
+  I1, I2 and I3 are closed with regression-failing tests; no new defects;
+  formatter output unchanged. Main re-ran the gates at `73deabc`: format 0
+  changed, analyze clean, **1243/1243**, APK `9139c940…`.
+- Parked Minors: C1 (some added test-body comments remain in dungeon_scene_test,
+  map_touch_test, crawl_action_row_test and type_authority_test) plus the
+  closure's two other Minors and M8. None blocks device evidence.
+- Next: the device gate on the user's new phone.
+- Recovery checkpoint `.flow/checkpoints/73deabc.md` was written before any
+  ADB command on the new phone. Read-only discovery of the I2505
+  (`10DG1E044B000B4`, 392.7×869.8 dp): the package is absent, so there is no
+  backup; the restore is uninstall. `emulator-5554` is attached and excluded.
+
+### U16.5 final device capsules on the I2505 — 2026-09-23
+
+- U165-EXP (`exp/`, 7 frames): fresh install `9139c940…`; map 392.7×446.5 dp
+  (51.3% of 869.8), about 24.5 columns, 16×20 cell, four unclipped peek lines,
+  callout, half and full expanded log, close. Pan and recenter were not
+  observed: the depth-1 floor fits the viewport and ADB drag did not register
+  on the Flame canvas. Pan is covered by U165-CPA2 (the camera code is
+  unchanged since) and by automated tests.
+- U165-BAT (`bat/`): battle map 392.7×359.3 dp (41.3%), identical across
+  turns; timeline 58 dp; combat panel 123.3 dp; two-monster NOW/NEXT. The hero
+  knew no spell, so the armed state and more than 5 actions were not
+  reachable on a fresh save (automated proof only). The hero died; the phone
+  is at the world screen and the app is installed.
+- Architect triage: F1 (hero-panel GOLD ellipsized) and F2 (combat-panel
+  resist fact ellipsized) hide facts and go to a `flow-implementer`
+  correction. Not defects: tapping a non-adjacent monster inspects (as
+  designed; "Adjacent" is the reach fact); a missing NEXT row happens when the
+  next actor to act is unknown (the U4 secrecy rule in
+  `projectActivationQueue`); no initiative numbers (by contract); a diagonal
+  step into a wall corner logs nothing (the bloc's existing silent return).
+
+### U16.5 paused before the F1/F2 fix — 2026-09-24 01:00
+
+- The user paused. The F1/F2 worker was cancelled before any source edit;
+  only its scratch measurement test existed and was removed. HEAD `73deabc`
+  has a clean package tree.
+- Next on resume: redispatch the F1/F2 correction with the same brief (see
+  the "final device capsules" entry). Then a device re-check of the hero and
+  combat panels, a reviewer parity score against the mocks, **user visual
+  sign-off**, then uninstall from the I2505 and verify absence.
+- Phone I2505 (`10DG1E044B000B4`): the app is installed at the world screen
+  after the hero died. The baseline was package-absent, so the restore is
+  uninstall. The checkpoint `.flow/checkpoints/73deabc.md` stays valid.

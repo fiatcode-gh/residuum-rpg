@@ -1,24 +1,20 @@
 # Resume Visual Reboot
 
-**Unit 16.5 — ASCII Crawl Full Parity — PAUSED after Task 07 by the user
-(2026-09-23).** Branch `residuum-visual-reboot-16`, pushed. Contract:
+**Unit 16.5 — ASCII Crawl Full Parity — PAUSED at the final gate by the user
+(2026-09-24 01:00). All 13 tasks, review corrections and device capsules done.** Branch `residuum-visual-reboot-16`, pushed. Contract:
 `units/unit-16.5/CONTRACT.md` (amended A1: 16×20 dp cell, 48 dp touch
 targets). Plan: `units/unit-16.5/PLAN.md` (read "Amendment A1" first).
 
 ## Next action on resume
 
-1. Dispatch **Task 08** (`plan-tasks/08-hero-panel.md`) with a fresh
-   `flow-plan-executor`. Carry the standing rulings: add any missing G2 role to
-   tokens.dart with the plan's values; migrate every caller of anything
-   deleted; rewrite, never re-pin, non-owned tests that assert the superseded
-   design; measured phone insets are top ≈38.2 dp and bottom ≈17.8 dp;
-   executors may commit their task and must run the full suite first.
-2. Tasks 09 → 13 in order, one fresh executor each.
-3. Main: full gates, one `flow-acceptance-reviewer`, refresh the checkpoint,
-   then device capsules (exploration, battle and timeline, armed targeting,
-   callout, peek, expanded log, road encounter, densest action state, recenter
-   on a large floor). Reviewer parity scoring against the four mocks, **user
-   visual sign-off**, uninstall the app and verify it is absent.
+1. Redispatch the **F1/F2 correction** (`flow-implementer`), using the brief in
+   the ledger entry "U16.5 final device capsules on the I2505": the hero-panel
+   GOLD and the combat-panel resist fact must not ellipsize.
+2. Re-capture the hero and combat panels on the I2505 (`10DG1E044B000B4`
+   only; never `emulator-5554`).
+3. Reviewer parity scoring of `exp/` and `bat/` frames against the four mocks,
+   then **user visual sign-off**, then uninstall from the I2505 and verify it
+   is absent.
 
 ## State at pause
 
