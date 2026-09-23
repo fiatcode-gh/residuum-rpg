@@ -3,8 +3,12 @@ import 'package:flutter/material.dart';
 import '../style/tokens.dart';
 
 const double crawlPanelPadding = 8;
-const double crawlTokenCell = 36;
-const double crawlTokenWidth = 76;
+
+/// PLAN.md G8 timeline internals (Task 11): the battle dock's own fixed
+/// height, and the fixed height of every pill it draws — NOW's, and each of
+/// NEXT's.
+const double crawlTimelineHeight = 58;
+const double crawlTokenHeight = 24;
 const double crawlEventsHeight = 96;
 const double crawlLogLine = 15;
 const double crawlLogSheetHeight = 345;

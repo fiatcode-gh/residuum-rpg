@@ -93,16 +93,6 @@ class CrawlPanel extends StatelessWidget {
   );
 }
 
-/// A region caption — `NOW`, `NEXT`, `MESSAGE LOG` — never per-entry prose.
-class CrawlRegionLabel extends StatelessWidget {
-  const CrawlRegionLabel(this.word, {super.key});
-
-  final String word;
-
-  @override
-  Widget build(BuildContext context) => Text(word, style: displayCaption);
-}
-
 /// Opens a crawl-themed modal bottom sheet: the crawl's own [CrawlPanel]
 /// surface, scrollable, over [showModalBottomSheet]'s own top-rounded shape
 /// and scrim, both already set on [residuumTheme].

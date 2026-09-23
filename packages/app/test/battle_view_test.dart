@@ -1,9 +1,7 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/battle_view.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
@@ -11,6 +9,7 @@ import 'package:residuum_app/game/log_drawer.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
+import 'package:residuum_app/style/tokens.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
@@ -444,50 +443,62 @@ void main() {
         'You, next activation',
       );
       expect(find.textContaining('IN '), findsNothing);
-    });
-    testWidgets('the current hero ring has more weight than future tokens', (
-      tester,
-    ) async {
-      await _pushGame(
-        tester,
-        battleGame(monsters: [ghoulAt(const Position(1, 2))]),
-      );
-
-      Finder ring(Key key) => find.descendant(
-        of: find.byKey(key),
-        matching: find.byWidgetPredicate(
-          (widget) =>
-              widget is DecoratedBox &&
-              widget.decoration is BoxDecoration &&
-              (widget.decoration as BoxDecoration).shape == BoxShape.circle,
+      final digit = RegExp('[0-9]');
+      for (final text in tester.widgetList<Text>(
+        find.descendant(
+          of: find.byKey(const Key('dock-backing')),
+          matching: find.byType(Text),
         ),
-      );
-      final currentRing = tester.widget<DecoratedBox>(
-        ring(const Key('timeline-current-hero')),
-      );
-      final futureRing = tester.widget<DecoratedBox>(
-        ring(const Key('timeline-actor-ghoul-1-1')),
-      );
-      final currentDecoration = currentRing.decoration as BoxDecoration;
-      final futureDecoration = futureRing.decoration as BoxDecoration;
-
-      expect(
-        currentDecoration.border!.dimensions.horizontal,
-        greaterThan(futureDecoration.border!.dimensions.horizontal),
-      );
-      expect(currentDecoration.color, isNot(futureDecoration.color));
-      expect(
-        tester.getSize(ring(const Key('timeline-current-hero'))),
-        const Size(36, 36),
-      );
-      expect(
-        tester
-            .getSize(find.byKey(const Key('timeline-actor-ghoul-1-1')))
-            .height,
-        greaterThanOrEqualTo(44),
-      );
-      expect(crawlTokenWidth, 76);
+      )) {
+        expect(digit.hasMatch(text.data ?? ''), isFalse, reason: text.data);
+      }
     });
+    testWidgets(
+      'the current pill is 24 dp on a 44 dp hit row, gold-bordered and '
+      'filled, unlike a future pill',
+      (tester) async {
+        await _pushGame(
+          tester,
+          battleGame(monsters: [ghoulAt(const Position(1, 2))]),
+        );
+
+        Container pillOf(Key key) => tester.widget<Container>(
+          find
+              .descendant(of: find.byKey(key), matching: find.byType(Container))
+              .first,
+        );
+
+        final currentPill = pillOf(const Key('timeline-current-hero'));
+        final nextPill = pillOf(const Key('timeline-actor-ghoul-1-1'));
+        final currentDecoration = currentPill.decoration as BoxDecoration;
+        final nextDecoration = nextPill.decoration as BoxDecoration;
+
+        expect(
+          tester.getSize(find.byKey(const Key('timeline-current-hero'))).height,
+          24,
+        );
+        expect(
+          tester
+              .getSize(find.byKey(const Key('timeline-actor-ghoul-1-1')))
+              .height,
+          44,
+        );
+        final currentHitRow = find
+            .ancestor(
+              of: find.byKey(const Key('timeline-current-hero')),
+              matching: find.byType(SizedBox),
+            )
+            .first;
+        expect(tester.getSize(currentHitRow).height, 44);
+
+        expect(currentDecoration.border!.top.width, 1.5);
+        expect(currentDecoration.border!.top.color, crawlGold);
+        expect(currentDecoration.color, isNotNull);
+        expect(nextDecoration.border!.top.width, 1);
+        expect(nextDecoration.border!.top.color, crawlChipBorder);
+        expect(nextDecoration.color, isNull);
+      },
+    );
 
     testWidgets(
       'the NEXT caption sits over the token it labels, not a guessed gap',
@@ -668,17 +679,6 @@ void main() {
         matching: find.text('the ghoul⁶'),
       );
       expect(laterName, findsOneWidget);
-      final fitting = find.ancestor(
-        of: laterName,
-        matching: find.byType(FittedBox),
-      );
-      expect(fitting, findsOneWidget);
-      expect(tester.getSize(fitting).width, crawlTokenWidth);
-      expect(tester.widget<FittedBox>(fitting).fit, BoxFit.scaleDown);
-      expect(
-        tester.renderObject<RenderParagraph>(laterName).didExceedMaxLines,
-        isFalse,
-      );
       final currentHero = find.byKey(const Key('timeline-current-hero'));
       final currentHeroRectBefore = tester.getRect(currentHero);
 
@@ -689,7 +689,7 @@ void main() {
         tester.getRect(laterToken).left,
         greaterThan(tester.getRect(dock).right),
       );
-      await tester.drag(scrollable, const Offset(-1000, 0));
+      await tester.drag(scrollable, Offset(-position.maxScrollExtent - 100, 0));
       await tester.pumpAndSettle();
       expect(position.pixels, greaterThan(0));
       expect(tester.getRect(currentHero), currentHeroRectBefore);

@@ -309,7 +309,6 @@ void main() {
       'textDetail': textDetail,
       'textDetailDim': textDetailDim,
       'textGlyph': textGlyph,
-      'textGlyphDim': textGlyphDim,
       'textMicro': textMicro,
       'textMicroDim': textMicroDim,
       'monoMeta': monoMeta,

@@ -379,16 +379,6 @@ const TextStyle textGlyph = TextStyle(
   color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
-const TextStyle textGlyphDim = TextStyle(
-  inherit: false,
-  fontFamily: textFace,
-  fontSize: 18,
-  fontWeight: FontWeight.w400,
-  height: 1.00,
-  textBaseline: TextBaseline.alphabetic,
-  color: dim,
-  fontFeatures: [FontFeature.tabularFigures()],
-);
 const TextStyle textMicro = TextStyle(
   inherit: false,
   fontFamily: textFace,
