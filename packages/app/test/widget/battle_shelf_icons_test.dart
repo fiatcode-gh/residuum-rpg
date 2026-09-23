@@ -147,7 +147,8 @@ void main() {
         );
       }
 
-      // assert - frost lance has no exact asset and stays text-only
+      // assert - frost lance has no shipped asset and draws a Material
+      // glyph mark instead (PLAN G9)
       final frostLance = _shelfButton('spell:frost-lance');
       expect(frostLance, findsOneWidget);
       expect(_shelfText('spell:frost-lance', '✳ Frost Lance'), findsOneWidget);
@@ -155,6 +156,10 @@ void main() {
       expect(
         find.descendant(of: frostLance, matching: find.byType(Image)),
         findsNothing,
+      );
+      expect(
+        find.descendant(of: frostLance, matching: find.byIcon(Icons.ac_unit)),
+        findsOneWidget,
       );
     });
 
@@ -170,14 +175,12 @@ void main() {
       await tester.tap(firebolt);
       await tester.pumpAndSettle();
 
-      // assert - the word gains its own armed line, the border is heavier
-      // than an unarmed sibling's, and the icon is still there
-      _expectShelfAction(
-        'spell:firebolt',
-        label: '✳ Firebolt',
-        metadata: '2 mana',
-      );
-      expect(find.text('— armed'), findsOneWidget);
+      // assert - the metadata line switches to the armed caption, the
+      // border is heavier than an unarmed sibling's, and the mark is still
+      // there
+      expect(_shelfText('spell:firebolt', '✳ Firebolt'), findsOneWidget);
+      expect(_shelfMetadata('spell:firebolt', '— armed'), findsOneWidget);
+      expect(_shelfMetadata('spell:firebolt', '2 mana'), findsNothing);
       expect(
         _borderOf(tester, firebolt).width,
         greaterThan(unarmedBorder.width),

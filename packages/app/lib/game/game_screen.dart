@@ -6,6 +6,7 @@ import '../art/art_assets.dart';
 import '../style/tokens.dart';
 import '../town/town_bloc.dart';
 import '../world/world_bloc.dart';
+import 'action_icon.dart';
 import 'battle_view.dart';
 import 'crawl_action_row.dart';
 import 'crawl_status.dart';
@@ -59,97 +60,117 @@ class GameScreen extends StatelessWidget {
         data: residuumTheme,
         child: Scaffold(
           body: SafeArea(
-            child: BlocBuilder<GameBloc, GameViewState>(
-              builder: (context, state) {
-                final bloc = context.read<GameBloc>();
-                return Stack(
-                  children: [
-                    Column(
-                      children: [
-                        CrawlStatus(state: state, dungeon: bloc.dungeon),
-                        if (state.isBattleOpen)
-                          BattleDock(
-                            state: state,
-                            onActorSelected: (actor) {
-                              final presentation = state.presentationOf(
-                                actor.id,
-                              );
-                              if (presentation == null) return;
-                              bloc.add(TimelineActorSelected(actor.id));
-                              showEnemyInfo(context, actor, presentation);
-                            },
-                          ),
-                        Expanded(
-                          key: dungeonSceneSlotKey,
-                          child: DecoratedBox(
-                            position: DecorationPosition.foreground,
-                            decoration: const BoxDecoration(
-                              border: Border(
-                                top: BorderSide(color: rule, width: hairline),
-                                bottom: BorderSide(
-                                  color: rule,
-                                  width: hairline,
-                                ),
-                              ),
-                            ),
-                            child: LayoutBuilder(
-                              builder: (mapContext, constraints) {
-                                final size = constraints.biggest;
-                                return Stack(
-                                  children: [
-                                    DungeonSceneHost(
-                                      key: dungeonSceneHostKey,
-                                      state: state,
-                                      palette: palette,
-                                      onTap: (local, geometry) => _onMapTap(
-                                        context,
-                                        bloc,
-                                        state,
-                                        geometry,
-                                        local,
-                                      ),
-                                      onPan: (delta) =>
-                                          bloc.add(MapPanned(delta)),
-                                      onLongPress: (local, geometry) =>
-                                          _onMapLongPress(
-                                            context,
-                                            state,
-                                            geometry,
-                                            local,
-                                          ),
-                                    ),
-                                    if (_heroOffScreen(state, size))
-                                      Positioned(
-                                        top: 8,
-                                        right: 8,
-                                        child: CrawlPill(
-                                          key: recenterKey,
-                                          label: 'Recenter on the hero',
-                                          icon: Icons.center_focus_strong,
-                                          onPressed: () =>
-                                              bloc.add(const RecenterPressed()),
-                                        ),
-                                      ),
-                                  ],
+            child: MediaQuery.withClampedTextScaling(
+              maxScaleFactor: 1.3,
+              child: BlocBuilder<GameBloc, GameViewState>(
+                builder: (context, state) {
+                  final bloc = context.read<GameBloc>();
+                  return Stack(
+                    children: [
+                      Column(
+                        children: [
+                          CrawlStatus(state: state, dungeon: bloc.dungeon),
+                          if (state.isBattleOpen)
+                            BattleDock(
+                              state: state,
+                              onActorSelected: (actor) {
+                                final presentation = state.presentationOf(
+                                  actor.id,
                                 );
+                                if (presentation == null) return;
+                                bloc.add(TimelineActorSelected(actor.id));
+                                showEnemyInfo(context, actor, presentation);
                               },
                             ),
+                          Expanded(
+                            child: Stack(
+                              children: [
+                                Column(
+                                  children: [
+                                    Expanded(
+                                      key: dungeonSceneSlotKey,
+                                      child: LayoutBuilder(
+                                        builder: (mapContext, constraints) {
+                                          final size = constraints.biggest;
+                                          return Stack(
+                                            children: [
+                                              DungeonSceneHost(
+                                                key: dungeonSceneHostKey,
+                                                state: state,
+                                                palette: palette,
+                                                onTap: (local, geometry) =>
+                                                    _onMapTap(
+                                                      context,
+                                                      bloc,
+                                                      state,
+                                                      geometry,
+                                                      local,
+                                                    ),
+                                                onPan: (delta) =>
+                                                    bloc.add(MapPanned(delta)),
+                                                onLongPress:
+                                                    (local, geometry) =>
+                                                        _onMapLongPress(
+                                                          context,
+                                                          state,
+                                                          geometry,
+                                                          local,
+                                                        ),
+                                              ),
+                                              _NotesOverlay(
+                                                notes: _notesFor(state),
+                                              ),
+                                              if (_heroOffScreen(state, size))
+                                                Positioned(
+                                                  top: 8,
+                                                  right: 8,
+                                                  child: CrawlPill(
+                                                    key: recenterKey,
+                                                    label:
+                                                        'Recenter on the hero',
+                                                    icon: Icons
+                                                        .center_focus_strong,
+                                                    onPressed: () => bloc.add(
+                                                      const RecenterPressed(),
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: crawlGap),
+                                    LogPeek(
+                                      key: logPeekKey,
+                                      state: state,
+                                      bloc: bloc,
+                                    ),
+                                    const SizedBox(height: crawlGap),
+                                  ],
+                                ),
+                                if (state.logDrawerExtent !=
+                                    LogDrawerExtent.peek)
+                                  LogDrawer(
+                                    key: logDrawerKey,
+                                    state: state,
+                                    bloc: bloc,
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                        LogPeek(key: logPeekKey, state: state, bloc: bloc),
-                        CrawlActionRow(
-                          key: actionRowKey,
-                          notes: _notesFor(state),
-                          actions: _actionsFor(context, bloc, state),
-                        ),
-                      ],
-                    ),
-                    if (state.logDrawerExtent != LogDrawerExtent.peek)
-                      LogDrawer(key: logDrawerKey, state: state, bloc: bloc),
-                    if (state.game.isGameOver) _DeathOverlay(state: state),
-                  ],
-                );
-              },
+                          CrawlActionBar(
+                            key: actionRowKey,
+                            actions: _actionsFor(context, bloc, state),
+                          ),
+                          const SizedBox(height: crawlBottomGap),
+                        ],
+                      ),
+                      if (state.game.isGameOver) _DeathOverlay(state: state),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -207,6 +228,51 @@ bool _heroOffScreen(GameViewState state, Size size) {
   return heroOffScreen(size, geometry, state.game.hero.position);
 }
 
+/// The crawl's conditional sentences (PLAN.md G8 notes), overlaid at the
+/// map slot's top-left: each note reads over the map without ever resizing
+/// it, so a note appearing or leaving never nudges the tile the hero stands
+/// on.
+class _NotesOverlay extends StatelessWidget {
+  const _NotesOverlay({required this.notes});
+
+  final List<String> notes;
+
+  @override
+  Widget build(BuildContext context) {
+    if (notes.isEmpty) return const SizedBox.shrink();
+    return Positioned(
+      top: 6,
+      left: 8,
+      right: 60,
+      child: IgnorePointer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final note in notes)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: crawlBackground.withValues(alpha: 0.78),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
+                    child: Text(note, style: textLineDim),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// The crawl's one action row: every verb that applies, each appearing only
 /// when it can do something.
 ///
@@ -236,7 +302,7 @@ List<CrawlAction> _actionsFor(
         id: 'drink',
         label: 'Drink',
         metadata: '×${state.potionCount}',
-        icon: ActionIcon.potion,
+        mark: const ShippedMark(ActionIcon.potion),
         onPressed: state.game.isGameOver
             ? null
             : () => bloc.add(const QuickDrinkPressed()),
@@ -247,7 +313,7 @@ List<CrawlAction> _actionsFor(
           id: 'spell:${spell.id}',
           label: '${spell.school.schoolMarking} ${spell.name}',
           metadata: '${spell.manaCost} mana',
-          icon: ActionIcon.forSpell(spell.id),
+          mark: spellMark(spell),
           armable: true,
           armed: state.armedSpellId == spell.id,
           onPressed: () => _onSpell(bloc, state, spell),
@@ -256,25 +322,28 @@ List<CrawlAction> _actionsFor(
       CrawlAction(
         id: 'spells-overflow',
         label: '+${state.knownSpells.length - readiedSpellCount}',
+        mark: const ShippedMark(ActionIcon.more),
         onPressed: () => _openSpellsOverflow(context, bloc, state),
       ),
     if (isBattleOpen)
       CrawlAction(
         id: 'wait',
         label: 'Wait',
-        icon: ActionIcon.wait,
+        mark: const ShippedMark(ActionIcon.wait),
         onPressed: () => bloc.add(const WaitPressed()),
       ),
     if (state.canPickUp)
       CrawlAction(
         id: 'pick-up',
         label: 'Pick up',
+        mark: const FontMark(Icons.back_hand),
         onPressed: () => bloc.add(const PickUpPressed()),
       ),
     if (state.canGather)
       CrawlAction(
         id: 'gather',
         label: node!.verb,
+        mark: FontMark(node == GatherKind.oreVein ? Icons.hardware : Icons.spa),
         onPressed: () => bloc.add(const GatherPressed()),
       ),
     if (!isBattleOpen && firstPotion != null)
@@ -282,7 +351,7 @@ List<CrawlAction> _actionsFor(
         id: 'drink',
         label: 'Drink',
         metadata: '×${state.potionCount}',
-        icon: ActionIcon.potion,
+        mark: const ShippedMark(ActionIcon.potion),
         onPressed: state.game.isGameOver
             ? null
             : () => bloc.add(const QuickDrinkPressed()),
@@ -291,7 +360,7 @@ List<CrawlAction> _actionsFor(
       id: 'pack',
       label: 'Pack',
       metadata: '×${state.game.inventory.length}',
-      icon: ActionIcon.pack,
+      mark: const ShippedMark(ActionIcon.pack),
       onPressed: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) =>
@@ -303,19 +372,21 @@ List<CrawlAction> _actionsFor(
       CrawlAction(
         id: 'wait',
         label: 'Wait',
-        icon: ActionIcon.wait,
+        mark: const ShippedMark(ActionIcon.wait),
         onPressed: () => bloc.add(const WaitPressed()),
       ),
     if (state.canFlee)
       CrawlAction(
         id: 'flee',
         label: 'Flee',
+        mark: const FontMark(Icons.directions_run),
         onPressed: () => bloc.add(const FleePressed()),
       ),
     if (state.isRoadClear)
       CrawlAction(
         id: 'move-on',
         label: 'Move on',
+        mark: const FontMark(Icons.hiking),
         onPressed: () =>
             leaveEncounter(context, state, EncounterEnding.cleared),
       ),
@@ -323,20 +394,21 @@ List<CrawlAction> _actionsFor(
       CrawlAction(
         id: 'ascend',
         label: 'Ascend <',
-        icon: ActionIcon.ascend,
+        mark: const ShippedMark(ActionIcon.ascend),
         onPressed: () => bloc.add(const AscendPressed()),
       ),
     if (state.canDescend)
       CrawlAction(
         id: 'descend',
         label: 'Descend >',
-        icon: ActionIcon.descend,
+        mark: const ShippedMark(ActionIcon.descend),
         onPressed: () => bloc.add(const DescendPressed()),
       ),
     if (state.canLeave)
       CrawlAction(
         id: 'leave-dungeon',
         label: ending ? doneControl : 'Leave',
+        mark: FontMark(ending ? Icons.flag : Icons.logout),
         onPressed: () => ending
             ? _confirmCompletion(context, state)
             : suspendDungeon(context, state),
@@ -559,7 +631,6 @@ class _OverflowRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final skin = crawlChipSkin(CrawlChipState.armed);
     return SpellRow(
       spell: spell,
       style: textLine,
@@ -570,7 +641,7 @@ class _OverflowRow extends StatelessWidget {
         onPressed: onCast,
         style: TextButton.styleFrom(
           side: armed
-              ? BorderSide(color: skin.border, width: skin.borderWidth)
+              ? const BorderSide(color: crawlCold, width: hairline * 1.5)
               : null,
         ),
         child: Text(

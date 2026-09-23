@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 import '../style/tokens.dart';
 import 'crawl_style.dart';
 
+/// The confirm dialog's own button spacing — pulled out of `crawl_style.dart`
+/// (the crawl chip vocabulary Unit 16.5 retires) since a dialog's stock
+/// button row and the action bar's slots never shared a value on purpose.
+const double _dialogButtonSpacing = 6;
+const double _dialogButtonRunSpacing = 4;
+
 /// One tappable crawl surface for every affordance that is not an action
 /// chip: a hairline-bordered [Material] with its own [InkWell], so the ink
 /// response lands on the pill rather than on whatever sits behind it.
@@ -153,8 +159,8 @@ Future<bool> showCrawlConfirm(
               const SizedBox(height: rhythm * 3),
               Wrap(
                 alignment: WrapAlignment.end,
-                spacing: crawlChipSpacing,
-                runSpacing: crawlChipRunSpacing,
+                spacing: _dialogButtonSpacing,
+                runSpacing: _dialogButtonRunSpacing,
                 children: [
                   CrawlPill(
                     label: dismiss,

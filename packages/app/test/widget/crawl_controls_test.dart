@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/crawl_action_row.dart';
@@ -163,38 +162,13 @@ Future<GameBloc> _openCrawl(WidgetTester tester, GameState game) async {
   return bloc;
 }
 
-/// Unit 12's no-squeeze proof, scoped to the chip row itself: every chip
-/// label `RenderParagraph` under [actionRowKey] fits without exceeding its
-/// line cap, and never runs narrower than the longest unbreakable word it
-/// carries. Scoped narrower than [actionRowKey] on purpose — the conditional
-/// sentence rows above the row (`doneAtTheBottom`, `Underfoot:`, `Here:`) are
-/// untouched by this unit and wrap onto a second line by design; that is not
-/// the defect this loop is proving against.
-///
-/// The `didExceedMaxLines` check below is a degenerate-path tripwire, not
-/// the clipping proof — `_fitFor`'s own candidate search already discards
-/// every column count that would exceed `crawlChipMaxLabelLines`, so it
-/// cannot fail on any candidate the search accepts. It only guards the one
-/// path that search does not cover: the no-legal-candidate fallback, which
-/// lays out at the full available width with no line-count check of its
-/// own. The real no-squeeze proof is the intrinsic-width check after it.
+/// The action bar's own no-squeeze proof: every slot label renders inside a
+/// single-line `FittedBox(scaleDown)` (PLAN.md G8), which scales a label
+/// down rather than wrapping or clipping it, so the only way a label could
+/// still break the bar is a render exception — an overflow, a NaN layout,
+/// anything `flutter_test` would otherwise swallow silently.
 void _expectNoSqueeze(WidgetTester tester) {
-  final paragraphs = tester.renderObjectList<RenderParagraph>(
-    find.descendant(
-      of: find.descendant(
-        of: find.byKey(actionRowKey),
-        matching: find.byType(Wrap),
-      ),
-      matching: find.byType(Text),
-    ),
-  );
-  for (final paragraph in paragraphs) {
-    expect(paragraph.didExceedMaxLines, isFalse);
-    expect(
-      paragraph.size.width + 0.5,
-      greaterThanOrEqualTo(paragraph.getMinIntrinsicWidth(double.infinity)),
-    );
-  }
+  expect(tester.takeException(), isNull);
 }
 
 Finder _chip(String id) => find.byKey(ValueKey(id));

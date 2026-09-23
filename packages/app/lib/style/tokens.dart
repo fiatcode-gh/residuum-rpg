@@ -226,6 +226,40 @@ const TextStyle textCaption = TextStyle(
   color: ink,
   fontFeatures: [FontFeature.tabularFigures()],
 );
+
+/// PLAN.md G2 slot roles (action bar, Task 06): Task 01 added every G2 role
+/// with no consumer yet except these three, whose only consumer is the
+/// action bar's own slot label. Same invariants as every role above.
+const TextStyle textSlot = TextStyle(
+  inherit: false,
+  fontFamily: textFace,
+  fontSize: 12.5,
+  fontWeight: FontWeight.w400,
+  height: 1.12,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlText,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle textSlotArmed = TextStyle(
+  inherit: false,
+  fontFamily: textFace,
+  fontSize: 12.5,
+  fontWeight: FontWeight.w600,
+  height: 1.12,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlText,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+const TextStyle textSlotDisabled = TextStyle(
+  inherit: false,
+  fontFamily: textFace,
+  fontSize: 12.5,
+  fontWeight: FontWeight.w400,
+  height: 1.12,
+  textBaseline: TextBaseline.alphabetic,
+  color: crawlTextDim,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
 const TextStyle textDetail = TextStyle(
   inherit: false,
   fontFamily: textFace,

@@ -149,7 +149,7 @@ void main() {
       );
       expect(explorationStatus.height, 49);
       expect(explorationMap.top, 49);
-      expect(explorationMap.bottom, closeTo(758.4, 0.1));
+      expect(explorationMap.bottom, closeTo(739.4, 0.1));
 
       await _openCrawl(tester, _battleGame());
       final battleStatus = tester.getRect(find.byType(CrawlStatus));
@@ -175,7 +175,7 @@ void main() {
       );
       expect(battleStatus.height, 49);
       expect(battleMap.top, 147);
-      expect(battleMap.bottom, closeTo(758.4, 0.1));
+      expect(battleMap.bottom, closeTo(739.4, 0.1));
       await _openCrawl(tester, _watchedGame());
       final watchedStatus = tester.getRect(find.byType(CrawlStatus));
       final watchedMap = tester.getRect(find.byKey(dungeonSceneSlotKey));
@@ -199,7 +199,7 @@ void main() {
       );
       expect(watchedStatus.height, 49);
       expect(watchedMap.top, 49);
-      expect(watchedMap.bottom, closeTo(758.4, 0.1));
+      expect(watchedMap.bottom, closeTo(739.4, 0.1));
     },
   );
 
@@ -266,30 +266,6 @@ void main() {
       expect(find.byKey(logDrawerKey), findsNothing);
       expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRect);
       expect(tester.getRect(find.byKey(logPeekKey)), peekRect);
-    },
-  );
-
-  testWidgets(
-    "the map's hairline border paints in front of the dungeon scene, not "
-    'behind it, where an opaque child would cover it',
-    (tester) async {
-      await _openCrawl(tester, _exploringGame());
-
-      // Flame's own `GameWidget` wraps its canvas in an opaque
-      // `DecoratedBox(decoration: BoxDecoration(color: backgroundColor()))`
-      // beneath the crawl's border — the predicate is what tells the two
-      // apart, since the crawl's is the one carrying a `Border`.
-      final border = tester.widget<DecoratedBox>(
-        find.descendant(
-          of: find.byKey(dungeonSceneSlotKey),
-          matching: find.byWidgetPredicate(
-            (widget) =>
-                widget is DecoratedBox &&
-                (widget.decoration as BoxDecoration).border != null,
-          ),
-        ),
-      );
-      expect(border.position, DecorationPosition.foreground);
     },
   );
 }

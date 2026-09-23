@@ -797,13 +797,26 @@ void main() {
 
       // assert
       expect(bloc.state.armedSpellId, 'firebolt');
-      _expectAction('spell:firebolt', label: '✳ Firebolt', metadata: '2 mana');
+      expect(
+        find.descendant(
+          of: _action('spell:firebolt'),
+          matching: find.text('✳ Firebolt'),
+        ),
+        findsOneWidget,
+      );
       expect(
         find.descendant(
           of: _action('spell:firebolt'),
           matching: find.text('— armed'),
         ),
         findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: _action('spell:firebolt'),
+          matching: find.text('2 mana'),
+        ),
+        findsNothing,
       );
     });
 
@@ -951,13 +964,26 @@ void main() {
 
       // assert - one armed slot at a time
       expect(bloc.state.armedSpellId, 'bind');
-      _expectAction('spell:bind', label: '⛒ Bind', metadata: '3 mana');
+      expect(
+        find.descendant(
+          of: _action('spell:bind'),
+          matching: find.text('⛒ Bind'),
+        ),
+        findsOneWidget,
+      );
       expect(
         find.descendant(
           of: _action('spell:bind'),
           matching: find.text('— armed'),
         ),
         findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: _action('spell:bind'),
+          matching: find.text('3 mana'),
+        ),
+        findsNothing,
       );
       expect(
         find.descendant(

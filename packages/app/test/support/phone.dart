@@ -11,3 +11,16 @@ Future<void> onAPhone(WidgetTester tester) async {
   tester.view.devicePixelRatio = 2.625;
   addTearDown(tester.view.reset);
 }
+
+/// Sizes the test surface exactly like the phone the U16.5 device pass
+/// captures on (vivo I2219: 393 x 875.6 dp, density 440), with the
+/// Checkpoint A logcat `WindowInsets` reading (top 38.2 dp, bottom 17.8 dp —
+/// PLAN.md assumed 37.8 / 24.0 before the reading came back).
+/// `FakeViewPadding` is in physical pixels, so each dp figure is multiplied
+/// by [devicePixelRatio].
+Future<void> onTheTargetPhone(WidgetTester tester) async {
+  tester.view.physicalSize = const Size(1080, 2408);
+  tester.view.devicePixelRatio = 2.75;
+  tester.view.padding = FakeViewPadding(top: 38.2 * 2.75, bottom: 17.8 * 2.75);
+  addTearDown(tester.view.reset);
+}
