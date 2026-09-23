@@ -32,7 +32,7 @@ const _stairsArena = '''
 #.....#
 #######''';
 
-// 40 interior columns (520dp of floor at mapCellWidth=13) still overflow the
+// 40 interior columns (640dp of floor at mapCellWidth=16) still overflow the
 // 360dp test viewport used below, which is what the camera-clamping tests
 // in this file need real overflow to clamp against.
 const _overflowingArena = '''
@@ -446,8 +446,8 @@ void main() {
       expect(unpannedGeometry.origin, isNot(pannedGeometry.origin));
 
       bool farFromBothCentres(Offset point) =>
-          (point - unpannedCentre).distance > 80 &&
-          (point - pannedCentre).distance > 80;
+          (point - unpannedCentre).distance > 100 &&
+          (point - pannedCentre).distance > 100;
       final farPoints = [
         for (var x = 20; x < 360; x += 40)
           for (var y = 20; y < 360; y += 40) Offset(x.toDouble(), y.toDouble()),
@@ -1021,15 +1021,15 @@ void main() {
       }
 
       // The overflow arena's 40 interior columns give the 360dp viewport
-      // (extent 42 * 13 = 546dp) 186dp of scrollable range: column 20 sits
+      // (extent 42 * 16 = 672dp) 312dp of scrollable range: column 20 sits
       // comfortably mid-scroll, unclamped; column 38 sits two columns from
       // the far wall, past the scrollable range, so the camera clamps at
-      // its far bound (360 - 546 = -186) instead of centring on it exactly.
+      // its far bound (360 - 672 = -312) instead of centring on it exactly.
       var state = _overflowingViewState(const Position(20, 1));
       await pumpScene(state);
       expect(
         (await tapProjectedTile(state, const Position(21, 1))).origin.dx,
-        closeTo(-86.5, 0.001),
+        closeTo(-148, 0.001),
       );
 
       final glyphsBeforeFocus = tester
@@ -1054,7 +1054,7 @@ void main() {
       );
       expect(
         (await tapProjectedTile(state, const Position(38, 1))).origin.dx,
-        closeTo(-186, 0.001),
+        closeTo(-312, 0.001),
       );
 
       final glyphsBeforePan = tester
@@ -1086,7 +1086,7 @@ void main() {
       await pumpScene(state);
       expect(
         (await tapProjectedTile(state, const Position(21, 1))).origin.dx,
-        closeTo(-86.5, 0.001),
+        closeTo(-148, 0.001),
       );
 
       expect(taps, const [
@@ -1238,8 +1238,11 @@ void main() {
         expect(bounds.left, greaterThanOrEqualTo(0));
         expect(bounds.right, lessThanOrEqualTo(mapCellWidth));
         if (child is TextComponent && child.anchor == Anchor.center) {
-          expect(bounds.top, greaterThanOrEqualTo(-1.2));
-          expect(bounds.bottom, lessThanOrEqualTo(mapCellHeight + 1.2));
+          expect(bounds.top, greaterThanOrEqualTo(-0.075 * mapCellHeight));
+          expect(
+            bounds.bottom,
+            lessThanOrEqualTo(mapCellHeight + 0.075 * mapCellHeight),
+          );
         } else {
           expect(bounds.top, greaterThanOrEqualTo(0));
           expect(bounds.bottom, lessThanOrEqualTo(mapCellHeight));

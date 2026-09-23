@@ -28,12 +28,14 @@ ink tint. The user delegated those four decisions to the architect on
 ## Settled decisions (delegated by the user, 2026-09-23)
 
 1. **Dense map; aim by intent, not by cell.** The map cell becomes a
-   monospace character cell at mock density: about **13 dp wide × 16 dp tall**
-   (the mock measures about 12.4 × 15.4 dp), so a 393 dp phone shows about 30
-   columns. This replaces the fixed 36 dp `cameraCellSize`. Touch precision
-   comes from resolving what the player meant, not from large cells: every map
-   interaction has an effective touch target of at least 44 dp (rules in
-   scope item 3). There is no zoom.
+   monospace character cell of **16 dp wide × 20 dp tall**, so a 393 dp phone
+   shows about 24 columns. (Amended by the user on 2026-09-23 after seeing
+   13×16 dp on the phone: too small to read and tap. The mock's cell is about
+   12×15 dp.) This replaces the fixed 36 dp `cameraCellSize`. Touch precision
+   comes from resolving what the player meant, not from large cells: every
+   map interaction has an effective touch target of at least **48 dp**,
+   meeting Android's minimum touch-target guidance (rules in scope item 3).
+   There is no zoom.
 2. **Monospace comes back, for the map and data only.** Bundle **IBM Plex
    Mono** (SIL OFL 1.1, licence file shipped next to the fonts) as a third
    type role in `lib/style/tokens.dart`. It is used for map glyphs, log
@@ -103,14 +105,14 @@ Every existing behaviour stays: tap to move or auto-walk, map-first melee,
 arm → target → tap, tap a far monster to inspect it, long-press to inspect,
 drag to pan, recenter. Only how a touch point becomes a logical cell changes:
 
-- With a spell armed, a tap resolves to the nearest legal target within 22 dp
+- With a spell armed, a tap resolves to the nearest legal target within 24 dp
   of the touch point.
-- A tap within 22 dp of a visible monster resolves to that monster (melee if
+- A tap within 24 dp of a visible monster resolves to that monster (melee if
   adjacent, inspect if far), as the current cell rules do.
-- Otherwise, a tap within 22 dp of the hero steps one cell in the tap's
-  8-way direction. A farther tap resolves to the cell under the finger for
-  auto-walk.
-- Long-press resolves to the nearest inspectable actor within 22 dp.
+- Otherwise, a tap within 24 dp of the hero steps one cell in the tap's
+  direction (4-way; see plan E1). A farther tap resolves to the cell under the
+  finger for auto-walk.
+- Long-press resolves to the nearest inspectable actor within 24 dp.
 - Ties break deterministically. A touch that resolves to nothing does
   nothing.
 
@@ -227,7 +229,7 @@ left out.
 
 ## Acceptance
 
-1. Map: the device shows about 30 columns of mono glyphs on a 393 dp phone,
+1. Map: the device shows about 24 columns of mono glyphs on a 393 dp phone,
    with warm terrain ink, a visible torchlight pool around `@`, falloff to dim
    at the edge of view, clearly dimmer remembered terrain, and a void for
    unknown cells.
@@ -237,7 +239,7 @@ left out.
    backdrop, is bounded, and is off under reduced motion. Projection and hit
    testing are unaffected (automated proof).
 4. Input: each rule in scope item 3 is proven by bloc- or widget-level tests,
-   including the 22 dp resolution radius, deterministic ties and
+   including the 24 dp resolution radius, deterministic ties and
    resolves-to-nothing. The existing interaction tests still pass, rewritten
    only where they pinned the 36 dp cell.
 5. Composition: exploration, battle/targeting and expanded-log device captures

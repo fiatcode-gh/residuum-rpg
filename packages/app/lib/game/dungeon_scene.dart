@@ -413,8 +413,8 @@ class _ReticleComponent extends PositionComponent {
 
   GlyphTargetMark _mark;
 
-  static const Rect _rect = Rect.fromLTWH(0.75, 0.75, 11.5, 14.5);
-  static const double _armLength = 3.5;
+  static const Rect _rect = Rect.fromLTWH(0.75, 0.75, 14.5, 18.5);
+  static const double _armLength = 4.3;
 
   static final Paint _ticksPaint = Paint()
     ..style = PaintingStyle.stroke

@@ -15,7 +15,7 @@ import 'package:residuum_core/core.dart';
 import '../support/phone.dart';
 
 // A room far taller and wider than any viewport this unit's chrome can leave
-// for the map: 34 floor columns (442dp of floor at mapCellWidth=13, wider
+// for the map: 34 floor columns (544dp of floor at mapCellWidth=16, wider
 // than the 411dp-logical-wide test phone) and 60 floor rows (960dp, taller
 // than the 923dp-logical-tall test phone). The point is not the room's
 // shape — it is that most of it always sits outside the camera's window, at

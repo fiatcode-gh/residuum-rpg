@@ -5,7 +5,7 @@ import 'package:residuum_core/core.dart';
 
 void main() {
   group('GridGeometry.camera', () {
-    test('camera cells are 13 by 16 dp on every viewport', () {
+    test('camera cells are 16 by 20 dp on every viewport', () {
       // arrange
       const size = Size(200, 400);
 
@@ -18,8 +18,8 @@ void main() {
       );
 
       // assert
-      expect(mapCellWidth, 13);
-      expect(mapCellHeight, 16);
+      expect(mapCellWidth, 16);
+      expect(mapCellHeight, 20);
       expect(geometry.cellWidth, mapCellWidth);
       expect(geometry.cellHeight, mapCellHeight);
     });
@@ -32,7 +32,7 @@ void main() {
       final geometry = GridGeometry.camera(size, 10, 10, const Position(0, 0));
 
       // assert
-      expect(geometry.origin, const Offset(35, 120));
+      expect(geometry.origin, const Offset(20, 100));
     });
 
     test('ignores pan on an axis whose whole extent fits', () {
@@ -49,7 +49,7 @@ void main() {
       );
 
       // assert
-      expect(panned.origin, const Offset(35, 120));
+      expect(panned.origin, const Offset(20, 100));
     });
 
     test('treats an extent exactly filling the viewport as fitting', () {
@@ -82,7 +82,7 @@ void main() {
       );
 
       // assert
-      expect(geometry.topLeftOf(20, 20), const Offset(173.5, 172));
+      expect(geometry.topLeftOf(20, 20), const Offset(172, 170));
     });
 
     test('clamps at the near edges rather than showing void', () {
@@ -155,8 +155,8 @@ void main() {
     });
 
     test('each axis fits or overflows independently', () {
-      // arrange - width (5 cells * 13 = 65) fits the 400 dp viewport and
-      // centres; height (40 cells * 16 = 640) overflows the 200 dp viewport
+      // arrange - width (5 cells * 16 = 80) fits the 400 dp viewport and
+      // centres; height (40 cells * 20 = 800) overflows the 200 dp viewport
       // and follows the focus instead
       const size = Size(400, 200);
 
@@ -233,7 +233,7 @@ void main() {
       final corner = geometry.topLeftOf(3, 2);
 
       // assert
-      expect(corner, const Offset(39, 32));
+      expect(corner, const Offset(48, 40));
     });
   });
 
@@ -336,8 +336,8 @@ void main() {
       );
 
       // act
-      final beyondX = geometry.positionAt(const Offset(170, 200));
-      final beyondY = geometry.positionAt(const Offset(100, 245));
+      final beyondX = geometry.positionAt(const Offset(190, 200));
+      final beyondY = geometry.positionAt(const Offset(100, 260));
 
       // assert
       expect(beyondX, isNull);

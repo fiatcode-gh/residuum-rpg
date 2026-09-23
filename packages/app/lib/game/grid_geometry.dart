@@ -7,13 +7,13 @@ import 'package:residuum_core/core.dart';
 /// the cells shrink with depth. A fixed cell means the deepest floor is
 /// exactly as legible as the first one; what a bigger floor costs is
 /// visibility, and visibility is what panning buys back.
-const double mapCellWidth = 13;
-const double mapCellHeight = 16;
+const double mapCellWidth = 16;
+const double mapCellHeight = 20;
 
 /// Projects the crawl's tile grid onto the screen, and screen points back
 /// onto it.
 ///
-/// The map cell is dense — about 13 by 16 dp, mock density rather than a
+/// The map cell is dense — about 16 by 20 dp, mock density rather than a
 /// touch target — so accurate aiming comes from resolving what the player
 /// meant (`map_touch.dart`), not from the cell being large enough to tap
 /// directly. `GridGeometry` stays the single projection and hit-test

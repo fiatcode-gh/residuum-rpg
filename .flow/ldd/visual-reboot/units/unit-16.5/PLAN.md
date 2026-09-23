@@ -1,6 +1,8 @@
 # U16.5 — ASCII Crawl Full Parity: execution plan
 
-Status: **execution-grade, pending user plan approval.** Governing WHAT/WHY:
+Status: **execution-grade; approved by the user 2026-09-23; amended by A1
+(below), which overrides every conflicting number in this plan and its task
+briefs.** Governing WHAT/WHY:
 [CONTRACT.md](CONTRACT.md), approved 2026-09-23. Plan derived from
 `2c073b7c8ff6ce2d6ea6bfbbe2a91a5eac131c5d` on `residuum-visual-reboot-16`.
 Dirty state at planning: `.flow/ldd/visual-reboot/LEDGER.md` and `RESUME.md`
@@ -14,6 +16,30 @@ Visual authority (appearance only, never facts):
 U16 plan decisions are superseded where they conflict (36 dp cell, ink-only
 light, gradient-only backdrop, no parallax, unchanged chrome/action row, 104 dp
 peek, 600 dp ceiling, `_fitFor`).
+
+## Amendment A1 — 16 × 20 cell and 48 dp touch targets (user, 2026-09-23)
+
+After seeing 13 × 16 on the phone, the user judged it too small to read and
+tap, citing Android's 48 dp minimum touch-target guidance. **A1 overrides every
+conflicting number below and in `plan-tasks/`.**
+
+- G1: `mapCellWidth = 16`, `mapCellHeight = 20`. Glyph centre `(8, 10)`, badge
+  anchor `(15.5, 0.5)`.
+- G2: `mapGlyphStyle` fontSize **21** (same 17:16 line-box-to-cell ratio
+  as before), `mapBadgeStyle` fontSize **10**. The Task 02 ruling holds: the
+  line box may exceed the cell by at most 1.2 dp per side.
+- G5: torch pool radius stays `6 · mapCellWidth` (now 96 dp). Bloom stays
+  `1.6 · mapCellWidth` (now 25.6 dp). The fog lattice is unchanged (screen
+  space).
+- G6: reticle rect `Rect.fromLTWH(0.75, 0.75, 14.5, 18.5)`, tick and bracket
+  arms 4.3 dp, strokes unchanged.
+- G7: `mapTouchRadius = 24` (a 48 dp target). Every `22` becomes `24`. The
+  step rule divides by `mapCellWidth` / `mapCellHeight` (the constants, not
+  literals). Radius edge tests use 23.9 / 24.1 dp.
+- Acceptance and §6 checklist: about 24 columns on the 393 dp phone. The
+  accepted mock delta is "16 × 20 cell (mock ≈ 10–12 × 12–15)".
+- Map floors (45% / 35%) and chrome G8 are unchanged. More map rows are simply
+  hidden behind the pan.
 
 ## 1. How the mocks were measured
 
@@ -230,7 +256,7 @@ Reticle rect `Rect.fromLTWH(0.75, 0.75, 11.5, 14.5)`, colour `crawlEnemyHigh`.
 ### G7 Touch resolution (`map_touch.dart`)
 
 ```dart
-const double mapTouchRadius = 22;
+const double mapTouchRadius = 24;
 sealed class MapTouch { const MapTouch(); }
 final class MapTouchCell extends MapTouch { const MapTouchCell(this.position); final Position position; }
 final class MapTouchInspect extends MapTouch { const MapTouchInspect(this.actor); final Actor actor; }

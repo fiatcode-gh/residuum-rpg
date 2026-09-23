@@ -1158,7 +1158,7 @@ void main() {
     testWidgets('the recenter affordance resets the pan', (tester) async {
       // arrange - a floor wider than the default test surface, panned so the
       // hero has been dragged off the right edge of the glass
-      // 70 columns (910dp of floor at mapCellWidth=13) still overflow the
+      // 70 columns (1120dp of floor at mapCellWidth=16) still overflow the
       // 800dp default test surface's full-width map slot.
       const wideArena = '''
 ######################################################################
