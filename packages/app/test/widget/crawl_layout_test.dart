@@ -12,6 +12,7 @@ import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
 import 'package:residuum_app/game/hero_panel.dart';
 import 'package:residuum_app/game/log_drawer.dart';
+import 'package:residuum_app/game/map_callout.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -338,20 +339,22 @@ void main() {
     expect(note, findsOneWidget);
   });
 
-  testWidgets('inspecting a far monster opens a sheet without moving the map', (
-    tester,
-  ) async {
-    await _openCrawl(tester, _exploringGame());
-    final mapRectNoInspect = tester.getRect(find.byKey(dungeonSceneSlotKey));
+  testWidgets(
+    'inspecting a far monster opens the map callout without moving the map',
+    (tester) async {
+      await _openCrawl(tester, _exploringGame());
+      final mapRectNoInspect = tester.getRect(find.byKey(dungeonSceneSlotKey));
 
-    await _openCrawl(tester, _watchedGame());
-    final mapRectBefore = tester.getRect(find.byKey(dungeonSceneSlotKey));
-    expect(mapRectBefore, mapRectNoInspect);
+      await _openCrawl(tester, _watchedGame());
+      final mapRectBefore = tester.getRect(find.byKey(dungeonSceneSlotKey));
+      expect(mapRectBefore, mapRectNoInspect);
 
-    await _tapTile(tester, const Position(4, 2));
-    await tester.pumpAndSettle();
+      await _tapTile(tester, const Position(4, 2));
+      await tester.pumpAndSettle();
 
-    expect(find.byType(BottomSheet), findsOneWidget);
-    expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRectBefore);
-  });
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.byKey(mapCalloutKey), findsOneWidget);
+      expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRectBefore);
+    },
+  );
 }

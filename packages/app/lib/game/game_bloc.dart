@@ -157,6 +157,30 @@ final class TimelineActorSelected extends GameBlocEvent {
   final String actorId;
 }
 
+/// The player tapped or long-pressed a far known monster on the map: name
+/// it the callout's own target, at no turn cost.
+///
+/// A map-scoped cousin of [TimelineActorSelected] rather than a reuse of
+/// it: the timeline still opens the sheet, and this opens `MapCallout`
+/// instead (PLAN.md Task 12 decision 2) — two different surfaces naming
+/// two different fields, so neither can silently open the other's.
+final class ActorInspected extends GameBlocEvent {
+  const ActorInspected(this.actorId);
+
+  final String actorId;
+}
+
+/// The player's next map interaction or action after opening a callout:
+/// dismisses it, at no turn cost.
+///
+/// `GameScreen` dispatches this only when a callout is actually open
+/// (PLAN.md Task 12 decision 2); every other handler already drops
+/// [GameViewState.inspectedActorId] by construction, so this is the one
+/// handler a still-open callout needs.
+final class InspectDismissed extends GameBlocEvent {
+  const InspectDismissed();
+}
+
 /// The player pulled the log drawer's handle, cycling its extent.
 final class LogDrawerHandlePulled extends GameBlocEvent {
   const LogDrawerHandlePulled();
@@ -188,6 +212,7 @@ class GameViewState {
     this.armedSpellId,
     ActorIdentityContext? actorIdentity,
     this.selectedActorId,
+    this.inspectedActorId,
     LogDrawerExtent logDrawerExtent = LogDrawerExtent.peek,
     bool logFollowing = true,
     int logUnread = 0,
@@ -228,6 +253,13 @@ class GameViewState {
   final List<LogLine> log;
   final ActorIdentityContext actorIdentity;
   final String? selectedActorId;
+
+  /// The monster a map tap or long-press named for the callout (PLAN.md
+  /// Task 12 decision 1), or null when no callout is open. The same
+  /// constructor-drop convention as [pan] and [armedSpellId]: no handler
+  /// but `_onActorInspected` names this, so a step, pan, recenter, log
+  /// action or arm dismisses the callout by construction.
+  final String? inspectedActorId;
 
   /// The tiles still to walk. Empty when the hero is not walking.
   final List<Position> autoPath;
@@ -310,6 +342,23 @@ class GameViewState {
     return null;
   }
 
+  /// The monster [inspectedActorId] names, so long as it is still alive,
+  /// visible and known — the same test [selectedActor] applies, since a
+  /// callout can show nothing the map itself would refuse to show.
+  Actor? get inspectedActor {
+    final inspectedId = inspectedActorId;
+    if (inspectedId == null) return null;
+    for (final monster in game.monsters) {
+      if (monster.id == inspectedId &&
+          monster.isAlive &&
+          game.visible.contains(monster.position) &&
+          presentationOf(monster.id) != null) {
+        return monster;
+      }
+    }
+    return null;
+  }
+
   Position get cameraFocus => selectedActor?.position ?? game.hero.position;
 
   /// The actor the combat panel names: an inspected or timeline-selected
@@ -321,7 +370,9 @@ class GameViewState {
   /// Outside battle with nothing selected there is nothing to guess at, so
   /// this is null rather than falling back to whatever the hero last saw.
   Actor? get targetActor =>
-      selectedActor ?? (isBattleOpen ? _nearestKnownVisible : null);
+      inspectedActor ??
+      selectedActor ??
+      (isBattleOpen ? _nearestKnownVisible : null);
 
   /// The known, visible monster nearest the hero by Chebyshev distance —
   /// [inspectTargetAt]'s own visibility and identity rule, so the panel
@@ -638,6 +689,8 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     on<AscendPressed>(_onAscendPressed);
     on<AutoWalkAdvanced>(_onAutoWalkAdvanced);
     on<TimelineActorSelected>(_onTimelineActorSelected);
+    on<ActorInspected>(_onActorInspected);
+    on<InspectDismissed>(_onInspectDismissed);
     on<PickUpPressed>(_onPickUpPressed);
     on<GatherPressed>(_onGatherPressed);
     on<EquipPressed>(_onEquipPressed);
@@ -790,6 +843,65 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         hasFled: state.hasFled,
         actorIdentity: state.actorIdentity,
         selectedActorId: actor.id,
+        logDrawerExtent: state.logDrawerExtent,
+        logFollowing: state.logFollowing,
+        logUnread: state.logUnread,
+      ),
+    );
+  }
+
+  /// Names the map's callout target, at no turn cost — the same
+  /// alive/visible/known guard [_onTimelineActorSelected] applies, and the
+  /// same field list it carries, so [selectedActorId] stays exactly what
+  /// it was (PLAN.md Task 12 decision 1).
+  void _onActorInspected(ActorInspected event, Emitter<GameViewState> emit) {
+    final actor = state.game.monsters
+        .where((monster) => monster.id == event.actorId)
+        .firstOrNull;
+    if (actor == null ||
+        !actor.isAlive ||
+        !state.game.visible.contains(actor.position) ||
+        state.presentationOf(actor.id) == null) {
+      return;
+    }
+    emit(
+      GameViewState(
+        game: state.game,
+        log: state.log,
+        autoPath: state.autoPath,
+        walkId: state.walkId,
+        armedSpellId: state.armedSpellId,
+        hasFled: state.hasFled,
+        actorIdentity: state.actorIdentity,
+        selectedActorId: state.selectedActorId,
+        inspectedActorId: actor.id,
+        logDrawerExtent: state.logDrawerExtent,
+        logFollowing: state.logFollowing,
+        logUnread: state.logUnread,
+      ),
+    );
+  }
+
+  /// Closes an open callout, at no turn cost. A no-op when none is open,
+  /// for the same reason [_onLogDrawerClosed] is: `GameScreen` dispatches
+  /// this on every map interaction that resolves to nothing, and a bloc
+  /// that re-emitted an identical state each time would rebuild the whole
+  /// screen for nothing.
+  void _onInspectDismissed(
+    InspectDismissed event,
+    Emitter<GameViewState> emit,
+  ) {
+    if (state.inspectedActorId == null) return;
+    emit(
+      GameViewState(
+        game: state.game,
+        log: state.log,
+        autoPath: state.autoPath,
+        walkId: state.walkId,
+        armedSpellId: state.armedSpellId,
+        hasFled: state.hasFled,
+        actorIdentity: state.actorIdentity,
+        selectedActorId: state.selectedActorId,
         logDrawerExtent: state.logDrawerExtent,
         logFollowing: state.logFollowing,
         logUnread: state.logUnread,

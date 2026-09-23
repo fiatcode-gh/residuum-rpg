@@ -9,6 +9,7 @@ import 'package:residuum_app/game/log_drawer.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
+import 'package:residuum_app/game/map_callout.dart';
 import 'package:residuum_app/style/tokens.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
@@ -1151,7 +1152,7 @@ void main() {
   });
 
   group('map inspect and recenter', () {
-    testWidgets('a tap on a distant monster opens the enemy info', (
+    testWidgets('a tap on a distant monster opens the map callout', (
       tester,
     ) async {
       // arrange - the spitter three tiles out, nothing armed
@@ -1163,12 +1164,27 @@ void main() {
       await _tapTile(tester, const Position(4, 1));
       await tester.pumpAndSettle();
 
-      expect(find.text('strikes at range 3'), findsOneWidget);
+      expect(bloc.state.inspectedActorId, 'spitter-1');
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.byKey(mapCalloutKey), findsOneWidget);
+      final callout = find.byKey(mapCalloutKey);
+      expect(
+        find.descendant(of: callout, matching: find.text('HP 4/4')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: callout, matching: find.text('ATK 2–3  SPD 5')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: callout, matching: find.text('Reach 3')),
+        findsOneWidget,
+      );
       expect(bloc.state.log.length, logBefore);
       expect(bloc.state.game.hero.position, const Position(1, 1));
     });
 
-    testWidgets('a long-press on a monster opens the enemy info', (
+    testWidgets('a long-press on a monster opens the map callout', (
       tester,
     ) async {
       // arrange - the spitter three tiles out
@@ -1184,7 +1200,9 @@ void main() {
       await tester.longPressAt(tester.getTopLeft(scene) + local);
       await tester.pumpAndSettle();
 
-      expect(find.text('strikes at range 3'), findsOneWidget);
+      expect(bloc.state.inspectedActorId, 'spitter-1');
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.byKey(mapCalloutKey), findsOneWidget);
       expect(bloc.state.log.length, logBefore);
     });
 

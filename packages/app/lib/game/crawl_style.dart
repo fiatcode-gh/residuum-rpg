@@ -63,3 +63,27 @@ double crawlScale(BuildContext context) =>
 /// available, disabled and armed: the action bar's whole slot-state
 /// vocabulary (PLAN.md G8).
 enum CrawlSlotState { available, disabled, armed }
+
+/// PLAN.md Task 12 map callout internals (decision 3): the card's fixed
+/// geometry in dp, independent of `crawlScale` — the callout sits over the
+/// dense map rather than the fixed chrome column, so text scale never
+/// grows it. Height is `crawlCalloutPadding * 2 + crawlCalloutNameRow +
+/// crawlCalloutGap + crawlCalloutHpRow + crawlCalloutGap +
+/// crawlCalloutLineHeight * k`, `k = 2 + resists.length +
+/// vulnerableTo.length`.
+const double crawlCalloutWidth = 172;
+const double crawlCalloutPadding = 10;
+const double crawlCalloutNameRow = 17;
+const double crawlCalloutGap = 4;
+const double crawlCalloutHpRow = 13;
+const double crawlCalloutLineHeight = 14;
+
+/// The gap between a cell's edge and the card placed beside it, and the
+/// margin every card edge stays clear of the map slot's own edges.
+const double crawlCalloutMargin = 14;
+const double crawlCalloutLeaderGap = 6;
+const double crawlCalloutEdgeClamp = 8;
+
+/// The leader line's stroke width and its dot's radius at the cell end.
+const double crawlCalloutLeaderWidth = 1;
+const double crawlCalloutDotRadius = 2.5;

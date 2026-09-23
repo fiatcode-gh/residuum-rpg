@@ -22,6 +22,7 @@ import 'hero_panel.dart';
 import 'log_drawer.dart';
 import 'log_line.dart';
 import 'grid_geometry.dart';
+import 'map_callout.dart';
 import 'map_touch.dart';
 import 'pack_screen.dart';
 import 'spell_row.dart';
@@ -115,7 +116,6 @@ class GameScreen extends StatelessWidget {
                                                     palette: palette,
                                                     onTap: (local, geometry) =>
                                                         _onMapTap(
-                                                          context,
                                                           bloc,
                                                           state,
                                                           geometry,
@@ -127,11 +127,15 @@ class GameScreen extends StatelessWidget {
                                                     onLongPress:
                                                         (local, geometry) =>
                                                             _onMapLongPress(
-                                                              context,
+                                                              bloc,
                                                               state,
                                                               geometry,
                                                               local,
                                                             ),
+                                                  ),
+                                                  MapCallout(
+                                                    state: state,
+                                                    size: size,
                                                   ),
                                                   _NotesOverlay(
                                                     notes: _notesFor(state),
@@ -226,10 +230,10 @@ class GameScreen extends StatelessWidget {
 }
 
 /// Routes a map tap by intent (`map_touch.dart::resolveMapTap`): a cell means
-/// the bloc decides — move, bump or cast — and an inspect means the enemy's
-/// numbers, presentation-only and at no turn cost.
+/// the bloc decides — move, bump or cast — and an inspect names the map
+/// callout's target, at no turn cost. A tap that resolves to nothing
+/// dismisses an open callout, exactly as PLAN.md Task 12 decision 2 says.
 void _onMapTap(
-  BuildContext context,
   GameBloc bloc,
   GameViewState state,
   GridGeometry geometry,
@@ -239,22 +243,24 @@ void _onMapTap(
     case MapTouchCell(:final position):
       bloc.add(TileTapped(position));
     case MapTouchInspect(:final actor):
-      showEnemyInfo(context, actor, state.presentationOf(actor.id)!);
+      bloc.add(ActorInspected(actor.id));
     case MapTouchNothing():
-      break;
+      if (state.inspectedActorId != null) {
+        bloc.add(const InspectDismissed());
+      }
   }
 }
 
-/// Opens the enemy's numbers under the long-press, at no turn cost.
+/// Names the map callout's target under the long-press, at no turn cost.
 void _onMapLongPress(
-  BuildContext context,
+  GameBloc bloc,
   GameViewState state,
   GridGeometry geometry,
   Offset local,
 ) {
   switch (resolveMapLongPress(state, geometry, local)) {
     case MapTouchInspect(:final actor):
-      showEnemyInfo(context, actor, state.presentationOf(actor.id)!);
+      bloc.add(ActorInspected(actor.id));
     case MapTouchCell():
     case MapTouchNothing():
       break;

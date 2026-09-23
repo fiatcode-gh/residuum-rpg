@@ -1212,6 +1212,210 @@ void main() {
       },
     );
   });
+
+  group('inspecting a monster from the map', () {
+    test('ActorInspected names the actor the target and leaves the camera '
+        'alone', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+      final before = bloc.state;
+
+      final next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      final inspected = await next;
+
+      expect(inspected.game, same(before.game));
+      expect(inspected.log, same(before.log));
+      expect(inspected.selectedActorId, before.selectedActorId);
+      expect(inspected.inspectedActorId, 'ghoul-1');
+      expect(inspected.inspectedActor, same(before.game.monsters.single));
+      expect(inspected.targetActor, same(inspected.inspectedActor));
+      expect(inspected.cameraFocus, before.cameraFocus);
+    });
+
+    blocTest<GameBloc, GameViewState>(
+      'an unknown actor id is ignored',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      ),
+      act: (bloc) => bloc.add(const ActorInspected('nobody')),
+      expect: () => <GameViewState>[],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a dead actor id is ignored',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2), hp: 0)],
+        ),
+      ),
+      act: (bloc) => bloc.add(const ActorInspected('ghoul-1')),
+      expect: () => <GameViewState>[],
+    );
+
+    test('a known actor no longer in sight is ignored', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(2, 2), speed: 1)],
+          ascii: wideArena,
+        ),
+      );
+      addTearDown(bloc.close);
+
+      for (var x = 2; x <= 11; x++) {
+        final next = bloc.stream.first;
+        bloc.add(TileTapped(Position(x, 1)));
+        await next;
+      }
+      expect(bloc.state.game.visible.contains(const Position(2, 2)), isFalse);
+
+      var emitted = false;
+      final subscription = bloc.stream.listen((_) => emitted = true);
+      bloc.add(const ActorInspected('ghoul-1'));
+      await Future<void>.delayed(Duration.zero);
+      await subscription.cancel();
+      expect(emitted, isFalse);
+    });
+
+    test(
+      'InspectDismissed clears it, and is a no-op once already clear',
+      () async {
+        final bloc = walker(
+          arenaGame(
+            heroAt: const Position(1, 1),
+            monsters: [ghoul(const Position(4, 2))],
+          ),
+        );
+        addTearDown(bloc.close);
+
+        var next = bloc.stream.first;
+        bloc.add(const ActorInspected('ghoul-1'));
+        await next;
+
+        next = bloc.stream.first;
+        bloc.add(const InspectDismissed());
+        final dismissed = await next;
+        expect(dismissed.inspectedActorId, isNull);
+
+        var emitted = false;
+        final subscription = bloc.stream.listen((_) => emitted = true);
+        bloc.add(const InspectDismissed());
+        await Future<void>.delayed(Duration.zero);
+        await subscription.cancel();
+        expect(emitted, isFalse);
+      },
+    );
+
+    test('a pan clears the inspected actor', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const MapPanned(Offset(4, 0)));
+      final panned = await next;
+
+      expect(panned.inspectedActorId, isNull);
+    });
+
+    test('holding ground clears the inspected actor', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const WaitPressed());
+      final waited = await next;
+
+      expect(waited.inspectedActorId, isNull);
+    });
+
+    test('a map tap that steps the hero clears the inspected actor', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const TileTapped(Position(2, 1)));
+      final stepped = await next;
+
+      expect(stepped.inspectedActorId, isNull);
+    });
+
+    test('arming a skill clears the inspected actor', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const SkillArmed('firebolt'));
+      final armed = await next;
+
+      expect(armed.inspectedActorId, isNull);
+    });
+
+    test('pulling the log handle clears the inspected actor', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const LogDrawerHandlePulled());
+      final pulled = await next;
+
+      expect(pulled.inspectedActorId, isNull);
+    });
+  });
 }
 
 const _sword = BaseItem(

@@ -6,6 +6,7 @@ import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
+import 'package:residuum_app/game/map_callout.dart';
 import 'package:residuum_core/core.dart';
 
 /// Widget proof for `map_touch.dart::resolveMapTap`, wired through the real
@@ -93,32 +94,36 @@ void main() {
     },
   );
 
-  testWidgets('a tap 18 dp off a far monster centre opens the enemy sheet', (
-    tester,
-  ) async {
-    final monster = Actor(
-      id: 'ghoul-1',
-      name: 'the ghoul',
-      glyph: 'g',
-      position: _farMonster,
-      hp: 10,
-      maxHp: 10,
-      attackMin: 3,
-      attackMax: 3,
-      speed: 10,
-      energy: actThreshold,
-    );
-    final bloc = await _openCrawl(tester, _openRoom(monsters: [monster]));
-    final geometry = _sceneGeometry(tester);
-    final local = geometry.centreOf(_farMonster) + const Offset(18, 0);
-    expect(_farMonster.isOrthogonallyAdjacentTo(_hero), isFalse);
+  testWidgets(
+    'a tap 18 dp off a far monster centre opens the map callout, not the '
+    'sheet',
+    (tester) async {
+      final monster = Actor(
+        id: 'ghoul-1',
+        name: 'the ghoul',
+        glyph: 'g',
+        position: _farMonster,
+        hp: 10,
+        maxHp: 10,
+        attackMin: 3,
+        attackMax: 3,
+        speed: 10,
+        energy: actThreshold,
+      );
+      final bloc = await _openCrawl(tester, _openRoom(monsters: [monster]));
+      final geometry = _sceneGeometry(tester);
+      final local = geometry.centreOf(_farMonster) + const Offset(18, 0);
+      expect(_farMonster.isOrthogonallyAdjacentTo(_hero), isFalse);
 
-    await _tapLocal(tester, local);
-    await tester.pumpAndSettle();
+      await _tapLocal(tester, local);
+      await tester.pumpAndSettle();
 
-    expect(find.text('strikes adjacent'), findsOneWidget);
-    expect(bloc.state.game.hero.position, _hero);
-  });
+      expect(bloc.state.inspectedActorId, 'ghoul-1');
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.byKey(mapCalloutKey), findsOneWidget);
+      expect(bloc.state.game.hero.position, _hero);
+    },
+  );
 
   testWidgets(
     'a tap in blank space off the grid changes nothing and opens no sheet',
