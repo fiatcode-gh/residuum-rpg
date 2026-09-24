@@ -5,9 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/battle_view.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/game/log_drawer.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
+import 'package:residuum_app/game/map_callout.dart';
+import 'package:residuum_app/style/tokens.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
@@ -171,9 +174,7 @@ Future<void> _tapTile(WidgetTester tester, Position tile) async {
   final scene = find.byKey(dungeonSceneKey);
   final size = tester.getSize(scene);
   final geometry = GridGeometry.camera(size, 7, 5, const Position(1, 1));
-  final local =
-      geometry.topLeftOf(tile.x, tile.y) +
-      Offset(geometry.cellSize / 2, geometry.cellSize / 2);
+  final local = geometry.centreOf(tile);
   await tester.tapAt(tester.getTopLeft(scene) + local);
 }
 
@@ -332,7 +333,7 @@ void main() {
       expect(find.byType(BattleDock), findsNothing);
       expect(find.text('Wait'), findsNothing);
       expect(find.byType(DungeonSceneHost), findsOneWidget);
-      expect(find.byType(ListView), findsOneWidget);
+      expect(find.byKey(logPeekKey), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -443,7 +444,88 @@ void main() {
         'You, next activation',
       );
       expect(find.textContaining('IN '), findsNothing);
+      final digit = RegExp('[0-9]');
+      for (final text in tester.widgetList<Text>(
+        find.descendant(
+          of: find.byKey(const Key('dock-backing')),
+          matching: find.byType(Text),
+        ),
+      )) {
+        expect(digit.hasMatch(text.data ?? ''), isFalse, reason: text.data);
+      }
     });
+    testWidgets(
+      'the current pill is 24 dp on a 44 dp hit row, gold-bordered and '
+      'filled, unlike a future pill',
+      (tester) async {
+        await _pushGame(
+          tester,
+          battleGame(monsters: [ghoulAt(const Position(1, 2))]),
+        );
+
+        Container pillOf(Key key) => tester.widget<Container>(
+          find
+              .descendant(of: find.byKey(key), matching: find.byType(Container))
+              .first,
+        );
+
+        final currentPill = pillOf(const Key('timeline-current-hero'));
+        final nextPill = pillOf(const Key('timeline-actor-ghoul-1-1'));
+        final currentDecoration = currentPill.decoration as BoxDecoration;
+        final nextDecoration = nextPill.decoration as BoxDecoration;
+
+        expect(
+          tester.getSize(find.byKey(const Key('timeline-current-hero'))).height,
+          24,
+        );
+        expect(
+          tester
+              .getSize(find.byKey(const Key('timeline-actor-ghoul-1-1')))
+              .height,
+          44,
+        );
+        final currentHitRow = find
+            .ancestor(
+              of: find.byKey(const Key('timeline-current-hero')),
+              matching: find.byType(SizedBox),
+            )
+            .first;
+        expect(tester.getSize(currentHitRow).height, 44);
+
+        expect(currentDecoration.border!.top.width, 1.5);
+        expect(currentDecoration.border!.top.color, crawlGold);
+        expect(currentDecoration.color, isNotNull);
+        expect(nextDecoration.border!.top.width, 1);
+        expect(nextDecoration.border!.top.color, crawlChipBorder);
+        expect(nextDecoration.color, isNull);
+      },
+    );
+    testWidgets(
+      'the pill sits centred in its 44 dp hit row, not pinned to the top',
+      (tester) async {
+        await _pushGame(
+          tester,
+          battleGame(monsters: [ghoulAt(const Position(1, 2))]),
+        );
+
+        final hitRowTop = tester
+            .getTopLeft(
+              find
+                  .ancestor(
+                    of: find.byKey(const Key('timeline-current-hero')),
+                    matching: find.byType(SizedBox),
+                  )
+                  .first,
+            )
+            .dy;
+        final pillTop = tester
+            .getTopLeft(find.byKey(const Key('timeline-current-hero')))
+            .dy;
+
+        expect(pillTop - hitRowTop, closeTo((44 - 24) / 2, 0.5));
+      },
+    );
+
     testWidgets(
       'the NEXT caption sits over the token it labels, not a guessed gap',
       (tester) async {
@@ -607,13 +689,22 @@ void main() {
       );
 
       // act
-      final bloc = await _pushGame(tester, game);
+      final bloc = await _pushGame(
+        tester,
+        game,
+        textScaler: TextScaler.linear(2),
+      );
       final dock = find.byKey(const Key('dock-backing'));
       final scrollable = find.descendant(
         of: dock,
         matching: find.byType(Scrollable),
       );
       final laterToken = find.byKey(const Key('timeline-actor-ghoul-6-12'));
+      final laterName = find.descendant(
+        of: laterToken,
+        matching: find.text('the ghoul⁶'),
+      );
+      expect(laterName, findsOneWidget);
       final currentHero = find.byKey(const Key('timeline-current-hero'));
       final currentHeroRectBefore = tester.getRect(currentHero);
 
@@ -624,7 +715,7 @@ void main() {
         tester.getRect(laterToken).left,
         greaterThan(tester.getRect(dock).right),
       );
-      await tester.drag(scrollable, const Offset(-1000, 0));
+      await tester.drag(scrollable, Offset(-position.maxScrollExtent - 100, 0));
       await tester.pumpAndSettle();
       expect(position.pixels, greaterThan(0));
       expect(tester.getRect(currentHero), currentHeroRectBefore);
@@ -645,7 +736,7 @@ void main() {
       expect(find.byType(DungeonSceneHost), findsOneWidget);
       expect(find.text('Wait'), findsOneWidget);
       expect(find.textContaining('Engaged'), findsOneWidget);
-      expect(find.byType(ListView), findsOneWidget);
+      expect(find.byKey(logPeekKey), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
@@ -733,13 +824,26 @@ void main() {
 
       // assert
       expect(bloc.state.armedSpellId, 'firebolt');
-      _expectAction('spell:firebolt', label: '✳ Firebolt', metadata: '2 mana');
+      expect(
+        find.descendant(
+          of: _action('spell:firebolt'),
+          matching: find.text('✳ Firebolt'),
+        ),
+        findsOneWidget,
+      );
       expect(
         find.descendant(
           of: _action('spell:firebolt'),
           matching: find.text('— armed'),
         ),
         findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: _action('spell:firebolt'),
+          matching: find.text('2 mana'),
+        ),
+        findsNothing,
       );
     });
 
@@ -887,13 +991,26 @@ void main() {
 
       // assert - one armed slot at a time
       expect(bloc.state.armedSpellId, 'bind');
-      _expectAction('spell:bind', label: '⛒ Bind', metadata: '3 mana');
+      expect(
+        find.descendant(
+          of: _action('spell:bind'),
+          matching: find.text('⛒ Bind'),
+        ),
+        findsOneWidget,
+      );
       expect(
         find.descendant(
           of: _action('spell:bind'),
           matching: find.text('— armed'),
         ),
         findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: _action('spell:bind'),
+          matching: find.text('3 mana'),
+        ),
+        findsNothing,
       );
       expect(
         find.descendant(
@@ -1002,7 +1119,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert - every spell is reachable from the sheet, cost-free
-      expect(find.text('Firebolt'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.text('Firebolt'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Mend'), findsOneWidget);
       expect(find.text('Ward'), findsOneWidget);
       expect(find.text('Bind'), findsOneWidget);
@@ -1054,7 +1177,7 @@ void main() {
   });
 
   group('map inspect and recenter', () {
-    testWidgets('a tap on a distant monster opens the enemy info', (
+    testWidgets('a tap on a distant monster opens the map callout', (
       tester,
     ) async {
       // arrange - the spitter three tiles out, nothing armed
@@ -1066,12 +1189,27 @@ void main() {
       await _tapTile(tester, const Position(4, 1));
       await tester.pumpAndSettle();
 
-      expect(find.text('strikes at range 3'), findsOneWidget);
+      expect(bloc.state.inspectedActorId, 'spitter-1');
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.byKey(mapCalloutKey), findsOneWidget);
+      final callout = find.byKey(mapCalloutKey);
+      expect(
+        find.descendant(of: callout, matching: find.text('HP 4/4')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: callout, matching: find.text('ATK 2–3  SPD 5')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: callout, matching: find.text('Reach 3')),
+        findsOneWidget,
+      );
       expect(bloc.state.log.length, logBefore);
       expect(bloc.state.game.hero.position, const Position(1, 1));
     });
 
-    testWidgets('a long-press on a monster opens the enemy info', (
+    testWidgets('a long-press on a monster opens the map callout', (
       tester,
     ) async {
       // arrange - the spitter three tiles out
@@ -1083,13 +1221,13 @@ void main() {
       final scene = find.byKey(dungeonSceneKey);
       final size = tester.getSize(scene);
       final geometry = GridGeometry.camera(size, 7, 5, const Position(1, 1));
-      final local =
-          geometry.topLeftOf(4, 1) +
-          Offset(geometry.cellSize / 2, geometry.cellSize / 2);
+      final local = geometry.centreOf(const Position(4, 1));
       await tester.longPressAt(tester.getTopLeft(scene) + local);
       await tester.pumpAndSettle();
 
-      expect(find.text('strikes at range 3'), findsOneWidget);
+      expect(bloc.state.inspectedActorId, 'spitter-1');
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.byKey(mapCalloutKey), findsOneWidget);
       expect(bloc.state.log.length, logBefore);
     });
 
@@ -1097,9 +1235,9 @@ void main() {
       // arrange - a floor wider than the default test surface, panned so the
       // hero has been dragged off the right edge of the glass
       const wideArena = '''
-##############################
-#............................#
-##############################''';
+######################################################################
+#....................................................................#
+######################################################################''';
       final map = FloorMap.parse(wideArena);
       final seen = computeFov(map, const Position(1, 1), fovRadius);
       final game = GameState(
@@ -1138,12 +1276,12 @@ void main() {
       'a distant selected actor makes recenter return focus to the hero',
       (tester) async {
         const wideArena = '''
-########################################
-#......................................#
-########################################''';
+######################################################################
+#....................................................................#
+######################################################################''';
         final map = FloorMap.parse(wideArena);
         const heroPosition = Position(1, 1);
-        const actorPosition = Position(18, 1);
+        const actorPosition = Position(60, 1);
         final monster = ghoulAt(actorPosition);
         final seen = {heroPosition, actorPosition};
         final game = GameState(

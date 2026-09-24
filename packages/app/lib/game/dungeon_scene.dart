@@ -2,76 +2,56 @@ import 'package:flame/camera.dart' show MaxViewport;
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
-import 'package:flame/text.dart';
 import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 
-import '../art/dungeon_art.dart';
-import '../style/tokens.dart' show textFace;
+import '../style/tokens.dart'
+    show crawlBackground, crawlEnemyHigh, mapBadgeStyle, mapGlyphStyle;
 import 'actor_presentation.dart';
-import 'dungeon_material.dart';
 import 'dungeon_palette.dart';
-import 'dungeon_scene_material.dart';
+
 import 'game_bloc.dart';
 import 'glyph_marks.dart';
 import 'glyph_plan.dart';
 import 'grid_geometry.dart';
+import 'dungeon_atmosphere.dart';
 
 const dungeonSceneKey = Key('dungeon-scene');
 const dungeonSceneHostKey = Key('dungeon-scene-host');
 const dungeonSceneSlotKey = Key('dungeon-scene-slot');
 
-/// Keeps actor glyphs and explicit terrain features above the material layer.
-///
-/// Terrain characters remain a characterization boundary: only a stair fact
-/// from [material] may promote a terrain cell above the continuous stone.
-List<GlyphCell> glyphCellsAboveMaterial(
-  List<GlyphCell> cells,
-  MaterialPlan material,
-) {
-  final stairPositions = <Position>{
-    for (final cell in material.cells)
-      if (cell.kind == MaterialTileKind.stairsDown ||
-          cell.kind == MaterialTileKind.stairsUp)
-        cell.position,
-  };
-  return [
-    for (final cell in cells)
-      if (cell.layer != GlyphLayer.terrain ||
-          stairPositions.contains(cell.position))
-        cell,
-  ];
-}
+/// A map tap or long-press, passed through raw: the canvas-local point and
+/// the scene's own projection, so `map_touch.dart` resolves what it meant
+/// without the scene filtering or interpreting anything itself.
+typedef MapTouchCallback = void Function(Offset local, GridGeometry geometry);
 
 class DungeonSceneSnapshot {
   DungeonSceneSnapshot._({
     required this.columns,
     required this.rows,
     required this.cells,
-    required this.material,
     required this.focus,
     required this.pan,
+    required this.heroPosition,
   });
 
-  factory DungeonSceneSnapshot.fromViewState(
-    GameViewState state,
-    DungeonPalette palette,
-  ) => DungeonSceneSnapshot._(
-    columns: state.game.map.width,
-    rows: state.game.map.height,
-    cells: List.unmodifiable(
-      glyphPlan(
-        state.game,
-        palette,
-        markedIds: state.armedTargets,
-        actorPresentations: state.actorIdentity.knownActors,
-        selectedActorId: state.selectedActor?.id,
-      ),
-    ),
-    material: materialPlan(state.game, palette),
-    focus: state.cameraFocus,
-    pan: state.pan,
-  );
+  factory DungeonSceneSnapshot.fromViewState(GameViewState state) =>
+      DungeonSceneSnapshot._(
+        columns: state.game.map.width,
+        rows: state.game.map.height,
+        cells: List.unmodifiable(
+          glyphPlan(
+            state.game,
+            markedIds: state.armedTargets,
+            actorPresentations: state.actorIdentity.knownActors,
+            selectedActorId: state.targetActor?.id,
+          ),
+        ),
+
+        focus: state.cameraFocus,
+        heroPosition: state.game.hero.position,
+        pan: state.pan,
+      );
 
   DungeonSceneSnapshot withViewport({
     required int columns,
@@ -82,20 +62,18 @@ class DungeonSceneSnapshot {
     columns: columns,
     rows: rows,
     cells: cells,
-    material: material,
     focus: focus,
     pan: pan,
+    heroPosition: heroPosition,
   );
 
   final int columns;
   final int rows;
   final List<GlyphCell> cells;
 
-  /// The deterministic material layer beneath the glyph actors.
-  final MaterialPlan material;
-
   final Position focus;
   final Offset pan;
+  final Position heroPosition;
 }
 
 class DungeonSceneHost extends StatefulWidget {
@@ -110,11 +88,12 @@ class DungeonSceneHost extends StatefulWidget {
 
   final GameViewState state;
   final DungeonPalette palette;
-  final ValueChanged<Position> onTap;
+  final MapTouchCallback onTap;
   final ValueChanged<Offset> onPan;
 
-  /// The tile a completed long-press landed on: the inspect gesture.
-  final ValueChanged<Position> onLongPress;
+  /// The canvas-local point and projection a completed long-press landed
+  /// on: the inspect gesture.
+  final MapTouchCallback onLongPress;
 
   @override
   State<DungeonSceneHost> createState() => _DungeonSceneHostState();
@@ -124,18 +103,14 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
   late final _DungeonScene _scene;
   late DungeonSceneSnapshot _snapshot;
   late GameState _projectionGame;
-  late DungeonPalette _projectionPalette;
   late ActorIdentityContext _projectionActorIdentity;
-  late String? _projectionSelectedActorId;
+  late String? _projectionTargetActorId;
   late String? _projectionArmedSpellId;
 
   @override
   void initState() {
     super.initState();
-    _snapshot = DungeonSceneSnapshot.fromViewState(
-      widget.state,
-      widget.palette,
-    );
+    _snapshot = DungeonSceneSnapshot.fromViewState(widget.state);
     _rememberProjectionInputs();
     _scene = _DungeonScene(
       snapshot: _snapshot,
@@ -155,7 +130,7 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
             focus: widget.state.cameraFocus,
             pan: widget.state.pan,
           )
-        : DungeonSceneSnapshot.fromViewState(widget.state, widget.palette);
+        : DungeonSceneSnapshot.fromViewState(widget.state);
     _rememberProjectionInputs();
     _scene.synchronize(
       _snapshot,
@@ -167,22 +142,24 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
 
   bool get _reusesProjection =>
       identical(_projectionGame, widget.state.game) &&
-      _projectionPalette == widget.palette &&
       _projectionArmedSpellId == widget.state.armedSpellId &&
       identical(_projectionActorIdentity, widget.state.actorIdentity) &&
-      _projectionSelectedActorId == widget.state.selectedActorId;
+      _projectionTargetActorId == widget.state.targetActor?.id;
 
   void _rememberProjectionInputs() {
     _projectionGame = widget.state.game;
-    _projectionPalette = widget.palette;
     _projectionActorIdentity = widget.state.actorIdentity;
-    _projectionSelectedActorId = widget.state.selectedActorId;
+    _projectionTargetActorId = widget.state.targetActor?.id;
     _projectionArmedSpellId = widget.state.armedSpellId;
   }
 
   @override
-  Widget build(BuildContext context) =>
-      GameWidget(key: dungeonSceneKey, game: _scene);
+  Widget build(BuildContext context) => GameWidget(
+    key: dungeonSceneKey,
+    game: _scene,
+    backgroundBuilder: (_) =>
+        DungeonAtmosphere(snapshot: _snapshot, fog: widget.palette.fog),
+  );
 }
 
 /// The default [MaxViewport] fills all available space, exactly like this
@@ -190,13 +167,10 @@ class _DungeonSceneHostState extends State<DungeonSceneHost> {
 /// does Flame's `GameRenderBox.paint` clip on its behalf. Nothing in
 /// Flame's render pipeline confines a game's paint to the viewport's own
 /// reported size; it is only ever used to position the camera.
-/// `_DungeonScene`'s [World] deliberately holds every tile in the current
-/// floor's `visible ∪ explored` set (`dungeon_material.dart`'s own
-/// invariant), which is routinely taller than the box the crawl's `Column`
-/// gives the map, so every tile the camera scrolls out of that box keeps
-/// painting straight through onto whatever chrome sits above or below it.
-/// This subclass adds exactly the clip [MaxViewport] omits — nothing else
-/// about its size tracking changes.
+/// `_DungeonScene`'s [World] holds the glyph-plan cells in the current
+/// floor's `visible ∪ explored` set, which is routinely taller than the box
+/// the crawl's `Column` gives the map. This subclass adds exactly the clip
+/// [MaxViewport] omits — nothing else about its size tracking changes.
 class _ClippedMaxViewport extends MaxViewport {
   Rect _clipRect = Rect.zero;
 
@@ -223,15 +197,13 @@ class _DungeonScene extends FlameGame
   }) : super(camera: CameraComponent(viewport: _ClippedMaxViewport()));
 
   DungeonSceneSnapshot _snapshot;
-  ValueChanged<Position> _onTap;
+  MapTouchCallback _onTap;
   ValueChanged<Offset> _onPan;
-  ValueChanged<Position> _onLongPress;
+  MapTouchCallback _onLongPress;
   final Map<GlyphRenderId, _GlyphComponent> _glyphs = {};
 
-  MaterialComponent? _material;
-
   @override
-  Color backgroundColor() => dungeonVoid;
+  Color backgroundColor() => crawlBackground;
 
   @override
   Future<void> onLoad() async {
@@ -254,16 +226,17 @@ class _DungeonScene extends FlameGame
 
   void synchronize(
     DungeonSceneSnapshot snapshot, {
-    required ValueChanged<Position> onTap,
+    required MapTouchCallback onTap,
     required ValueChanged<Offset> onPan,
-    required ValueChanged<Position> onLongPress,
+    required MapTouchCallback onLongPress,
   }) {
     final projectionChanged = !identical(_snapshot.cells, snapshot.cells);
+    final lightOriginChanged = _snapshot.heroPosition != snapshot.heroPosition;
     _snapshot = snapshot;
     _onTap = onTap;
     _onPan = onPan;
     _onLongPress = onLongPress;
-    if (isLoaded && projectionChanged) {
+    if (isLoaded && (projectionChanged || lightOriginChanged)) {
       _synchronizeComponents();
     } else if (isLoaded) {
       _updateCamera();
@@ -272,10 +245,7 @@ class _DungeonScene extends FlameGame
 
   @override
   void onTapUp(TapUpEvent event) {
-    final position = _geometry.positionAt(
-      Offset(event.canvasPosition.x, event.canvasPosition.y),
-    );
-    if (position != null) _onTap(position);
+    _onTap(Offset(event.canvasPosition.x, event.canvasPosition.y), _geometry);
   }
 
   @override
@@ -286,10 +256,10 @@ class _DungeonScene extends FlameGame
   @override
   void onLongPressStart(LongPressStartEvent event) {
     super.onLongPressStart(event);
-    final position = _geometry.positionAt(
+    _onLongPress(
       Offset(event.canvasPosition.x, event.canvasPosition.y),
+      _geometry,
     );
-    if (position != null) _onLongPress(position);
   }
 
   GridGeometry get _geometry => GridGeometry.camera(
@@ -301,15 +271,7 @@ class _DungeonScene extends FlameGame
   );
 
   void _synchronizeComponents() {
-    _synchronizeMaterial();
-
-    final cellsById = {
-      for (final cell in glyphCellsAboveMaterial(
-        _snapshot.cells,
-        _snapshot.material,
-      ))
-        cell.renderId: cell,
-    };
+    final cellsById = {for (final cell in _snapshot.cells) cell.renderId: cell};
     final removed = <_GlyphComponent>[
       for (final entry in _glyphs.entries)
         if (!cellsById.containsKey(entry.key)) entry.value,
@@ -319,32 +281,20 @@ class _DungeonScene extends FlameGame
 
     final added = <_GlyphComponent>[];
     for (final cell in cellsById.values) {
-      final treatment = glyphMarkTreatment(
-        cell,
-        semanticTerrain: cell.layer == GlyphLayer.terrain,
-      );
+      final treatment = glyphMarkTreatment(cell);
+      final ink = glyphInk(cell, _snapshot.heroPosition);
       final existing = _glyphs[cell.renderId];
       if (existing == null) {
-        final component = _GlyphComponent(cell, treatment);
+        final component = _GlyphComponent(cell, treatment, ink);
         _glyphs[cell.renderId] = component;
         added.add(component);
       } else {
-        existing.synchronize(cell, treatment);
+        existing.synchronize(cell, treatment, ink);
       }
     }
     world.addAll(added);
     _updateCamera();
     if (isMounted) processLifecycleEvents();
-  }
-
-  void _synchronizeMaterial() {
-    final material = _snapshot.material;
-    if (_material == null) {
-      _material = MaterialComponent(material, art: dungeonArt);
-      world.add(_material!);
-    } else {
-      _material!.adopt(material);
-    }
   }
 
   void _updateCamera() {
@@ -355,65 +305,53 @@ class _DungeonScene extends FlameGame
 }
 
 class _GlyphComponent extends PositionComponent {
-  _GlyphComponent(GlyphCell cell, GlyphMarkTreatment treatment)
+  _GlyphComponent(GlyphCell cell, GlyphMarkTreatment treatment, Color ink)
     : _cell = cell,
+      _ink = ink,
       super(
         position: _mapPosition(cell),
-        size: Vector2.all(cameraCellSize),
+        size: Vector2(mapCellWidth, mapCellHeight),
         priority: cell.layer.index,
       ) {
     _text = TextComponent(
       text: cell.glyph,
-      textRenderer: _textPaint(cell),
+      textRenderer: _textPaint(ink),
       anchor: Anchor.center,
-      position: Vector2.all(cameraCellSize / 2),
+      position: Vector2(mapCellWidth / 2, mapCellHeight / 2),
     );
     _applyTreatment(treatment);
-    _updateOutlines(cell, treatment);
-    if (treatment.halo) add(_halo);
+    _updateReticle(treatment);
     add(_text);
     _updateBadge(cell);
   }
 
   GlyphCell _cell;
+  Color _ink;
   late final TextComponent _text;
   TextComponent? _badge;
-  RectangleComponent? _targetOutline;
-  CircleComponent? _selectedOutline;
+  _ReticleComponent? _reticle;
 
-  /// The hero's very small halo — a soft value contrast behind the mark so
-  /// the hero reads against the stone at a glance. Shape, not hue: the halo
-  /// is the cell's own ink at a whisper of alpha.
-  CircleComponent get _halo => CircleComponent(
-    radius: cameraCellSize * 0.32,
-    position: Vector2.all(cameraCellSize / 2),
-    anchor: Anchor.center,
-    paint: Paint()
-      ..color = _cell.ink.withValues(alpha: 0.10 + 0.06 * _cell.opacity),
-  );
-
-  void synchronize(GlyphCell cell, GlyphMarkTreatment treatment) {
+  void synchronize(GlyphCell cell, GlyphMarkTreatment treatment, Color ink) {
     final before = _cell;
+    final beforeInk = _ink;
     _cell = cell;
+    _ink = ink;
     position.setFrom(_mapPosition(cell));
     if (before.glyph != cell.glyph ||
-        before.ink != cell.ink ||
+        beforeInk != ink ||
         before.opacity != cell.opacity) {
       _text
         ..text = cell.glyph
-        ..textRenderer = _textPaint(cell);
+        ..textRenderer = _textPaint(ink);
     }
     _applyTreatment(treatment);
     if (before.badge != cell.badge ||
-        before.ink != cell.ink ||
+        beforeInk != ink ||
         before.opacity != cell.opacity) {
       _updateBadge(cell);
     }
-    if (before.marked != cell.marked ||
-        before.selected != cell.selected ||
-        before.ink != cell.ink ||
-        before.opacity != cell.opacity) {
-      _updateOutlines(cell, treatment);
+    if (before.marked != cell.marked || before.selected != cell.selected) {
+      _updateReticle(treatment);
     }
   }
 
@@ -421,28 +359,14 @@ class _GlyphComponent extends PositionComponent {
     _text.scale = Vector2.all(treatment.scale);
   }
 
-  static Vector2 _mapPosition(GlyphCell cell) => Vector2(
-    cell.position.x * cameraCellSize,
-    cell.position.y * cameraCellSize,
-  );
+  static Vector2 _mapPosition(GlyphCell cell) =>
+      Vector2(cell.position.x * mapCellWidth, cell.position.y * mapCellHeight);
 
-  static TextPaint _textPaint(GlyphCell cell) => TextPaint(
-    style: TextStyle(
-      color: cell.ink.withValues(alpha: cell.opacity),
-      fontSize: cameraCellSize * glyphBaseFontScale,
-      fontFamily: textFace,
-      height: 1,
-    ),
-  );
+  static TextPaint _textPaint(Color ink) =>
+      TextPaint(style: mapGlyphStyle(ink));
 
-  static TextPaint _badgePaint(GlyphCell cell) => TextPaint(
-    style: TextStyle(
-      color: cell.ink.withValues(alpha: cell.opacity),
-      fontSize: cameraCellSize * 0.30,
-      fontFamily: textFace,
-      height: 1,
-    ),
-  );
+  static TextPaint _badgePaint(Color ink) =>
+      TextPaint(style: mapBadgeStyle(ink));
 
   void _updateBadge(GlyphCell cell) {
     final badge = cell.badge;
@@ -453,46 +377,90 @@ class _GlyphComponent extends PositionComponent {
     }
     _badge ??= TextComponent(
       text: badge,
-      textRenderer: _badgePaint(cell),
+      textRenderer: _badgePaint(_ink),
       anchor: Anchor.topRight,
-      position: Vector2(cameraCellSize - 1, 1),
+      position: Vector2(mapCellWidth - 0.5, 0.5),
     );
     _badge!
       ..text = badge
-      ..textRenderer = _badgePaint(cell);
+      ..textRenderer = _badgePaint(_ink);
     if (_badge!.parent == null) add(_badge!);
   }
 
-  void _updateOutlines(GlyphCell cell, GlyphMarkTreatment treatment) {
-    if (treatment.targetOutline == GlyphOutlineShape.square) {
-      _targetOutline ??= RectangleComponent(
-        position: Vector2.all(1),
-        size: Vector2.all(cameraCellSize - 2),
-        paint: Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1,
-      );
-      _targetOutline!.paint.color = cell.ink.withValues(alpha: cell.opacity);
-      if (_targetOutline!.parent == null) add(_targetOutline!);
-    } else {
-      _targetOutline?.removeFromParent();
-      _targetOutline = null;
+  void _updateReticle(GlyphMarkTreatment treatment) {
+    final mark = treatment.targetMark;
+    if (mark == null) {
+      _reticle?.removeFromParent();
+      _reticle = null;
+      return;
     }
-
-    if (treatment.selectedOutline == GlyphOutlineShape.circle) {
-      _selectedOutline ??= CircleComponent(
-        radius: cameraCellSize * 0.46,
-        position: Vector2.all(cameraCellSize / 2),
-        anchor: Anchor.center,
-        paint: Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1,
-      );
-      _selectedOutline!.paint.color = cell.ink.withValues(alpha: cell.opacity);
-      if (_selectedOutline!.parent == null) add(_selectedOutline!);
+    if (_reticle == null) {
+      _reticle = _ReticleComponent(mark);
+      add(_reticle!);
     } else {
-      _selectedOutline?.removeFromParent();
-      _selectedOutline = null;
+      _reticle!.synchronize(mark);
     }
   }
+}
+
+/// Draws the corner-tick or bracket reticle PLAN.md G6 defines, inside the
+/// cell so its arms never bleed into the neighbour.
+///
+/// One component handles both shapes: ticks and brackets never coexist on
+/// the same cell (selection supersedes marking), so switching [_mark] is
+/// cheaper than swapping components in and out.
+class _ReticleComponent extends PositionComponent {
+  _ReticleComponent(GlyphTargetMark mark)
+    : _mark = mark,
+      super(size: Vector2(mapCellWidth, mapCellHeight));
+
+  GlyphTargetMark _mark;
+
+  static const Rect _rect = Rect.fromLTWH(0.75, 0.75, 14.5, 18.5);
+  static const double _armLength = 4.3;
+
+  static final Paint _ticksPaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.0
+    ..color = crawlEnemyHigh;
+  static final Paint _bracketsPaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.75
+    ..color = crawlEnemyHigh;
+
+  void synchronize(GlyphTargetMark mark) => _mark = mark;
+
+  @override
+  void render(Canvas canvas) {
+    switch (_mark) {
+      case GlyphTargetMark.ticks:
+        canvas.drawPath(_ticksPath, _ticksPaint);
+      case GlyphTargetMark.brackets:
+        canvas.drawPath(_bracketsPath, _bracketsPaint);
+    }
+  }
+
+  static final Path _ticksPath = Path()
+    ..moveTo(_rect.left, _rect.top + _armLength)
+    ..lineTo(_rect.left, _rect.top)
+    ..lineTo(_rect.left + _armLength, _rect.top)
+    ..moveTo(_rect.right - _armLength, _rect.top)
+    ..lineTo(_rect.right, _rect.top)
+    ..lineTo(_rect.right, _rect.top + _armLength)
+    ..moveTo(_rect.right, _rect.bottom - _armLength)
+    ..lineTo(_rect.right, _rect.bottom)
+    ..lineTo(_rect.right - _armLength, _rect.bottom)
+    ..moveTo(_rect.left + _armLength, _rect.bottom)
+    ..lineTo(_rect.left, _rect.bottom)
+    ..lineTo(_rect.left, _rect.bottom - _armLength);
+
+  static final Path _bracketsPath = Path()
+    ..moveTo(_rect.left + _armLength, _rect.top)
+    ..lineTo(_rect.left, _rect.top)
+    ..lineTo(_rect.left, _rect.bottom)
+    ..lineTo(_rect.left + _armLength, _rect.bottom)
+    ..moveTo(_rect.right - _armLength, _rect.top)
+    ..lineTo(_rect.right, _rect.top)
+    ..lineTo(_rect.right, _rect.bottom)
+    ..lineTo(_rect.right - _armLength, _rect.bottom);
 }

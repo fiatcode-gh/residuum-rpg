@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/crawl_action_row.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
@@ -84,37 +82,6 @@ void _expectChipLabel(String id, String label, {String? metadata}) {
       find.descendant(of: chip, matching: find.text(metadata)),
       findsOneWidget,
       reason: metadata,
-    );
-  }
-}
-
-/// Unit 12's no-squeeze proof, scoped to the chip row itself: every chip
-/// label `RenderParagraph` under [actionRowKey] fits without exceeding its
-/// line cap, and never runs narrower than the longest unbreakable word it
-/// carries. Mirrors `crawl_controls_test.dart`'s `_expectNoSqueeze`.
-///
-/// The `didExceedMaxLines` check below is a degenerate-path tripwire, not
-/// the clipping proof — `_fitFor`'s own candidate search already discards
-/// every column count that would exceed `crawlChipMaxLabelLines`, so it
-/// cannot fail on any candidate the search accepts. It only guards the one
-/// path that search does not cover: the no-legal-candidate fallback, which
-/// lays out at the full available width with no line-count check of its
-/// own. The real no-squeeze proof is the intrinsic-width check after it.
-void _expectNoSqueeze(WidgetTester tester) {
-  final paragraphs = tester.renderObjectList<RenderParagraph>(
-    find.descendant(
-      of: find.descendant(
-        of: find.byKey(actionRowKey),
-        matching: find.byType(Wrap),
-      ),
-      matching: find.byType(Text),
-    ),
-  );
-  for (final paragraph in paragraphs) {
-    expect(paragraph.didExceedMaxLines, isFalse);
-    expect(
-      paragraph.size.width + 0.5,
-      greaterThanOrEqualTo(paragraph.getMinIntrinsicWidth(double.infinity)),
     );
   }
 }
@@ -209,7 +176,6 @@ void main() {
       // 'Mine' is four letters for exactly this reason
       _expectChipLabel('pick-up', 'Pick up');
       _expectChipLabel('gather', 'Mine');
-      _expectNoSqueeze(tester);
       addTearDown(bloc.close);
     });
   });

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
@@ -6,17 +8,22 @@ import '../art/art_assets.dart';
 import '../style/tokens.dart';
 import '../town/town_bloc.dart';
 import '../world/world_bloc.dart';
+import 'action_icon.dart';
 import 'battle_view.dart';
+import 'combat_panel.dart';
 import 'crawl_action_row.dart';
-import 'crawl_status.dart';
+import 'crawl_header.dart';
 import 'crawl_style.dart';
 import 'crawl_surfaces.dart';
 import 'dungeon_palette.dart';
 import 'dungeon_scene.dart';
 import 'game_bloc.dart';
+import 'hero_panel.dart';
 import 'log_drawer.dart';
 import 'log_line.dart';
 import 'grid_geometry.dart';
+import 'map_callout.dart';
+import 'map_touch.dart';
 import 'pack_screen.dart';
 import 'spell_row.dart';
 
@@ -58,95 +65,162 @@ class GameScreen extends StatelessWidget {
         data: residuumTheme,
         child: Scaffold(
           body: SafeArea(
-            child: BlocBuilder<GameBloc, GameViewState>(
-              builder: (context, state) {
-                final bloc = context.read<GameBloc>();
-                return Stack(
-                  children: [
-                    Column(
-                      children: [
-                        CrawlStatus(state: state, dungeon: bloc.dungeon),
-                        if (state.isBattleOpen)
-                          BattleDock(
+            child: MediaQuery.withClampedTextScaling(
+              maxScaleFactor: 1.3,
+              child: BlocBuilder<GameBloc, GameViewState>(
+                builder: (context, state) {
+                  final bloc = context.read<GameBloc>();
+                  return Stack(
+                    children: [
+                      Column(
+                        children: [
+                          CrawlHeader(
                             state: state,
-                            onActorSelected: (actor) {
-                              final presentation = state.presentationOf(
-                                actor.id,
-                              );
-                              if (presentation == null) return;
-                              bloc.add(TimelineActorSelected(actor.id));
-                              showEnemyInfo(context, actor, presentation);
-                            },
+                            dungeon: bloc.dungeon,
+                            day: bloc.day,
                           ),
-                        Expanded(
-                          key: dungeonSceneSlotKey,
-                          child: DecoratedBox(
-                            position: DecorationPosition.foreground,
-                            decoration: const BoxDecoration(
-                              border: Border(
-                                top: BorderSide(color: rule, width: hairline),
-                                bottom: BorderSide(
-                                  color: rule,
-                                  width: hairline,
-                                ),
-                              ),
+                          if (state.isBattleOpen)
+                            BattleDock(
+                              state: state,
+                              onActorSelected: (actor) {
+                                final presentation = state.presentationOf(
+                                  actor.id,
+                                );
+                                if (presentation == null) return;
+                                bloc.add(TimelineActorSelected(actor.id));
+                                showEnemyInfo(context, actor, presentation);
+                              },
                             ),
+                          Expanded(
                             child: LayoutBuilder(
-                              builder: (mapContext, constraints) {
-                                final size = constraints.biggest;
+                              builder: (overlayContext, overlayConstraints) {
+                                final overlayHeight =
+                                    overlayConstraints.maxHeight;
+                                final fullDrawer =
+                                    state.logDrawerExtent ==
+                                    LogDrawerExtent.full;
                                 return Stack(
                                   children: [
-                                    DungeonSceneHost(
-                                      key: dungeonSceneHostKey,
-                                      state: state,
-                                      palette: palette,
-                                      onTap: (position) => _onMapTap(
-                                        context,
-                                        bloc,
-                                        state,
-                                        position,
-                                      ),
-                                      onPan: (delta) =>
-                                          bloc.add(MapPanned(delta)),
-                                      onLongPress: (position) =>
-                                          _onMapLongPress(
-                                            context,
-                                            state,
-                                            position,
+                                    Column(
+                                      children: [
+                                        Expanded(
+                                          key: dungeonSceneSlotKey,
+                                          child: LayoutBuilder(
+                                            builder: (mapContext, constraints) {
+                                              final size = constraints.biggest;
+                                              return Stack(
+                                                children: [
+                                                  DungeonSceneHost(
+                                                    key: dungeonSceneHostKey,
+                                                    state: state,
+                                                    palette: palette,
+                                                    onTap: (local, geometry) =>
+                                                        _onMapTap(
+                                                          bloc,
+                                                          state,
+                                                          geometry,
+                                                          local,
+                                                        ),
+                                                    onPan: (delta) => bloc.add(
+                                                      MapPanned(delta),
+                                                    ),
+                                                    onLongPress:
+                                                        (local, geometry) =>
+                                                            _onMapLongPress(
+                                                              bloc,
+                                                              state,
+                                                              geometry,
+                                                              local,
+                                                            ),
+                                                  ),
+                                                  MapCallout(
+                                                    state: state,
+                                                    size: size,
+                                                  ),
+                                                  _NotesOverlay(
+                                                    notes: _notesFor(state),
+                                                  ),
+                                                  if (_heroOffScreen(
+                                                    state,
+                                                    size,
+                                                  ))
+                                                    Positioned(
+                                                      top: 8,
+                                                      right: 8,
+                                                      child: CrawlPill(
+                                                        key: recenterKey,
+                                                        label: 'Recenter on the hero',
+                                                        icon: Icons
+                                                            .center_focus_strong,
+                                                        onPressed: () => bloc.add(
+                                                          const RecenterPressed(),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                ],
+                                              );
+                                            },
                                           ),
-                                    ),
-                                    if (_heroOffScreen(state, size))
-                                      Positioned(
-                                        top: 8,
-                                        right: 8,
-                                        child: CrawlPill(
-                                          key: recenterKey,
-                                          label: 'Recenter on the hero',
-                                          icon: Icons.center_focus_strong,
-                                          onPressed: () =>
-                                              bloc.add(const RecenterPressed()),
                                         ),
+                                        const SizedBox(height: crawlPanelGap),
+                                        state.isBattleOpen
+                                            ? CombatPanel(state: state)
+                                            : HeroPanel(
+                                                state: state,
+                                                heroLabel: bloc.heroLabel,
+                                              ),
+                                        const SizedBox(height: crawlGap),
+                                        LogPeek(
+                                          key: logPeekKey,
+                                          state: state,
+                                          bloc: bloc,
+                                        ),
+                                        const SizedBox(height: crawlGap),
+                                      ],
+                                    ),
+                                    if (state.logDrawerExtent !=
+                                        LogDrawerExtent.peek)
+                                      Positioned(
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        top: fullDrawer ? 0 : null,
+                                        child: fullDrawer
+                                            ? LogDrawer(
+                                                key: logDrawerKey,
+                                                state: state,
+                                                bloc: bloc,
+                                              )
+                                            : SizedBox(
+                                                height: math.min(
+                                                  crawlLogSheetHeight *
+                                                      crawlScale(context),
+                                                  overlayHeight,
+                                                ),
+                                                child: LogDrawer(
+                                                  key: logDrawerKey,
+                                                  state: state,
+                                                  bloc: bloc,
+                                                ),
+                                              ),
                                       ),
                                   ],
                                 );
                               },
                             ),
                           ),
-                        ),
-                        LogPeek(key: logPeekKey, state: state, bloc: bloc),
-                        CrawlActionRow(
-                          key: actionRowKey,
-                          notes: _notesFor(state),
-                          actions: _actionsFor(context, bloc, state),
-                        ),
-                      ],
-                    ),
-                    if (state.logDrawerExtent != LogDrawerExtent.peek)
-                      LogDrawer(key: logDrawerKey, state: state, bloc: bloc),
-                    if (state.game.isGameOver) _DeathOverlay(state: state),
-                  ],
-                );
-              },
+                          CrawlActionBar(
+                            key: actionRowKey,
+                            actions: _actionsFor(context, bloc, state),
+                          ),
+                          const SizedBox(height: crawlBottomGap),
+                        ],
+                      ),
+                      if (state.game.isGameOver) _DeathOverlay(state: state),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -155,45 +229,50 @@ class GameScreen extends StatelessWidget {
   );
 }
 
-/// Routes a map tap: all meaning stays in the bloc; only inspection is routed
-/// here, because it is presentation-only.
-///
-/// Armed, the tap is the bloc's to decide — cast at a marked monster or
-/// disarm. Bare, a tap on a monster beyond one orthogonal step is the enemy's
-/// numbers, and a tap on an adjacent monster is the bump the bloc answers.
+/// Routes a map tap by intent (`map_touch.dart::resolveMapTap`): a cell means
+/// the bloc decides — move, bump or cast — and an inspect names the map
+/// callout's target, at no turn cost. A tap that resolves to a cell or to
+/// nothing dismisses an open callout first: the bloc's own no-op returns
+/// (an unexplored cell, a non-adjacent wall, no path) never emit, so the
+/// dismissal has to come from here, not from whatever `TileTapped` decides.
 void _onMapTap(
-  BuildContext context,
   GameBloc bloc,
   GameViewState state,
-  Position position,
+  GridGeometry geometry,
+  Offset local,
 ) {
-  if (state.armedSpellId != null) {
-    bloc.add(TileTapped(position));
-    return;
+  switch (resolveMapTap(state, geometry, local)) {
+    case MapTouchCell(:final position):
+      if (state.inspectedActorId != null) {
+        bloc.add(const InspectDismissed());
+      }
+      bloc.add(TileTapped(position));
+    case MapTouchInspect(:final actor):
+      bloc.add(ActorInspected(actor.id));
+    case MapTouchNothing():
+      if (state.inspectedActorId != null) {
+        bloc.add(const InspectDismissed());
+      }
   }
-  final monster = state.inspectTargetAt(position);
-  final adjacent = state.game.hero.position.isOrthogonallyAdjacentTo(position);
-  if (monster != null && !adjacent) {
-    final presentation = state.presentationOf(monster.id);
-    if (presentation != null) {
-      showEnemyInfo(context, monster, presentation);
-    }
-    return;
-  }
-  bloc.add(TileTapped(position));
 }
 
-/// Opens the enemy's numbers under the long-press, at no turn cost.
+/// Names the map callout's target under the long-press, at no turn cost.
+/// A long-press that resolves to nothing dismisses an open callout too,
+/// the same rule [_onMapTap] applies.
 void _onMapLongPress(
-  BuildContext context,
+  GameBloc bloc,
   GameViewState state,
-  Position position,
+  GridGeometry geometry,
+  Offset local,
 ) {
-  if (state.inspectTargetAt(position) case final Actor monster) {
-    final presentation = state.presentationOf(monster.id);
-    if (presentation != null) {
-      showEnemyInfo(context, monster, presentation);
-    }
+  switch (resolveMapLongPress(state, geometry, local)) {
+    case MapTouchInspect(:final actor):
+      bloc.add(ActorInspected(actor.id));
+    case MapTouchCell():
+    case MapTouchNothing():
+      if (state.inspectedActorId != null) {
+        bloc.add(const InspectDismissed());
+      }
   }
 }
 
@@ -208,6 +287,51 @@ bool _heroOffScreen(GameViewState state, Size size) {
     state.pan,
   );
   return heroOffScreen(size, geometry, state.game.hero.position);
+}
+
+/// The crawl's conditional sentences (PLAN.md G8 notes), overlaid at the
+/// map slot's top-left: each note reads over the map without ever resizing
+/// it, so a note appearing or leaving never nudges the tile the hero stands
+/// on.
+class _NotesOverlay extends StatelessWidget {
+  const _NotesOverlay({required this.notes});
+
+  final List<String> notes;
+
+  @override
+  Widget build(BuildContext context) {
+    if (notes.isEmpty) return const SizedBox.shrink();
+    return Positioned(
+      top: 6,
+      left: 8,
+      right: 60,
+      child: IgnorePointer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final note in notes)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: crawlBackground.withValues(alpha: 0.78),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
+                    child: Text(note, style: textLineDim),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// The crawl's one action row: every verb that applies, each appearing only
@@ -239,7 +363,7 @@ List<CrawlAction> _actionsFor(
         id: 'drink',
         label: 'Drink',
         metadata: '×${state.potionCount}',
-        icon: ActionIcon.potion,
+        mark: const ShippedMark(ActionIcon.potion),
         onPressed: state.game.isGameOver
             ? null
             : () => bloc.add(const QuickDrinkPressed()),
@@ -250,7 +374,7 @@ List<CrawlAction> _actionsFor(
           id: 'spell:${spell.id}',
           label: '${spell.school.schoolMarking} ${spell.name}',
           metadata: '${spell.manaCost} mana',
-          icon: ActionIcon.forSpell(spell.id),
+          mark: spellMark(spell),
           armable: true,
           armed: state.armedSpellId == spell.id,
           onPressed: () => _onSpell(bloc, state, spell),
@@ -259,25 +383,28 @@ List<CrawlAction> _actionsFor(
       CrawlAction(
         id: 'spells-overflow',
         label: '+${state.knownSpells.length - readiedSpellCount}',
+        mark: const ShippedMark(ActionIcon.more),
         onPressed: () => _openSpellsOverflow(context, bloc, state),
       ),
     if (isBattleOpen)
       CrawlAction(
         id: 'wait',
         label: 'Wait',
-        icon: ActionIcon.wait,
+        mark: const ShippedMark(ActionIcon.wait),
         onPressed: () => bloc.add(const WaitPressed()),
       ),
     if (state.canPickUp)
       CrawlAction(
         id: 'pick-up',
         label: 'Pick up',
+        mark: const FontMark(Icons.back_hand),
         onPressed: () => bloc.add(const PickUpPressed()),
       ),
     if (state.canGather)
       CrawlAction(
         id: 'gather',
         label: node!.verb,
+        mark: FontMark(node == GatherKind.oreVein ? Icons.hardware : Icons.spa),
         onPressed: () => bloc.add(const GatherPressed()),
       ),
     if (!isBattleOpen && firstPotion != null)
@@ -285,7 +412,7 @@ List<CrawlAction> _actionsFor(
         id: 'drink',
         label: 'Drink',
         metadata: '×${state.potionCount}',
-        icon: ActionIcon.potion,
+        mark: const ShippedMark(ActionIcon.potion),
         onPressed: state.game.isGameOver
             ? null
             : () => bloc.add(const QuickDrinkPressed()),
@@ -294,7 +421,7 @@ List<CrawlAction> _actionsFor(
       id: 'pack',
       label: 'Pack',
       metadata: '×${state.game.inventory.length}',
-      icon: ActionIcon.pack,
+      mark: const ShippedMark(ActionIcon.pack),
       onPressed: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) =>
@@ -306,19 +433,21 @@ List<CrawlAction> _actionsFor(
       CrawlAction(
         id: 'wait',
         label: 'Wait',
-        icon: ActionIcon.wait,
+        mark: const ShippedMark(ActionIcon.wait),
         onPressed: () => bloc.add(const WaitPressed()),
       ),
     if (state.canFlee)
       CrawlAction(
         id: 'flee',
         label: 'Flee',
+        mark: const FontMark(Icons.directions_run),
         onPressed: () => bloc.add(const FleePressed()),
       ),
     if (state.isRoadClear)
       CrawlAction(
         id: 'move-on',
         label: 'Move on',
+        mark: const FontMark(Icons.hiking),
         onPressed: () =>
             leaveEncounter(context, state, EncounterEnding.cleared),
       ),
@@ -326,20 +455,21 @@ List<CrawlAction> _actionsFor(
       CrawlAction(
         id: 'ascend',
         label: 'Ascend <',
-        icon: ActionIcon.ascend,
+        mark: const ShippedMark(ActionIcon.ascend),
         onPressed: () => bloc.add(const AscendPressed()),
       ),
     if (state.canDescend)
       CrawlAction(
         id: 'descend',
         label: 'Descend >',
-        icon: ActionIcon.descend,
+        mark: const ShippedMark(ActionIcon.descend),
         onPressed: () => bloc.add(const DescendPressed()),
       ),
     if (state.canLeave)
       CrawlAction(
         id: 'leave-dungeon',
         label: ending ? doneControl : 'Leave',
+        mark: FontMark(ending ? Icons.flag : Icons.logout),
         onPressed: () => ending
             ? _confirmCompletion(context, state)
             : suspendDungeon(context, state),
@@ -562,7 +692,6 @@ class _OverflowRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final skin = crawlChipSkin(CrawlChipState.armed);
     return SpellRow(
       spell: spell,
       style: textLine,
@@ -573,7 +702,7 @@ class _OverflowRow extends StatelessWidget {
         onPressed: onCast,
         style: TextButton.styleFrom(
           side: armed
-              ? BorderSide(color: skin.border, width: skin.borderWidth)
+              ? const BorderSide(color: crawlCold, width: hairline * 1.5)
               : null,
         ),
         child: Text(

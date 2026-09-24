@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:residuum_core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/glyph_plan.dart';
 import 'package:residuum_app/game/glyph_marks.dart';
+import 'package:residuum_app/style/tokens.dart';
 
 void main() {
   group('the graphical glyph marks', () {
@@ -34,64 +36,6 @@ void main() {
       for (final treatment in treatments) {
         expect(treatment.scale, greaterThan(0.0));
       }
-    });
-    test('uses the locked relative hierarchy and nominal cell envelope', () {
-      const hero = GlyphCell(
-        Position(1, 1),
-        '@',
-        Color(0xFFFFFFFF),
-        1.0,
-        layer: GlyphLayer.hero,
-      );
-      const monster = GlyphCell(
-        Position(1, 2),
-        'g',
-        Color(0xFFD9A227),
-        1.0,
-        layer: GlyphLayer.monster,
-      );
-      const stairs = GlyphCell(
-        Position(1, 3),
-        '>',
-        Color(0xFFE8ECF2),
-        1.0,
-        layer: GlyphLayer.terrain,
-      );
-      const node = GlyphCell(
-        Position(1, 4),
-        'v',
-        Color(0xFFD9A227),
-        1.0,
-        layer: GlyphLayer.node,
-      );
-      const litter = GlyphCell(
-        Position(1, 5),
-        '!',
-        Color(0xFF7FC8B8),
-        1.0,
-        layer: GlyphLayer.litter,
-      );
-
-      final heroScale = glyphMarkTreatment(hero).scale;
-      final monsterScale = glyphMarkTreatment(monster).scale;
-      final stairsScale = glyphMarkTreatment(
-        stairs,
-        semanticTerrain: true,
-      ).scale;
-      final nodeScale = glyphMarkTreatment(node).scale;
-      final litterScale = glyphMarkTreatment(litter).scale;
-
-      expect(glyphBaseFontScale, 0.73);
-      expect(heroScale, 1.08);
-      expect(monsterScale, 1.04);
-      expect(stairsScale, 1.02);
-      expect(nodeScale, 1.0);
-      expect(litterScale, 0.94);
-      expect(glyphBaseFontScale * heroScale, lessThan(1.0));
-      expect(glyphBaseFontScale * monsterScale, lessThan(1.0));
-      expect(glyphBaseFontScale * stairsScale, lessThan(1.0));
-      expect(glyphBaseFontScale * nodeScale, lessThan(1.0));
-      expect(glyphBaseFontScale * litterScale, lessThan(1.0));
     });
 
     test('give the hero the strongest presence in the hierarchy', () {
@@ -126,87 +70,9 @@ void main() {
       // assert — subtle scale hierarchy: hero above monster above litter
       expect(heroTreatment.scale, greaterThan(monsterTreatment.scale));
       expect(monsterTreatment.scale, greaterThan(litterTreatment.scale));
-      expect(heroTreatment.halo, isTrue);
     });
 
-    test('leave terrain glyphs untouched by the actor treatment', () {
-      // arrange
-      const terrain = GlyphCell(
-        Position(1, 1),
-        '.',
-        Color(0xFF5B6270),
-        1.0,
-        layer: GlyphLayer.terrain,
-      );
-
-      // act
-      final treatment = glyphMarkTreatment(terrain);
-
-      // assert — terrain gets no actor-grade mark; the material layer owns
-      // the visible terrain
-      expect(treatment.scale, 1.0);
-      expect(treatment.halo, isFalse);
-    });
-
-    test('do not infer terrain semantics from a glyph character', () {
-      // arrange — glyph-plan characters are a characterization boundary, not
-      // terrain facts the Flame layer may parse back into game semantics.
-      const terrainCharacter = GlyphCell(
-        Position(1, 1),
-        '>',
-        Color(0xFFE8ECF2),
-        1.0,
-        layer: GlyphLayer.terrain,
-      );
-
-      // act
-      final treatment = glyphMarkTreatment(terrainCharacter);
-
-      // assert — without the material-plan feature, this terrain cell stays
-      expect(treatment.scale, 1.0);
-    });
-
-    test('mark stairs as semantic glyphs above the material', () {
-      // arrange — stairs carry a terrain-layer cell, but unlike wall/floor
-      // text they must survive as a drawn mark: the exit is a semantic
-      // feature, not stone texture
-      const stairsDown = GlyphCell(
-        Position(1, 1),
-        '>',
-        Color(0xFFE8ECF2),
-        1.0,
-        layer: GlyphLayer.terrain,
-      );
-      const stairsUp = GlyphCell(
-        Position(2, 1),
-        '<',
-        Color(0xFFE8ECF2),
-        1.0,
-        layer: GlyphLayer.terrain,
-      );
-      const floor = GlyphCell(
-        Position(3, 1),
-        '.',
-        Color(0xFF5B6270),
-        1.0,
-        layer: GlyphLayer.terrain,
-      );
-
-      // act
-      final downTreatment = glyphMarkTreatment(
-        stairsDown,
-        semanticTerrain: true,
-      );
-      final upTreatment = glyphMarkTreatment(stairsUp, semanticTerrain: true);
-
-      // assert — stairs render as deliberate marks with a slight presence
-      // lift, while floor text does not.
-      expect(downTreatment.scale, greaterThan(1.0));
-      expect(upTreatment.scale, greaterThan(1.0));
-      expect(glyphMarkTreatment(floor).scale, 1.0);
-    });
-
-    test('uses a square outline for a marked target', () {
+    test('uses ticks for a marked target', () {
       const cell = GlyphCell(
         Position(1, 1),
         'g',
@@ -218,11 +84,10 @@ void main() {
 
       final treatment = glyphMarkTreatment(cell);
 
-      expect(treatment.targetOutline, GlyphOutlineShape.square);
-      expect(treatment.selectedOutline, isNull);
+      expect(treatment.targetMark, GlyphTargetMark.ticks);
     });
 
-    test('uses a circle outline for a selected actor', () {
+    test('uses brackets for a selected actor', () {
       const cell = GlyphCell(
         Position(1, 1),
         'g',
@@ -234,11 +99,10 @@ void main() {
 
       final treatment = glyphMarkTreatment(cell);
 
-      expect(treatment.targetOutline, isNull);
-      expect(treatment.selectedOutline, GlyphOutlineShape.circle);
+      expect(treatment.targetMark, GlyphTargetMark.brackets);
     });
 
-    test('keeps target and selection outlines together', () {
+    test('selection supersedes marking on the same cell', () {
       const cell = GlyphCell(
         Position(1, 1),
         'g',
@@ -251,11 +115,122 @@ void main() {
 
       final treatment = glyphMarkTreatment(cell);
 
-      expect(treatment.targetOutline, GlyphOutlineShape.square);
-      expect(treatment.selectedOutline, GlyphOutlineShape.circle);
+      expect(treatment.targetMark, GlyphTargetMark.brackets);
     });
 
-    test('uses no outline for an ordinary actor', () {
+    group('glyphInk (PLAN.md G4)', () {
+      const hero = Position(0, 0);
+
+      GlyphCell wallAt(int distance) => GlyphCell(
+        Position(distance, 0),
+        '#',
+        stoneWallLit,
+        fullOpacity,
+        shade: stoneWallShade,
+        layer: GlyphLayer.terrain,
+      );
+
+      test('a visible wall at the hero is lit stone at full alpha', () {
+        expect(glyphInk(wallAt(0), hero), stoneWallLit.withValues(alpha: 1.0));
+      });
+
+      test('a visible wall at the edge of sight is shade stone at 0.60', () {
+        expect(
+          glyphInk(wallAt(fovRadius), hero),
+          stoneWallShade.withValues(alpha: 0.60),
+        );
+      });
+
+      test('a visible wall halfway to the edge lerps at 0.8 alpha', () {
+        final ink = glyphInk(wallAt(4), hero);
+        final expected = Color.lerp(
+          stoneWallShade,
+          stoneWallLit,
+          0.5,
+        )!.withValues(alpha: 0.60 + 0.40 * 0.5);
+
+        expect(ink, expected);
+        expect(ink.a, closeTo(0.8, 0.0001));
+      });
+
+      test('value strictly decreases with distance along a row', () {
+        double luminance(Color colour) =>
+            0.2126 * colour.r + 0.7152 * colour.g + 0.0722 * colour.b;
+        final values = [
+          for (var distance = 0; distance <= fovRadius; distance++)
+            luminance(glyphInk(wallAt(distance), hero)),
+        ];
+        for (var i = 1; i < values.length; i++) {
+          expect(values[i], lessThan(values[i - 1]));
+        }
+      });
+
+      test('a remembered wall is shade stone at the remembered opacity, '
+          'dimmer than the edge of sight', () {
+        const remembered = GlyphCell(
+          Position(4, 0),
+          '#',
+          stoneWallLit,
+          rememberedOpacity,
+          shade: stoneWallShade,
+          layer: GlyphLayer.terrain,
+        );
+
+        final ink = glyphInk(remembered, hero);
+        final edgeOfSight = glyphInk(wallAt(fovRadius), hero);
+
+        expect(ink, stoneWallShade.withValues(alpha: 0.24));
+        expect(ink.a, lessThan(edgeOfSight.a));
+      });
+
+      test('node, litter, monster and hero glyphs paint at their own ink '
+          'and opacity', () {
+        const node = GlyphCell(
+          Position(1, 1),
+          '⌂',
+          nodeInk,
+          fullOpacity,
+          layer: GlyphLayer.node,
+        );
+        const rememberedNode = GlyphCell(
+          Position(1, 1),
+          '⌂',
+          nodeInk,
+          rememberedOpacity,
+          layer: GlyphLayer.node,
+        );
+        const litter = GlyphCell(
+          Position(1, 1),
+          '!',
+          litterInk,
+          fullOpacity,
+          layer: GlyphLayer.litter,
+        );
+        const monster = GlyphCell(
+          Position(1, 2),
+          'g',
+          crawlEnemy,
+          fullOpacity,
+          layer: GlyphLayer.monster,
+        );
+        const heroCell = GlyphCell(
+          Position(0, 0),
+          '@',
+          crawlHero,
+          fullOpacity,
+          layer: GlyphLayer.hero,
+        );
+
+        for (final cell in [node, rememberedNode, litter, monster, heroCell]) {
+          expect(
+            glyphInk(cell, hero),
+            cell.ink.withValues(alpha: cell.opacity),
+          );
+        }
+      });
+    });
+
+    test('carries no target mark for an ordinary actor', () {
       const cell = GlyphCell(
         Position(1, 1),
         'g',
@@ -266,8 +241,7 @@ void main() {
 
       final treatment = glyphMarkTreatment(cell);
 
-      expect(treatment.targetOutline, isNull);
-      expect(treatment.selectedOutline, isNull);
+      expect(treatment.targetMark, isNull);
     });
   });
 }

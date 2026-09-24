@@ -3,8 +3,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/art/art_assets.dart';
-import 'package:residuum_app/art/dungeon_art.dart';
-import 'package:residuum_app/game/dungeon_palette.dart';
 
 const _otherRegions = [
   RegionMaterial.cryptStone,
@@ -181,22 +179,6 @@ void main() {
           );
         }
       }
-    });
-
-    test('an unloaded process has no art', () {
-      // arrange
-      const regions = [..._otherRegions, RegionMaterial.lowlandRoad];
-
-      // act + assert
-      for (final region in regions) {
-        for (final surface in MaterialSurface.values) {
-          expect(dungeonArt.surfaceFor(region, surface), isNull);
-        }
-        for (final kind in OverlayKind.values) {
-          expect(dungeonArt.overlayFor(region, kind), isNull);
-        }
-      }
-      expect(const DungeonArt.none().surfaces, isEmpty);
     });
   });
 }

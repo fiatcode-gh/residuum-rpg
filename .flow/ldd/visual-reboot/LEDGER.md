@@ -34,22 +34,20 @@ The epic was opened from an approved external planning handoff:
 
 ## Current state
 
-- **Units 1–11 are accepted and present on `main`.** On 2026-09-17, local
-  `main` resolves to Unit 11's PR #21 merge commit
-  `60909e60ec3150cf9b590e6641a8ae51efca775c`.
-- **Unit 8's deferred device gate remains closed** and Unit 9's accepted
-  crawl-HUD contract remains unchanged.
-- **Unit 11 (dungeon scene recomposition) is merged and closed.** Its
-  renderer is an accepted dependency, not an implementation surface. Unit 10's
-  authored-art pipeline, determinism and one-time decode ownership stand.
-- **Unit 12 (crawl interface visual grammar) is locally accepted on suite
-  evidence and uncommitted** on `residuum-visual-reboot-12`. Final gate: 120
-  files formatted 0 changed, analyzer clean, **906 tests** against 884 before
-  the unit. The next gate is the user's integration decision.
-- **Unit 12.5 (crawl device gate) carries Unit 12's deferred device debt** —
-  AC5 greyscale, AC12 by eye, AC14 device figures, AC16 in full and AC17 —
-  plus three appearance findings the closure review could only defer. Its
-  contract is drafted and unapproved.
+- **Units 1–15 are on `main`.** Unit 12 merged by PR #22 (`907a4a8`), Units
+  13–14 by PR #23 (`4033de5`), and Unit 15 by PR #24 (`374ee77`, current
+  `main`).
+- **Unit 16 (ASCII atmospheric crawl parity)** is implemented on
+  `residuum-visual-reboot-16` (`b301f27`, pushed, no pull request) and is
+  **not accepted**: device exploration evidence showed it far from the
+  references.
+- **Unit 16.5 (ASCII crawl full parity)** has an approved contract
+  (`units/unit-16.5/CONTRACT.md`, 2026-09-23) on the same branch, and planning
+  is in progress. It supersedes the 36 dp cell, the monospace retirement, the
+  600 dp action-driven chrome ceiling, U15's chip-fit search and the textured
+  or material dungeon direction. U16 and U16.5 are accepted together.
+- The test app is installed on the user's physical phone with U16 test
+  saves. U16.5 ends by uninstalling it and verifying absence.
 
 ## Epic status
 
@@ -67,8 +65,10 @@ The epic was opened from an approved external planning handoff:
 | Unit 9 — crawl HUD chrome | Unit 8 | **merged** to `main` | 834 app tests, `dart format` 101 files/0 changed, analyzer clean; integrated acceptance review PASS with zero findings; `Medium_Phone` colour/greyscale device gate across five status scenes, measured one-row (52 px) map cost, both save slots restored byte-identically | merged by PR #19 at `4bf865c` (code `92fd4aa`); contract: `units/unit-9/CONTRACT.md`; plan: `units/unit-9/PLAN.md`; two-row `crawl_status.dart`; red/blue meter fills rejected, icon control chips deferred |
 | Unit 10 — authored art integration | Unit 9 | **merged** to `main` | final app gate, integrated acceptance review and five `Medium_Phone` colour/greyscale capsules passed; save restoration MATCH | merged by PR #20 at `0692bbc`; contract: `units/unit-10/CONTRACT.md`; approved masters remain LFS-backed |
 | Unit 11 — dungeon scene recomposition | Unit 10 | **merged** to `main` | `dart format` clean, `flutter analyze` clean, full app 884 tests; `Medium_Phone` colour/greyscale capsules; both save slots restored SHA-256 MATCH | merged by PR #21 at `60909e6` (code `824f53f`); contract: `units/unit-11/CONTRACT.md`; plan: `units/unit-11/PLAN.md`; later task receipts and acceptance were never written to this ledger — the PR record is the surviving evidence |
-| Unit 12 — crawl interface visual grammar | Unit 11 | **locally accepted, uncommitted; device gate deferred** | `dart format` 120 files/0 changed, `flutter analyze` clean, full app **906 tests** (884 before the unit); integrated acceptance review ACCEPT WITH FINDINGS then scoped closure ACCEPT WITH FINDINGS, no must-fix outstanding; **no device evidence** | on `residuum-visual-reboot-12`; contract: `units/unit-12/CONTRACT.md`; plan + Correction C1: `units/unit-12/PLAN.md`; one chip action row, crawl style seam, mock column order; O3 chip-keying deferred |
-| Unit 12.5 — crawl device gate | Unit 12 | **contract drafted, awaiting approval** | none yet | seven `Medium_Phone` capsules A–G, colour and greyscale, save backup and byte-identical restore; settles AC5/AC12/AC14/AC16/AC17 and closure findings OPT-1/2/3; contract: `units/unit-12.5/CONTRACT.md` |
+| Unit 12 — crawl interface visual grammar | Unit 11 | **merged** to `main` | see decision log | merged by PR #22 at `907a4a8` |
+| Units 12.5–15 | see decision log | code of Units 13–14 merged by PR #23 `4033de5`, Unit 15 by PR #24 `374ee77`; Unit 12.5 was a device gate (see decision log) | see decision log and RESUME | U13 visual system and U14 type authority are partly superseded by U16.5 |
+| Unit 16 — ASCII atmospheric crawl parity | Unit 15 | **implemented, not accepted** | package gates passed; one exploration device capsule; parity failed | `b301f27` on `residuum-visual-reboot-16`; contract: `units/unit-16/CONTRACT.md` |
+| Unit 16.5 — ASCII crawl full parity | Unit 16 | **contract approved; planning** | pending | contract: `units/unit-16.5/CONTRACT.md`; accepted together with U16 |
 
 Completed units are ordered **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11**.
 Unit 12 follows Unit 11 and consumes its renderer as a closed dependency.
@@ -79,8 +79,10 @@ log drawer; no unit reordering is needed.
 
 - Phone-first; tablet later. Flame only for the dungeon scene — never the
   whole app, and **Flame is never authoritative game state**.
-- Graphical-glyph dungeon (not sprite-tile), procedural deterministic
-  terrain texture, smooth lighting over rules-driven FOV.
+- Pure-ASCII glyph dungeon (not sprite-tile, no terrain textures), with a
+  deterministic torchlight pool, visible-terrain falloff, and non-semantic fog
+  or parallax over rules-driven FOV (U16.5 supersedes the procedural terrain
+  texture).
 - Four-region responsibility rule: map = space/targets, timeline = time,
   log = causality, action shelf = verbs. No concern duplicated across
   regions.
@@ -95,8 +97,8 @@ log drawer; no unit reordering is needed.
 - Activation queue replaces `NOW`/`IN n` prose; repeated fast-actor
   activations shown literally; duplicate enemies get stable encounter-local
   labels used consistently across map/timeline/targeting/inspect/log.
-- 3-line scrollable log peek + half/full overlay history; auto-follow with
-  `↓ N new` return affordance.
+- Four-line log peek + overlay history; auto-follow with an unread/new
+  return affordance (U16.5 composition).
 - No pinch zoom in the first pass; no decorative interactable-looking props
   unsupported by rules; non-dungeon UI quiet and subordinate to the map.
 - Accessibility non-negotiable (AGENTS.md + handoff 3.5): no important state
@@ -4418,3 +4420,741 @@ request exists, and the integration choice is the user's.
   unchanged, and the visible Firebolt armed marker and ghoul target outline
   appear without resolving gameplay. Both capsules restored both canonical
   save slots by SHA-256 plus `cmp` MATCH.
+
+## Unit 16 intake — 2026-09-23
+
+- Local intake validated the external bundle and all SHA-256 receipts at
+  `374ee775e6fd1c29519dab8fe9d597dd38650593`, which is current `main`
+  and the PR #24 merge. U15 is integrated; no U15 history was rewritten.
+- The user-approved ASCII atmospheric direction is preserved: active crawl
+  terrain/actors are semantic glyphs; light and depth are presentation; mock
+  content never overrides repository truth. All four bundled visual
+  references were inspected and match their declared hashes.
+- Fresh source recon is `units/unit-16/recon.md`. The locally governing
+  contract is drafted at `units/unit-16/CONTRACT.md` and awaits explicit
+  approval. Its boundaries prohibit implementation changes until separately
+  authorized and preserve U15's 36 dp grid, stable action fitting, secrecy,
+  log/timeline semantics, and <600 dp target-device chrome limit.
+- The imported implementation strategy is partial, not execution-grade.
+  After contract approval, local `flow-planning` owns the renderer/composition
+  HOW, exact placeholder slot geometry, proof surfaces, and task briefs.
+  Implementation requires a separate explicit plan approval.
+- The source checkout was clean on `main` at intake. No production code,
+  asset generation, or device mutation occurred.
+
+### U16 contract approval — 2026-09-23
+
+- The user explicitly approved the locally reconciled WHAT/WHY contract at
+  `units/unit-16/CONTRACT.md`, materially unchanged from the approved
+  handoff direction.
+- Authorization now extends to execution-grade planning only. The imported
+  strategy is partial; implementation remains unauthorized until the plan is
+  completed and separately approved.
+
+### U16 execution-plan pre-approval — 2026-09-23
+
+- The execution-grade plan is
+  `units/unit-16/PLAN.md` with seven sequential fresh-executor briefs in
+  `units/unit-16/plan-tasks/`. The plan quality gate records COR/TTC/CRF pass
+  and SEC skip; its source recon targets the verified base.
+- The user explicitly directed execution after planning and pre-approved
+  this plan before its completion, conditional on conformance to the approved
+  U16 contract. This authorizes local implementation only within the plan;
+  material deviations return to Main. No publication or integration action
+  is authorized.
+- No production changes have begun. Current `main` is not the execution
+  checkout; create `residuum-visual-reboot-16` from the verified base while
+  preserving the staged shared LDD artifacts.
+
+### U16 plan accepted; Task 01 active — 2026-09-23
+
+- Main inspected `PLAN.md` and all seven fresh-executor capsules against
+  the approved contract. It preserves semantics and fixes the scope at
+  seven sequential tasks: ASCII foreground; dungeon-decode cutover; visible
+  terrain light; non-semantic static depth; status; timeline; recent events.
+- Planner omitted parallax and rejected all new placeholders after confirming
+  existing real icon/glyph consumers; this stays inside the approved optional
+  scope and preserves the device chrome budget. No terrain/actor art or fake
+  controls are introduced.
+- Main removed an OS-level greyscale capture from the target-device procedure
+  because repository rules do not require it; colour evidence with redundant
+  non-hue cues remains mandatory. Target-device work requires a user-started
+  device and checkpointed save backup/restore.
+- User explicitly pre-approved execution of this plan after its completion.
+  `residuum-visual-reboot-16` is the feature checkout created from the recorded
+  base. Task 01 is active; implementation is not yet accepted.
+
+### U16 Task 01 — ASCII renderer accepted — 2026-09-23
+
+- Fresh plan executor replaced active material rendering with the existing
+  ordered `glyphPlan` foreground. Known terrain now renders `#`, `.`, stairs
+  and current semantic glyphs; visible/remembered/unknown behavior, actor
+  layering, selection/target shapes, regional palettes, 36 dp grid and
+  presentation-only input paths remain in place.
+- The Red scene-world assertion failed because a known wall `#` had no live
+  glyph component. Green passed the renderer/navigation/geometry/bleed scope
+  (99 tests) and the palette suite (5 tests); formatting completed and
+  `flutter analyze` reported no issues.
+- Active material renderer and material-only tests were deleted as the
+  planned clean cutover. Historical dungeon assets/catalogue and startup
+  decode remain until Task 02. No gameplay, content, asset, save, UI chrome,
+  device, or publication changes occurred.
+- Main independently inspected the patch and rendered scene assertions. A
+  plan/test path discrepancy (`test/game/grid_geometry_test.dart` versus the
+  actual root `test/grid_geometry_test.dart`) was corrected in Task 01 and
+  Task 04 capsules before Green; source/proof scope did not change.
+- Task 02 is next: remove only unused dungeon-image startup decoding while
+  preserving environment illustration precache and the historical catalogue.
+
+### U16 Task 02 — startup dungeon decode removed — 2026-09-23
+
+- Main startup retains `await warmUpArt()` before `guardedBoot`. The warm-up
+  moved to `art/warm_up.dart` and now precaches only the three
+  `EnvironmentArt` illustrations. `art/dungeon_art.dart`, its `DungeonArt`
+  image retention/decode machinery, and dungeon-image warm-up were removed
+  without a shim.
+- `RegionMaterial` moved into `art/art_assets.dart`; all historical
+  `MaterialArt`/`TerrainOverlayArt` catalogue paths, mapping, manifest entries,
+  shipped assets and masters remain.
+- Baseline focused warm-up/catalogue/navigation/layout tests passed (65).
+  The new asset-channel behavioral Red observed six `MaterialArt` and twelve
+  `TerrainOverlayArt` requests. Green passed all 65, verifies environment
+  assets requested and resolved from real file bytes, and observes no dungeon
+  image requests. Formatter and `flutter analyze` passed.
+- Main inspected startup order, warm-up/error-handling path, catalogue tests,
+  and request-spy assertions. No asset, manifest, save, gameplay, UI, device,
+  or publication change occurred.
+- Task 03 is next: hero-centered visible-terrain lighting that preserves
+  opacity and leaves hidden/remembered glyphs unchanged.
+
+### U16 Task 03 — visibility-aware lighting — active — 2026-09-23
+
+- Fresh `flow-plan-executor` `U16Task03` is executing
+  `plan-tasks/03-visibility-light.md` on `residuum-visual-reboot-16`.
+- Scope is limited to deterministic hero-centered visible-terrain ink,
+  retained-glyph repaint, and shape-distinct targeting/selection in the
+  existing renderer. Main reviews actual patch and focused proof before
+  Task 04.
+
+### U16 Task 03 — visible-terrain lighting accepted — 2026-09-23
+
+- `terrainPresentationInk` implements the approved squared-distance tint only
+  for fully visible terrain. Snapshots carry true hero position separately
+  from camera focus and through viewport reuse; retained glyphs update their
+  resolved ink on hero/projection change, not pan alone. Remembered glyphs,
+  actors, nodes, opacity, map input and 36 dp geometry remain unchanged.
+- The new behavioral Red failed on the missing lighting function. Green
+  passed the focused renderer/glyph-plan/navigation/battle scope (118 tests).
+  Tests observe hero-vs-selected light origin, retained glyph recolour after
+  movement and no recolour on pan, hidden position absence, and simultaneous
+  inset square target/circle selection geometry. Formatting and analyzer passed.
+- Main independently reviewed the ink formula, snapshot propagation,
+  synchronization invalidation, live text component and outline assertions.
+  No device, publication, gameplay, save, or additional UI work occurred.
+- Task 04 is next: add depth behind the scene without encoding map information.
+
+### U16 Task 04 — viewport-only nonsemantic depth — active — 2026-09-23
+
+- Fresh `flow-plan-executor` `U16Task04` is executing
+  `plan-tasks/04-nonsemantic-depth.md` on `residuum-visual-reboot-16`.
+- Scope is limited to deterministic viewport-only atmosphere behind Flame.
+  Main reviews same-size/topology independence, input and clipping proof before
+  Task 05.
+
+### U16 Task 04 — viewport-only depth accepted — 2026-09-23
+
+- Added a constant `DungeonDepthPainter` with uniform charcoal base and broad,
+  subdued cool/warm radial value fields. `GameWidget.backgroundBuilder` places
+  it inside the exact map viewport under `IgnorePointer` and `ExcludeSemantics`.
+  It does not read game state or topology; no parallax/fallback was added.
+- Red failed on the absent scene backdrop. Green passed 41 focused scene,
+  bleed, grid and crawl-layout tests. Raster proof covers exact repeated
+  same-size output, broad variation, identical background across hidden
+  topology and hero/pan/selection changes, and the actual Flame scene shows the
+  painter beneath unknown cells. Input/semantics, visible glyphs, grid/hits and
+  bleed sentinels remain covered. Formatting and analyzer passed.
+- Main inspected the painter, widget placement, input proof and raster/bleed
+  assertions. No device, asset, gameplay, publication, or integration change.
+- Task 05 is next: factual status within the existing allocation and height.
+
+### U16 Task 05 — framed factual status — active — 2026-09-23
+
+- Fresh `flow-plan-executor` `U16Task05` is executing
+  `plan-tasks/05-factual-status.md` on `residuum-visual-reboot-16`.
+- Scope is limited to styling the existing factual band with zero added height
+  or changed allocations. Main reviews test-host status/map measurements and
+  content retention before Task 06.
+
+### U16 Task 05 — framed factual status accepted — 2026-09-23
+
+- Wrapped the existing header and resource rows in one `panel`/`rule`/
+  `hairline`/`radius` frame inside the unchanged padding. No new status fact,
+  padding or allocation; status order, labels, keys, meters, action row and
+  `Expanded` map remain unchanged.
+- Behavioral Red found HP outside one shared status frame. Green passed 30
+  status/layout/action tests. Exploration and watched status remain 49 dp with
+  map y=49..758.4 dp; battle remains 49 dp with map y=155..758.4 dp. Existing
+  road/dungeon/engagement/HP/mana/ward cases and longest keep state at 1.3x
+  text scale remained readable. Formatter/analyzer passed.
+- Main inspected visible-frame style, frame containment of facts and the
+  measured test-host geometry. Physical-device chrome remains Main-owned.
+  No other screen, game allocation, shared meter, or device changed.
+- Task 06 is next: compact the existing activation timeline without changing
+  its projection or action semantics.
+
+### U16 Task 06 — compact activation timeline — active — 2026-09-23
+
+- Fresh `flow-plan-executor` `U16Task06` is executing
+  `plan-tasks/06-compact-timeline.md` on `residuum-visual-reboot-16`.
+- Scope is limited to current-token hierarchy and the planned circle/gap
+  dimensions. Projection, secrecy, actor identity, interaction, map allocation
+  and action shelf remain locked. Main reviews focused proof before Task 07.
+
+### U16 device target updated — 2026-09-23
+
+- User explicitly directed U16 captures to their attached physical Android
+  phone over wireless ADB instead of the usual AVD. This supersedes the earlier
+  `Medium_Phone` emulator target; the user-approved contract and device gate
+  were updated, including the no-emulator substitution rule.
+- No ADB/device action has occurred. Before any ADB command, Main must write a
+  recovery checkpoint and ledger pointer. Then identify the phone, back up and
+  hash both save slots, verify a safe restore path, and only afterward install,
+  launch or capture. If safe access/restore is unavailable, stop without using
+  an emulator.
+
+### U16 Task 06 — compact timeline accepted — 2026-09-23
+
+- Changed only `crawlTokenCell` to 36 dp and current-hero ring border/value
+  treatment in `battle_view.dart`. 76 dp token width, order/repetition,
+  `projectActivationQueue`, secrecy, token keys, words, actor inspection and
+  action shelf remain unchanged; actor InkWell stays at least 44 dp high.
+- Behavioral Red failed because current and future token borders were both
+  2 dp. Green passed the focused activation/battle/layout/action-row tests.
+  Test-host dock/map placement is 90 dp / y=147 dp for both standard and
+  repeated-actor queues. Repeated/hidden queue behavior, scroll and full-name
+  fit at 2x, exact actor selection and NOW/NEXT are covered. Formatter and
+  analyzer passed.
+- Main inspected live widget styling, hit-surface sizing and hidden-middle
+  negative proof. No queue/API, combat, action shelf, device or save change.
+- Task 07 is next: recent-event peek and expanded log composition.
+
+### U16 Task 07 — recent events/log — active — 2026-09-23
+
+- Fresh `flow-plan-executor` `U16Task07` is executing
+  `plan-tasks/07-recent-events.md` on `residuum-visual-reboot-16`.
+- Scope is limited to the fixed 104 dp peek and existing log drawer.
+  Main-owned final app gates and independent acceptance review precede the
+  physical-phone checkpoint and evidence.
+
+### U16 Task 07 — recent events/log accepted — 2026-09-23
+
+- The 104 dp `LogPeek` now has a compact `RECENT EVENTS` title, hairline,
+  reverse list of real sentences with the newest at the bottom, and existing
+  expand affordance. `LogDrawer` adds the same heading and an exact live entry
+  count, including zero. Category marks/words, chronological list, accessible
+  row sentence, follow/unread, close, and death behavior remain intact.
+- Behavioral Red found no peek heading. Green passed the assigned
+  `log_drawer_test`, `crawl_layout_test`, `crawl_action_row_test` and
+  `battle_view_test` suites. Widget evidence covers real multiline newest text,
+  empty/populated counts, category marks/words, chronology, follow/unread and
+  exact map/peek/action geometry through closed/half/full/closed states.
+  Peek remains 104 dp. Formatting and analyzer passed.
+- Main inspected the real-line reverse list, live count, row semantics and
+  extent assertions. No event model, reducer, overlay placement, action,
+  gameplay, save, device, or publication changes occurred.
+- All seven implementation tasks are accepted. Main owns the final
+  package-wide gates and one independent acceptance review before phone
+  evidence.
+
+### U16 Main final package gates — 2026-09-23
+
+- On the coherent Task 01–07 tree, from `packages/app`:
+  `dart format --output=none --set-exit-if-changed lib test` reported 123
+  files, zero changes; `flutter analyze` reported no issues; `flutter test`
+  passed all 1,069 tests. Staged and unstaged `git diff --check` passed.
+- No production/asset/build mutation followed these gates. The latest physical
+  phone target/checkpoint documentation edit preceded them. Next: one
+  independent acceptance review; no ADB/device action has started.
+
+### U16 acceptance review and phone recovery checkpoint — 2026-09-23
+
+- `flow-acceptance-reviewer` returned **ACCEPT**, no findings, on the coherent
+  seven-task app diff and approved contract/plan. It independently verified
+  scene/bleed targeted tests and confirmed no core/content/asset/pubspec
+  changes. The complete Main-owned final gates passed: 123 files formatted,
+  zero changes; analyzer clean; 1,069 app tests passed; staged/unstaged diff
+  checks clean.
+- Review’s unstaged app diff SHA-256
+  `4615f31a8c12d6c15ad067559b71f3af870a1cdca402f78aef7dcbf61af612ec`
+  remains unchanged. After review, only staged LDD ledger/resume records
+  changed; those docs do not affect app proof.
+- User explicitly directs evidence on their attached physical Android phone
+  over wireless ADB instead of the usual AVD/`Medium_Phone`. The contract and
+  plan were superseded accordingly.
+- Durable pre-device checkpoint:
+  `.flow/checkpoints/374ee775e6fd1c29519dab8fe9d597dd38650593.md`.
+  The checkpoint and ledger pointer were recorded before the first ADB
+  command. Read-only checks identified the phone but found no current app
+  package/data access. No installation, launch or save action occurred.
+- The next action is blocked on the user's safe-data decision recorded below;
+  no further ADB/device action or emulator substitution.
+
+### U16 phone discovery — capture blocked — 2026-09-23
+
+- After recording `.flow/checkpoints/374ee775e6fd1c29519dab8fe9d597dd38650593.md`
+  and the ledger pointer, read-only wireless ADB discovery found one physical
+  vivo I2219 phone running Android 16 (API 36), 1080x2408 px at density 440.
+  No AVD was used. The exact unique serial is retained only in the ignored
+  local checkpoint, not this tracked shared ledger.
+- The current source app ID is `com.example.residuum_app`, but the phone has no
+  package path or installed package matching Residuum; `run-as` reports
+  `packagelist_parse failed`. No app launch/install, save read/backup, save
+  mutation or restore test occurred. Existing on-device data status is
+  unverified; absence from `pm list packages` alone is not proof that no prior
+  private data exists.
+- The capture gate was initially blocked pending data clarification. The user
+  has now explicitly confirmed this package never held app data and authorized
+  fresh installation/capture with restoration to the prior absent state.
+  See the following approved-path record; no device mutation has occurred.
+
+### U16 user-approved fresh-install device path — 2026-09-23
+
+- After read-only phone discovery found `com.example.residuum_app` absent and
+  inaccessible to `run-as`, Main stopped before installation. The user
+  explicitly selected the option confirming this package has never held app
+  data and authorizing a fresh install/capture followed by restoration to the
+  pre-capture absent-package state.
+- The approved baseline is package absent and both app-document save slots
+  absent, based on the user's confirmation and read-only package checks. The
+  local pre-capture receipt is
+  `.flow/evidence/visual-reboot/unit-16-device/device-state-before.md`. Before
+  install, `pm path` returned no path, package search found no match, and
+  `/sdcard/Android/data/com.example.residuum_app` did not exist. No save backup
+  or file hash is claimed; any baseline contradiction blocks mutation.
+- After capture, uninstall only the test package and verify package absence.
+  Do not clear data, alter unrelated phone state or substitute an emulator.
+
+### U16 authorized APK installation — 2026-09-23
+
+- The accepted `packages/app` debug APK built successfully and was installed
+  only after the user-authorized absent-package baseline and external-path
+  checks were recorded. APK SHA-256:
+  `320aa28b30d96d8bb81d7903777df41645273b5842b06d6705b72835ff0ee995`.
+- `adb install` returned `Success`; `pm path com.example.residuum_app`
+  returned an installed APK path. The app has not been launched. No AVD was
+  used. The local pre-install baseline receipt remains
+  `.flow/evidence/visual-reboot/unit-16-device/device-state-before.md`.
+- Next action: fresh `flow-evidence-verifier` sessions own the designated
+  device capture capsules; Main inspects receipts and decides acceptance.
+
+### U16 exploration device capsule — 2026-09-23
+
+- Live physical-phone exploration evidence was captured on the accepted APK.
+  Visible, remembered and unknown terrain are distinguishable; 36dp grid-cell
+  spacing and the map rectangle were measured; pan/recenter, backdrop
+  legibility and observed clipping were recorded.
+- The capsule left the fresh app installed in The Crypt exploration. Ordinary
+  play created both save slots. No save contents were read or edited; the
+  receipts and screenshots remain in the local evidence capsule.
+- Tap/swipe operations were ADB-injected on the physical phone, not direct
+  fingertip input. Visual evidence is available; direct touch precision is
+  unverified. Next use fresh sequential verifiers for the remaining scene
+  capsules, then restore the package to absent.
+
+### U16 pause and Unit 16.5 handoff — 2026-09-23
+
+- Visual parity was not achieved in this session. Only the exploration capsule
+  was captured; combat/targeting/timeline, log drawer, road encounter and
+  worst-density evidence remain outstanding.
+- Direct fingertip precision was not tested; map movement and pan used
+  ADB-injected touch events on the physical phone.
+- The user directs a pause and will create Unit 16.5 with a stronger model.
+  Leave the accepted app installed in The Crypt with the newly created test
+  save slots unchanged for handoff. Their contents were not read or edited.
+- Unit 16 remains unaccepted. The new unit must decide how to continue device
+  evidence and restore the prior absent-package state. No further device
+  actions in this session.
+
+### U16 paused branch publication — 2026-09-23
+
+- Commit `b301f27d70db5c5c09ca7274b81fa1f44983162c` (`feat: add ASCII crawl
+  presentation`) was pushed to `origin/residuum-visual-reboot-16` at the user's
+  request. No pull request was created.
+- The branch contains the implementation and shared U16 LDD records. Local
+  device receipts and screenshots remain under ignored `.flow/evidence/`;
+  `.flow/checkpoints/` retains the exact phone state and remaining acceptance
+  work for Unit 16.5.
+- U16 is not accepted. Unit 16.5 must decide how to continue visual evidence
+  and restore the phone to the user-authorized prior absent-package state.
+
+## Unit 16.5 intake — 2026-09-23
+
+- Architect review of U16's exploration capture against the four approved
+  references: the result is far from parity. Root causes were the plan's
+  locks, not execution: the 36 dp cell (about 11×17 cells against the mock's
+  about 30 columns), Spectral map glyphs where the bible's typography panel
+  specifies mono for map and UI, an ink-only 0.38 tint in place of a light
+  pool, a gradient-only backdrop with no fog, vignette or parallax, and the
+  unchanged status band and action row. The log peek heading also clips its
+  first line on device. Criterion 5 ("materially closer") was never a gate
+  before `b301f27` was pushed.
+- The user delegated four decisions to the architect and asked for full
+  parity with the art bible and mocks on the same branch
+  `residuum-visual-reboot-16`. Decided: (1) a dense mono character cell of
+  about 13×16 dp, with intent-based touch resolution (22 dp radius) in place
+  of the fixed 36 dp cell; (2) IBM Plex Mono as a third type role for the map
+  and data, superseding the Unit 14 monospace retirement; (3) fixed chrome per
+  mode with a horizontally scrolling five-slot action bar, retiring the 600 dp
+  action-driven ceiling and U15's chip-fit search, with a new map-share floor
+  of 45% in exploration and 35% in battle; (4) a real torchlight pool,
+  terrain falloff, fog, vignette and camera-relative parallax, with
+  knowledge secrecy kept.
+- The user authorized updates to any repo doc that contradicts the new
+  direction.
+- Draft contract: `units/unit-16.5/CONTRACT.md`, awaiting explicit user
+  approval. U16 remains unaccepted and is accepted together with U16.5.
+
+### U16.5 contract approval — 2026-09-23
+
+- The user explicitly approved `units/unit-16.5/CONTRACT.md` and authorized
+  local commits on `residuum-visual-reboot-16` during execution. Push, pull
+  request and merge remain separately gated. The plan still needs explicit
+  approval before any production-writing worker. Next: dispatch
+  `flow-planner`.
+
+### U16.5 plan approval — 2026-09-23
+
+- `flow-planner` produced `units/unit-16.5/PLAN.md` and 13 task briefs
+  (execution-grade; COR/TTC/CRF PASS, SEC skip). The architect accepted
+  escalations E1–E6: 4-way step (core `Direction` is 4-way); a cell-under-finger
+  guard and an orthogonal step guard ahead of the 22 dp monster rule; peek shows
+  `N entries` because peek forces unread to 0; hero name and world day passed
+  in as app-side run constants; hero HP/mana kept in the combat panel; map
+  floors asserted at text scale 1.0.
+- The user explicitly approved the plan and authorized use of the attached
+  physical phone over wireless ADB for Checkpoint A and the final gate
+  (install over the U16 test build; uninstall and verify absence at the end).
+- Next: Task 01 (`plan-tasks/01-mono-type-role.md`), with a fresh
+  `flow-plan-executor`.
+
+### U16.5 Task 01 — mono type role accepted — 2026-09-23
+
+- `9249e86`: IBM Plex Mono Regular/SemiBold + OFL (SHA-256 matched plan),
+  pubspec + test FontLoader, G2 mono roles, G3 crawl palette tokens, AGENTS.md
+  type rule. Red: Ahem width 115 vs 69; Green: type_authority 285 pass,
+  analyzer clean. Next: Task 02.
+
+### U16.5 Task 02 — dense glyph grid accepted — 2026-09-23
+
+- First executor stalled before any action; cancelled and redispatched.
+- Commit: 13×16 `GridGeometry` (`mapCellWidth`/`mapCellHeight`,
+  `centreOf`/`rectOf`, `fit` deleted), mono glyph rendering, `·` floor,
+  corner-tick/bracket reticles, and a CI gate that allows `fontFamily` only in
+  tokens.dart (the monospace grep is retired). 185 focused tests pass;
+  analyzer clean; core/content untouched.
+- Ruling: the 17 dp Plex line box exceeds the 16 dp cell by ≤1.2 dp per side
+  as empty ascender/descender space. Accepted; the test bounds it at 1.2 dp
+  per side.
+
+### U16.5 Task 03 — stone light values accepted — 2026-09-23
+
+- Commit: `glyphInk` per G4 (lit→shade by (1−t)², alpha 0.55–1.0, remembered
+  shade at 0.24), stone inks shared across regions, `DungeonPalette` reduced
+  to fog, hero `crawlHero`, monsters `crawlEnemy`, litter `crawlCold`. 136
+  focused tests pass; analyzer clean.
+
+### U16.5 Task 04 — atmosphere accepted; Checkpoint A started — 2026-09-23
+
+- `b6ff3fa`: `dungeon_atmosphere.dart` replaces `dungeon_depth.dart`: base,
+  hashed fog field, vignette, and parallax on fog only (0.12, ±40 dp, off
+  under reduced motion), plus the torch pool and hero bloom in place of the
+  per-glyph halo. 135 focused tests pass; analyzer clean; debug APK
+  `0f98cad2…` built.
+- The recovery checkpoint `.flow/checkpoints/b6ff3fa.md` was written before any
+  ADB command. Next: verifier capsule U165-CPA (install over the U16 build,
+  capture exploration), then the architect's on-track verdict.
+
+### U16.5 amendment A1 — 16×20 cell, 48 dp touch targets — 2026-09-23
+
+- The user saw the 13×16 dp map on the phone and judged it too small and hard
+  to tap, citing Android's minimum 48 dp touch target. Cause: the cell is small,
+  and Task 05 (intent-based touch resolution) had not landed, so taps needed an
+  exact cell hit.
+- The user chose 16×20 dp cells (about 24 columns) over 13×16 dp and 18×22 dp.
+  Touch radius goes from 22 to 24 dp (a 48 dp target). The contract and PLAN.md
+  were amended (A1). Map glyph 21 dp, badge 10 dp, reticle rect scaled; pool,
+  bloom and floors unchanged.
+- Next: a fresh correction executor applies A1 to Tasks 02–04's constants and
+  tests; then Checkpoint A is re-captured and Task 05 uses radius 24.
+
+### U16.5 amendment A1 applied — 2026-09-23
+
+- Commit: 16×20 cell, glyph 21 dp, badge 10 dp, reticle (0.75, 0.75,
+  14.5, 18.5) with 4.3 dp arms; pool and bloom derive to 96 / 25.6 dp. Ruling:
+  the line-box overflow bound becomes proportional, 0.075 × cell height
+  (1.5 dp), for every glyph layer (the hero at scale 1.08 is 1.34 dp).
+  478 focused tests pass; analyzer clean; APK `b5186d8f…`.
+
+### U16.5 Checkpoint A, first capture (13×16, superseded) — 2026-09-23
+
+- The U165-CPA capture of `0f98cad2…` stopped early because A1 superseded it.
+  The app is installed in Crypt exploration. Insets: top ≈38.2 dp, bottom
+  ≈17.8 dp.
+- Verdict: structurally on track: torch pool, mono stone glyphs, dimmer
+  remembered terrain, void unknown, no leak.
+- Tuning is off: terrain outside the pool reads neutral grey, and the fog is
+  nearly invisible. The architect locked a tuning correction to G3/G4/G5: warm
+  shade inks (#8A7552 / #6B5B40 / #B39A6A), linear light with alpha
+  0.60 + 0.40·light, fog alpha 0.22–0.70 with disc radius 96.
+- Pan was a no-op because the depth-1 floor (24×16) fits both axes. That is by
+  design. Parallax and recenter need a larger floor or a road fight in the
+  re-capture.
+
+- Tuning committed as `206bc97`; APK `4471552…`. Recovery checkpoint `.flow/checkpoints/206bc97.md`. Next: re-capture capsule U165-CPA2.
+
+### U16.5 Checkpoint A verdict and Task 05 — 2026-09-23
+
+- Re-capture at 16×20 on `4471552…` (U165-CPA2 frames 01–02): warm tan stone
+  across the lit room fading to dim brown, a visible torch pool, a clearly
+  dimmer remembered room, visible blue-grey fog masses, about 24 columns.
+  **Verdict: on track.** Chrome tasks may proceed. Final sign-off must judge
+  two notes: Plex Mono's slanted `#` against the mock's upright `#`, and an
+  item glyph showing at the edge of `@` when the hero stands on an item.
+- Task 05 committed: `map_touch.dart` (G7 with A1 radius 24) wired through
+  `GameScreen`. 17 resolver tests + 3 wiring tests, 450 focused tests pass;
+  analyzer clean.
+- U165-CPA2 complete: cell measured 16.0×20.0 dp; depth-2 pan moved the camera
+  64 px (the clamp limit). Fog parallax (≈8 px) was not measured on device and
+  stays proven by the automated test. Recenter was not exercised (23 dp pan
+  range); the final gate needs a larger floor. The hero was left Wounded
+  (6/20 HP, 0 potions) at depth 1. The app stays installed.
+
+### U16.5 Task 06 — five-slot action bar accepted — 2026-09-23
+
+- `ea7b682`: a fixed five-slot bar with horizontal scroll and peek replaces
+  `_fitFor` and the chip Wrap; `— armed` replaces metadata while armed; the
+  test phone fixture uses the measured insets. Rulings: Task 06 adds the missing
+  G2 textSlot roles (later tasks add their own missing G2 roles); the dialog
+  spacing constants migrated; two battle_view tests and the bleed-test
+  precondition were rewritten to the new bar. **Full suite 1202/1202**,
+  formatter and analyzer clean.
+
+### U16.5 Task 07 — recent events and expanded log accepted; paused — 2026-09-23
+
+- `91aa6db`: the peek is a fixed 96 dp, four-line mono column with `RECENT
+  EVENTS` and `N entries` (fixes the clipped first line). The expanded sheet has
+  per-category pictograms and tints, half extent 345 dp or full to the map top,
+  and bottoms on the action bar. Added G2 displaySection / displaySheetTitle.
+  Fixed a Container border-padding overflow. Two battle_view assertions were
+  rewritten off the old ListView. **Full suite 1200/1200**, formatter and
+  analyzer clean.
+- **User paused after Task 07** and authorized pushing the branch (no pull
+  request). Next on resume: Task 08 (`plan-tasks/08-hero-panel.md`) with a
+  fresh `flow-plan-executor`, then 09–13, then Main's final gates, acceptance
+  review, device gate, reviewer scoring, user sign-off and uninstall.
+- Device: the app stays installed on the phone (APK `4471552…`, pre-Task-05
+  build), the hero Wounded 6/20 at Crypt depth 1. Recovery checkpoint
+  `.flow/checkpoints/206bc97.md`.
+
+### U16/U16.5 vivo phone restored — 2026-09-23
+
+- The user is switching to a different phone for future evidence. Test saves
+  on the vivo were our own throwaway data (the original baseline was absent),
+  so no backup was taken. With the user's approval, the app was uninstalled.
+  Absence is verified with the same signals as the pre-U16 baseline: RESTORE
+  MATCH (`.flow/evidence/visual-reboot/unit-16.5-device/restore-receipt.md`).
+  The vivo device debt is closed.
+- The new phone is unknown. Before its first ADB action: write a checkpoint,
+  then run a read-only discovery of size, density, insets and package
+  presence. If the package holds real data, back up both save slots
+  (`app_flutter/save.json`, `save-previous.json`) byte-exact before installing.
+  Re-measure G8 figures there; layout rules stay proportional.
+
+### U16.5 Task 08 — character panel accepted — 2026-09-23
+
+- `69cdf30`: `HeroPanel` (102 dp; 132.6 dp at 1.3× text), hero label passed in
+  from main.dart, G11 facts, `displayLabel` role added. The exploration map
+  bottom moves from 747.4 to 639.4 dp as designed. Full suite 1205/1205;
+  analyzer clean; core/content untouched.
+
+### U16.5 Task 09 — combat panel accepted — 2026-09-23
+
+- `e736f6d`: `CombatPanel` (124 dp) replaces `HeroPanel` in battle.
+  `GameViewState.targetActor` gives one target focus with a deterministic
+  tie-break. Added roles displayName and displayNameCold. The armed and
+  unarmed map rects are identical. Full suite 1223/1223; analyzer clean. Three
+  non-owned tests were rewritten to the new design. For the acceptance review:
+  a body comment added to crawl_layout_test must be checked against the
+  AGENTS.md comment rule.
+
+### U16.5 Task 10 — crawl header accepted — 2026-09-23
+
+- `b8c2356`: `CrawlHeader` (88 dp: wordmark, meta line with depth, place and
+  day, shape-mark chips) replaces `crawl_status.dart`. World day is a GameBloc
+  run constant; it cannot change while a crawl is open (world_bloc
+  `_onDayWalked` only runs while travelling). Map in the test fixture:
+  exploration 88→639.4 (551 dp), battle 186→617.4 (431 dp), above the
+  45%/35% floors. Full suite 1225/1225; analyzer clean.
+
+### U16.5 Task 11 — timeline and fixed-chrome proof accepted — 2026-09-23
+
+- `74ca6c8`: NOW/NEXT pill timeline (24 dp pills, 44 dp hit rows, gold current
+  frame) and the fixed-chrome proof on the 392.7×875.6 fixture with the
+  measured insets. The receipt's rects were mis-transcribed; the executor
+  re-measured on query. Global rects: exploration map 126.2→573.8 (447.6 dp,
+  51%), battle map 184.2→551.8 (367.6 dp, 42%). Both floors hold, and the
+  column fills the 819.6 dp safe height exactly. The map rect is identical
+  across armed/unarmed, 2 vs 12 actions, log extents, notes and inspect (1
+  action is unreachable in battle; the pair is 2 vs 12 with the battle held
+  constant). Full suite 1222/1222 (6 generated tests for the deleted
+  textGlyphDim role are gone).
+
+### U16.5 Task 12 — map callout accepted — 2026-09-23
+
+- `464b979`: an anchored `MapCallout` with a leader line replaces the
+  map-inspect sheet (the timeline token keeps the sheet). New events
+  `ActorInspected`/`InspectDismissed`; the callout clears on pan, actions,
+  arming, the log handle and blank taps. Edge flips are proven, and the map
+  rect is unchanged. Full suite 1242/1242; analyzer clean. Four non-owned
+  tests were migrated off the sheet design.
+
+### U16.5 Task 13 and Main final package gates — 2026-09-23
+
+- `41c83f0`: the design spec's Visuals row and the VISUAL-SYSTEM.md
+  supersessions, with A1 numbers. The stale-claim grep is clean and the CI type
+  gate passes.
+- Main at `41c83f0` from packages/app: `dart format` 132 files, 0 changed;
+  `flutter analyze` clean; `flutter test` **1242/1242**. `packages/core` and
+  `packages/content` have zero diff since `2c073b7`. Next: one
+  `flow-acceptance-reviewer` over `2c073b7..41c83f0`, then the new-phone device
+  gate.
+
+### U16.5 acceptance review — REJECT (changes) — 2026-09-23
+
+- `flow-acceptance-reviewer` over `2c073b7..41c83f0`: secrecy, determinism,
+  action ids and dispatch, LogCategory behaviour and mock-only facts all pass.
+  Three Important findings: I1 inspect and dismiss reset the camera pan
+  (confirmed by the architect: both handlers omit `pan`); I2 the callout stays
+  open on taps the bloc ignores; I3 fixed text slots clip at 1.3× text scale.
+  Minors M1–M7 (dead tokens, stale docs, added test body comments and
+  debugPrint, implementation-pinning asserts, per-frame paths, duplicate fact
+  formatting, missing radius-edge and fog tests) are batched. M8 (the
+  `frost-lance` id in the app) is parked.
+- A single correction round went to a `flow-implementer`. Then one scoped
+  closure review.
+
+### U16.5 correction closed — ACCEPT WITH FINDINGS — 2026-09-23
+
+- `73deabc` (two workers: the first stopped on its request budget after I1–I3,
+  M1 and M2; a fresh executor finished M3–M7 on top). Scoped closure review:
+  I1, I2 and I3 are closed with regression-failing tests; no new defects;
+  formatter output unchanged. Main re-ran the gates at `73deabc`: format 0
+  changed, analyze clean, **1243/1243**, APK `9139c940…`.
+- Parked Minors: C1 (some added test-body comments remain in dungeon_scene_test,
+  map_touch_test, crawl_action_row_test and type_authority_test) plus the
+  closure's two other Minors and M8. None blocks device evidence.
+- Next: the device gate on the user's new phone.
+- Recovery checkpoint `.flow/checkpoints/73deabc.md` was written before any
+  ADB command on the new phone. Read-only discovery of the I2505
+  (`10DG1E044B000B4`, 392.7×869.8 dp): the package is absent, so there is no
+  backup; the restore is uninstall. `emulator-5554` is attached and excluded.
+
+### U16.5 final device capsules on the I2505 — 2026-09-23
+
+- U165-EXP (`exp/`, 7 frames): fresh install `9139c940…`; map 392.7×446.5 dp
+  (51.3% of 869.8), about 24.5 columns, 16×20 cell, four unclipped peek lines,
+  callout, half and full expanded log, close. Pan and recenter were not
+  observed: the depth-1 floor fits the viewport and ADB drag did not register
+  on the Flame canvas. Pan is covered by U165-CPA2 (the camera code is
+  unchanged since) and by automated tests.
+- U165-BAT (`bat/`): battle map 392.7×359.3 dp (41.3%), identical across
+  turns; timeline 58 dp; combat panel 123.3 dp; two-monster NOW/NEXT. The hero
+  knew no spell, so the armed state and more than 5 actions were not
+  reachable on a fresh save (automated proof only). The hero died; the phone
+  is at the world screen and the app is installed.
+- Architect triage: F1 (hero-panel GOLD ellipsized) and F2 (combat-panel
+  resist fact ellipsized) hide facts and go to a `flow-implementer`
+  correction. Not defects: tapping a non-adjacent monster inspects (as
+  designed; "Adjacent" is the reach fact); a missing NEXT row happens when the
+  next actor to act is unknown (the U4 secrecy rule in
+  `projectActivationQueue`); no initiative numbers (by contract); a diagonal
+  step into a wall corner logs nothing (the bloc's existing silent return).
+
+### U16.5 paused before the F1/F2 fix — 2026-09-24 01:00
+
+- The user paused. The F1/F2 worker was cancelled before any source edit;
+  only its scratch measurement test existed and was removed. HEAD `73deabc`
+  has a clean package tree.
+- Next on resume: redispatch the F1/F2 correction with the same brief (see
+  the "final device capsules" entry). Then a device re-check of the hero and
+  combat panels, a reviewer parity score against the mocks, **user visual
+  sign-off**, then uninstall from the I2505 and verify absence.
+- Phone I2505 (`10DG1E044B000B4`): the app is installed at the world screen
+  after the hero died. The baseline was package-absent, so the restore is
+  uninstall. The checkpoint `.flow/checkpoints/73deabc.md` stays valid.
+
+### U16.5 resume — device switched to the vivo I2219 — 2026-09-24
+
+- The user directs the connected physical device (vivo I2219) instead of the
+  I2505. Checkpoint `.flow/checkpoints/4332727.md` was written before any ADB
+  command. Read-only: 1080×2408, density 440, font scale 1.0, package absent,
+  no external data. The restore at the end is uninstall.
+- **Open device debt:** the I2505 still holds the test install and is not
+  attached. Uninstall it when it is reconnected.
+- The F1/F2 correction was redispatched (U165Facts2).
+- F1/F2 were fixed in `d0f1d57`. GOLD is its own right-column row, the stats
+  line is ATK/ARM only, and target facts wrap up to 3 lines (TARGET column
+  flex 36→45, SPELL 40→31). Panel heights stay 102/124 and the map rect is
+  unchanged. Worst-value tests fail before the fix and pass after it. Full
+  suite 1247/1247; analyzer and format clean; APK `3e5519bc…`. Main re-ran
+  the panel tests: 22/22. Next: the U165-FACTS capsule on the vivo.
+- U165-FACTS on the vivo at `d0f1d57` (`facts/`): F1 passes on the device
+  (GOLD has its own row, no ellipsis). F2 has no regression on the device:
+  the spitter's facts are unclipped. No resisting monster was met, so the
+  worst case stays proven by the test. Map share: exploration 51.1%, battle
+  42.0%. The hero died; the app is installed at the world screen. New Minor:
+  "READIED SPELL" now wraps to two lines in the narrower SPELL column. Next:
+  independent parity scoring (U165Parity), then user sign-off.
+
+### U16.5 parity scoring — NEAR-PARITY — 2026-09-24
+
+- An independent reviewer scored the device frames against the four
+  references. Region order and proportions pass (within ±18%), and so do the
+  type roles, callout, log, expanded log and fact honesty. Ranked gaps:
+  (1) the atmosphere paints outside the map rect over the header and timeline;
+  (2) the wordmark rule has zero width; (3) the combat column flex from
+  `d0f1d57` wraps `READIED SPELL`; (4) the fog is too light and uniform;
+  (5) the pool reads cream rather than amber; (6) the filler slots look like
+  dead buttons; (7) the timeline has a dead band.
+- Architect ruling: fix 1–7 in one correction round (U165Gaps) with the exact
+  values in its brief. Park 8 (the map gutter touches the projection), 9 (the
+  slanted `#` is the user's call at sign-off) and 10 (hero-panel layout).
+  Then re-capture on the vivo and show the frames to the user for sign-off.
+- `2ed0992` closes parity gaps 1–7: the atmosphere is clipped to the map rect,
+  the wordmark rule stretches to 376.7 dp, combat flex is 36/24/40 with fact
+  line B up to 4 lines and a spell title that never wraps, the fog has two
+  darker mottled octaves, the bloom is amber, filler slots are at α 0.25 with
+  no fill, and timeline pills are centred. Full suite 1252/1252; analyzer and
+  format clean; core/content untouched; APK `5eaff40e…`. Next: sign-off
+  capture U165-SIGN on the vivo.
+- U165-SIGN on the vivo at `2ed0992` (`sign/01–04`): the header is plain dark
+  with no fog, the gold rule is visible, the wordmark is bright, the NOW pill
+  is gold, `READIED SPELL` fits one line, nothing is truncated, the pool is
+  amber, fillers are faint, and the fog is mottled. The architect judges it
+  ready for user sign-off. Not on device: NEXT tokens (seen earlier in
+  `bat/03`), armed targeting, more than 5 actions, pan/recenter (automated,
+  plus vivo CPA2 for pan). The app is installed on the vivo; the I2505 still
+  holds its install.
+
+### U16 + U16.5 accepted — 2026-09-24
+
+- **The user gave visual sign-off** on the `sign/` frames at `2ed0992`. Units
+  16 and 16.5 are accepted together. Main's final gate at `2ed0992`: format
+  0 changed, analyze clean, **1252/1252**; core/content untouched.
+- **The user waived device cleanup:** the test app may stay installed on the
+  vivo I2219 and the I2505. The restore debt is closed by user decision.
+- Accepted as-is (the user did not ask for changes): the slanted Plex `#`, the
+  edge-to-edge map (no gutter), the gap in the hero panel's left column, M8
+  (the `frost-lance` id in the app), and the closure Minors (a few remaining
+  test-body comments).
+- The user authorized push and opening a pull request. Merge stays gated.

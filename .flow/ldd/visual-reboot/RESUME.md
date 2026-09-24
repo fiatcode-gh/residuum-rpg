@@ -1,46 +1,94 @@
 # Resume Visual Reboot
 
-**Units 1–14 are integrated on `main`. Unit 15 — Row, Control and Chip
-Grammar — is the active unit.**
+**Units 16 and 16.5 are accepted (user sign-off 2026-09-24).** Branch
+`residuum-visual-reboot-16` is pushed and has a pull request against `main`.
+**Next: the user's merge decision.** No device cleanup is owed (the user
+waived it).
+
+Parked follow-ups for a later unit: an upright wall `#` if wanted, an 8 dp map
+gutter (touches the projection), the hero-panel left-column gap, spell marks
+keyed on content (not the `frost-lance` id), the remaining test-body comments.
+
+## Historical U16 detail
 
 ## Exact state
 
-- `main` is `4033de53f96470bfc75dabba6b28bc0ae67816a6`, the PR #23 merge.
-- U14's code, automated gates, acceptance review and thirteen-capsule device
-  pass are integrated. Its U15 follow-ups are the Character mana presentation
-  and the Tavern affordability cue.
-- The `unit-15-chatgpt-handoff` bundle is an untracked, user-owned external
-  planning artifact. Its v1 manifest and SHA-256 receipts validated locally;
-  it observes this exact `main` revision, settles U15 WHAT, carries only a
-  partial implementation strategy, and carries no authorization.
-- Unit 15 implementation, automated gates, scoped acceptance, and all required
-  target-device evidence are complete. Every device capsule restored both
-  canonical save slots with SHA-256 plus `cmp` MATCH.
-- The final crawl correction reduced private chip padding only. Fresh package
-  proof passed: formatter-clean, analyzer-clean, and 1,127 tests. Corrected
-  worst legal target-device chrome is 591.238 dp, strictly below the locked
-  600 dp ceiling. Corrected armed spell evidence preserved the exact
-  `Rect.fromLTRB(0,470,1080,1192)` map slot and the fixed 36 dp camera.
+- Execution base: `374ee775e6fd1c29519dab8fe9d597dd38650593`, the PR #24
+  merge. Feature branch `residuum-visual-reboot-16` was created from that
+  base; shared LDD artifacts are staged on it.
+- Handoff validator and every declared checksum passed. All four visual
+  references were inspected; they guide appearance only.
+- The U16 contract is approved. The execution-grade plan and seven sequential
+  task capsules are accepted under the user's explicit pre-approval, bounded
+  by that contract. Plan review removed an inapplicable OS-level greyscale
+  capture requirement; visual evidence is colour-first with non-hue cues.
+- Tasks 01–07 are accepted.
+- Main-owned final package gates and independent acceptance review passed.
+  Device acceptance is still outstanding.
+- Implementation authorization covers only this plan and feature branch.
+  Device actions require the checkpoint/save protocol; commits, publication
+  and integration remain gated as recorded in the plan.
+- User directs evidence on their attached physical Android phone over wireless
+  ADB instead of the usual AVD. The app package is not installed; the user
+  explicitly confirmed it has never held app data and authorized a fresh
+  install/capture followed by restoration to its absent state. See safeguards
+  below.
 
-## Exact next action — integration decision
+## User-approved fresh-install path — proceed with recorded safeguards
 
-Unit 15 is locally complete. Present the user with the concrete keep, commit,
-or publish/PR integration choices. Do not commit, push, or open/update a pull
-request until the user explicitly chooses that action.
+The checkpoint at `.flow/checkpoints/374ee775e6fd1c29519dab8fe9d597dd38650593.md`
+was written before the first ADB command. Read-only discovery identified one
+attached wireless vivo I2219 phone (Android 16/API 36, 1080x2408, density 440;
+392.7x875.6 dp). No AVD was used.
 
-## Unit 15 inherited locks
+The user confirmed `com.example.residuum_app` has never held app data and
+authorized fresh installation/capture followed by restoration to the prior
+absent state. The pre-capture absence receipt is
+`.flow/evidence/visual-reboot/unit-16-device/device-state-before.md`. Package
+absence and missing external data path were reconfirmed before installation.
+The accepted debug APK was installed, then U16-EXP captured exploration on the
+phone. Its receipt and 13 screenshots are in
+`.flow/evidence/visual-reboot/unit-16-device/exploration/`. The app remains
+installed in The Crypt exploration; fresh `save.json` (4790 bytes) and
+`save-previous.json` (4806 bytes) now exist, but their contents were not read or
+edited. Synthetic ADB touch input was used; direct finger precision remains
+unverified. Uninstall the test package only after all capsules are complete.
 
-- Preserve current game vocabulary, transactions, action dispatch and
-  information boundaries. The mock cannot create Craft, Tavern Rest/Listen/
-  Leave, a current-mana town fact, or undiscovered spell identities.
-- U15 creates no authored production art. Its medallion hosts are measured,
-  empty-ready consumers for U16.
-- The action shelf retains measure-all-candidates / shortest-legal-layout,
-  the eleven-action ceiling, fixed 36 dp cells and an `Expanded` map.
-- No important state relies on hue; every changed surface must remain legible
-  in greyscale. The target device gate uses actual device measurements, never
-  widget-test dp figures.
-- Run formatter, analyzer and tests from `packages/app`; no root pubspec.
+The user paused U16 after exploration and will create Unit 16.5 to continue
+visual work with a stronger model. Only U16-EXP evidence exists; combat/target
+and timeline, expanded log, road encounter and worst-density evidence remain
+unobserved. Direct fingertip precision was not tested; the exploration
+verifier used ADB-injected touch on the physical phone.
+
+Do not continue capture or alter the device. It remains on the accepted APK in
+The Crypt exploration with the new `save.json` (4790 bytes) and
+`save-previous.json` (4806 bytes). Their contents were not read or edited. The
+pre-capture absent-package receipt is retained; Unit 16 is not accepted. Unit
+16.5 must decide how to continue and restore the prior absent-package state.
+
+Current feature branch `residuum-visual-reboot-16` was committed as
+`b301f27d70db5c5c09ca7274b81fa1f44983162c` and pushed to
+`origin/residuum-visual-reboot-16`. No pull request was created. The user will
+create Unit 16.5; do not continue device work in this session.
+
+## U16 inherited locks
+
+- No new authored assets or gameplay facts/mechanics from mock illustrations.
+- Keep 36 dp camera geometry, visibility secrecy, input and targeting
+  behavior, U15 stable action identity/fit, map allocation invariants, and
+  worst legal device chrome below 600 dp.
+- Preserve timeline and log semantics; important states never rely on hue.
+- Existing dungeon-art masters remain historical; plan only the active
+  rendering/decode cutover needed for this unit.
+- See the proposed governing boundaries and acceptance criteria in
+  `units/unit-16/CONTRACT.md`.
+
+## U15 integrated proof carried forward
+
+- Formatter/analyzer/full app suite passed at 1,127 tests.
+- Corrected worst legal target-device chrome was 591.238 dp.
+- Armed targeting preserved the map rectangle and fixed 36 dp camera cell.
+- Both device save slots restored byte-identically.
 
 ## Historical Unit 14 detail
 

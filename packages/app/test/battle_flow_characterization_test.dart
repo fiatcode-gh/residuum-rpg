@@ -106,9 +106,7 @@ Future<void> _tapTile(WidgetTester tester, Position tile) async {
   final scene = find.byKey(dungeonSceneKey);
   final size = tester.getSize(scene);
   final geometry = GridGeometry.camera(size, 7, 5, const Position(1, 1));
-  final local =
-      geometry.topLeftOf(tile.x, tile.y) +
-      Offset(geometry.cellSize / 2, geometry.cellSize / 2);
+  final local = geometry.centreOf(tile);
   await tester.tapAt(tester.getTopLeft(scene) + local);
 }
 

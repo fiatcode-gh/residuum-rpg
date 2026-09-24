@@ -22,6 +22,13 @@ Future<void> loadResiduumFonts() async {
       ],
     ),
     (displayFace, ['assets/fonts/EBGaramond-Variable.ttf']),
+    (
+      monoFace,
+      [
+        'assets/fonts/IBMPlexMono-Regular.ttf',
+        'assets/fonts/IBMPlexMono-SemiBold.ttf',
+      ],
+    ),
   ]) {
     final loader = FontLoader(family);
     for (final asset in assets) {

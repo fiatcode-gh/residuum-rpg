@@ -141,6 +141,14 @@ void main() {
       final mWidth = _widthOf('MMMMMMMMMM', displayTitle);
       expect(iWidth, lessThan(mWidth));
     });
+
+    test('monoData advances a fixed 0.6 em per glyph regardless of shape, '
+        'unlike the proportional faces above', () {
+      final mWidth = _widthOf('MMMMMMMMMM', monoData);
+      final iWidth = _widthOf('iiiiiiiiii', monoData);
+      expect(mWidth, closeTo(69.0, 0.5));
+      expect(iWidth, closeTo(69.0, 0.5));
+    });
   });
 
   group('glyph coverage, per mark', () {
@@ -198,14 +206,7 @@ void main() {
     };
 
     // Confirmed absent from both Spectral and EB Garamond (PLAN.md F3).
-    // Seven of the twelve are `const` markings in `packages/core`, which
-    // this unit may not touch — U16 retires them.
     const absent = {
-      '◎', // U+25CE — lib/game/log_line.dart, expanded log / log peek
-      '⇅', // U+21C5 — lib/game/log_line.dart, expanded log
-      '✕', // U+2715 — lib/game/log_line.dart, expanded log
-      '✖', // U+2716 — lib/game/crawl_status.dart, engaged
-      '◉', // U+25C9 — lib/game/crawl_status.dart, watched
       '※', // U+203B — core/lib/src/loot/rarity.dart, Epic
       '★', // U+2605 — core/lib/src/loot/rarity.dart, Legendary
       '▮', // U+25AE — core/lib/src/craft/material.dart, ingot
@@ -228,6 +229,61 @@ void main() {
     }
   });
 
+  group('Plex Mono glyph coverage', () {
+    final monoRegularBytes = File('assets/fonts/IBMPlexMono-Regular.ttf')
+        .readAsBytesSync();
+    final monoSemiBoldBytes = File('assets/fonts/IBMPlexMono-SemiBold.ttf')
+        .readAsBytesSync();
+
+    // The crawl marks beyond printable ASCII the mono role must also carry.
+    const extraMarks = [
+      '·',
+      '–',
+      '—',
+      '×',
+      '⁰',
+      '¹',
+      '²',
+      '³',
+      '⁴',
+      '⁵',
+      '⁶',
+      '⁷',
+      '⁸',
+      '⁹',
+      '←',
+      '→',
+      '↓',
+      '†',
+      '§',
+      '›',
+    ];
+
+    for (final entry in {
+      'Regular': monoRegularBytes,
+      'SemiBold': monoSemiBoldBytes,
+    }.entries) {
+      test(
+        '${entry.key} covers every printable ASCII code point and the crawl marks',
+        () {
+          final missing = <String>[];
+          for (var codepoint = 0x20; codepoint <= 0x7E; codepoint++) {
+            if (!_cmapContains(entry.value, codepoint)) {
+              final hex = codepoint.toRadixString(16).padLeft(4, '0');
+              missing.add('U+$hex (${String.fromCharCode(codepoint)})');
+            }
+          }
+          for (final mark in extraMarks) {
+            if (!_cmapContains(entry.value, mark.runes.first)) {
+              missing.add(mark);
+            }
+          }
+          expect(missing, isEmpty, reason: 'missing glyphs: $missing');
+        },
+      );
+    }
+  });
+
   group('every exported role satisfies the invariants', () {
     const roles = {
       'displayTitle': displayTitle,
@@ -241,28 +297,44 @@ void main() {
       'textLine': textLine,
       'textLineDim': textLineDim,
       'textLabel': textLabel,
-      'textLabelDim': textLabelDim,
       'textLabelStrong': textLabelStrong,
-      'textCaption': textCaption,
       'textDetail': textDetail,
       'textDetailDim': textDetailDim,
       'textGlyph': textGlyph,
-      'textGlyphDim': textGlyphDim,
       'textMicro': textMicro,
       'textMicroDim': textMicroDim,
+      'monoMeta': monoMeta,
+      'monoMetaCold': monoMetaCold,
+      'monoChip': monoChip,
+      'monoData': monoData,
+      'monoDataDim': monoDataDim,
+      'monoItem': monoItem,
+      'monoLog': monoLog,
+      'monoLogHostile': monoLogHostile,
+      'monoLogCold': monoLogCold,
+      'monoLogTorch': monoLogTorch,
+      'monoFigure': monoFigure,
+      'monoFigureCold': monoFigureCold,
+      'monoToken': monoToken,
+      'monoTokenHostile': monoTokenHostile,
+      'monoSlotMeta': monoSlotMeta,
     };
 
     for (final entry in roles.entries) {
       final name = entry.key;
       final style = entry.value;
       final isDisplay = name.startsWith('display');
+      final isMono = name.startsWith('mono');
 
       test('$name does not inherit', () {
         expect(style.inherit, isFalse);
       });
 
       test('$name names its own family', () {
-        expect(style.fontFamily, isDisplay ? displayFace : textFace);
+        expect(
+          style.fontFamily,
+          isDisplay ? displayFace : (isMono ? monoFace : textFace),
+        );
       });
 
       test('$name sets an explicit height', () {
@@ -283,6 +355,43 @@ void main() {
         if (isDisplay) {
           expect(features, contains(const FontFeature.liningFigures()));
         }
+      });
+    }
+  });
+
+  group('mapGlyphStyle and mapBadgeStyle satisfy the same invariants', () {
+    const suppliedInk = Color(0xFF123456);
+
+    for (final entry in {
+      'mapGlyphStyle': mapGlyphStyle(suppliedInk),
+      'mapBadgeStyle': mapBadgeStyle(suppliedInk),
+    }.entries) {
+      final name = entry.key;
+      final style = entry.value;
+
+      test('$name does not inherit', () {
+        expect(style.inherit, isFalse);
+      });
+
+      test('$name names the mono family', () {
+        expect(style.fontFamily, monoFace);
+      });
+
+      test('$name sets an explicit height', () {
+        expect(style.height, isNotNull);
+      });
+
+      test('$name sets an explicit textBaseline', () {
+        expect(style.textBaseline, isNotNull);
+      });
+
+      test('$name carries the supplied colour', () {
+        expect(style.color, suppliedInk);
+      });
+
+      test('$name carries tabular figures', () {
+        final features = style.fontFeatures ?? const [];
+        expect(features, contains(const FontFeature.tabularFigures()));
       });
     }
   });

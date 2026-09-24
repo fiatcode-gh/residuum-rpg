@@ -1,5 +1,3 @@
-import '../game/dungeon_palette.dart';
-
 const String _visualRoot = 'assets/visual/';
 
 enum EnvironmentArt {
@@ -34,6 +32,8 @@ enum ActionIcon {
     _ => null,
   };
 }
+
+enum RegionMaterial { cryptStone, seaCaveStone, ruinedKeepMasonry, lowlandRoad }
 
 enum MaterialSurface { floor, wall }
 

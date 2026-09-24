@@ -1,40 +1,23 @@
 import 'dart:ui' show Color;
 
-import 'package:flutter/material.dart' show HSLColor;
+import 'package:flutter/material.dart' show HSVColor;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
+import 'package:residuum_app/style/tokens.dart' show crawlEnemy;
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-double _value(Color colour) =>
-    0.2126 * colour.r + 0.7152 * colour.g + 0.0722 * colour.b;
+double _hue(Color colour) => HSVColor.fromColor(colour).hue;
 
-const Map<String, DungeonPalette> _palettes = {
-  'crypt': DungeonPalette.crypt,
-  'sea-cave': DungeonPalette.seaCave,
-  'ruined-keep': DungeonPalette.ruinedKeep,
-  'lowland-road': DungeonPalette.lowlandRoad,
-};
+/// The shorter way around the hue circle between two hues in degrees.
+double _hueDistance(double a, double b) {
+  final delta = (a - b).abs() % 360;
+  return delta > 180 ? 360 - delta : delta;
+}
 
 void main() {
-  group('the terrain palettes', () {
-    test('the crypt keeps the exact Unit 2 anchors', () {
-      // assert
-      expect(DungeonPalette.crypt.wall, const Color(0xFFB9BEC6));
-      expect(DungeonPalette.crypt.floor, const Color(0xFF5B6270));
-      expect(DungeonPalette.crypt.stairs, const Color(0xFFE8ECF2));
-      expect(DungeonPalette.crypt.rememberedStone, const Color(0xFF1A1E20));
-      expect(DungeonPalette.crypt.visibleStone, const Color(0xFF292A27));
-      expect(DungeonPalette.crypt.edgeInk, const Color(0xFF48463F));
-      expect(DungeonPalette.crypt.detailInk, const Color(0xFFD4B77B));
-      expect(DungeonPalette.crypt.lightInk, const Color(0xFFE8C58A));
-      expect(DungeonPalette.crypt.maxLightLift, 0.30);
-      expect(DungeonPalette.crypt.maxTintMix, 0.12);
-      expect(DungeonPalette.crypt.themeSalt, 0x0C7);
-      expect(DungeonPalette.crypt.material, RegionMaterial.cryptStone);
-    });
-
+  group('the region palettes', () {
     test('maps exactly the three dungeon ids and rejects towns', () {
       // assert
       expect(paletteForDungeon(cryptNode), DungeonPalette.crypt);
@@ -76,69 +59,50 @@ void main() {
       );
     });
 
-    test('keeps the glyph and material value ladders readable', () {
+    test('carries four distinct fog values, one per region', () {
       // assert
-      for (final entry in _palettes.entries) {
-        final palette = entry.value;
-        expect(
-          _value(palette.floor),
-          lessThan(_value(palette.wall)),
-          reason: entry.key,
-        );
-        expect(
-          _value(palette.wall),
-          lessThan(_value(palette.stairs)),
-          reason: entry.key,
-        );
-        expect(
-          _value(palette.rememberedStone),
-          lessThan(_value(palette.visibleStone)),
-          reason: entry.key,
-        );
-        expect(
-          _value(nodeInk) - _value(palette.floor),
-          greaterThan(0.1),
-          reason: entry.key,
-        );
-        expect(
-          _value(litterInk) - _value(nodeInk),
-          greaterThan(0.1),
-          reason: entry.key,
-        );
-      }
-      final lowlandSaturation = HSLColor.fromColor(
-        DungeonPalette.lowlandRoad.floor,
-      ).saturation;
-      expect(
-        lowlandSaturation,
-        lessThan(HSLColor.fromColor(DungeonPalette.seaCave.floor).saturation),
-      );
-      expect(
-        lowlandSaturation,
-        lessThan(
-          HSLColor.fromColor(DungeonPalette.ruinedKeep.floor).saturation,
-        ),
-      );
+      expect(DungeonPalette.crypt.fog, const Color(0xFF1A2430));
+      expect(DungeonPalette.seaCave.fog, const Color(0xFF152A3A));
+      expect(DungeonPalette.ruinedKeep.fog, const Color(0xFF221F2A));
+      expect(DungeonPalette.lowlandRoad.fog, const Color(0xFF1D2327));
+      expect({
+        DungeonPalette.crypt.fog,
+        DungeonPalette.seaCave.fog,
+        DungeonPalette.ruinedKeep.fog,
+        DungeonPalette.lowlandRoad.fog,
+      }, hasLength(4));
+    });
+  });
+
+  group('the warm stone terrain ink (PLAN.md G3)', () {
+    test('keeps a floor < wall < stairs value ladder, lit and shade', () {
+      double value(Color colour) => HSVColor.fromColor(colour).value;
+
+      expect(value(stoneFloorLit), lessThan(value(stoneWallLit)));
+      expect(value(stoneWallLit), lessThan(value(stoneStairsLit)));
+      expect(value(stoneFloorShade), lessThan(value(stoneWallShade)));
+      expect(value(stoneWallShade), lessThan(value(stoneStairsShade)));
     });
 
-    test('gives each context its material, anchors, and salt', () {
-      // act
-      final materials = _palettes.values.map((palette) => palette.material);
-      final salts = _palettes.values.map((palette) => palette.themeSalt);
-      final visible = _palettes.values.map((palette) => palette.visibleStone);
-      final remembered = _palettes.values.map(
-        (palette) => palette.rememberedStone,
-      );
-      final edges = _palettes.values.map((palette) => palette.edgeInk);
-
-      // assert
-      expect(materials.toSet(), hasLength(4));
-      expect(salts.toSet(), hasLength(4));
-      expect(visible.toSet(), hasLength(4));
-      expect(remembered.toSet(), hasLength(4));
-      expect(edges.toSet(), hasLength(4));
-      expect(litterInk, const Color(0xFF7FC8B8));
-      expect(nodeInk, const Color(0xFFA87BC0));
-    });
+    test(
+      'keeps litterInk, nodeInk and crawlEnemy pairwise distinct in hue',
+      () {
+        final hues = {
+          'litter': _hue(litterInk),
+          'node': _hue(nodeInk),
+          'enemy': _hue(crawlEnemy),
+        };
+        final entries = hues.entries.toList();
+        for (var i = 0; i < entries.length; i++) {
+          for (var j = i + 1; j < entries.length; j++) {
+            expect(
+              _hueDistance(entries[i].value, entries[j].value),
+              greaterThan(30),
+              reason: '${entries[i].key} vs ${entries[j].key}',
+            );
+          }
+        }
+      },
+    );
   });
 }

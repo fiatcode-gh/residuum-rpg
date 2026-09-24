@@ -1,5 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/actor_presentation.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_app/game/activation_timeline.dart';
@@ -1211,6 +1212,256 @@ void main() {
       },
     );
   });
+
+  group('inspecting a monster from the map', () {
+    test('ActorInspected names the actor the target and leaves the camera '
+        'alone', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+      final before = bloc.state;
+
+      final next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      final inspected = await next;
+
+      expect(inspected.game, same(before.game));
+      expect(inspected.log, same(before.log));
+      expect(inspected.selectedActorId, before.selectedActorId);
+      expect(inspected.inspectedActorId, 'ghoul-1');
+      expect(inspected.inspectedActor, same(before.game.monsters.single));
+      expect(inspected.targetActor, same(inspected.inspectedActor));
+      expect(inspected.cameraFocus, before.cameraFocus);
+    });
+
+    test('ActorInspected keeps the pan the player dragged to', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const MapPanned(Offset(4, 0)));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      final inspected = await next;
+
+      expect(inspected.pan, const Offset(4, 0));
+      expect(inspected.inspectedActorId, 'ghoul-1');
+    });
+
+    test('InspectDismissed keeps the pan the player dragged to', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const MapPanned(Offset(4, 0)));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const InspectDismissed());
+      final dismissed = await next;
+
+      expect(dismissed.pan, const Offset(4, 0));
+      expect(dismissed.inspectedActorId, isNull);
+    });
+
+    blocTest<GameBloc, GameViewState>(
+      'an unknown actor id is ignored',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      ),
+      act: (bloc) => bloc.add(const ActorInspected('nobody')),
+      expect: () => <GameViewState>[],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a dead actor id is ignored',
+      build: () => walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2), hp: 0)],
+        ),
+      ),
+      act: (bloc) => bloc.add(const ActorInspected('ghoul-1')),
+      expect: () => <GameViewState>[],
+    );
+
+    test('a known actor no longer in sight is ignored', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(2, 2), speed: 1)],
+          ascii: wideArena,
+        ),
+      );
+      addTearDown(bloc.close);
+
+      for (var x = 2; x <= 11; x++) {
+        final next = bloc.stream.first;
+        bloc.add(TileTapped(Position(x, 1)));
+        await next;
+      }
+      expect(bloc.state.game.visible.contains(const Position(2, 2)), isFalse);
+
+      var emitted = false;
+      final subscription = bloc.stream.listen((_) => emitted = true);
+      bloc.add(const ActorInspected('ghoul-1'));
+      await Future<void>.delayed(Duration.zero);
+      await subscription.cancel();
+      expect(emitted, isFalse);
+    });
+
+    test(
+      'InspectDismissed clears it, and is a no-op once already clear',
+      () async {
+        final bloc = walker(
+          arenaGame(
+            heroAt: const Position(1, 1),
+            monsters: [ghoul(const Position(4, 2))],
+          ),
+        );
+        addTearDown(bloc.close);
+
+        var next = bloc.stream.first;
+        bloc.add(const ActorInspected('ghoul-1'));
+        await next;
+
+        next = bloc.stream.first;
+        bloc.add(const InspectDismissed());
+        final dismissed = await next;
+        expect(dismissed.inspectedActorId, isNull);
+
+        var emitted = false;
+        final subscription = bloc.stream.listen((_) => emitted = true);
+        bloc.add(const InspectDismissed());
+        await Future<void>.delayed(Duration.zero);
+        await subscription.cancel();
+        expect(emitted, isFalse);
+      },
+    );
+
+    test('a pan clears the inspected actor', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const MapPanned(Offset(4, 0)));
+      final panned = await next;
+
+      expect(panned.inspectedActorId, isNull);
+    });
+
+    test('holding ground clears the inspected actor', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const WaitPressed());
+      final waited = await next;
+
+      expect(waited.inspectedActorId, isNull);
+    });
+
+    test('a map tap that steps the hero clears the inspected actor', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const TileTapped(Position(2, 1)));
+      final stepped = await next;
+
+      expect(stepped.inspectedActorId, isNull);
+    });
+
+    test('arming a skill clears the inspected actor', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const SkillArmed('firebolt'));
+      final armed = await next;
+
+      expect(armed.inspectedActorId, isNull);
+    });
+
+    test('pulling the log handle clears the inspected actor', () async {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(4, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      var next = bloc.stream.first;
+      bloc.add(const ActorInspected('ghoul-1'));
+      await next;
+
+      next = bloc.stream.first;
+      bloc.add(const LogDrawerHandlePulled());
+      final pulled = await next;
+
+      expect(pulled.inspectedActorId, isNull);
+    });
+  });
 }
 
 const _sword = BaseItem(
@@ -2408,6 +2659,112 @@ void _lootTests() {
       // assert
       expect(open, isTrue);
       expect(closed, isFalse);
+    });
+  });
+
+  group('the combat panel target', () {
+    test('a selection wins over the nearest-known guess', () {
+      // arrange
+      final near = ghoul(const Position(3, 1));
+      final far = ghoul(const Position(5, 2), id: 'ghoul-2');
+      final state = GameViewState(
+        game: arenaGame(heroAt: const Position(3, 2), monsters: [near, far]),
+        log: const [],
+        selectedActorId: far.id,
+      );
+
+      // act
+      final targetId = state.targetActor?.id;
+
+      // assert
+      expect(targetId, far.id);
+    });
+
+    test('in battle with no selection, the nearest known monster is the '
+        'target, ties broken upper-left', () {
+      // arrange
+      final tieA = ghoul(const Position(2, 1));
+      final tieB = ghoul(const Position(4, 1), id: 'ghoul-2');
+      final reachHolder = ghoul(const Position(3, 3), id: 'ghoul-3');
+      final state = GameViewState(
+        game: arenaGame(
+          heroAt: const Position(3, 2),
+          monsters: [tieA, tieB, reachHolder],
+          ascii: wideArena,
+        ),
+        log: const [],
+      );
+
+      // act
+      final targetId = state.targetActor?.id;
+
+      // assert
+      expect(state.isBattleOpen, isTrue);
+      expect(targetId, tieA.id);
+    });
+
+    test('an unknown or out-of-sight monster is never the guessed target', () {
+      // arrange
+      const hero = Position(10, 2);
+      final reachHolder = Actor(
+        id: 'reach-holder',
+        name: 'the reach holder',
+        glyph: 'p',
+        position: const Position(13, 2),
+        hp: 4,
+        maxHp: 4,
+        attackMin: 2,
+        attackMax: 3,
+        speed: 5,
+        energy: actThreshold,
+        reach: 3,
+      );
+      final known = ghoul(const Position(12, 2), id: 'known-far');
+      final unknownNear = ghoul(const Position(9, 1), id: 'unknown-near');
+      final hiddenNear = ghoul(const Position(11, 1), id: 'hidden-near');
+      final baseGame = arenaGame(
+        heroAt: hero,
+        monsters: [reachHolder, known],
+        ascii: wideArena,
+      );
+      final identity = ActorIdentityContext.fromGame(baseGame);
+      final game = baseGame.copyWith(
+        monsters: [reachHolder, known, unknownNear, hiddenNear],
+        visible: {
+          for (final position in baseGame.visible)
+            if (position != hiddenNear.position) position,
+        },
+      );
+      final state = GameViewState(
+        game: game,
+        log: const [],
+        actorIdentity: identity,
+      );
+
+      // act
+      final targetId = state.targetActor?.id;
+
+      // assert
+      expect(state.isBattleOpen, isTrue);
+      expect(targetId, 'known-far');
+    });
+
+    test('outside battle with no selection, there is nothing to guess at', () {
+      // arrange
+      final state = GameViewState(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(5, 3))],
+        ),
+        log: const [],
+      );
+
+      // act
+      final target = state.targetActor;
+
+      // assert
+      expect(state.isBattleOpen, isFalse);
+      expect(target, isNull);
     });
   });
 

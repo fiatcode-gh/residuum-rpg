@@ -176,15 +176,12 @@ void main() {
       expect(describeEvent(gameOver, const {}), isNull);
     });
 
-    test('every category has a distinct mark and a distinct word', () {
+    test('every category has a distinct word', () {
       // act
-      final marks = LogCategory.values.map((category) => category.mark).toSet();
       final words = LogCategory.values.map((category) => category.word).toSet();
 
       // assert
-      expect(marks, hasLength(LogCategory.values.length));
       expect(words, hasLength(LogCategory.values.length));
-      expect(marks.every((mark) => mark.isNotEmpty), isTrue);
       expect(words.every((word) => word.isNotEmpty), isTrue);
     });
   });

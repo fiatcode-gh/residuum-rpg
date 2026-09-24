@@ -14,6 +14,11 @@ all set in the mock's own serif. Every frame in the audit paid for the gap
 twice, because monospace at a legible size eats horizontal room that serif
 does not, and the epic's whole chrome budget is horizontal and vertical room.
 
+> **Superseded by Unit 16.5 (2026-09-23):** IBM Plex Mono returns as a third
+> type role, used for map glyphs, log sentences, numbers and data; EB
+> Garamond stays the display face and Spectral stays body text. See
+> `units/unit-16.5/CONTRACT.md`.
+
 Two roles, and only two:
 
 | Role | Used for | Mock evidence |
@@ -136,6 +141,12 @@ families; nothing outside them is pre-authorized.
 | Dungeon structure | stair art, door art, per-biome prop family (3 biomes × ~4 props), placed light-source art | dungeon renderer |
 | Creature art | one per monster family in `packages/content` | dungeon renderer |
 
+> **Superseded by Unit 16.5 (2026-09-23):** the "Dungeon structure" row's
+> stair art, door art, per-biome prop family and placed light-source art are
+> not planned. Dungeon structure is typographic glyphs (`#` walls, `·`
+> floor, `<`/`>` stairs) plus code-drawn torchlight and fog; no authored
+> dungeon art is planned. See `units/unit-16.5/CONTRACT.md`.
+
 Pipeline rules from `unit-2/ART-BIBLE.md` are unchanged and binding: authored
 masters are multitone and untinted; `assets/visual/<family>/`;
 `{subject}_{variant}.png`; cold charcoal stone against warm amber light; ~30%
@@ -173,9 +184,20 @@ Behaviour and accessibility, unchanged:
 - no important state by hue alone; every screen reads in greyscale;
 - `cameraCellSize` stays fixed at 36 dp — fitting it shrank cells to ~12 dp
   on the deepest floor and a tap that must be aimed is not a tap;
+
+> **Superseded by Unit 16.5 (2026-09-23):** the map cell is
+> `mapCellWidth = 16` dp x `mapCellHeight = 20` dp; aiming is by
+> touch-intent resolution within a 24 dp radius (a 48 dp effective target,
+> `map_touch.dart`), not by large fixed cells. See
+> `units/unit-16.5/CONTRACT.md`.
 - the map is `Expanded`: chrome is paid for in map height, and the measured
   dp budget (exploration 331.1, typical combat 438.1, worst legal 580.95
   against a 600 ceiling) is the real constraint on every chrome change.
+
+> **Superseded by Unit 16.5 (2026-09-23):** chrome is fixed per mode; the
+> map floor is at least 45% of logical height in exploration and at least
+> 35% in battle. The 600 dp worst-legal-chrome ceiling and `_fitFor` are
+> retired. See `units/unit-16.5/CONTRACT.md`.
 
 ## 8. Superseded
 
@@ -195,6 +217,11 @@ Behaviour and accessibility, unchanged:
   and the application-wide type/surface/control/art absence (frames 1, 5–10).
   Neither dominates the other. The ordering in `ROADMAP.md` is by dependency
   and cost, not by dominance.
+
+> **Superseded by Unit 16.5 (2026-09-23):** the dungeon rendering gap
+> (frames 2-4: material/light/structure/actor) is closed by the U16.5
+> glyph/light/fog direction -- IBM Plex Mono glyphs, a torchlight pool,
+> deterministic fog and a vignette. See `units/unit-16.5/CONTRACT.md`.
 - **"Never an application-wide design system"** — **superseded 2026-09-18 by
   the user.** The carry-forward lock was written when the epic's scope was
   the crawl seam, and it forbade a global `MaterialApp` theme change for a
@@ -207,6 +234,9 @@ Behaviour and accessibility, unchanged:
   nothing is restyled implicitly, and every screen root opts in. A
   `MaterialApp`-wide `ThemeData` that restyles stock Material controls
   application-wide remains prohibited.
+- **Monospace retired / 36 dp camera cell / 600 dp chrome ceiling /
+  ink-only light** — superseded by Unit 16.5 (2026-09-23), see
+  units/unit-16.5/CONTRACT.md.
 
 ## 9. Settled by the user, 2026-09-18
 
@@ -217,6 +247,10 @@ Behaviour and accessibility, unchanged:
   not a compromise with the old identity. Numeric alignment is carried by
   tabular figures and fixed-width slots — the town already aligned its
   columns that way and explicitly not by the font (`town_style.dart:31`).
+
+> **Superseded by Unit 16.5 (2026-09-23):** superseded as in section 1 —
+> IBM Plex Mono returns as a third type role for map glyphs, log sentences,
+> numbers and data. See `units/unit-16.5/CONTRACT.md`.
 - **Shared token module plus sibling themes**: approved. Section 8.
 - **Frame 4's three intermediate cells are a mock flourish.** No range or
   path feedback is implied and none will be built. The map marks the legal

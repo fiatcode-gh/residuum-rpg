@@ -27,71 +27,52 @@ class BattleDock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final queue = state.activationQueue;
-    final hasRemainder = queue.length > 1;
+    final hasNext = queue.length > 1;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: gutter, vertical: rhythm),
-      child: CrawlPanel(
+      padding: const EdgeInsets.symmetric(horizontal: crawlGutter),
+      child: SizedBox(
         key: const Key('dock-backing'),
-        padding: const EdgeInsets.all(crawlPanelPadding),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        height: crawlTimelineHeight * crawlScale(context),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const SizedBox(
-                  width: crawlTokenWidth,
-                  child: Center(child: CrawlRegionLabel('NOW')),
-                ),
-                if (hasRemainder) ...[
-                  // Same glyph and style as the separator in the token row
-                  // below, invisible here — this is what keeps the gap
-                  // exactly as wide as the chevron actually renders, on
-                  // every face, rather than a guessed constant.
-                  const Opacity(
-                    opacity: 0,
-                    child: Text('›', style: textGlyphDim),
-                  ),
-                  Flexible(child: CrawlRegionLabel('NEXT')),
-                ],
-              ],
+            _TimelineColumn(
+              label: 'NOW',
+              hitRow: _TimelineToken(
+                token: queue[0],
+                queueIndex: 0,
+                state: state,
+                onActorSelected: onActorSelected,
+              ),
             ),
-            const SizedBox(height: rhythm),
-            Row(
-              children: [
-                _TimelineToken(
-                  token: queue[0],
-                  queueIndex: 0,
-                  state: state,
-                  onActorSelected: onActorSelected,
-                ),
-                if (hasRemainder) const Text('›', style: textGlyphDim),
-                if (hasRemainder)
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (
-                            var queueIndex = 1;
-                            queueIndex < queue.length;
-                            queueIndex++
-                          ) ...[
-                            if (queueIndex > 1)
-                              const Text('›', style: textGlyphDim),
-                            _TimelineToken(
-                              token: queue[queueIndex],
-                              queueIndex: queueIndex,
-                              state: state,
-                              onActorSelected: onActorSelected,
-                            ),
+            if (hasNext) const _TimelineDivider(),
+            Expanded(
+              child: !hasNext
+                  ? const SizedBox.shrink()
+                  : _TimelineColumn(
+                      label: 'NEXT',
+                      hitRow: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (
+                              var queueIndex = 1;
+                              queueIndex < queue.length;
+                              queueIndex++
+                            ) ...[
+                              if (queueIndex > 1) const SizedBox(width: 8),
+                              _TimelineToken(
+                                token: queue[queueIndex],
+                                queueIndex: queueIndex,
+                                state: state,
+                                onActorSelected: onActorSelected,
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-              ],
             ),
           ],
         ),
@@ -100,43 +81,50 @@ class BattleDock extends StatelessWidget {
   }
 }
 
-/// One timeline cell: a ringed glyph over the actor's word, both fitted
-/// rather than ellipsised so no label can silently truncate.
-class _TimelineCell extends StatelessWidget {
-  const _TimelineCell({required this.glyph, required this.word, super.key});
+/// One timeline column (PLAN.md G8 "Timeline internals"): a `displayLabel`
+/// caption over a fixed 44 dp hit row, so NOW and NEXT share one rhythm.
+class _TimelineColumn extends StatelessWidget {
+  const _TimelineColumn({required this.label, required this.hitRow});
 
-  final String glyph;
-  final String word;
+  final String label;
+  final Widget hitRow;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    width: crawlTokenWidth,
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: displayLabel),
+      const SizedBox(height: 3),
+      hitRow,
+    ],
+  );
+}
+
+/// The rule between NOW and NEXT, aligned to the pill band rather than the
+/// label above it.
+class _TimelineDivider extends StatelessWidget {
+  const _TimelineDivider();
+
+  @override
+  Widget build(BuildContext context) => const Padding(
+    padding: EdgeInsets.symmetric(horizontal: 8),
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: crawlTokenCell,
-          height: crawlTokenCell,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: raised,
-            border: Border.all(color: rule, width: hairline),
-          ),
-          child: Text(glyph, style: textGlyph),
-        ),
+        SizedBox(height: 14),
         SizedBox(
-          width: crawlTokenWidth,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(word, style: textDetailDim),
-          ),
+          width: 1,
+          height: crawlTokenHeight,
+          child: ColoredBox(color: crawlDivider),
         ),
       ],
     ),
   );
 }
 
+/// One timeline pill: glyph and word in the actor's hue, 24 dp tall, at the
+/// top of a 44 dp hit row that is the actor token's own tap target.
 class _TimelineToken extends StatelessWidget {
   const _TimelineToken({
     required this.token,
@@ -158,12 +146,20 @@ class _TimelineToken extends StatelessWidget {
             ? 'You, current activation'
             : 'You, next activation',
         excludeSemantics: true,
-        child: _TimelineCell(
-          key: Key(
-            hero.isCurrent ? 'timeline-current-hero' : 'timeline-next-hero',
+        child: SizedBox(
+          height: 44,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: _TimelinePill(
+              key: Key(
+                hero.isCurrent ? 'timeline-current-hero' : 'timeline-next-hero',
+              ),
+              glyph: '@',
+              word: 'You',
+              style: monoToken,
+              current: hero.isCurrent,
+            ),
           ),
-          glyph: '@',
-          word: 'You',
         ),
       );
     }
@@ -178,13 +174,61 @@ class _TimelineToken extends StatelessWidget {
       child: InkWell(
         key: Key('timeline-actor-${actor.id}-$queueIndex'),
         onTap: () => onActorSelected(actor),
-        child: _TimelineCell(
-          glyph: presentation.glyphLabel,
-          word: presentation.displayName,
+        child: SizedBox(
+          height: 44,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: _TimelinePill(
+              glyph: presentation.glyphLabel,
+              word: presentation.displayName,
+              style: monoTokenHostile,
+            ),
+          ),
         ),
       ),
     );
   }
+}
+
+/// The pill itself (PLAN.md G8): radius 5, 8 dp horizontal padding, gold
+/// border and fill on the current activation, a plain chip border on every
+/// other one.
+class _TimelinePill extends StatelessWidget {
+  const _TimelinePill({
+    required this.glyph,
+    required this.word,
+    required this.style,
+    this.current = false,
+    super.key,
+  });
+
+  final String glyph;
+  final String word;
+  final TextStyle style;
+  final bool current;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: crawlTokenHeight,
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(5),
+      color: current ? crawlGold.withValues(alpha: 0.08) : null,
+      border: Border.all(
+        color: current ? crawlGold : crawlChipBorder,
+        width: current ? 1.5 : 1,
+      ),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(glyph, style: style),
+        const SizedBox(width: 5),
+        Text(word, style: style),
+      ],
+    ),
+  );
 }
 
 /// Opens the enemy's numbers over the crawl: name, glyph, wounds, attack,

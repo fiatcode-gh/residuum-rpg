@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
-import 'art/dungeon_art.dart';
+import 'art/warm_up.dart';
 import 'game/dungeon_palette.dart';
 import 'game/game_bloc.dart';
 import 'game/game_screen.dart';
@@ -418,6 +418,8 @@ class _SessionState extends State<_Session> {
         day: _world.state.world.day,
         road: met.road,
       ),
+      heroLabel: _saver.document.heroes[_saver.document.active]!.label,
+      day: _world.state.world.day,
       log: const [roadOpeningLog],
     );
     if (!mounted) return;
@@ -582,6 +584,8 @@ class _SessionState extends State<_Session> {
     final game = GameBloc(
       game: run,
       dungeon: dungeon,
+      heroLabel: _saver.document.heroes[_saver.document.active]!.label,
+      day: _world.state.world.day,
       log: resumed ? _openingLog() : const [],
     );
     _saver.watchGame(game);
