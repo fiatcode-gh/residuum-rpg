@@ -5092,3 +5092,56 @@ request exists, and the integration choice is the user's.
 - Phone I2505 (`10DG1E044B000B4`): the app is installed at the world screen
   after the hero died. The baseline was package-absent, so the restore is
   uninstall. The checkpoint `.flow/checkpoints/73deabc.md` stays valid.
+
+### U16.5 resume — device switched to the vivo I2219 — 2026-09-24
+
+- The user directs the connected physical device (vivo I2219) instead of the
+  I2505. Checkpoint `.flow/checkpoints/4332727.md` was written before any ADB
+  command. Read-only: 1080×2408, density 440, font scale 1.0, package absent,
+  no external data. The restore at the end is uninstall.
+- **Open device debt:** the I2505 still holds the test install and is not
+  attached. Uninstall it when it is reconnected.
+- The F1/F2 correction was redispatched (U165Facts2).
+- F1/F2 were fixed in `d0f1d57`. GOLD is its own right-column row, the stats
+  line is ATK/ARM only, and target facts wrap up to 3 lines (TARGET column
+  flex 36→45, SPELL 40→31). Panel heights stay 102/124 and the map rect is
+  unchanged. Worst-value tests fail before the fix and pass after it. Full
+  suite 1247/1247; analyzer and format clean; APK `3e5519bc…`. Main re-ran
+  the panel tests: 22/22. Next: the U165-FACTS capsule on the vivo.
+- U165-FACTS on the vivo at `d0f1d57` (`facts/`): F1 passes on the device
+  (GOLD has its own row, no ellipsis). F2 has no regression on the device:
+  the spitter's facts are unclipped. No resisting monster was met, so the
+  worst case stays proven by the test. Map share: exploration 51.1%, battle
+  42.0%. The hero died; the app is installed at the world screen. New Minor:
+  "READIED SPELL" now wraps to two lines in the narrower SPELL column. Next:
+  independent parity scoring (U165Parity), then user sign-off.
+
+### U16.5 parity scoring — NEAR-PARITY — 2026-09-24
+
+- An independent reviewer scored the device frames against the four
+  references. Region order and proportions pass (within ±18%), and so do the
+  type roles, callout, log, expanded log and fact honesty. Ranked gaps:
+  (1) the atmosphere paints outside the map rect over the header and timeline;
+  (2) the wordmark rule has zero width; (3) the combat column flex from
+  `d0f1d57` wraps `READIED SPELL`; (4) the fog is too light and uniform;
+  (5) the pool reads cream rather than amber; (6) the filler slots look like
+  dead buttons; (7) the timeline has a dead band.
+- Architect ruling: fix 1–7 in one correction round (U165Gaps) with the exact
+  values in its brief. Park 8 (the map gutter touches the projection), 9 (the
+  slanted `#` is the user's call at sign-off) and 10 (hero-panel layout).
+  Then re-capture on the vivo and show the frames to the user for sign-off.
+- `2ed0992` closes parity gaps 1–7: the atmosphere is clipped to the map rect,
+  the wordmark rule stretches to 376.7 dp, combat flex is 36/24/40 with fact
+  line B up to 4 lines and a spell title that never wraps, the fog has two
+  darker mottled octaves, the bloom is amber, filler slots are at α 0.25 with
+  no fill, and timeline pills are centred. Full suite 1252/1252; analyzer and
+  format clean; core/content untouched; APK `5eaff40e…`. Next: sign-off
+  capture U165-SIGN on the vivo.
+- U165-SIGN on the vivo at `2ed0992` (`sign/01–04`): the header is plain dark
+  with no fog, the gold rule is visible, the wordmark is bright, the NOW pill
+  is gold, `READIED SPELL` fits one line, nothing is truncated, the pool is
+  amber, fillers are faint, and the fog is mottled. The architect judges it
+  ready for user sign-off. Not on device: NEXT tokens (seen earlier in
+  `bat/03`), armed targeting, more than 5 actions, pan/recenter (automated,
+  plus vivo CPA2 for pan). The app is installed on the vivo; the I2505 still
+  holds its install.
