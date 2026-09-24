@@ -44,8 +44,8 @@ class HeroPanel extends StatelessWidget {
             padding: const EdgeInsets.only(
               left: 11,
               right: 11,
-              top: 10,
-              bottom: 8,
+              top: 8,
+              bottom: 6,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -62,7 +62,6 @@ class HeroPanel extends StatelessWidget {
                     attackMin: attackMin,
                     attackMax: attackMax,
                     armor: state.armor,
-                    gold: state.game.gold,
                   ),
                 ),
                 const ColumnDivider(),
@@ -100,11 +99,19 @@ class HeroPanel extends StatelessWidget {
                         label: 'QUICK',
                         mark: const ShippedMark(ActionIcon.potion),
                         text: 'Potion ×${state.potionCount}',
+                        maxLines: 1,
                       ),
                       _LabelledMark(
                         label: 'PACK',
                         mark: const ShippedMark(ActionIcon.pack),
                         text: '${state.game.inventory.length}/$inventoryCap',
+                        maxLines: 1,
+                      ),
+                      _LabelledMark(
+                        label: 'GOLD',
+                        mark: const FontMark(Icons.paid),
+                        text: '${state.game.gold}',
+                        maxLines: 1,
                       ),
                     ],
                   ),
@@ -132,7 +139,6 @@ class _HeroColumn extends StatelessWidget {
     required this.attackMin,
     required this.attackMax,
     required this.armor,
-    required this.gold,
   });
 
   final String? heroLabel;
@@ -144,7 +150,6 @@ class _HeroColumn extends StatelessWidget {
   final int attackMin;
   final int attackMax;
   final int armor;
-  final int gold;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -193,8 +198,6 @@ class _HeroColumn extends StatelessWidget {
             TextSpan(text: '$attackMin–$attackMax', style: monoData),
             const TextSpan(text: '  ARM ', style: monoDataDim),
             TextSpan(text: '$armor', style: monoData),
-            const TextSpan(text: '  GOLD ', style: monoDataDim),
-            TextSpan(text: '$gold', style: monoData),
           ],
         ),
         maxLines: 1,
@@ -249,16 +252,23 @@ class _CrawlMeter extends StatelessWidget {
 
 /// One middle/right-column entry: a section caption, then a mark beside a
 /// name or count that may wrap to at most two lines (PLAN.md G8).
+///
+/// [maxLines] defaults to the two-line WEAPON/ARMOUR box; QUICK, PACK and
+/// GOLD pass 1, since none of their values ever need to wrap, and the
+/// right column has no room to spare for a box sized to wrap they never
+/// use.
 class _LabelledMark extends StatelessWidget {
   const _LabelledMark({
     required this.label,
     required this.mark,
     required this.text,
+    this.maxLines = 2,
   });
 
   final String label;
   final ActionMark mark;
   final String text;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -266,9 +276,9 @@ class _LabelledMark extends StatelessWidget {
     mainAxisSize: MainAxisSize.min,
     children: [
       Text(label, style: displayLabel),
-      const SizedBox(height: 3),
+      SizedBox(height: maxLines == 1 ? 2 : 3),
       SizedBox(
-        height: 26 * crawlScale(context),
+        height: (maxLines == 1 ? 16 : 26) * crawlScale(context),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -278,7 +288,7 @@ class _LabelledMark extends StatelessWidget {
               child: Text(
                 text,
                 style: monoItem,
-                maxLines: 2,
+                maxLines: maxLines,
                 overflow: TextOverflow.ellipsis,
               ),
             ),

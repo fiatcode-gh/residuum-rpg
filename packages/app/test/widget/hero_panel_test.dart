@@ -1,3 +1,4 @@
+import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
@@ -35,6 +36,21 @@ final _plainMailHauberk = Item(
 
 Item _potion(String id) =>
     Item(id: id, base: healingPotion, rarity: Rarity.common);
+
+/// Five pieces summing to 12 armour, the stats line's own worst case:
+/// mail hauberk (4), kite shield (3), iron helm (2), iron gauntlets (2) and
+/// leather boots (1).
+final _worstArmour = {
+  EquipSlot.chest: Item(id: 'kit-6', base: mailHauberk, rarity: Rarity.common),
+  EquipSlot.offHand: Item(id: 'kit-7', base: kiteShield, rarity: Rarity.common),
+  EquipSlot.head: Item(id: 'kit-8', base: ironHelm, rarity: Rarity.common),
+  EquipSlot.hands: Item(
+    id: 'kit-9',
+    base: ironGauntlets,
+    rarity: Rarity.common,
+  ),
+  EquipSlot.feet: Item(id: 'kit-10', base: leatherBoots, rarity: Rarity.common),
+};
 
 GameState _game({
   int hp = 12,
@@ -131,7 +147,9 @@ void main() {
       expect(tester.getSize(find.byKey(heroPanelKey)).height, 102);
       expect(find.text('MIRA'), findsOneWidget);
       expect(find.text('HP 12/20'), findsOneWidget);
-      expect(find.text('ATK 5–8  ARM 4  GOLD 40'), findsOneWidget);
+      expect(find.text('ATK 5–8  ARM 4'), findsOneWidget);
+      expect(find.text('GOLD'), findsOneWidget);
+      expect(find.text('40'), findsOneWidget);
       expect(find.text('Rare Keen Iron Sword of Embers'), findsOneWidget);
       expect(find.text('Common Mail Hauberk'), findsOneWidget);
       expect(find.text('Potion ×3'), findsOneWidget);
@@ -264,4 +282,56 @@ void main() {
     expect(find.textContaining('Hungry'), findsNothing);
     expect(find.textContaining('Seed'), findsNothing);
   });
+
+  testWidgets(
+    'never ellipsizes the stats line or the gold count at worst realistic '
+    'values',
+    (tester) async {
+      // act
+      await _pumpPanel(
+        tester,
+        _game(
+          attackMin: 12,
+          attackMax: 18,
+          gold: 9999,
+          equipment: _worstArmour,
+        ),
+      );
+
+      // assert
+      final statsLine = find.text('ATK 12–18  ARM 12');
+      expect(statsLine, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(statsLine).didExceedMaxLines,
+        isFalse,
+      );
+      final goldLine = find.text('9999');
+      expect(goldLine, findsOneWidget);
+      expect(
+        tester.renderObject<RenderParagraph>(goldLine).didExceedMaxLines,
+        isFalse,
+      );
+    },
+  );
+
+  testWidgets(
+    'the stats line and the gold row stay unclipped at 1.3x text scale, at '
+    'worst realistic values',
+    (tester) async {
+      // act
+      await _pumpPanel(
+        tester,
+        _game(
+          attackMin: 12,
+          attackMax: 18,
+          gold: 9999,
+          equipment: _worstArmour,
+        ),
+        textScaler: const TextScaler.linear(1.3),
+      );
+
+      // assert
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

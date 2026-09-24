@@ -1,3 +1,4 @@
+import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,6 +32,8 @@ Actor _ghoulTarget({
   int attackMax = 4,
   int speed = 12,
   int reach = 1,
+  Set<DamageType> resists = const {DamageType.fire},
+  Set<DamageType> vulnerableTo = const {DamageType.frost},
 }) => Actor(
   id: 'ghoul-1',
   name: 'the ghoul',
@@ -43,7 +46,15 @@ Actor _ghoulTarget({
   speed: speed,
   energy: actThreshold,
   reach: reach,
-  resists: const {DamageType.fire},
+  resists: resists,
+  vulnerableTo: vulnerableTo,
+);
+
+/// Fact line B's own worst case: a stated reach, both resists (there are
+/// only two [DamageType] values in core) and a vulnerability.
+Actor _worstGhoul() => _ghoulTarget(
+  reach: 3,
+  resists: const {DamageType.fire, DamageType.frost},
   vulnerableTo: const {DamageType.frost},
 );
 
@@ -83,17 +94,27 @@ GameState _game({
 /// The panel alone, over a bare [GameViewState] — no bloc, exactly like
 /// `hero_panel_test.dart`'s own pump helper: nothing here dispatches, so a
 /// bloc would test nothing the constructor's facts do not already carry.
-Future<void> _pumpPanel(WidgetTester tester, GameViewState state) async {
+Future<void> _pumpPanel(
+  WidgetTester tester,
+  GameViewState state, {
+  TextScaler? textScaler,
+}) async {
   await onTheTargetPhone(tester);
-  await tester.pumpWidget(
-    MaterialApp(
-      home: Material(
-        child: Align(
-          alignment: Alignment.topLeft,
-          child: CombatPanel(state: state),
-        ),
+  final app = MaterialApp(
+    home: Material(
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: CombatPanel(state: state),
       ),
     ),
+  );
+  await tester.pumpWidget(
+    textScaler == null
+        ? app
+        : MediaQuery(
+            data: MediaQueryData(textScaler: textScaler),
+            child: app,
+          ),
   );
 }
 
@@ -166,6 +187,51 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'wraps fact line B rather than ellipsizing it at worst realistic '
+      'values: a stated reach, both resists and a vulnerability',
+      (tester) async {
+        // act
+        final state = GameViewState(
+          game: _game(target: _worstGhoul()),
+          log: const [],
+        );
+
+        await _pumpPanel(tester, state);
+
+        // assert
+        final factLineB = find.text(
+          'Reach 3 · Resists fire · Resists frost · Burns at frost',
+        );
+        expect(factLineB, findsOneWidget);
+        expect(
+          tester.renderObject<RenderParagraph>(factLineB).didExceedMaxLines,
+          isFalse,
+        );
+      },
+    );
+
+    testWidgets(
+      'fact line B stays unclipped at 1.3x text scale, at worst realistic '
+      'values',
+      (tester) async {
+        // act
+        final state = GameViewState(
+          game: _game(target: _worstGhoul()),
+          log: const [],
+        );
+
+        await _pumpPanel(
+          tester,
+          state,
+          textScaler: const TextScaler.linear(1.3),
+        );
+
+        // assert
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('says so when nothing is in sight', (tester) async {
       final state = GameViewState(

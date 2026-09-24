@@ -47,12 +47,12 @@ class CombatPanel extends StatelessWidget {
         child: DecoratedBox(
           decoration: crawlFrameDecoration,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
-                  flex: 36,
+                  flex: 45,
                   child: _TargetColumn(
                     target: target,
                     name: target == null
@@ -79,7 +79,7 @@ class CombatPanel extends StatelessWidget {
                 ),
                 const ColumnDivider(),
                 Expanded(
-                  flex: 40,
+                  flex: 31,
                   child: _SpellColumn(spell: spell, armed: armedSpell != null),
                 ),
               ],
@@ -132,7 +132,7 @@ class _TargetColumn extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text('HP $hp/${target.maxHp}', style: monoData),
-        const SizedBox(height: 3),
+        const SizedBox(height: 1),
         ClipRRect(
           borderRadius: BorderRadius.circular(2.5),
           child: LinearProgressIndicator(
@@ -142,7 +142,7 @@ class _TargetColumn extends StatelessWidget {
             valueColor: const AlwaysStoppedAnimation(crawlEnemy),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 2),
         Text(
           facts[0],
           style: monoMeta,
@@ -152,7 +152,7 @@ class _TargetColumn extends StatelessWidget {
         Text(
           facts.skip(1).join(' · '),
           style: monoMeta,
-          maxLines: 1,
+          maxLines: 3,
           overflow: TextOverflow.ellipsis,
         ),
       ],
