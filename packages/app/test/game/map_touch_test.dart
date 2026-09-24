@@ -474,6 +474,17 @@ void main() {
       expect(geometry.positionAt(voidCardinal), isNull);
       expect(resolveMapTap(state, geometry, voidCardinal), _nothing);
 
+      /// `voidDiagonal`/`voidCardinal` above both happen to pick a
+      /// horizontal (westward) dominant axis, which the separate
+      /// `inBounds(target)` check already rejects regardless of the
+      /// `under != null` guard. This offset is vertical-dominant (the
+      /// void tap barely crosses the column boundary while the vertical
+      /// component is large) so a north step stays in bounds on column 0;
+      /// only the `under != null` guard stops it from wrongly stepping.
+      final voidVerticalDominant = heroCentre + const Offset(-13, -40);
+      expect(geometry.positionAt(voidVerticalDominant), isNull);
+      expect(resolveMapTap(state, geometry, voidVerticalDominant), _nothing);
+
       final floorDiagonal = heroCentre + const Offset(24, 30);
       expect(geometry.positionAt(floorDiagonal), isNotNull);
       expect(
