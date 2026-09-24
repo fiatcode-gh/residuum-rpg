@@ -5,210 +5,152 @@ import 'package:residuum_core/core.dart';
 
 void main() {
   group('GridGeometry.camera', () {
-    test('camera cells are 16 by 20 dp on every viewport', () {
-      // arrange
-      const size = Size(200, 400);
+    const viewport = Size(392.7, 568.8);
 
-      // act
+    test('cells are 24 by 30 dp', () {
       final geometry = GridGeometry.camera(
-        size,
+        viewport,
         40,
         40,
         const Position(20, 20),
       );
 
-      // assert
-      expect(mapCellWidth, 16);
-      expect(mapCellHeight, 20);
+      expect(mapCellWidth, 24);
+      expect(mapCellHeight, 30);
       expect(geometry.cellWidth, mapCellWidth);
       expect(geometry.cellHeight, mapCellHeight);
     });
 
-    test('an axis that fits centres with its own extent', () {
-      // arrange
-      const size = Size(200, 400);
-
-      // act
-      final geometry = GridGeometry.camera(size, 10, 10, const Position(0, 0));
-
-      // assert
-      expect(geometry.origin, const Offset(20, 100));
+    test('centres the hero on the viewport at zero pan, near every edge of a '
+        '24 x 16 floor', () {
+      const columns = 24;
+      const rows = 16;
+      for (final hero in const [
+        Position(3, 2),
+        Position(23, 15),
+        Position(12, 8),
+      ]) {
+        final geometry = GridGeometry.camera(viewport, columns, rows, hero);
+        final centre = geometry.centreOf(hero);
+        expect(centre.dx, closeTo(viewport.width / 2, 0.01));
+        expect(centre.dy, closeTo(viewport.height / 2, 0.01));
+      }
     });
 
-    test('ignores pan on an axis whose whole extent fits', () {
-      // arrange
-      const size = Size(200, 400);
-
-      // act
+    test('a pan on an axis that used to fit moves the origin instead of being '
+        'ignored', () {
+      const columns = 24;
+      const rows = 16;
+      const hero = Position(12, 8);
+      final unpanned = GridGeometry.camera(viewport, columns, rows, hero);
       final panned = GridGeometry.camera(
-        size,
-        10,
-        10,
-        const Position(0, 0),
-        const Offset(90, 90),
+        viewport,
+        columns,
+        rows,
+        hero,
+        const Offset(100, 50),
       );
 
-      // assert
-      expect(panned.origin, const Offset(20, 100));
+      expect(panned.origin, unpanned.origin + const Offset(100, 50));
     });
 
-    test('treats an extent exactly filling the viewport as fitting', () {
-      // arrange
-      const size = Size(mapCellWidth * 5, mapCellHeight * 5);
-
-      // act
+    test('an extreme pan clamps so the viewport centre lands on the floor '
+        'edge instead of past it', () {
+      const columns = 24;
+      const rows = 16;
+      const hero = Position(12, 8);
+      final extentY = mapCellHeight * rows;
       final geometry = GridGeometry.camera(
-        size,
-        5,
-        5,
-        const Position(4, 4),
-        const Offset(50, 50),
+        viewport,
+        columns,
+        rows,
+        hero,
+        const Offset(10000, -10000),
       );
 
-      // assert
-      expect(geometry.origin, Offset.zero);
+      expect(geometry.origin.dx, viewport.width / 2);
+      expect(geometry.origin.dy, viewport.height / 2 - extentY);
     });
 
-    test('centres the focus cell on an overflowing axis', () {
-      // arrange
-      const size = Size(360, 360);
+    test('clampPan reports exactly the pan the camera already applied for '
+        'that same drag', () {
+      const columns = 24;
+      const rows = 16;
+      const hero = Position(12, 8);
+      const rawPan = Offset(10000, -10000);
 
-      // act
       final geometry = GridGeometry.camera(
-        size,
-        40,
-        40,
-        const Position(20, 20),
+        viewport,
+        columns,
+        rows,
+        hero,
+        rawPan,
+      );
+      final effective = GridGeometry.clampPan(
+        viewport,
+        columns,
+        rows,
+        hero,
+        rawPan,
       );
 
-      // assert
-      expect(geometry.topLeftOf(20, 20), const Offset(172, 170));
-    });
-
-    test('clamps at the near edges rather than showing void', () {
-      // arrange
-      const size = Size(360, 360);
-
-      // act
-      final geometry = GridGeometry.camera(size, 40, 40, const Position(0, 0));
-
-      // assert
-      expect(geometry.origin, Offset.zero);
-    });
-
-    test('clamps at the far edges rather than showing void', () {
-      // arrange
-      const size = Size(360, 360);
-      const extentX = mapCellWidth * 40;
-      const extentY = mapCellHeight * 40;
-
-      // act
-      final geometry = GridGeometry.camera(
-        size,
-        40,
-        40,
-        const Position(39, 39),
+      expect(
+        GridGeometry.camera(viewport, columns, rows, hero, effective).origin,
+        geometry.origin,
       );
-
-      // assert
-      expect(geometry.origin, const Offset(360 - extentX, 360 - extentY));
+      expect(effective, isNot(rawPan));
     });
 
-    test('shifts by the pan before clamping', () {
-      // arrange
-      const size = Size(360, 360);
-      final unpanned = GridGeometry.camera(
-        size,
-        40,
-        40,
-        const Position(20, 20),
-      );
+    test('the lit area around a centred hero on a depth-5 floor stays fully '
+        'on screen', () {
+      const columns = 32;
+      const rows = 20;
+      const hero = Position(16, 10);
+      final geometry = GridGeometry.camera(viewport, columns, rows, hero);
 
-      // act
-      final panned = GridGeometry.camera(
-        size,
-        40,
-        40,
-        const Position(20, 20),
-        const Offset(30, -30),
-      );
-
-      // assert
-      expect(panned.origin, unpanned.origin + const Offset(30, -30));
+      for (var dx = -7; dx <= 7; dx++) {
+        for (var dy = -8; dy <= 8; dy++) {
+          final rect = geometry.rectOf(Position(hero.x + dx, hero.y + dy));
+          expect(rect.left, greaterThanOrEqualTo(0));
+          expect(rect.top, greaterThanOrEqualTo(0));
+          expect(rect.right, lessThanOrEqualTo(viewport.width));
+          expect(rect.bottom, lessThanOrEqualTo(viewport.height));
+        }
+      }
     });
 
-    test('a pan past the edge clamps instead of running off', () {
-      // arrange
-      const size = Size(360, 360);
+    test(
+      'positionAt round-trips centreOf for every cell of a panned camera',
+      () {
+        const columns = 24;
+        const rows = 16;
+        final geometry = GridGeometry.camera(
+          viewport,
+          columns,
+          rows,
+          const Position(12, 8),
+          const Offset(13, -29),
+        );
 
-      // act
-      final geometry = GridGeometry.camera(
-        size,
-        40,
-        40,
-        const Position(20, 20),
-        const Offset(9999, 9999),
-      );
-
-      // assert
-      expect(geometry.origin, Offset.zero);
-    });
-
-    test('each axis fits or overflows independently: width centres within '
-        'the viewport, height overflows and follows the focus', () {
-      // arrange
-      const size = Size(400, 200);
-
-      // act
-      final geometry = GridGeometry.camera(size, 5, 40, const Position(2, 20));
-
-      // assert
-      expect(geometry.cellWidth, mapCellWidth);
-      expect(geometry.cellHeight, mapCellHeight);
-      expect(geometry.origin.dx, (400 - 5 * mapCellWidth) / 2);
-      expect(geometry.origin.dy, lessThan(0));
-    });
-
-    test('positionAt inverts centreOf and topLeftOf for a panned, clamped '
-        'camera on a 40 x 30 map, including the last row and column', () {
-      // arrange
-      final geometry = GridGeometry.camera(
-        const Size(357, 411),
-        40,
-        30,
-        const Position(17, 23),
-        const Offset(13, -29),
-      );
-      const tiles = [Position(0, 0), Position(19, 21), Position(39, 29)];
-
-      // act
-      final fromCorners = [
-        for (final tile in tiles)
-          geometry.positionAt(
-            geometry.topLeftOf(tile.x, tile.y) + const Offset(1, 1),
-          ),
-      ];
-      final fromCentres = [
-        for (final tile in tiles) geometry.positionAt(geometry.centreOf(tile)),
-      ];
-
-      // assert
-      expect(fromCorners, tiles);
-      expect(fromCentres, tiles);
-    });
+        for (var x = 0; x < columns; x++) {
+          for (var y = 0; y < rows; y++) {
+            final cell = Position(x, y);
+            expect(geometry.positionAt(geometry.centreOf(cell)), cell);
+          }
+        }
+      },
+    );
 
     test('a point one dp past the right or bottom edge is null', () {
-      // arrange
       final geometry = GridGeometry.camera(
-        const Size(357, 411),
-        40,
-        30,
-        const Position(17, 23),
+        viewport,
+        24,
+        16,
+        const Position(12, 8),
         const Offset(13, -29),
       );
-      final corner = geometry.topLeftOf(39, 29);
+      final corner = geometry.topLeftOf(23, 15);
 
-      // act
       final pastRight = geometry.positionAt(
         Offset(corner.dx + mapCellWidth + 1, corner.dy),
       );
@@ -216,7 +158,6 @@ void main() {
         Offset(corner.dx, corner.dy + mapCellHeight + 1),
       );
 
-      // assert
       expect(pastRight, isNull);
       expect(pastBottom, isNull);
     });
@@ -225,18 +166,19 @@ void main() {
   group('GridGeometry.topLeftOf', () {
     test('walks cells by the dense cell size from the origin', () {
       // arrange
-      final geometry = GridGeometry.camera(
-        const Size(mapCellWidth * 20, mapCellHeight * 12),
-        20,
-        12,
-        const Position(0, 0),
+      const geometry = GridGeometry(
+        cellWidth: mapCellWidth,
+        cellHeight: mapCellHeight,
+        origin: Offset.zero,
+        columns: 20,
+        rows: 12,
       );
 
       // act
       final corner = geometry.topLeftOf(3, 2);
 
       // assert
-      expect(corner, const Offset(48, 40));
+      expect(corner, const Offset(3 * mapCellWidth, 2 * mapCellHeight));
     });
   });
 
@@ -342,10 +284,15 @@ void main() {
         5,
         const Position(0, 0),
       );
+      final corner = geometry.topLeftOf(9, 4);
 
       // act
-      final beyondX = geometry.positionAt(const Offset(190, 200));
-      final beyondY = geometry.positionAt(const Offset(100, 260));
+      final beyondX = geometry.positionAt(
+        Offset(corner.dx + mapCellWidth, corner.dy),
+      );
+      final beyondY = geometry.positionAt(
+        Offset(corner.dx, corner.dy + mapCellHeight),
+      );
 
       // assert
       expect(beyondX, isNull);

@@ -20,12 +20,14 @@ class CrawlPill extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.icon,
+    this.extent = tapTarget,
     super.key,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
+  final double extent;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +46,7 @@ class CrawlPill extends StatelessWidget {
               ),
             ),
           )
-        : SizedBox(width: tapTarget, height: tapTarget, child: Icon(icon));
+        : SizedBox(width: extent, height: extent, child: Icon(icon));
     return Semantics(
       button: true,
       enabled: enabled,

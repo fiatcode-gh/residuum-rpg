@@ -32,7 +32,7 @@ const _stairsArena = '''
 #.....#
 #######''';
 
-/// 40 interior columns (640dp of floor at mapCellWidth=16) still overflow
+/// 40 interior columns (960dp of floor at mapCellWidth=24) still overflow
 /// the 360dp test viewport used below, which is what the camera-clamping
 /// tests in this file need real overflow to clamp against.
 const _overflowingArena = '''
@@ -460,37 +460,34 @@ void main() {
     },
   );
 
-  testWidgets('the torch pool and hero bloom follow the hero', (tester) async {
+  testWidgets('the torch pool and hero bloom are centred on the hero', (
+    tester,
+  ) async {
     const size = Size(360, 360);
-    const before = Position(1, 1);
-    const after = Position(2, 1);
-    final beforeState = _viewState(hero: before);
-    final afterState = _viewState(hero: after);
-
-    /// Both positions fit inside the small arena's viewport, so the camera
-    /// origin (and thus the fog layer) never moves between the two states —
-    /// only the hero's own screen position does.
-    final geometry = GridGeometry.camera(
-      size,
-      beforeState.game.map.width,
-      beforeState.game.map.height,
-      beforeState.cameraFocus,
-      beforeState.pan,
-    );
-    final beforeCentre = geometry.centreOf(before);
-    final afterCentre = geometry.centreOf(after);
-    final beforeBytes = await _renderBackgroundOnly(tester, beforeState);
-    final afterBytes = await _renderBackgroundOnly(tester, afterState);
 
     Color at(Uint8List bytes, Offset point) =>
         _pixelAt(bytes, size, point.dx.round(), point.dy.round());
 
-    expect(at(afterBytes, beforeCentre), isNot(at(beforeBytes, beforeCentre)));
-    expect(at(afterBytes, afterCentre), isNot(at(beforeBytes, afterCentre)));
+    /// The camera always keeps the hero exactly centred at zero pan, so
+    /// the highlight sits at the same screen point regardless of where the
+    /// hero actually stands on the floor — checked at two different hero
+    /// positions so this cannot pass by coincidence of one particular cell.
+    for (final hero in const [Position(1, 1), Position(2, 1)]) {
+      final state = _viewState(hero: hero);
+      final geometry = GridGeometry.camera(
+        size,
+        state.game.map.width,
+        state.game.map.height,
+        state.cameraFocus,
+        state.pan,
+      );
+      final centre = geometry.centreOf(hero);
+      final bytes = await _renderBackgroundOnly(tester, state);
 
-    final warm = at(afterBytes, afterCentre);
-    final cool = at(afterBytes, afterCentre + const Offset(120, 0));
-    expect(warm.r - warm.b, greaterThan(cool.r - cool.b));
+      final warm = at(bytes, centre);
+      final cool = at(bytes, centre + const Offset(120, 0));
+      expect(warm.r - warm.b, greaterThan(cool.r - cool.b));
+    }
   });
 
   testWidgets(
@@ -515,9 +512,14 @@ void main() {
       final pannedCentre = pannedGeometry.centreOf(hero);
       expect(unpannedGeometry.origin, isNot(pannedGeometry.origin));
 
+      // Beyond the torch pool's own radius (6 * mapCellWidth) the pool's
+      // radial gradient clamps to a constant far-field colour, so a point
+      // safely past that radius from *both* hero-relative centres isolates
+      // parallax from the torch's own, legitimate pan-tracking.
+      const beyondTorchPool = 6 * mapCellWidth + 20;
       bool farFromBothCentres(Offset point) =>
-          (point - unpannedCentre).distance > 100 &&
-          (point - pannedCentre).distance > 100;
+          (point - unpannedCentre).distance > beyondTorchPool &&
+          (point - pannedCentre).distance > beyondTorchPool;
       final farPoints = [
         for (var x = 20; x < 360; x += 40)
           for (var y = 20; y < 360; y += 40) Offset(x.toDouble(), y.toDouble()),
@@ -1024,7 +1026,91 @@ void main() {
       expect(taps, [const Position(2, 1)]);
       expect(
         pans.fold(Offset.zero, (sum, delta) => sum + delta),
-        const Offset(48, 24),
+        GridGeometry.clampPan(
+          size,
+          state.game.map.width,
+          state.game.map.height,
+          state.game.hero.position,
+          const Offset(48, 24),
+        ),
+      );
+    },
+  );
+
+  testWidgets(
+    'a drag past a bound stops the camera there; a reverse drag resumes '
+    'immediately and a further drag past the same bound dispatches nothing',
+    (tester) async {
+      final pans = <Offset>[];
+      final state = _viewState();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Center(
+            child: SizedBox(
+              width: 360,
+              height: 360,
+              child: DungeonSceneHost(
+                state: state,
+                palette: DungeonPalette.crypt,
+                onTap: (_, _) {},
+                onPan: pans.add,
+                onLongPress: (_, _) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final scene = find.byKey(dungeonSceneKey);
+      final size = tester.getSize(scene);
+      final bound = GridGeometry.clampPan(
+        size,
+        state.game.map.width,
+        state.game.map.height,
+        state.game.hero.position,
+        const Offset(10000, 0),
+      );
+
+      await tester.dragFrom(
+        tester.getCenter(scene),
+        const Offset(10000, 0),
+        touchSlopX: 0,
+        touchSlopY: 0,
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(pans.fold(Offset.zero, (sum, delta) => sum + delta), bound);
+
+      pans.clear();
+      await tester.dragFrom(
+        tester.getCenter(scene),
+        const Offset(10000, 0),
+        touchSlopX: 0,
+        touchSlopY: 0,
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(
+        pans,
+        isEmpty,
+        reason:
+            'already at the bound: an identical further drag has no '
+            'further room to clamp into, so it must dispatch nothing',
+      );
+
+      await tester.dragFrom(
+        tester.getCenter(scene),
+        const Offset(-40, 0),
+        touchSlopX: 0,
+        touchSlopY: 0,
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(
+        pans,
+        [const Offset(-40, 0)],
+        reason:
+            'a reverse drag must move the camera on its first update, with '
+            'none of the earlier overshoot travelled back first',
       );
     },
   );
@@ -1091,16 +1177,19 @@ void main() {
         return geometry;
       }
 
-      // The overflow arena's 40 interior columns give the 360dp viewport
-      // (extent 42 * 16 = 672dp) 312dp of scrollable range: column 20 sits
-      // comfortably mid-scroll, unclamped; column 38 sits two columns from
-      // the far wall, past the scrollable range, so the camera clamps at
-      // its far bound (360 - 672 = -312) instead of centring on it exactly.
+      // The overflow arena's 40 interior columns (960dp of floor at
+      // mapCellWidth=24) far exceed the 360dp test viewport, so the camera
+      // keeps centring exactly on the focus column at zero pan with no
+      // clamp at all — even two columns from the far wall, the void beyond
+      // the floor's edge would show rather than the camera stopping short.
+      // Only an explicit drag clamps: requesting (1000, 0) past the
+      // floor's own extent pins the viewport's own centre on the floor's
+      // edge (origin.dx = 360 / 2 = 180) instead of running further off it.
       var state = _overflowingViewState(const Position(20, 1));
       await pumpScene(state);
       expect(
         (await tapProjectedTile(state, const Position(21, 1))).origin.dx,
-        closeTo(-148, 0.001),
+        closeTo(-312, 0.001),
       );
 
       final glyphsBeforeFocus = tester
@@ -1125,7 +1214,7 @@ void main() {
       );
       expect(
         (await tapProjectedTile(state, const Position(38, 1))).origin.dx,
-        closeTo(-312, 0.001),
+        closeTo(-744, 0.001),
       );
 
       final glyphsBeforePan = tester
@@ -1150,14 +1239,14 @@ void main() {
       );
       expect(
         (await tapProjectedTile(state, const Position(5, 1))).origin.dx,
-        0,
+        180,
       );
 
       state = _overflowingViewState(const Position(20, 1));
       await pumpScene(state);
       expect(
         (await tapProjectedTile(state, const Position(21, 1))).origin.dx,
-        closeTo(-148, 0.001),
+        closeTo(-312, 0.001),
       );
 
       expect(taps, const [

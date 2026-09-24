@@ -95,11 +95,12 @@ GameState _gameState({
   );
 }
 
-/// A map wide or tall enough that the camera clamps to an edge instead of
-/// centring — [heroAt] pinned at that edge, [monsterAt] a few cells inside
-/// it so the monster's own cell lands near the same edge on screen.
-/// [visible] is explicit rather than FOV-derived, so the scene never has to
-/// out-chase a monster to stay known.
+/// A map with a hero and a monster at explicit positions, [columns]/[rows]
+/// apart wide enough to hold them: the camera always centres [heroAt]
+/// exactly at zero pan, so [monsterAt]'s own screen offset from the hero —
+/// not any floor edge — is what places its cell near a viewport edge.
+/// Visibility is explicit rather than FOV-derived, so the scene never has
+/// to out-chase a monster to stay known.
 GameState _clampedGameState({
   required int columns,
   required int rows,
@@ -482,10 +483,10 @@ void main() {
     'slot',
     (tester) async {
       const size = Size(392.7, 441.8);
-      const heroAt = Position(29, 5);
-      const monsterAt = Position(26, 5);
+      const heroAt = Position(5, 5);
+      const monsterAt = Position(12, 5);
       final game = _clampedGameState(
-        columns: 30,
+        columns: 20,
         rows: 12,
         heroAt: heroAt,
         monsterAt: monsterAt,
@@ -500,7 +501,7 @@ void main() {
 
       final geometry = GridGeometry.camera(
         size,
-        30,
+        20,
         12,
         state.cameraFocus,
         state.pan,
@@ -520,11 +521,11 @@ void main() {
     'slot',
     (tester) async {
       const size = Size(392.7, 441.8);
-      const heroAt = Position(6, 0);
-      const monsterAt = Position(6, 2);
+      const heroAt = Position(6, 10);
+      const monsterAt = Position(6, 3);
       final game = _clampedGameState(
         columns: 12,
-        rows: 30,
+        rows: 20,
         heroAt: heroAt,
         monsterAt: monsterAt,
       );
@@ -539,7 +540,7 @@ void main() {
       final geometry = GridGeometry.camera(
         size,
         12,
-        30,
+        20,
         state.cameraFocus,
         state.pan,
       );
@@ -592,7 +593,7 @@ void main() {
     (tester) async {
       const size = Size(392.7, 441.8);
       const heroAt = Position(6, 5);
-      const monsterAt = Position(20, 5);
+      const monsterAt = Position(13, 5);
       final game = _clampedGameState(
         columns: 30,
         rows: 12,

@@ -146,13 +146,15 @@ class GameScreen extends StatelessWidget {
                                                     size,
                                                   ))
                                                     Positioned(
-                                                      top: 8,
                                                       right: 8,
+                                                      bottom: 8,
                                                       child: CrawlPill(
                                                         key: recenterKey,
                                                         label: 'Recenter on the hero',
                                                         icon: Icons
                                                             .center_focus_strong,
+                                                        extent:
+                                                            crawlTouchTarget,
                                                         onPressed: () => bloc.add(
                                                           const RecenterPressed(),
                                                         ),

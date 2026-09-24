@@ -109,23 +109,29 @@ void main() {
     test('two legal monsters equidistant in the same column resolve to the '
         'upper one', () {
       final upper = _monsterAt(const Position(2, 1), id: 'upper');
-      final lower = _monsterAt(const Position(2, 3), id: 'lower');
+      final lower = _monsterAt(const Position(2, 2), id: 'lower');
       final state = _state(
         hero: const Position(6, 6),
         monsters: [upper, lower],
         visible: {
           const Position(2, 1),
-          const Position(2, 3),
+          const Position(2, 2),
           const Position(6, 6),
         },
         armedSpellId: 'bolt',
       );
       final geometry = _geometry();
-      final local = Offset.lerp(
-        geometry.centreOf(upper.position),
-        geometry.centreOf(lower.position),
-        0.5,
-      )!;
+      // Shifted off the shared column so the touch lands on an empty cell
+      // (landing on either monster's own cell would resolve to it directly,
+      // short-circuiting the tie-break this test exists to prove) while
+      // staying exactly equidistant from both centres and within radius.
+      final local =
+          Offset.lerp(
+            geometry.centreOf(upper.position),
+            geometry.centreOf(lower.position),
+            0.5,
+          )! +
+          Offset(mapCellWidth / 2 + 1, 0);
 
       expect(resolveMapTap(state, geometry, local), _cell(upper.position));
     });
@@ -281,7 +287,7 @@ void main() {
       final geometry = _geometry();
       final heroCentre = geometry.centreOf(hero);
       final local =
-          heroCentre + Offset(0.9 * mapCellWidth, 0.9 * mapCellHeight);
+          heroCentre + Offset(0.6 * mapCellWidth, 0.6 * mapCellHeight);
       final under = geometry.positionAt(local)!;
       expect(under, const Position(5, 5));
       expect((local - heroCentre).distance, lessThanOrEqualTo(24));

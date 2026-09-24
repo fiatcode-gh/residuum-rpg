@@ -194,13 +194,21 @@ class _DungeonScene extends FlameGame
     required this._onTap,
     required this._onPan,
     required this._onLongPress,
-  }) : super(camera: CameraComponent(viewport: _ClippedMaxViewport()));
+  }) : super(camera: CameraComponent(viewport: _ClippedMaxViewport())) {
+    _dragPan = _snapshot.pan;
+  }
 
   DungeonSceneSnapshot _snapshot;
   MapTouchCallback _onTap;
   ValueChanged<Offset> _onPan;
   MapTouchCallback _onLongPress;
   final Map<GlyphRenderId, _GlyphComponent> _glyphs = {};
+
+  /// The camera's own clamped record of the drag, not the raw finger
+  /// delta: a drag that overshoots a bound keeps this pinned at the bound,
+  /// so a reverse drag moves the camera on its first update instead of
+  /// having to travel the overshoot back first.
+  Offset _dragPan = Offset.zero;
 
   @override
   Color backgroundColor() => crawlBackground;
@@ -236,6 +244,7 @@ class _DungeonScene extends FlameGame
     _onTap = onTap;
     _onPan = onPan;
     _onLongPress = onLongPress;
+    _dragPan = snapshot.pan;
     if (isLoaded && (projectionChanged || lightOriginChanged)) {
       _synchronizeComponents();
     } else if (isLoaded) {
@@ -250,7 +259,16 @@ class _DungeonScene extends FlameGame
 
   @override
   void onDragUpdate(DragUpdateEvent event) {
-    _onPan(Offset(event.canvasDelta.x, event.canvasDelta.y));
+    final allowed = GridGeometry.clampPan(
+      Size(canvasSize.x, canvasSize.y),
+      _snapshot.columns,
+      _snapshot.rows,
+      _snapshot.focus,
+      _dragPan + Offset(event.canvasDelta.x, event.canvasDelta.y),
+    );
+    final delta = allowed - _dragPan;
+    if (delta != Offset.zero) _onPan(delta);
+    _dragPan = allowed;
   }
 
   @override
@@ -416,8 +434,13 @@ class _ReticleComponent extends PositionComponent {
 
   GlyphTargetMark _mark;
 
-  static const Rect _rect = Rect.fromLTWH(0.75, 0.75, 14.5, 18.5);
-  static const double _armLength = 4.3;
+  static const Rect _rect = Rect.fromLTWH(
+    0.75,
+    0.75,
+    mapCellWidth - 1.5,
+    mapCellHeight - 1.5,
+  );
+  static const double _armLength = 6.5;
 
   static final Paint _ticksPaint = Paint()
     ..style = PaintingStyle.stroke

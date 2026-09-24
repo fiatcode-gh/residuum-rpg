@@ -556,7 +556,7 @@ const TextStyle monoSlotMeta = TextStyle(
 TextStyle mapGlyphStyle(Color ink) => TextStyle(
   inherit: false,
   fontFamily: monoFace,
-  fontSize: 21,
+  fontSize: 31,
   letterSpacing: 0,
   fontWeight: FontWeight.w400,
   height: 1.0,
@@ -567,7 +567,7 @@ TextStyle mapGlyphStyle(Color ink) => TextStyle(
 TextStyle mapBadgeStyle(Color ink) => TextStyle(
   inherit: false,
   fontFamily: monoFace,
-  fontSize: 10,
+  fontSize: 15,
   letterSpacing: 0,
   fontWeight: FontWeight.w400,
   height: 1.0,

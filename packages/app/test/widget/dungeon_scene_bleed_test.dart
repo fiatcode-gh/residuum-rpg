@@ -20,9 +20,9 @@ const _heroAt = Position(8, 16);
 const _ghoulAt = Position(9, 16);
 
 /// A room far taller and wider than any viewport this unit's chrome can
-/// leave for the map: [_interiorWidth] floor columns (544dp of floor at
-/// mapCellWidth=16, wider than the 411dp-logical-wide test phone) and
-/// [_interiorHeight] floor rows (960dp, taller than the
+/// leave for the map: [_interiorWidth] floor columns (816dp of floor at
+/// mapCellWidth=24, wider than the 411dp-logical-wide test phone) and
+/// [_interiorHeight] floor rows (1800dp, taller than the
 /// 923dp-logical-tall test phone). The point is not the room's shape — it
 /// is that most of it always sits outside the camera's window, at every
 /// chrome density, so a camera that paints the whole world rather than
@@ -210,9 +210,9 @@ void main() {
       // `margin - 1`, i.e. one pixel above local y=0) or below its own
       // bottom edge (row `margin + box.height`, i.e. one pixel below local
       // y=box.height). The box's own centre column is used because the
-      // 14-column, 504dp-wide room is clamped flush to the viewport's left
-      // edge and fills it entirely, so every column of the box sees real
-      // floor content once the camera's window is exceeded.
+      // camera always keeps the hero exactly centred at zero pan, so that
+      // column is the hero's own column — guaranteed real floor content,
+      // whatever the room's size, once the camera's window is exceeded.
       const sentinel = Color(0xFFFF00FF);
       final x = (mapRect.width / 2).round();
       final abovePixel = await tester.runAsync(

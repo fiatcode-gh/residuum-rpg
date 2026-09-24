@@ -7,17 +7,14 @@ import 'package:residuum_core/core.dart';
 /// the cells shrink with depth. A fixed cell means the deepest floor is
 /// exactly as legible as the first one; what a bigger floor costs is
 /// visibility, and visibility is what panning buys back.
-const double mapCellWidth = 16;
-const double mapCellHeight = 20;
+const double mapCellWidth = 24;
+const double mapCellHeight = 30;
 
 /// Projects the crawl's tile grid onto the screen, and screen points back
 /// onto it.
 ///
-/// The map cell is dense — about 16 by 20 dp, mock density rather than a
-/// touch target — so accurate aiming comes from resolving what the player
-/// meant (`map_touch.dart`), not from the cell being large enough to tap
-/// directly. `GridGeometry` stays the single projection and hit-test
-/// authority; rendering layers never install input handlers of their own.
+/// `GridGeometry` stays the single projection and hit-test authority;
+/// rendering layers never install input handlers of their own.
 class GridGeometry {
   const GridGeometry({
     required this.cellWidth,
@@ -27,13 +24,6 @@ class GridGeometry {
     required this.rows,
   });
 
-  /// The grid framed by a camera: the dense cell throughout, [focus]
-  /// centred, shifted by [pan], then held inside the map's own edges. Each
-  /// axis decides for itself, because a floor is wider than it is tall and a
-  /// phone is the other way round, so one axis routinely fits while the
-  /// other does not. An axis that fits ignores [pan] entirely and centres on
-  /// its own extent instead — it has nothing hidden to reveal. An extent
-  /// exactly equal to the viewport counts as fitting.
   factory GridGeometry.camera(
     Size size,
     int columns,
@@ -63,12 +53,41 @@ class GridGeometry {
     int focus,
     double pan,
     double cellExtent,
+  ) =>
+      _centred(viewport, focus, cellExtent) +
+      _clampAxisPan(viewport, cells, focus, pan, cellExtent);
+
+  static double _centred(double viewport, int focus, double cellExtent) =>
+      viewport / 2 - (focus + 0.5) * cellExtent;
+
+  static double _clampAxisPan(
+    double viewport,
+    int cells,
+    int focus,
+    double pan,
+    double cellExtent,
   ) {
-    final extent = cellExtent * cells;
-    if (extent <= viewport) return (viewport - extent) / 2;
-    final centred = viewport / 2 - (focus + 0.5) * cellExtent;
-    return (centred + pan).clamp(viewport - extent, 0.0);
+    final centred = _centred(viewport, focus, cellExtent);
+    return pan.clamp(
+      viewport / 2 - cellExtent * cells - centred,
+      viewport / 2 - centred,
+    );
   }
+
+  /// The pan the camera would actually apply on [columns] × [rows] cells
+  /// once bounded so the viewport's own centre stays over the floor:
+  /// `_DungeonScene`'s drag tracks this, not the raw finger delta, so a
+  /// reverse drag after overshooting a bound moves the camera immediately.
+  static Offset clampPan(
+    Size size,
+    int columns,
+    int rows,
+    Position focus,
+    Offset pan,
+  ) => Offset(
+    _clampAxisPan(size.width, columns, focus.x, pan.dx, mapCellWidth),
+    _clampAxisPan(size.height, rows, focus.y, pan.dy, mapCellHeight),
+  );
 
   Offset topLeftOf(int x, int y) =>
       Offset(origin.dx + x * cellWidth, origin.dy + y * cellHeight);
