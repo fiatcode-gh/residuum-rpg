@@ -1,35 +1,13 @@
 # Resume Visual Reboot
 
-**Unit 16.5 — ASCII Crawl Full Parity — PAUSED at the final gate by the user
-(2026-09-24 01:00). All 13 tasks, review corrections and device capsules done.** Branch `residuum-visual-reboot-16`, pushed. Contract:
-`units/unit-16.5/CONTRACT.md` (amended A1: 16×20 dp cell, 48 dp touch
-targets). Plan: `units/unit-16.5/PLAN.md` (read "Amendment A1" first).
+**Units 16 and 16.5 are accepted (user sign-off 2026-09-24).** Branch
+`residuum-visual-reboot-16` is pushed and has a pull request against `main`.
+**Next: the user's merge decision.** No device cleanup is owed (the user
+waived it).
 
-## Next action on resume
-
-1. Redispatch the **F1/F2 correction** (`flow-implementer`), using the brief in
-   the ledger entry "U16.5 final device capsules on the I2505": the hero-panel
-   GOLD and the combat-panel resist fact must not ellipsize.
-2. Re-capture the hero and combat panels on the I2505 (`10DG1E044B000B4`
-   only; never `emulator-5554`).
-3. Reviewer parity scoring of `exp/` and `bat/` frames against the four mocks,
-   then **user visual sign-off**, then uninstall from the I2505 and verify it
-   is absent.
-
-## State at pause
-
-- Done: Tasks 01–07, A1, and the Checkpoint A tuning (warm shade inks, linear
-  light, stronger fog). Checkpoint A verdict: on track. Full suite 1200/1200 at
-  `91aa6db`.
-- Sign-off notes to judge: Plex Mono's slanted `#` against the mock's upright
-  `#`; an item glyph peeking beside `@` when the hero stands on an item.
-- Phone: the vivo I2219 was restored to never-installed (uninstall verified,
-  RESTORE MATCH). **The user will use a different phone** for the final gate.
-  Before its first ADB action: write a checkpoint, run a read-only discovery
-  (size, density, insets, package presence), and back up both save slots
-  byte-exact if the app already holds real data there. Re-measure the G8
-  figures on it.
-- U16 is not accepted; it is accepted together with U16.5.
+Parked follow-ups for a later unit: an upright wall `#` if wanted, an 8 dp map
+gutter (touches the projection), the hero-panel left-column gap, spell marks
+keyed on content (not the `frost-lance` id), the remaining test-body comments.
 
 ## Historical U16 detail
 

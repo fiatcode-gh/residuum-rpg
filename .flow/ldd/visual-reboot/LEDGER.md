@@ -5145,3 +5145,16 @@ request exists, and the integration choice is the user's.
   `bat/03`), armed targeting, more than 5 actions, pan/recenter (automated,
   plus vivo CPA2 for pan). The app is installed on the vivo; the I2505 still
   holds its install.
+
+### U16 + U16.5 accepted — 2026-09-24
+
+- **The user gave visual sign-off** on the `sign/` frames at `2ed0992`. Units
+  16 and 16.5 are accepted together. Main's final gate at `2ed0992`: format
+  0 changed, analyze clean, **1252/1252**; core/content untouched.
+- **The user waived device cleanup:** the test app may stay installed on the
+  vivo I2219 and the I2505. The restore debt is closed by user decision.
+- Accepted as-is (the user did not ask for changes): the slanted Plex `#`, the
+  edge-to-edge map (no gutter), the gap in the hero panel's left column, M8
+  (the `frost-lance` id in the app), and the closure Minors (a few remaining
+  test-body comments).
+- The user authorized push and opening a pull request. Merge stays gated.
