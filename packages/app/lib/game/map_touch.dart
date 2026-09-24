@@ -8,6 +8,12 @@ import 'grid_geometry.dart';
 /// monster" is, amended by A1 to a 48 dp target.
 const double mapTouchRadius = 24;
 
+/// PLAN.md §2 G4: how far from the hero's own centre a bare tap still
+/// steps the hero one cell, by dominant axis, rather than falling through
+/// to a cell tap or an auto-walk. Unlike [mapTouchRadius] this is a box on
+/// each axis, not a disc.
+const double mapStepReach = 48;
+
 /// What a map tap or long-press resolves to, once the touch point's
 /// distance from every candidate monster is weighed against the cell the
 /// finger actually landed on.
@@ -111,10 +117,13 @@ MapTouch resolveMapTap(
   }
   final nearestKnown = _nearest(_known(state), dist);
   if (nearestKnown != null) return _meleeOrInspect(nearestKnown, hero);
-  if (dist(hero) <= mapTouchRadius && under != hero) {
-    final heroCentre = geometry.centreOf(hero);
-    final u = (local.dx - heroCentre.dx) / mapCellWidth;
-    final v = (local.dy - heroCentre.dy) / mapCellHeight;
+  final d = local - geometry.centreOf(hero);
+  if (under != null &&
+      d.dx.abs() <= mapStepReach &&
+      d.dy.abs() <= mapStepReach &&
+      d != Offset.zero) {
+    final u = d.dx / mapCellWidth;
+    final v = d.dy / mapCellHeight;
     final direction = u.abs() >= v.abs()
         ? (u >= 0 ? Direction.east : Direction.west)
         : (v >= 0 ? Direction.south : Direction.north);

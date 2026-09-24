@@ -1,9 +1,9 @@
-import 'dart:math' as math;
-
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
+import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_app/game/map_touch.dart';
 import 'package:residuum_core/core.dart';
 
@@ -280,34 +280,13 @@ void main() {
       expect(resolveMapTap(state, geometry, local), _cell(neighbour));
     });
 
-    test('a touch in a diagonal neighbour within 24 dp of the hero steps the '
-        'dominant axis, horizontal winning an exact diagonal', () {
+    test('a touch at the diagonal cell centre (u = v = 1) ties toward '
+        'east', () {
       const hero = Position(4, 4);
       final state = _state(hero: hero, visible: {hero});
       final geometry = _geometry();
       final heroCentre = geometry.centreOf(hero);
-      final local =
-          heroCentre + Offset(0.6 * mapCellWidth, 0.6 * mapCellHeight);
-      final under = geometry.positionAt(local)!;
-      expect(under, const Position(5, 5));
-      expect((local - heroCentre).distance, lessThanOrEqualTo(24));
-
-      expect(
-        resolveMapTap(state, geometry, local),
-        _cell(const Position(5, 4)),
-      );
-    });
-
-    test('a touch 23.9 dp from the hero on the diagonal steps the dominant '
-        'axis', () {
-      const hero = Position(4, 4);
-      final state = _state(hero: hero, visible: {hero});
-      final geometry = _geometry();
-      final heroCentre = geometry.centreOf(hero);
-      final local = heroCentre + Offset.fromDirection(math.pi / 4, 23.9);
-      final under = geometry.positionAt(local)!;
-      expect(under.isOrthogonallyAdjacentTo(hero), isFalse);
-      expect((local - heroCentre).distance, lessThanOrEqualTo(mapTouchRadius));
+      final local = heroCentre + const Offset(24, 30);
 
       expect(
         resolveMapTap(state, geometry, local),
@@ -315,19 +294,199 @@ void main() {
       );
     });
 
-    test('a touch 24.1 dp from the hero on the same diagonal falls through '
-        'to the cell under the finger instead of stepping', () {
+    test('a touch inside the south-east diagonal cell steps south, the '
+        'dominant vertical axis', () {
       const hero = Position(4, 4);
       final state = _state(hero: hero, visible: {hero});
       final geometry = _geometry();
       final heroCentre = geometry.centreOf(hero);
-      final local = heroCentre + Offset.fromDirection(math.pi / 4, 24.1);
+      final local = heroCentre + const Offset(13, 44);
       final under = geometry.positionAt(local)!;
-      expect(under.isOrthogonallyAdjacentTo(hero), isFalse);
-      expect((local - heroCentre).distance, greaterThan(mapTouchRadius));
+      expect(under, hero.step(Direction.east).step(Direction.south));
+
+      expect(
+        resolveMapTap(state, geometry, local),
+        _cell(hero.step(Direction.south)),
+      );
+    });
+
+    test('a touch inside the hero own cell, off centre, still steps', () {
+      const hero = Position(4, 4);
+      final state = _state(hero: hero, visible: {hero});
+      final geometry = _geometry();
+      final heroCentre = geometry.centreOf(hero);
+      final local = heroCentre + const Offset(5, 0);
+      expect(geometry.positionAt(local), hero);
+
+      expect(
+        resolveMapTap(state, geometry, local),
+        _cell(hero.step(Direction.east)),
+      );
+    });
+
+    test('a touch at the exact hero centre resolves to the hero own cell, '
+        'not a step', () {
+      const hero = Position(4, 4);
+      final state = _state(hero: hero, visible: {hero});
+      final geometry = _geometry();
+      final local = geometry.centreOf(hero);
+
+      expect(resolveMapTap(state, geometry, local), _cell(hero));
+    });
+
+    test('a touch 47.9 dp east of the hero, inside the 48 dp step box, '
+        'steps east instead of auto-walking to the far cell', () {
+      const hero = Position(4, 4);
+      final state = _state(hero: hero, visible: {hero});
+      final geometry = _geometry();
+      final heroCentre = geometry.centreOf(hero);
+      final local = heroCentre + const Offset(47.9, 0);
+      final under = geometry.positionAt(local)!;
+      expect(under, isNot(hero.step(Direction.east)));
+
+      expect(
+        resolveMapTap(state, geometry, local),
+        _cell(hero.step(Direction.east)),
+      );
+    });
+
+    test('a touch 47.9 dp west of the hero steps west', () {
+      const hero = Position(4, 4);
+      final state = _state(hero: hero, visible: {hero});
+      final geometry = _geometry();
+      final heroCentre = geometry.centreOf(hero);
+      final local = heroCentre + const Offset(-47.9, 0);
+
+      expect(
+        resolveMapTap(state, geometry, local),
+        _cell(hero.step(Direction.west)),
+      );
+    });
+
+    test('a touch 47.9 dp south of the hero steps south', () {
+      const hero = Position(4, 4);
+      final state = _state(hero: hero, visible: {hero});
+      final geometry = _geometry();
+      final heroCentre = geometry.centreOf(hero);
+      final local = heroCentre + const Offset(0, 47.9);
+
+      expect(
+        resolveMapTap(state, geometry, local),
+        _cell(hero.step(Direction.south)),
+      );
+    });
+
+    test('a touch 47.9 dp north of the hero steps north', () {
+      const hero = Position(4, 4);
+      final state = _state(hero: hero, visible: {hero});
+      final geometry = _geometry();
+      final heroCentre = geometry.centreOf(hero);
+      final local = heroCentre + const Offset(0, -47.9);
+
+      expect(
+        resolveMapTap(state, geometry, local),
+        _cell(hero.step(Direction.north)),
+      );
+    });
+
+    test('a touch 48.1 dp east of the hero falls outside the step box and '
+        'auto-walks to the cell under the finger', () {
+      const hero = Position(4, 4);
+      final state = _state(hero: hero, visible: {hero});
+      final geometry = _geometry();
+      final heroCentre = geometry.centreOf(hero);
+      final local = heroCentre + const Offset(48.1, 0);
+      final under = geometry.positionAt(local)!;
       expect(under, isNot(hero.step(Direction.east)));
 
       expect(resolveMapTap(state, geometry, local), _cell(under));
+    });
+
+    test('a known monster within 24 dp of the tap wins over the step '
+        '(rule 3 precedence)', () {
+      const hero = Position(4, 4);
+      final monster = _monsterAt(const Position(6, 5), id: 'ghoul-diag');
+      final state = _state(
+        hero: hero,
+        monsters: [monster],
+        visible: {hero, monster.position},
+      );
+      final geometry = _geometry();
+      final heroCentre = geometry.centreOf(hero);
+      final local = heroCentre + const Offset(24, 30);
+      expect(monster.position.isOrthogonallyAdjacentTo(hero), isFalse);
+      expect(
+        (local - geometry.centreOf(monster.position)).distance,
+        lessThanOrEqualTo(mapTouchRadius),
+      );
+
+      expect(resolveMapTap(state, geometry, local), _inspect(monster.id));
+    });
+
+    test('a monster under the finger wins over the step (rule 1)', () {
+      const hero = Position(4, 4);
+      final monster = _monsterAt(const Position(6, 4), id: 'ghoul-under');
+      final state = _state(
+        hero: hero,
+        monsters: [monster],
+        visible: {hero, monster.position},
+      );
+      final geometry = _geometry();
+      final heroCentre = geometry.centreOf(hero);
+      final local = heroCentre + const Offset(40, 10);
+      final under = geometry.positionAt(local)!;
+      expect(under, monster.position);
+      expect(monster.position.isOrthogonallyAdjacentTo(hero), isFalse);
+
+      expect(resolveMapTap(state, geometry, local), _inspect(monster.id));
+    });
+
+    test('a tap on an orthogonal neighbour cell far corner still steps '
+        'there (rule 2)', () {
+      const hero = Position(4, 4);
+      const neighbour = Position(5, 4);
+      final state = _state(hero: hero, visible: {hero});
+      final geometry = _geometry();
+      final local =
+          geometry.topLeftOf(neighbour.x, neighbour.y) +
+          const Offset(mapCellWidth - 0.1, mapCellHeight - 0.1);
+      expect(geometry.positionAt(local), neighbour);
+
+      expect(resolveMapTap(state, geometry, local), _cell(neighbour));
+    });
+
+    test('a floor-edge fixture: a tap on the void past the hero west edge '
+        'falls through, the mirrored tap east still steps', () {
+      /// The hero sits in the map's leftmost column, so a tap west of it
+      /// lands past `positionAt`'s bounds (`under == null`): no floor cell
+      /// means no step, `MapTouchNothing` and no `TileTapped` dispatch, so
+      /// the hero never moves. PLAN.md G4 amendment.
+      const hero = Position(0, 4);
+      final state = _state(hero: hero, visible: {hero});
+      final geometry = _geometry();
+      final heroCentre = geometry.centreOf(hero);
+
+      final voidDiagonal = heroCentre + const Offset(-24, -30);
+      expect(geometry.positionAt(voidDiagonal), isNull);
+      expect(resolveMapTap(state, geometry, voidDiagonal), _nothing);
+
+      final voidCardinal = heroCentre + const Offset(-40, 0);
+      expect(geometry.positionAt(voidCardinal), isNull);
+      expect(resolveMapTap(state, geometry, voidCardinal), _nothing);
+
+      final floorDiagonal = heroCentre + const Offset(24, 30);
+      expect(geometry.positionAt(floorDiagonal), isNotNull);
+      expect(
+        resolveMapTap(state, geometry, floorDiagonal),
+        _cell(hero.step(Direction.east)),
+      );
+
+      final floorCardinal = heroCentre + const Offset(40, 0);
+      expect(geometry.positionAt(floorCardinal), isNotNull);
+      expect(
+        resolveMapTap(state, geometry, floorCardinal),
+        _cell(hero.step(Direction.east)),
+      );
     });
 
     test('the hero at the map west edge: a touch 15 dp west of it falls '
@@ -382,6 +541,48 @@ void main() {
 
       expect(resolveMapTap(state, geometry, local), _nothing);
     });
+  });
+
+  group('wired to GameBloc', () {
+    const hero = Position(4, 4);
+    final monster = _monsterAt(const Position(8, 4), id: 'ghoul-watcher');
+
+    blocTest<GameBloc, GameViewState>(
+      'a tap resolved inside the 48 dp step box moves the hero even while '
+      'watched, the tap half of the walkthrough stall',
+      build: () {
+        final state = _state(
+          hero: hero,
+          monsters: [monster],
+          visible: {hero, monster.position},
+        );
+        return GameBloc(game: state.game, stepDelay: Duration.zero);
+      },
+      act: (bloc) {
+        final geometry = _geometry();
+        final local = geometry.centreOf(hero) + const Offset(20, 40);
+        expect(geometry.positionAt(local), const Position(5, 5));
+        expect(bloc.state.enemiesInSight, greaterThan(0));
+
+        final resolved = resolveMapTap(bloc.state, geometry, local);
+        expect(resolved, isA<MapTouchCell>());
+        bloc.add(TileTapped((resolved as MapTouchCell).position));
+      },
+      verify: (bloc) {
+        expect(bloc.state.game.hero.position, hero.step(Direction.south));
+        expect(
+          bloc.state.log,
+          isNot(
+            contains(
+              const LogLine(
+                'Something is watching. You stay put.',
+                LogCategory.refused,
+              ),
+            ),
+          ),
+        );
+      },
+    );
   });
 
   group('long-press', () {
