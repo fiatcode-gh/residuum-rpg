@@ -47,12 +47,12 @@ class CombatPanel extends StatelessWidget {
         child: DecoratedBox(
           decoration: crawlFrameDecoration,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 3),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
-                  flex: 45,
+                  flex: 36,
                   child: _TargetColumn(
                     target: target,
                     name: target == null
@@ -79,7 +79,7 @@ class CombatPanel extends StatelessWidget {
                 ),
                 const ColumnDivider(),
                 Expanded(
-                  flex: 31,
+                  flex: 40,
                   child: _SpellColumn(spell: spell, armed: armedSpell != null),
                 ),
               ],
@@ -124,15 +124,14 @@ class _TargetColumn extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         const Text('TARGET', style: displayLabel),
-        const SizedBox(height: 3),
+        const SizedBox(height: 1),
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
           child: Text(capitaliseFirst(name), style: displayName, maxLines: 1),
         ),
-        const SizedBox(height: 4),
-        Text('HP $hp/${target.maxHp}', style: monoData),
         const SizedBox(height: 1),
+        Text('HP $hp/${target.maxHp}', style: monoData),
         ClipRRect(
           borderRadius: BorderRadius.circular(2.5),
           child: LinearProgressIndicator(
@@ -142,7 +141,6 @@ class _TargetColumn extends StatelessWidget {
             valueColor: const AlwaysStoppedAnimation(crawlEnemy),
           ),
         ),
-        const SizedBox(height: 2),
         Text(
           facts[0],
           style: monoMeta,
@@ -152,7 +150,7 @@ class _TargetColumn extends StatelessWidget {
         Text(
           facts.skip(1).join(' · '),
           style: monoMeta,
-          maxLines: 3,
+          maxLines: 4,
           overflow: TextOverflow.ellipsis,
         ),
       ],
@@ -235,7 +233,16 @@ class _SpellColumn extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: displayLabel),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              label,
+              style: displayLabel,
+              maxLines: 1,
+              softWrap: false,
+            ),
+          ),
           const SizedBox(height: 3),
           const Text('No spell known', style: textLineDim),
         ],
@@ -245,7 +252,11 @@ class _SpellColumn extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: displayLabel),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(label, style: displayLabel, maxLines: 1, softWrap: false),
+        ),
         const SizedBox(height: 3),
         SizedBox(
           height: 20,

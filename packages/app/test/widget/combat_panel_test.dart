@@ -326,6 +326,27 @@ void main() {
       expect(find.text('No spell known'), findsOneWidget);
     });
   });
+  testWidgets(
+    'the spell title never wraps onto a second line, even at 1.3x text '
+    'scale in the narrowest realistic column',
+    (tester) async {
+      // act
+      final state = GameViewState(
+        game: _game(knownSpells: const {'firebolt', 'mend'}),
+        log: const [],
+        armedSpellId: 'mend',
+      );
+
+      await _pumpPanel(tester, state, textScaler: const TextScaler.linear(1.3));
+
+      // assert - a single line of 'ARMED SPELL' is well under 20 dp even
+      // scaled up; a wrap onto two lines nearly doubles that height.
+      final title = tester.renderObject<RenderParagraph>(
+        find.text('ARMED SPELL'),
+      );
+      expect(title.size.height, lessThan(20));
+    },
+  );
 
   group('YOU', () {
     testWidgets('shows the hero\'s own vitals under the meter keys', (

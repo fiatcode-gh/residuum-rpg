@@ -136,7 +136,7 @@ class _InertFrame extends StatelessWidget {
       height: height,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          border: Border.all(color: crawlDivider.withValues(alpha: 0.6)),
+          border: Border.all(color: crawlFrame.withValues(alpha: 0.25)),
           borderRadius: BorderRadius.circular(radius),
         ),
       ),

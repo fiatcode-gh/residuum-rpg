@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/crawl_header.dart';
+import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/style/tokens.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
@@ -379,6 +381,28 @@ void main() {
       expect(
         tester.getRect(find.byType(CrawlHeader)).height,
         closeTo(114.4, 0.1),
+      );
+    });
+  });
+  group('the wordmark rule', () {
+    testWidgets('spans the header width minus the gutters, not zero width', (
+      tester,
+    ) async {
+      await onTheTargetPhone(tester);
+      await _pumpCrawlAt(tester, cryptNode, day: 3);
+
+      final rule = find.descendant(
+        of: find.byKey(crawlHeaderKey),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is ColoredBox && widget.color == crawlGoldRule,
+        ),
+      );
+      expect(rule, findsOneWidget);
+      final screenWidth =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      expect(
+        tester.getSize(rule).width,
+        closeTo(screenWidth - crawlGutter * 2, 0.5),
       );
     });
   });

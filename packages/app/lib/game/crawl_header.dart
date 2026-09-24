@@ -39,6 +39,7 @@ class CrawlHeader extends StatelessWidget {
     width: double.infinity,
     height: crawlHeaderHeight * crawlScale(context),
     child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 6),
         const ExcludeSemantics(

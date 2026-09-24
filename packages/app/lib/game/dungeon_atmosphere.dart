@@ -3,7 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../style/tokens.dart' show crawlBackground, crawlHero, crawlTorch;
+import '../style/tokens.dart' show crawlBackground, crawlTorch;
 import 'dungeon_scene.dart' show DungeonSceneSnapshot;
 import 'grid_geometry.dart';
 
@@ -27,15 +27,17 @@ Offset backdropDrift(Offset cameraOrigin) => Offset(
 /// `Rng` (PLAN.md G5, contract "Determinism").
 const int fogSalt = 0x5E5D1DE;
 
+/// The second fog octave's own salt (gap 4): XORed off [fogSalt] so its
+/// lattice points never land on the first octave's, which is what makes the
+/// combined field read as mottled cloud rather than one smooth blob.
+const int _fogOctave2Salt = fogSalt ^ 0x9E37;
+
 /// A deterministic pseudo-random value in `[0, 1)` for one fog lattice
-/// point's channel, hashed from screen-space coordinates and [fogSalt]
+/// point's channel, hashed from screen-space coordinates and [salt]
 /// only — never from gameplay state (PLAN.md G5).
-double fogHash(int ix, int iy, int channel) {
+double fogHash(int ix, int iy, int channel, [int salt = fogSalt]) {
   var h =
-      ((ix * 0x27d4eb2d) ^
-          (iy * 0x165667b1) ^
-          (channel * 0x9e3779b9) ^
-          fogSalt) &
+      ((ix * 0x27d4eb2d) ^ (iy * 0x165667b1) ^ (channel * 0x9e3779b9) ^ salt) &
       0xFFFFFFFF;
   h = ((h ^ (h >> 15)) * 0x2c1b3c6d) & 0xFFFFFFFF;
   h = ((h ^ (h >> 12)) * 0x297a2d39) & 0xFFFFFFFF;
@@ -45,6 +47,8 @@ double fogHash(int ix, int iy, int channel) {
 
 const double _fogLatticeSpacing = 56;
 const double _fogDiscRadius = 96;
+const double _fogOctave2Spacing = 28;
+const double _fogOctave2Radius = 40;
 const double _torchPoolRadius = 6 * mapCellWidth;
 const double _heroBloomRadius = 1.6 * mapCellWidth;
 const Color _vignetteColor = Color(0xFF020406);
@@ -127,37 +131,72 @@ class _DungeonAtmosphereState extends State<DungeonAtmosphere> {
   );
 }
 
-/// Records the fog field once for `(size, fog)` (PLAN.md G5): a jittered
-/// lattice of soft discs covering the viewport plus the parallax and disc
-/// margins, so drift never uncovers a bare edge.
+/// Fills one fog octave's discs into [canvas] (PLAN.md G5, gap 4): its own
+/// lattice spacing, disc radius and hash salt, so the two octaves never
+/// land on the same points — which is what turns one smooth blob into
+/// mottled cloud. Covers the viewport plus the parallax and disc margins,
+/// so drift never uncovers a bare edge.
+void _paintFogOctave(
+  Canvas canvas,
+  Size size,
+  Color fog, {
+  required double spacing,
+  required double discRadius,
+  required int salt,
+  required double skipBelow,
+  required double Function(double k) alphaOf,
+}) {
+  final minX = -parallaxLimit - discRadius;
+  final maxX = size.width + parallaxLimit + discRadius;
+  final minY = -parallaxLimit - discRadius;
+  final maxY = size.height + parallaxLimit + discRadius;
+  final startIx = (minX / spacing).floor();
+  final endIx = (maxX / spacing).ceil();
+  final startIy = (minY / spacing).floor();
+  final endIy = (maxY / spacing).ceil();
+  for (var ix = startIx; ix <= endIx; ix++) {
+    for (var iy = startIy; iy <= endIy; iy++) {
+      final k = fogHash(ix, iy, 3, salt);
+      if (k < skipBelow) continue;
+      final jx = (fogHash(ix, iy, 1, salt) - 0.5) * 0.8 * spacing;
+      final jy = (fogHash(ix, iy, 2, salt) - 0.5) * 0.8 * spacing;
+      final centre = Offset(ix * spacing + jx, iy * spacing + jy);
+      final shader = ui.Gradient.radial(centre, discRadius, [
+        fog.withValues(alpha: alphaOf(k)),
+        fog.withValues(alpha: 0),
+      ]);
+      canvas.drawCircle(centre, discRadius, Paint()..shader = shader);
+    }
+  }
+}
+
+/// Records the fog field once for `(size, fog)` (PLAN.md G5, gap 4): two
+/// jittered lattices of soft discs — a broad, sparser octave and a smaller,
+/// denser one on a different salt — into the same picture, so dark gaps show
+/// between puffs instead of one smooth, too-light blob.
 ui.Picture _recordFogField(Size size, Color fog) {
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
-  const s = _fogLatticeSpacing;
-  const r = _fogDiscRadius;
-  final minX = -parallaxLimit - r;
-  final maxX = size.width + parallaxLimit + r;
-  final minY = -parallaxLimit - r;
-  final maxY = size.height + parallaxLimit + r;
-  final startIx = (minX / s).floor();
-  final endIx = (maxX / s).ceil();
-  final startIy = (minY / s).floor();
-  final endIy = (maxY / s).ceil();
-  for (var ix = startIx; ix <= endIx; ix++) {
-    for (var iy = startIy; iy <= endIy; iy++) {
-      final k = fogHash(ix, iy, 3);
-      if (k < 0.35) continue;
-      final jx = (fogHash(ix, iy, 1) - 0.5) * 0.8 * s;
-      final jy = (fogHash(ix, iy, 2) - 0.5) * 0.8 * s;
-      final centre = Offset(ix * s + jx, iy * s + jy);
-      final alpha = 0.22 + 0.48 * (k - 0.35) / 0.65;
-      final shader = ui.Gradient.radial(centre, r, [
-        fog.withValues(alpha: alpha),
-        fog.withValues(alpha: 0),
-      ]);
-      canvas.drawCircle(centre, r, Paint()..shader = shader);
-    }
-  }
+  _paintFogOctave(
+    canvas,
+    size,
+    fog,
+    spacing: _fogLatticeSpacing,
+    discRadius: _fogDiscRadius,
+    salt: fogSalt,
+    skipBelow: 0.55,
+    alphaOf: (k) => 0.08 + 0.52 * (k - 0.55) / 0.45,
+  );
+  _paintFogOctave(
+    canvas,
+    size,
+    fog,
+    spacing: _fogOctave2Spacing,
+    discRadius: _fogOctave2Radius,
+    salt: _fogOctave2Salt,
+    skipBelow: 0.70,
+    alphaOf: (k) => 0.06 + 0.24 * (k - 0.70) / 0.30,
+  );
   return recorder.endRecording();
 }
 
@@ -173,6 +212,8 @@ class DungeonBackdropPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
     final bounds = Offset.zero & size;
+    canvas.save();
+    canvas.clipRect(bounds);
     canvas.drawRect(bounds, Paint()..color = crawlBackground);
 
     canvas.save();
@@ -192,6 +233,7 @@ class DungeonBackdropPainter extends CustomPainter {
       const [0.55, 1.0],
     );
     canvas.drawRect(bounds, Paint()..shader = vignette);
+    canvas.restore();
   }
 
   @override
@@ -210,11 +252,13 @@ class TorchLightPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
     final poolShader = ui.Gradient.radial(
       heroCentre,
       _torchPoolRadius,
       [
-        crawlTorch.withValues(alpha: 0.30),
+        crawlTorch.withValues(alpha: 0.34),
         crawlTorch.withValues(alpha: 0.15),
         crawlTorch.withValues(alpha: 0.05),
         crawlTorch.withValues(alpha: 0),
@@ -228,14 +272,15 @@ class TorchLightPainter extends CustomPainter {
     );
 
     final bloomShader = ui.Gradient.radial(heroCentre, _heroBloomRadius, [
-      crawlHero.withValues(alpha: 0.28),
-      crawlHero.withValues(alpha: 0),
+      crawlTorch.withValues(alpha: 0.18),
+      crawlTorch.withValues(alpha: 0),
     ]);
     canvas.drawCircle(
       heroCentre,
       _heroBloomRadius,
       Paint()..shader = bloomShader,
     );
+    canvas.restore();
   }
 
   @override

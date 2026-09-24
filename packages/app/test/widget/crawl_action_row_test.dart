@@ -454,6 +454,38 @@ void main() {
 
       expect(dispatched, isFalse);
     });
+    testWidgets(
+      'an inert frame has no fill and a dim frame at a quarter of crawlFrame',
+      (tester) async {
+        await onTheTargetPhone(tester);
+        await _pumpBar(tester, _actions(3));
+
+        final inertFrame = find
+            .descendant(
+              of: find.byKey(actionRowKey),
+              matching: find.byWidgetPredicate(
+                (widget) => widget.runtimeType.toString() == '_InertFrame',
+              ),
+            )
+            .first;
+        final decoration =
+            tester
+                    .widget<DecoratedBox>(
+                      find.descendant(
+                        of: inertFrame,
+                        matching: find.byType(DecoratedBox),
+                      ),
+                    )
+                    .decoration
+                as BoxDecoration;
+
+        expect(decoration.color, isNull);
+        expect(
+          decoration.border!.top.color,
+          crawlFrame.withValues(alpha: 0.25),
+        );
+      },
+    );
 
     testWidgets(
       'more than five actions scroll: the sixth peeks 18 dp, and dragging to '

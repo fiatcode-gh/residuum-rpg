@@ -336,6 +336,68 @@ void main() {
       lessThan(_pixelAt(vignetted, size, 180, 180).computeLuminance()),
     );
   });
+  testWidgets(
+    'the backdrop and torch painters never paint outside the rect they are '
+    'given, even embedded in a larger canvas',
+    (tester) async {
+      const canvasSize = Size(300, 300);
+      const mapRect = Rect.fromLTWH(40, 120, 160, 160);
+      const ground = Color(0xFF223344);
+
+      final bytes = await tester.runAsync(() async {
+        /// A fog disc centred on the map rect's own top-left corner with a
+        /// radius far larger than the rect, so an unclipped paint clearly
+        /// bleeds past every edge — including upward, into where the header
+        /// sits above the map in the real layout.
+        final fogRecorder = ui.PictureRecorder();
+        final fogCanvas = ui.Canvas(fogRecorder);
+        final fogShader = ui.Gradient.radial(Offset.zero, 140, const [
+          Color(0xFF1A2430),
+          Color(0x001A2430),
+        ]);
+        fogCanvas.drawCircle(Offset.zero, 140, Paint()..shader = fogShader);
+        final fogField = fogRecorder.endRecording();
+
+        final recorder = ui.PictureRecorder();
+        final canvas = ui.Canvas(recorder);
+        canvas.drawRect(Offset.zero & canvasSize, Paint()..color = ground);
+        canvas.save();
+        canvas.translate(mapRect.left, mapRect.top);
+        DungeonBackdropPainter(
+          fogField: fogField,
+          drift: Offset.zero,
+        ).paint(canvas, mapRect.size);
+        const TorchLightPainter(heroCentre: Offset(4, 4))
+            .paint(canvas, mapRect.size);
+        canvas.restore();
+        final picture = recorder.endRecording();
+        try {
+          final image = await picture.toImage(
+            canvasSize.width.toInt(),
+            canvasSize.height.toInt(),
+          );
+          try {
+            return (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!
+                .buffer
+                .asUint8List();
+          } finally {
+            image.dispose();
+          }
+        } finally {
+          picture.dispose();
+          fogField.dispose();
+        }
+      });
+
+      Color at(int x, int y) => _pixelAt(bytes!, canvasSize, x, y);
+      // Directly above the map rect — the header's own zone in the real
+      // layout — must read as untouched ground, not fog or torchlight.
+      expect(at(60, 20), ground);
+      expect(at(60, 90), ground);
+      // Left of the map rect.
+      expect(at(5, 200), ground);
+    },
+  );
 
   testWidgets(
     'AC2: unknown cells stay unrevealed by fog, light or the full scene',

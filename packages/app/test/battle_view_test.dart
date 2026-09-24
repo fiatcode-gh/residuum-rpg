@@ -500,6 +500,31 @@ void main() {
         expect(nextDecoration.color, isNull);
       },
     );
+    testWidgets(
+      'the pill sits centred in its 44 dp hit row, not pinned to the top',
+      (tester) async {
+        await _pushGame(
+          tester,
+          battleGame(monsters: [ghoulAt(const Position(1, 2))]),
+        );
+
+        final hitRowTop = tester
+            .getTopLeft(
+              find
+                  .ancestor(
+                    of: find.byKey(const Key('timeline-current-hero')),
+                    matching: find.byType(SizedBox),
+                  )
+                  .first,
+            )
+            .dy;
+        final pillTop = tester
+            .getTopLeft(find.byKey(const Key('timeline-current-hero')))
+            .dy;
+
+        expect(pillTop - hitRowTop, closeTo((44 - 24) / 2, 0.5));
+      },
+    );
 
     testWidgets(
       'the NEXT caption sits over the token it labels, not a guessed gap',

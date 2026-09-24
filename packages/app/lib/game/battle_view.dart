@@ -149,7 +149,7 @@ class _TimelineToken extends StatelessWidget {
         child: SizedBox(
           height: 44,
           child: Align(
-            alignment: Alignment.topLeft,
+            alignment: Alignment.centerLeft,
             child: _TimelinePill(
               key: Key(
                 hero.isCurrent ? 'timeline-current-hero' : 'timeline-next-hero',
@@ -177,7 +177,7 @@ class _TimelineToken extends StatelessWidget {
         child: SizedBox(
           height: 44,
           child: Align(
-            alignment: Alignment.topLeft,
+            alignment: Alignment.centerLeft,
             child: _TimelinePill(
               glyph: presentation.glyphLabel,
               word: presentation.displayName,
