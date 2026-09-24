@@ -65,6 +65,7 @@ class GameScreen extends StatelessWidget {
         data: residuumTheme,
         child: Scaffold(
           body: SafeArea(
+            minimum: const EdgeInsets.only(bottom: crawlGestureClear),
             child: MediaQuery.withClampedTextScaling(
               maxScaleFactor: 1.3,
               child: BlocBuilder<GameBloc, GameViewState>(

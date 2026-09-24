@@ -4,6 +4,8 @@ import '../style/tokens.dart';
 
 const double crawlPanelPadding = 8;
 
+const double crawlGestureClear = 18;
+
 /// PLAN.md G8 timeline internals (Task 11): the battle dock's own fixed
 /// height, and the fixed height of every pill it draws — NOW's, and each of
 /// NEXT's.
