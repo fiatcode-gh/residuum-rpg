@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/action_card.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/game_bloc.dart';
@@ -240,6 +241,11 @@ Future<void> _tapTile(
   await tester.tapAt(tester.getTopLeft(scene) + local);
 }
 
+Finder _cardVerb(String id) => find.descendant(
+  of: find.byKey(actionCardKey),
+  matching: find.byKey(ValueKey(id)),
+);
+
 void main() {
   testWidgets('attack: a map tap on an adjacent monster is a bump', (
     tester,
@@ -322,12 +328,12 @@ void main() {
     expect(bloc.state.game.hero.hp, greaterThan(hpBefore));
   });
 
-  testWidgets('wait: the log row control holds ground for a turn', (
+  testWidgets('wait: the action card control holds ground for a turn', (
     tester,
   ) async {
     final bloc = await _pushCrawl(tester, _roadScene());
 
-    await tester.tap(find.byKey(const ValueKey('wait')));
+    await tester.tap(_cardVerb('wait'));
     await tester.pumpAndSettle();
 
     expect(
@@ -336,72 +342,71 @@ void main() {
     );
   });
 
-  testWidgets('flee: the log row control walks the hero off the ring', (
+  testWidgets('flee: the action card control walks the hero off the ring', (
     tester,
   ) async {
     final bloc = await _pushCrawl(tester, _roadScene());
 
-    await tester.tap(find.byKey(const ValueKey('flee')));
+    await tester.tap(_cardVerb('flee'));
     await tester.pumpAndSettle();
 
     expect(bloc.state.hasFled, isTrue);
   });
 
-  testWidgets('pick up: the place pop-up takes what is underfoot', (
+  testWidgets('pick up: the action card takes what is underfoot', (
     tester,
   ) async {
     final bloc = await _pushCrawl(tester, _landingScene());
 
-    await tester.tap(find.byKey(const ValueKey('pick-up')));
+    await tester.tap(_cardVerb('pick-up'));
     await tester.pumpAndSettle();
 
     expect(bloc.state.itemsUnderfoot, isEmpty);
     expect(bloc.state.game.inventory, hasLength(2));
   });
 
-  testWidgets('mine/gather: the place pop-up works the node underfoot', (
+  testWidgets('mine/gather: the action card works the node underfoot', (
     tester,
   ) async {
     final bloc = await _pushCrawl(tester, _gatherScene());
 
-    await tester.tap(find.byKey(const ValueKey('gather')));
+    await tester.tap(_cardVerb('gather'));
     await tester.pumpAndSettle();
 
     expect(bloc.state.nodeUnderfoot, isNull);
   });
 
-  testWidgets(
-    'descend, then ascend: the place pop-up moves a floor at a time',
-    (tester) async {
-      final bloc = await _pushCrawl(tester, _descendScene());
+  testWidgets('descend, then ascend: the action card moves a floor at a time', (
+    tester,
+  ) async {
+    final bloc = await _pushCrawl(tester, _descendScene());
 
-      await tester.tap(find.byKey(const ValueKey('descend')));
-      await tester.pumpAndSettle();
-      expect(bloc.state.game.depth, 2);
+    await tester.tap(_cardVerb('descend'));
+    await tester.pumpAndSettle();
+    expect(bloc.state.game.depth, 2);
 
-      await tester.tap(find.byKey(const ValueKey('ascend')));
-      await tester.pumpAndSettle();
-      expect(bloc.state.game.depth, 1);
-    },
-  );
+    await tester.tap(_cardVerb('ascend'));
+    await tester.pumpAndSettle();
+    expect(bloc.state.game.depth, 1);
+  });
 
-  testWidgets('move on: the place pop-up clears a won road fight', (
+  testWidgets('move on: the action card clears a won road fight', (
     tester,
   ) async {
     await _pushCrawl(tester, _clearedRoadScene());
 
-    await tester.tap(find.byKey(const ValueKey('move-on')));
+    await tester.tap(_cardVerb('move-on'));
     await tester.pumpAndSettle();
 
     expect(find.byType(GameScreen), findsNothing);
   });
 
-  testWidgets('leave/finish: the place pop-up ends a bottom-floor delve', (
+  testWidgets('leave/finish: the action card ends a bottom-floor delve', (
     tester,
   ) async {
     await _pushCrawl(tester, _bottomLandingScene());
 
-    await tester.tap(find.byKey(const ValueKey('leave-dungeon')));
+    await tester.tap(_cardVerb('leave-dungeon'));
     await tester.pumpAndSettle();
     expect(
       find.text('The delve is done. Leave with your spoils?'),

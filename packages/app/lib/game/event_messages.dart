@@ -70,10 +70,7 @@ LogLine? describeEvent(
     'You pick up ${item.displayName}.',
     LogCategory.item,
   ),
-  InventoryFull() => const LogLine(
-    'You cannot carry any more.',
-    LogCategory.refused,
-  ),
+  InventoryFull() => const LogLine(inventoryFullSentence, LogCategory.refused),
   ItemEquipped(:final item, :final slot) => LogLine(
     'You put on ${item.displayName} (${_slotName(slot)}).',
     LogCategory.item,
@@ -193,6 +190,8 @@ String _skillName(SkillId skill) => switch (skill) {
 
 /// The id the hero always answers to.
 const String heroId = 'hero';
+
+const String inventoryFullSentence = 'You cannot carry any more.';
 
 String _named(Map<String, String> names, String id) =>
     names[id] ?? 'something in the dark';

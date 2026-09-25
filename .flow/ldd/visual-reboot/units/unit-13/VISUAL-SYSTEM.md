@@ -141,9 +141,9 @@ families; nothing outside them is pre-authorized.
 | Dungeon structure | stair art, door art, per-biome prop family (3 biomes × ~4 props), placed light-source art | dungeon renderer |
 | Creature art | one per monster family in `packages/content` | dungeon renderer |
 
-> **Superseded by Unit 16.6 (2026-09-24):** the action shelf is retired;
-> verb and spell marks appear on the bottom menu, the pop-ups and the
-> log-side controls. See `units/unit-16.6/CONTRACT.md`.
+> **Superseded by Unit 16.6 (2026-09-24, amended 2026-09-25):** the action
+> shelf is retired; verb and spell marks appear on the bottom menu, the
+> pop-ups and the action card. See `units/unit-16.6/CONTRACT.md`.
 
 > **Superseded by Unit 16.5 (2026-09-23):** the "Dungeon structure" row's
 > stair art, door art, per-biome prop family and placed light-source art are
@@ -179,21 +179,21 @@ Behaviour and accessibility, unchanged:
   causality, action shelf = verbs, no concern duplicated; combat has one
   action row;
 
-> **Superseded by Unit 16.6 (2026-09-24):** verbs are split between the
-> persistent bottom menu (Quests, Spells, Quick, Hero), the log-side
-> Wait/Flee, on-map place pop-ups and the map itself; turn order and the
-> target card float over the map; there is no action row. See
-> `units/unit-16.6/CONTRACT.md`.
+> **Superseded by Unit 16.6 (2026-09-24, amended 2026-09-25):** verbs are
+> split between the persistent bottom menu (Quests, Spells, Quick, Hero),
+> the action card (place actions, Wait, Flee) and the map itself; turn
+> order and the target card float over the map; there is no action row.
+> See `units/unit-16.6/CONTRACT.md`.
 - melee is map-first; a targeted spell is `arm → map target → tap`;
 - circle means selection, square means targeting — shape, never hue;
 - activation repetition and hidden-actor secrecy;
 - authoritative action vocabulary and counts; `readiedSpellCount` is 3, so
   eleven chips is the true row ceiling and `Flee` never appears in a crawl;
 
-> **Superseded by Unit 16.6 (2026-09-24):** readied spells live in the
-> Spells pop-up (three, plus the grimoire); Flee sits beside the log
-> whenever fleeing is legal; there is no chip row or ceiling. See
-> `units/unit-16.6/CONTRACT.md`.
+> **Superseded by Unit 16.6 (2026-09-24, amended 2026-09-25):** readied
+> spells live in the Spells pop-up (three, plus the grimoire); Flee sits
+> in the action card whenever fleeing is legal; there is no chip row or
+> ceiling. See `units/unit-16.6/CONTRACT.md`.
 - the game's own words win over the mock's caption text: `Gear` not
   `Equipment`, the real attribute set, the real door set;
 - no important state by hue alone; every screen reads in greyscale;

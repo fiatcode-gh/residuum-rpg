@@ -512,8 +512,7 @@ void main() {
     expect(iconRect.left, greaterThanOrEqualTo(drawerRect.left));
   });
 
-  testWidgets('the action row stays hit-testable while the drawer is open '
-      '(Wait itself moved into the log row the drawer covers — PLAN.md G8)', (
+  testWidgets('the action row stays hit-testable while the drawer is open', (
     tester,
   ) async {
     await onTheTargetPhone(tester);

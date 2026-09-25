@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/log_drawer.dart';
 import 'package:residuum_app/game/log_line.dart';
@@ -17,9 +18,9 @@ const _dungeonArena = '''
 #######''';
 
 const _roadArena = '''
-.........
-.........
-.........''';
+.......
+.......
+.......''';
 
 Actor _hero(Position at) => Actor(
   id: 'hero',
@@ -65,7 +66,7 @@ GameState _exploringGame() {
 }
 
 /// A dungeon with a visible monster two cells away, not holding reach:
-/// Watched, so Wait applies and Flee does not (not an encounter).
+/// Watched, so Wait applies.
 GameState _watchedGame() {
   final map = FloorMap.parse(_dungeonArena);
   const heroAt = Position(1, 1);
@@ -82,8 +83,7 @@ GameState _watchedGame() {
   );
 }
 
-/// A dungeon with an adjacent monster: battle, so Wait applies and Flee does
-/// not (not an encounter).
+/// A dungeon with an adjacent monster: battle.
 GameState _battleGame() {
   final map = FloorMap.parse(_dungeonArena);
   const heroAt = Position(1, 1);
@@ -101,8 +101,10 @@ GameState _battleGame() {
 }
 
 /// A road edge with a visible monster not holding reach: both Wait
-/// (Watched) and Flee (the hero stands on the outermost ring) apply.
-GameState _roadEdgeBothGame() {
+/// (Watched) and Flee (the hero stands on the outermost ring) would once
+/// have applied, so this is the case that most stressed the old side
+/// column's width.
+GameState _roadEdgeGame() {
   final map = FloorMap.parse(_roadArena);
   const heroAt = Position(0, 1);
   final visible = computeFov(map, heroAt, fovRadius);
@@ -110,24 +112,6 @@ GameState _roadEdgeBothGame() {
     map: map,
     hero: _hero(heroAt),
     monsters: [_ghoulAt(const Position(4, 1))],
-    rng: Rng(1),
-    lootRng: Rng(2),
-    buildFloor: (depth) => throw StateError('no floor below'),
-    visible: visible,
-    explored: {...visible},
-    isEncounter: true,
-  );
-}
-
-/// A road edge with nothing in sight: Flee applies and Wait does not.
-GameState _roadEdgeFleeOnlyGame() {
-  final map = FloorMap.parse(_roadArena);
-  const heroAt = Position(0, 1);
-  final visible = computeFov(map, heroAt, fovRadius);
-  return GameState(
-    map: map,
-    hero: _hero(heroAt),
-    monsters: const [],
     rng: Rng(1),
     lootRng: Rng(2),
     buildFloor: (depth) => throw StateError('no floor below'),
@@ -167,8 +151,8 @@ Future<GameBloc> _pumpLogRow(WidgetTester tester, GameState game) async {
 
 void main() {
   testWidgets(
-    'the log row rect is identical across exploration, Watched, battle and '
-    'a road edge',
+    'the row rect is identical across exploration, Watched, battle and a '
+    'road edge',
     (tester) async {
       await _pumpLogRow(tester, _exploringGame());
       final exploringRect = tester.getRect(find.byKey(logRowKey));
@@ -179,74 +163,56 @@ void main() {
       await _pumpLogRow(tester, _battleGame());
       expect(tester.getRect(find.byKey(logRowKey)), exploringRect);
 
-      await _pumpLogRow(tester, _roadEdgeBothGame());
+      await _pumpLogRow(tester, _roadEdgeGame());
       expect(tester.getRect(find.byKey(logRowKey)), exploringRect);
     },
   );
 
-  testWidgets('neither Wait nor Flee shows while exploring', (tester) async {
-    await _pumpLogRow(tester, _exploringGame());
+  testWidgets(
+    'the peek fills the row less the gutter on both sides, in all four '
+    'states',
+    (tester) async {
+      for (final game in [
+        _exploringGame(),
+        _watchedGame(),
+        _battleGame(),
+        _roadEdgeGame(),
+      ]) {
+        await _pumpLogRow(tester, game);
+        final rowRect = tester.getRect(find.byKey(logRowKey));
+        final peekRect = tester.getRect(find.byKey(logPeekKey));
+        expect(peekRect.width, closeTo(rowRect.width - 2 * crawlGutter, 0.5));
+      }
+    },
+  );
 
-    expect(find.byKey(const ValueKey('wait')), findsNothing);
-    expect(find.byKey(const ValueKey('flee')), findsNothing);
-  });
-
-  testWidgets('Wait shows alone while Watched', (tester) async {
-    await _pumpLogRow(tester, _watchedGame());
-
-    expect(find.byKey(const ValueKey('wait')), findsOneWidget);
-    expect(find.byKey(const ValueKey('flee')), findsNothing);
-  });
-
-  testWidgets('Flee shows alone at a road edge with nothing in sight', (
-    tester,
-  ) async {
-    await _pumpLogRow(tester, _roadEdgeFleeOnlyGame());
-
-    expect(find.byKey(const ValueKey('wait')), findsNothing);
-    expect(find.byKey(const ValueKey('flee')), findsOneWidget);
-  });
-
-  testWidgets('Wait and Flee both show at a road edge in sight, Flee below', (
-    tester,
-  ) async {
-    await _pumpLogRow(tester, _roadEdgeBothGame());
-
-    final wait = tester.getRect(find.byKey(const ValueKey('wait')));
-    final flee = tester.getRect(find.byKey(const ValueKey('flee')));
-    expect(flee.top, greaterThanOrEqualTo(wait.bottom));
-  });
-
-  testWidgets('each side control is at least 48 dp tall', (tester) async {
-    await _pumpLogRow(tester, _roadEdgeBothGame());
-
-    expect(
-      tester.getSize(find.byKey(const ValueKey('wait'))).height,
-      greaterThanOrEqualTo(48),
-    );
-    expect(
-      tester.getSize(find.byKey(const ValueKey('flee'))).height,
-      greaterThanOrEqualTo(48),
-    );
-  });
-
-  testWidgets('tapping Wait appends the hold-ground sentence', (tester) async {
-    final bloc = await _pumpLogRow(tester, _watchedGame());
-
-    await tester.tap(find.byKey(const ValueKey('wait')));
-    await tester.pump();
-
-    expect(bloc.state.log.first.sentence, 'You hold your ground.');
-  });
-
-  testWidgets('tapping Flee at a road edge flees', (tester) async {
-    final bloc = await _pumpLogRow(tester, _roadEdgeFleeOnlyGame());
-
-    await tester.tap(find.byKey(const ValueKey('flee')));
-    await tester.pump();
-
-    expect(bloc.state.hasFled, isTrue);
-  });
+  testWidgets(
+    'no Wait or Flee key sits inside the log row, in any of the four states',
+    (tester) async {
+      for (final game in [
+        _exploringGame(),
+        _watchedGame(),
+        _battleGame(),
+        _roadEdgeGame(),
+      ]) {
+        await _pumpLogRow(tester, game);
+        expect(
+          find.descendant(
+            of: find.byKey(logRowKey),
+            matching: find.byKey(const ValueKey('wait')),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byKey(logRowKey),
+            matching: find.byKey(const ValueKey('flee')),
+          ),
+          findsNothing,
+        );
+      }
+    },
+  );
 
   testWidgets('the peek still opens the drawer', (tester) async {
     final bloc = await _pumpLogRow(tester, _exploringGame());

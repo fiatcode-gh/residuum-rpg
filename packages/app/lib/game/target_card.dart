@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../style/tokens.dart';
 import 'crawl_meter.dart';
 import 'crawl_style.dart';
+import 'crawl_surfaces.dart';
 import 'game_bloc.dart';
 import 'grid_geometry.dart';
 import 'map_overlay_layout.dart';
@@ -14,12 +15,14 @@ class TargetCard extends StatelessWidget {
   const TargetCard({
     required this.state,
     required this.size,
+    this.area,
     this.avoid = const [],
     super.key,
   });
 
   final GameViewState state;
   final Size size;
+  final Rect? area;
   final List<Rect> avoid;
 
   @override
@@ -55,7 +58,7 @@ class TargetCard extends StatelessWidget {
 
     final hero = geometry.rectOf(state.game.hero.position);
     final cardRect = placeMapOverlay(
-      map: size,
+      area: area ?? (Offset.zero & size),
       size: Size(width, height),
       hero: hero,
       preferred: [
@@ -94,7 +97,7 @@ class TargetCard extends StatelessWidget {
         Positioned.fill(
           child: IgnorePointer(
             child: CustomPaint(
-              painter: _LeaderPainter(from: cellCorner, to: cardCorner),
+              painter: LeaderPainter(from: cellCorner, to: cardCorner),
             ),
           ),
         ),
@@ -108,11 +111,7 @@ class TargetCard extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             onTap: () {},
             child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: crawlCalloutFill,
-                border: Border.all(color: crawlFrame),
-                borderRadius: BorderRadius.circular(6),
-              ),
+              decoration: crawlCalloutDecoration,
               child: Padding(
                 padding: const EdgeInsets.all(crawlCalloutPadding),
                 child: Column(
@@ -166,28 +165,4 @@ class _MetaLine extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
     ),
   );
-}
-
-class _LeaderPainter extends CustomPainter {
-  const _LeaderPainter({required this.from, required this.to});
-
-  final Offset from;
-  final Offset to;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final line = Paint()
-      ..color = crawlGold.withValues(alpha: 0.7)
-      ..strokeWidth = crawlCalloutLeaderWidth
-      ..style = PaintingStyle.stroke;
-    canvas.drawLine(from, to, line);
-    final dot = Paint()
-      ..color = crawlGold.withValues(alpha: 0.7)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(from, crawlCalloutDotRadius, dot);
-  }
-
-  @override
-  bool shouldRepaint(covariant _LeaderPainter oldDelegate) =>
-      oldDelegate.from != from || oldDelegate.to != to;
 }

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/action_card_verbs.dart';
 import 'package:residuum_app/game/crawl_exits.dart';
 import 'package:residuum_app/game/game_bloc.dart';
-import 'package:residuum_app/game/place_actions.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -31,8 +31,8 @@ Actor _hero({int hp = 20}) => Actor(
   energy: actThreshold,
 );
 
-/// A dungeon floor at [_heroAt], staged with whatever the place actions
-/// under test need — loot, a node, stairs, a live monster — and nothing
+/// A dungeon floor at [_heroAt], staged with whatever the action card
+/// under test needs — loot, a node, stairs, a live monster — and nothing
 /// else.
 GameState _dungeon({
   List<Actor> monsters = const [],
@@ -94,6 +94,34 @@ GameState _road({List<Actor> monsters = const []}) {
   );
 }
 
+GameState _roadInland({List<Actor> monsters = const []}) {
+  final map = FloorMap.parse(_roadArena);
+  const heroAt = Position(3, 1);
+  final visible = computeFov(map, heroAt, fovRadius);
+  return GameState(
+    map: map,
+    hero: Actor(
+      id: 'hero',
+      name: 'you',
+      glyph: '@',
+      position: heroAt,
+      hp: 20,
+      maxHp: 20,
+      attackMin: 4,
+      attackMax: 4,
+      speed: 10,
+      energy: actThreshold,
+    ),
+    monsters: monsters,
+    rng: Rng(1),
+    lootRng: Rng(2),
+    visible: visible,
+    explored: {...visible},
+    buildFloor: (depth) => throw StateError('no floor below'),
+    isEncounter: true,
+  );
+}
+
 Actor _ghoul(Position at) => Actor(
   id: 'ghoul-1',
   name: 'the ghoul',
@@ -114,9 +142,9 @@ List<Item> _oneSword() => const [
 ];
 
 void main() {
-  group('placeVerbsFor', () {
+  group('cardVerbsFor', () {
     test('a bare floor offers nothing', () {
-      expect(placeVerbsFor(_view(_dungeon())), isEmpty);
+      expect(cardVerbsFor(_view(_dungeon())), isEmpty);
     });
 
     test(
@@ -124,8 +152,8 @@ void main() {
       () {
         final withRoom = _dungeon(groundItems: {_heroAt: _oneSword()});
         final noLoot = _dungeon();
-        expect(placeVerbsFor(_view(withRoom)), contains(PlaceVerb.pickUp));
-        expect(placeVerbsFor(_view(noLoot)), isNot(contains(PlaceVerb.pickUp)));
+        expect(cardVerbsFor(_view(withRoom)), contains(CardVerb.pickUp));
+        expect(cardVerbsFor(_view(noLoot)), isNot(contains(CardVerb.pickUp)));
       },
     );
 
@@ -138,7 +166,7 @@ void main() {
               Item(id: 'held-$index', base: ironSword, rarity: Rarity.common),
         ),
       );
-      expect(placeVerbsFor(_view(full)), isNot(contains(PlaceVerb.pickUp)));
+      expect(cardVerbsFor(_view(full)), isNot(contains(CardVerb.pickUp)));
       expect(placeFacts(_view(full)), contains('Here: Common Iron Sword'));
     });
 
@@ -146,45 +174,39 @@ void main() {
       final ore = _dungeon(nodes: {_heroAt: GatherKind.oreVein});
       final herb = _dungeon(nodes: {_heroAt: GatherKind.herbPatch});
       final bare = _dungeon();
-      expect(placeVerbsFor(_view(ore)), contains(PlaceVerb.gather));
-      expect(placeVerbsFor(_view(herb)), contains(PlaceVerb.gather));
-      expect(placeVerbsFor(_view(bare)), isNot(contains(PlaceVerb.gather)));
+      expect(cardVerbsFor(_view(ore)), contains(CardVerb.gather));
+      expect(cardVerbsFor(_view(herb)), contains(CardVerb.gather));
+      expect(cardVerbsFor(_view(bare)), isNot(contains(CardVerb.gather)));
     });
 
     test('move on appears exactly when the road fight is cleared', () {
       final cleared = _road();
       final live = _road(monsters: [_ghoul(const Position(5, 1))]);
-      expect(placeVerbsFor(_view(cleared)), contains(PlaceVerb.moveOn));
-      expect(placeVerbsFor(_view(live)), isNot(contains(PlaceVerb.moveOn)));
+      expect(cardVerbsFor(_view(cleared)), contains(CardVerb.moveOn));
+      expect(cardVerbsFor(_view(live)), isNot(contains(CardVerb.moveOn)));
     });
 
     test('ascend appears exactly on the stairs up', () {
       final onStairs = _dungeon(stairsUp: _heroAt);
       final elsewhere = _dungeon(stairsUp: const Position(3, 2));
-      expect(placeVerbsFor(_view(onStairs)), contains(PlaceVerb.ascend));
-      expect(
-        placeVerbsFor(_view(elsewhere)),
-        isNot(contains(PlaceVerb.ascend)),
-      );
+      expect(cardVerbsFor(_view(onStairs)), contains(CardVerb.ascend));
+      expect(cardVerbsFor(_view(elsewhere)), isNot(contains(CardVerb.ascend)));
     });
 
     test('descend appears exactly on the stairs down', () {
       final onStairs = _dungeon(stairsDown: _heroAt);
       final elsewhere = _dungeon(stairsDown: const Position(3, 2));
-      expect(placeVerbsFor(_view(onStairs)), contains(PlaceVerb.descend));
-      expect(
-        placeVerbsFor(_view(elsewhere)),
-        isNot(contains(PlaceVerb.descend)),
-      );
+      expect(cardVerbsFor(_view(onStairs)), contains(CardVerb.descend));
+      expect(cardVerbsFor(_view(elsewhere)), isNot(contains(CardVerb.descend)));
     });
 
     test('leave appears wherever ascend or descend does, and the bottom stairs '
         'carry its own note', () {
       final mid = _dungeon(stairsUp: _heroAt, depth: 2);
       final bottom = _dungeon(stairsUp: _heroAt, depth: deepestDepth);
-      expect(placeVerbsFor(_view(mid)), contains(PlaceVerb.leave));
+      expect(cardVerbsFor(_view(mid)), contains(CardVerb.leave));
       expect(placeFacts(_view(mid)), isNot(contains(doneAtTheBottom)));
-      expect(placeVerbsFor(_view(bottom)), contains(PlaceVerb.leave));
+      expect(cardVerbsFor(_view(bottom)), contains(CardVerb.leave));
       expect(placeFacts(_view(bottom)), contains(doneAtTheBottom));
     });
 
@@ -195,8 +217,61 @@ void main() {
         groundItems: {_heroAt: _oneSword()},
         isGameOver: true,
       );
-      expect(placeVerbsFor(_view(over)), isEmpty);
+      expect(cardVerbsFor(_view(over)), isEmpty);
     });
+
+    test('flee appears exactly when canFlee: yes at a road edge, no inland '
+        'on the same road, no in a dungeon', () {
+      final edge = _road(monsters: [_ghoul(const Position(5, 1))]);
+      final inland = _roadInland(monsters: [_ghoul(const Position(5, 1))]);
+      final dungeon = _dungeon();
+      expect(cardVerbsFor(_view(edge)), contains(CardVerb.flee));
+      expect(cardVerbsFor(_view(inland)), isNot(contains(CardVerb.flee)));
+      expect(cardVerbsFor(_view(dungeon)), isNot(contains(CardVerb.flee)));
+    });
+
+    test('wait appears exactly when offersWait: Watched, battle, never while '
+        'exploring or once the game is over', () {
+      final watched = _dungeon(monsters: [_ghoul(const Position(4, 1))]);
+      final battle = _dungeon(monsters: [_ghoul(const Position(2, 1))]);
+      final exploring = _dungeon();
+      final over = _dungeon(
+        monsters: [_ghoul(const Position(2, 1))],
+        isGameOver: true,
+      );
+      expect(_view(watched).offersWait, isTrue);
+      expect(cardVerbsFor(_view(watched)), contains(CardVerb.wait));
+      expect(_view(battle).isBattleOpen, isTrue);
+      expect(cardVerbsFor(_view(battle)), contains(CardVerb.wait));
+      expect(cardVerbsFor(_view(exploring)), isNot(contains(CardVerb.wait)));
+      expect(cardVerbsFor(_view(over)), isNot(contains(CardVerb.wait)));
+    });
+
+    test(
+      'a road edge with a distant monster in sight orders flee then wait',
+      () {
+        final state = _view(_road(monsters: [_ghoul(const Position(5, 1))]));
+        expect(state.canFlee, isTrue);
+        expect(state.offersWait, isTrue);
+        expect(cardVerbsFor(state), [CardVerb.flee, CardVerb.wait]);
+      },
+    );
+
+    test(
+      'a landing with loot while Watched orders pick up first and wait last',
+      () {
+        final state = _view(
+          _dungeon(
+            groundItems: {_heroAt: _oneSword()},
+            monsters: [_ghoul(const Position(4, 1))],
+          ),
+        );
+        expect(state.offersWait, isTrue);
+        final verbs = cardVerbsFor(state);
+        expect(verbs.first, CardVerb.pickUp);
+        expect(verbs.last, CardVerb.wait);
+      },
+    );
   });
 
   group('placeFacts', () {
@@ -230,6 +305,31 @@ void main() {
 
     test('a bare floor names nothing', () {
       expect(placeFacts(_view(_dungeon())), isEmpty);
+    });
+
+    test('a full pack on an item adds the cannot-carry sentence; one free '
+        'slot leaves it out', () {
+      final full = _dungeon(
+        groundItems: {_heroAt: _oneSword()},
+        inventory: List.generate(
+          inventoryCap,
+          (index) =>
+              Item(id: 'held-$index', base: ironSword, rarity: Rarity.common),
+        ),
+      );
+      final oneFree = _dungeon(
+        groundItems: {_heroAt: _oneSword()},
+        inventory: List.generate(
+          inventoryCap - 1,
+          (index) =>
+              Item(id: 'held-$index', base: ironSword, rarity: Rarity.common),
+        ),
+      );
+      expect(placeFacts(_view(full)), contains('You cannot carry any more.'));
+      expect(
+        placeFacts(_view(oneFree)),
+        isNot(contains('You cannot carry any more.')),
+      );
     });
   });
 }

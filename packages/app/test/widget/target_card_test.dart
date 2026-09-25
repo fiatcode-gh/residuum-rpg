@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/action_card.dart';
 import 'package:residuum_app/game/actor_presentation.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
@@ -8,7 +9,6 @@ import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
 import 'package:residuum_app/game/map_overlay_layout.dart';
-import 'package:residuum_app/game/place_popup.dart';
 import 'package:residuum_app/game/target_card.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
@@ -608,7 +608,7 @@ void main() {
   });
 
   testWidgets(
-    'the card and the place pop-up never overlap when the hero is engaged '
+    'the card and the action card never overlap when the hero is engaged '
     'standing on an item',
     (tester) async {
       final monster = _ghoul(_nearGhoul);
@@ -624,10 +624,46 @@ void main() {
       expect(bloc.state.isBattleOpen, isTrue);
 
       final card = find.byKey(targetCardKey);
-      final popup = find.byKey(placePopupKey);
+      final popup = find.byKey(actionCardKey);
       expect(card, findsOneWidget);
       expect(popup, findsOneWidget);
       expect(tester.getRect(card).overlaps(tester.getRect(popup)), isFalse);
+    },
+  );
+
+  testWidgets(
+    'a monster two rows below the hero, inspected, never overlaps the '
+    'action card the loot underfoot raises, and misses the hero block',
+    (tester) async {
+      const monsterAt = Position(3, 3);
+      final monster = _ghoul(monsterAt);
+      final bloc = await _openCrawl(
+        tester,
+        _gameState(
+          ascii: _roomArena,
+          heroAt: _hero,
+          monsters: [monster],
+          groundItems: {_hero: _oneSword()},
+        ),
+      );
+      final geometry = _mapGeometry(tester, bloc.state);
+
+      await _tapLocal(tester, geometry.centreOf(monsterAt));
+      await tester.pumpAndSettle();
+      expect(bloc.state.inspectedActorId, monster.id);
+
+      final targetCard = find.byKey(targetCardKey);
+      final actionCard = find.byKey(actionCardKey);
+      expect(targetCard, findsOneWidget);
+      expect(actionCard, findsOneWidget);
+      expect(
+        tester.getRect(targetCard).overlaps(tester.getRect(actionCard)),
+        isFalse,
+      );
+
+      final topLeft = tester.getTopLeft(find.byKey(dungeonSceneKey));
+      final heroRect = geometry.rectOf(_hero).shift(topLeft);
+      expect(tester.getRect(targetCard).overlaps(heroBlock(heroRect)), isFalse);
     },
   );
 

@@ -228,3 +228,27 @@ Future<T?> showCrawlPopup<T>(
     ),
   );
 }
+
+class LeaderPainter extends CustomPainter {
+  const LeaderPainter({required this.from, required this.to});
+
+  final Offset from;
+  final Offset to;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final line = Paint()
+      ..color = crawlGold.withValues(alpha: 0.7)
+      ..strokeWidth = crawlCalloutLeaderWidth
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(from, to, line);
+    final dot = Paint()
+      ..color = crawlGold.withValues(alpha: 0.7)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(from, crawlCalloutDotRadius, dot);
+  }
+
+  @override
+  bool shouldRepaint(covariant LeaderPainter oldDelegate) =>
+      oldDelegate.from != from || oldDelegate.to != to;
+}

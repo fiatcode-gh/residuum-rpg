@@ -14,8 +14,6 @@ const double crawlTokenHeight = 24;
 const double crawlLogLine = 15;
 
 const double crawlLogRowHeight = 104;
-const double crawlSideControlWidth = 64;
-const double crawlSideControlGap = 6;
 const double crawlLogSheetHeight = 345;
 const double crawlLogSheetHeader = 40;
 const double crawlLogRowPadding = 1.5;
@@ -75,8 +73,12 @@ const double crawlCalloutLeaderGap = 6;
 const double crawlCalloutLeaderWidth = 1;
 const double crawlCalloutDotRadius = 2.5;
 
-const double crawlPlacePopupWidth = 300;
-const double crawlPlaceButtonHeight = 48;
-const double crawlPlaceButtonGap = 6;
+const double crawlActionCardGap = 6;
+
+const BoxDecoration crawlCalloutDecoration = BoxDecoration(
+  color: crawlCalloutFill,
+  border: Border.fromBorderSide(BorderSide(color: crawlFrame)),
+  borderRadius: BorderRadius.all(Radius.circular(6)),
+);
 
 const double crawlOverlayMargin = 8;

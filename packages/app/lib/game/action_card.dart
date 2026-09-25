@@ -4,28 +4,30 @@ import 'package:residuum_core/core.dart';
 import '../art/art_assets.dart';
 import '../style/tokens.dart';
 import '../world/world_bloc.dart';
+import 'action_card_verbs.dart';
 import 'action_icon.dart';
 import 'crawl_exits.dart';
+import 'crawl_slot.dart';
 import 'crawl_style.dart';
 import 'game_bloc.dart';
-import 'place_actions.dart';
 
-const placePopupKey = Key('place-popup');
+const actionCardKey = Key('action-card');
+const actionCardLeaderKey = Key('action-card-leader');
 
-double placePopupHeight(GameViewState state, double scale) {
+double actionCardHeight(GameViewState state, double scale) {
   final facts = placeFacts(state).length;
-  final verbs = placeVerbsFor(state).length;
+  final verbs = cardVerbsFor(state).length;
   if (facts == 0 && verbs == 0) return 0;
-  final rows = verbs == 0 ? 0 : (verbs / 2).ceil();
+  final rows = verbs == 0 ? 0 : (verbs / 4).ceil();
   return crawlCalloutPadding * 2 +
       facts * crawlCalloutLineHeight * scale +
-      (facts > 0 && verbs > 0 ? crawlPlaceButtonGap : 0) +
-      rows * crawlPlaceButtonHeight +
-      (rows > 1 ? (rows - 1) * crawlPlaceButtonGap : 0);
+      (facts > 0 && verbs > 0 ? crawlActionCardGap : 0) +
+      rows * crawlTouchTarget +
+      (rows > 1 ? (rows - 1) * crawlActionCardGap : 0);
 }
 
-class PlacePopup extends StatelessWidget {
-  const PlacePopup({
+class ActionCard extends StatelessWidget {
+  const ActionCard({
     required this.bloc,
     required this.state,
     required this.width,
@@ -40,41 +42,32 @@ class PlacePopup extends StatelessWidget {
   Widget build(BuildContext context) {
     final scale = crawlScale(context);
     final facts = placeFacts(state);
-    final verbs = placeVerbsFor(state);
-    final buttonWidth = verbs.length <= 1
-        ? width - crawlCalloutPadding * 2
-        : (width - crawlCalloutPadding * 2 - crawlPlaceButtonGap) / 2;
+    final verbs = cardVerbsFor(state);
+    final buttonWidth =
+        (width - crawlCalloutPadding * 2 - 3 * crawlActionCardGap) / 4;
 
     final rows = <Widget>[];
-    for (var index = 0; index < verbs.length; index += 2) {
-      if (index > 0) rows.add(const SizedBox(height: crawlPlaceButtonGap));
-      final left = verbs[index];
-      final right = index + 1 < verbs.length ? verbs[index + 1] : null;
+    for (var index = 0; index < verbs.length; index += 4) {
+      if (index > 0) rows.add(const SizedBox(height: crawlActionCardGap));
+      final slice = verbs.skip(index).take(4).toList(growable: false);
       rows.add(
-        verbs.length == 1
-            ? _button(context, left, buttonWidth)
-            : Row(
-                children: [
-                  _button(context, left, buttonWidth),
-                  const SizedBox(width: crawlPlaceButtonGap),
-                  right == null
-                      ? SizedBox(width: buttonWidth)
-                      : _button(context, right, buttonWidth),
-                ],
-              ),
+        Row(
+          children: [
+            for (var i = 0; i < slice.length; i++) ...[
+              if (i > 0) const SizedBox(width: crawlActionCardGap),
+              _button(context, slice[i], buttonWidth),
+            ],
+          ],
+        ),
       );
     }
 
     return GestureDetector(
-      key: placePopupKey,
+      key: actionCardKey,
       behavior: HitTestBehavior.opaque,
       onTap: () {},
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: crawlCalloutFill,
-          border: Border.all(color: crawlFrame),
-          borderRadius: BorderRadius.circular(6),
-        ),
+        decoration: crawlCalloutDecoration,
         child: Padding(
           padding: const EdgeInsets.all(crawlCalloutPadding),
           child: Column(
@@ -92,7 +85,7 @@ class PlacePopup extends StatelessWidget {
                   ),
                 ),
               if (facts.isNotEmpty && verbs.isNotEmpty)
-                const SizedBox(height: crawlPlaceButtonGap),
+                const SizedBox(height: crawlActionCardGap),
               ...rows,
             ],
           ),
@@ -101,78 +94,61 @@ class PlacePopup extends StatelessWidget {
     );
   }
 
-  Widget _button(BuildContext context, PlaceVerb verb, double width) {
+  Widget _button(BuildContext context, CardVerb verb, double width) {
     final node = state.nodeUnderfoot;
     final ending = state.canLeave && state.isAtTheBottom;
     final (label, mark, onPressed) = switch (verb) {
-      PlaceVerb.pickUp => (
+      CardVerb.pickUp => (
         'Pick up',
         const FontMark(Icons.back_hand) as ActionMark,
         () => bloc.add(const PickUpPressed()),
       ),
-      PlaceVerb.gather => (
+      CardVerb.gather => (
         node!.verb,
         FontMark(node == GatherKind.oreVein ? Icons.hardware : Icons.spa)
             as ActionMark,
         () => bloc.add(const GatherPressed()),
       ),
-      PlaceVerb.moveOn => (
+      CardVerb.moveOn => (
         'Move on',
         const FontMark(Icons.hiking) as ActionMark,
         () => leaveEncounter(context, state, EncounterEnding.cleared),
       ),
-      PlaceVerb.ascend => (
+      CardVerb.ascend => (
         'Ascend <',
         const ShippedMark(ActionIcon.ascend) as ActionMark,
         () => bloc.add(const AscendPressed()),
       ),
-      PlaceVerb.descend => (
+      CardVerb.descend => (
         'Descend >',
         const ShippedMark(ActionIcon.descend) as ActionMark,
         () => bloc.add(const DescendPressed()),
       ),
-      PlaceVerb.leave => (
+      CardVerb.leave => (
         ending ? doneControl : 'Leave',
         FontMark(ending ? Icons.flag : Icons.logout) as ActionMark,
         ending
             ? () => confirmCompletion(context, state)
             : () => suspendDungeon(context, state),
       ),
-    };
-    return SizedBox(
-      key: ValueKey(verb.id),
-      width: width,
-      height: crawlPlaceButtonHeight,
-      child: Semantics(
-        button: true,
-        label: label,
-        child: ExcludeSemantics(
-          child: Material(
-            color: crawlSlotFill,
-            shape: RoundedRectangleBorder(
-              side: const BorderSide(color: crawlFrame),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: InkWell(
-              onTap: onPressed,
-              borderRadius: BorderRadius.circular(6),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ActionMarkView(mark, size: 18),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(label, style: textSlot),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+      CardVerb.flee => (
+        'Flee',
+        const FontMark(Icons.directions_run) as ActionMark,
+        () => bloc.add(const FleePressed()),
       ),
+      CardVerb.wait => (
+        'Wait',
+        const ShippedMark(ActionIcon.wait) as ActionMark,
+        () => bloc.add(const WaitPressed()),
+      ),
+    };
+    return CrawlSlot(
+      key: ValueKey(verb.id),
+      label: label,
+      mark: mark,
+      onPressed: onPressed,
+      width: width,
+      height: crawlTouchTarget,
     );
   }
 }

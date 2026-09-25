@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/action_card.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
-import 'package:residuum_app/game/log_row.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -84,14 +84,15 @@ Future<GameBloc> _openBattle(WidgetTester tester, GameState game) async {
 Finder _shelfText(String id, String label) =>
     find.descendant(of: _shelfButton(id), matching: find.text(label));
 
-/// The chip carrying [id]: scoped to the log row for `wait`, which sits
-/// beside the recent-events peek (PLAN.md G8); every other id is a
-/// `spell:<id>`, `drink:<id>` or `spells-overflow` row inside whichever
-/// pop-up the test has open, and those ids are unique enough on their own
-/// that no scope is needed to tell them apart from anything else on screen.
+/// The chip carrying [id]: scoped to the action card for `wait`, which
+/// sits alongside the place verbs and Flee (PLAN.md G12); every other id
+/// is a `spell:<id>`, `drink:<id>` or `spells-overflow` row inside
+/// whichever pop-up the test has open, and those ids are unique enough on
+/// their own that no scope is needed to tell them apart from anything else
+/// on screen.
 Finder _shelfButton(String id) => id == 'wait'
     ? find.descendant(
-        of: find.byKey(logRowKey),
+        of: find.byKey(actionCardKey),
         matching: find.byKey(ValueKey(id)),
       )
     : find.byKey(ValueKey(id));

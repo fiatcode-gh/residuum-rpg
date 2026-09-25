@@ -1,14 +1,12 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
+import 'action_card.dart';
+import 'action_card_verbs.dart';
 import 'crawl_style.dart';
 import 'crawl_surfaces.dart';
 import 'game_bloc.dart';
 import 'grid_geometry.dart';
 import 'map_overlay_layout.dart';
-import 'place_actions.dart';
-import 'place_popup.dart';
 import 'target_card.dart';
 import 'turn_order_strip.dart';
 
@@ -64,30 +62,33 @@ class MapOverlays extends StatelessWidget {
       );
     }
 
-    final avoid = [if (showRecenter) recenterRect(size), ?stripRect];
-
-    final facts = placeFacts(state);
-    final verbs = placeVerbsFor(state);
-    Rect? popupRect;
-    if (facts.isNotEmpty || verbs.isNotEmpty) {
-      final scale = crawlScale(context);
-      final width = math.min(size.width - 16, crawlPlacePopupWidth);
-      final height = placePopupHeight(state, scale);
-      final hc = hero.center;
-      final block = heroBlock(hero);
-      popupRect = placeMapOverlay(
+    final showCard =
+        cardVerbsFor(state).isNotEmpty || placeFacts(state).isNotEmpty;
+    Rect? cardRect;
+    if (showCard) {
+      cardRect = placeActionCard(
         map: size,
-        size: Size(width, height),
+        height: actionCardHeight(state, crawlScale(context)),
         hero: hero,
-        preferred: [
-          Offset(hc.dx - width / 2, block.bottom + 6),
-          Offset(hc.dx - width / 2, block.top - 6 - height),
-        ],
-        avoid: avoid,
+        strip: stripRect,
       );
     }
 
-    final cardAvoid = [?popupRect, ...avoid];
+    Rect? recenter;
+    if (showRecenter) {
+      recenter = recenterRect(size, actionCard: cardRect);
+    }
+
+    final leader = cardRect == null
+        ? null
+        : actionCardLeader(map: size, card: cardRect, hero: hero);
+
+    final targetArea = cardRect == null
+        ? Offset.zero & size
+        : (cardRect.center.dy >= hero.center.dy
+              ? Rect.fromLTRB(0, 0, size.width, cardRect.top)
+              : Rect.fromLTRB(0, cardRect.bottom, size.width, size.height));
+
     return Stack(
       children: [
         if (stripRect != null)
@@ -103,21 +104,31 @@ class MapOverlays extends StatelessWidget {
               flipped: stripFlipped,
             ),
           ),
-        if (popupRect != null)
-          Positioned(
-            left: popupRect.left,
-            top: popupRect.top,
-            width: popupRect.width,
-            height: popupRect.height,
-            child: PlacePopup(bloc: bloc, state: state, width: popupRect.width),
+        if (leader != null)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                key: actionCardLeaderKey,
+                painter: LeaderPainter(from: leader.$1, to: leader.$2),
+              ),
+            ),
+          ),
+        if (cardRect != null)
+          Positioned.fromRect(
+            rect: cardRect,
+            child: ActionCard(bloc: bloc, state: state, width: cardRect.width),
           ),
         Positioned.fill(
-          child: TargetCard(state: state, size: size, avoid: cardAvoid),
+          child: TargetCard(
+            state: state,
+            size: size,
+            area: targetArea,
+            avoid: [?recenter, ?stripRect],
+          ),
         ),
-        if (showRecenter)
-          Positioned(
-            right: 8,
-            bottom: 8,
+        if (showRecenter && recenter != null)
+          Positioned.fromRect(
+            rect: recenter,
             child: CrawlPill(
               key: recenterKey,
               label: 'Recenter on the hero',
