@@ -3,26 +3,21 @@ import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../style/tokens.dart';
+import 'crawl_meter.dart';
 import 'crawl_style.dart';
 import 'game_bloc.dart';
 
-const crawlHeaderKey = Key('crawl-header');
+const crawlHudKey = Key('crawl-hud');
 const depthPairKey = Key('crawl-depth');
 const crawlChipBattleKey = Key('crawl-chip-battle');
 const crawlChipConditionKey = Key('crawl-chip-condition');
 const crawlChipWardKey = Key('crawl-chip-ward');
+const hpMeterKey = Key('hp-meter');
+const manaMeterKey = Key('mana-meter');
+const crawlGoldKey = Key('crawl-gold');
 
-/// The crawl's wordmark header (PLAN.md G8 "Header internals", G9 chip
-/// shapes, G11 displayed facts): the brand, the meta line naming where and
-/// when the hero stands, and the chips reading battle, condition and ward.
-///
-/// A pure projection, deliberately: it reads no bloc and dispatches
-/// nothing, so every fact on it comes in through [state], [dungeon] and
-/// [day]. [day] is a separate parameter rather than read off [state]
-/// because it is app state, not crawl state (PLAN.md E4) — [GameBloc]
-/// carries it as a run constant beside `dungeon`.
-class CrawlHeader extends StatelessWidget {
-  const CrawlHeader({
+class CrawlHud extends StatelessWidget {
+  const CrawlHud({
     required this.state,
     required this.dungeon,
     required this.day,
@@ -34,37 +29,75 @@ class CrawlHeader extends StatelessWidget {
   final int? day;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    key: crawlHeaderKey,
-    width: double.infinity,
-    height: crawlHeaderHeight * crawlScale(context),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 6),
-        const ExcludeSemantics(
-          child: Text(
-            'RESIDUUM',
-            textAlign: TextAlign.center,
-            style: displayWordmark,
-          ),
+  Widget build(BuildContext context) {
+    final hero = state.game.hero;
+    final hasSpell = state.knownSpells.isNotEmpty;
+    return SizedBox(
+      key: crawlHudKey,
+      width: double.infinity,
+      height: crawlHudHeight * crawlScale(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: crawlGutter),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  flex: 38,
+                  child: CrawlMeter(
+                    key: hpMeterKey,
+                    label: 'HP',
+                    value: hero.hp.clamp(0, state.maxHp),
+                    ceiling: state.maxHp,
+                    fill: crawlEnemy,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 38,
+                  child: hasSpell
+                      ? CrawlMeter(
+                          key: manaMeterKey,
+                          label: 'Mana',
+                          value: state.mana,
+                          ceiling: state.maxMana,
+                          fill: crawlCold,
+                        )
+                      : const SizedBox.shrink(),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  key: crawlGoldKey,
+                  width: 72,
+                  child: Semantics(
+                    label: 'Gold ${state.game.gold}',
+                    child: ExcludeSemantics(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          const Icon(Icons.paid, size: 14, color: crawlGold),
+                          const SizedBox(width: 4),
+                          Text('${state.game.gold}', style: monoData),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            _MetaLine(state: state, dungeon: dungeon, day: day),
+            const SizedBox(height: 4),
+            _ChipsRow(state: state),
+            const SizedBox(height: 6),
+          ],
         ),
-        const SizedBox(height: 7),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: crawlGutter),
-          child: SizedBox(
-            height: hairline,
-            child: ColoredBox(color: crawlGoldRule),
-          ),
-        ),
-        const SizedBox(height: 7),
-        _MetaLine(state: state, dungeon: dungeon, day: day),
-        const SizedBox(height: 6),
-        _ChipsRow(state: state),
-        const SizedBox(height: 4),
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
 
 /// The header's second line (PLAN.md G11): depth (omitted on an

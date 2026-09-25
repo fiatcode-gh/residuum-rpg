@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/crawl_action_row.dart';
-import 'package:residuum_app/game/crawl_header.dart';
+import 'package:residuum_app/game/crawl_hud.dart';
 import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
@@ -101,7 +101,7 @@ void main() {
     );
     await _openCrawl(tester);
 
-    final headerTop = tester.getTopLeft(find.byKey(crawlHeaderKey)).dy;
+    final headerTop = tester.getTopLeft(find.byKey(crawlHudKey)).dy;
     expect(headerTop, greaterThanOrEqualTo(insetDp - 0.5));
   });
 }

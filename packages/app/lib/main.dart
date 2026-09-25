@@ -418,7 +418,6 @@ class _SessionState extends State<_Session> {
         day: _world.state.world.day,
         road: met.road,
       ),
-      heroLabel: _saver.document.heroes[_saver.document.active]!.label,
       day: _world.state.world.day,
       log: const [roadOpeningLog],
     );
@@ -584,7 +583,6 @@ class _SessionState extends State<_Session> {
     final game = GameBloc(
       game: run,
       dungeon: dungeon,
-      heroLabel: _saver.document.heroes[_saver.document.active]!.label,
       day: _world.state.world.day,
       log: resumed ? _openingLog() : const [],
     );

@@ -22,9 +22,7 @@ const double crawlLogSheetHeader = 40;
 const double crawlLogRowPadding = 1.5;
 const double crawlLogPictogram = 15;
 
-/// PLAN.md G8 header internals (Task 10): the crawl header's own fixed
-/// height, top of the fixed-chrome column.
-const double crawlHeaderHeight = 88;
+const double crawlHudHeight = 80;
 
 /// The opacity a disabled slot's mark renders at (PLAN.md G8).
 const double crawlDisabledIconOpacity = 0.45;
@@ -40,15 +38,6 @@ const double crawlSlotGap = 7;
 const double crawlSlotPeek = 18;
 const double crawlSlotMark = 22;
 
-/// PLAN.md G8 hero panel internals (Task 08): the panel's own fixed height,
-/// the gap it sits in between the map and the log peek, its corner radius,
-/// and the frame every fixed-chrome panel this unit draws shares.
-const double crawlHeroPanelHeight = 102;
-
-/// PLAN.md G8 combat panel internals (Task 09): the panel's own fixed
-/// height, replacing [crawlHeroPanelHeight] for exactly as long as
-/// `GameViewState.isBattleOpen` holds.
-const double crawlCombatPanelHeight = 124;
 const double crawlPanelGap = 6;
 const double crawlPanelRadius = 6;
 const BoxDecoration crawlFrameDecoration = BoxDecoration(
@@ -98,19 +87,3 @@ const double crawlCalloutEdgeClamp = 8;
 /// The leader line's stroke width and its dot's radius at the cell end.
 const double crawlCalloutLeaderWidth = 1;
 const double crawlCalloutDotRadius = 2.5;
-
-/// The vertical rule PLAN.md G8 draws between a fixed-chrome panel's stat
-/// columns — the hero panel and the combat panel both use it, sized
-/// identically wherever it appears.
-class ColumnDivider extends StatelessWidget {
-  const ColumnDivider({super.key});
-
-  @override
-  Widget build(BuildContext context) => const VerticalDivider(
-    width: 23,
-    thickness: hairline,
-    indent: 8,
-    endIndent: 8,
-    color: crawlDivider,
-  );
-}

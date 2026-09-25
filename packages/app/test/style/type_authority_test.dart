@@ -313,8 +313,6 @@ void main() {
       'monoLogHostile': monoLogHostile,
       'monoLogCold': monoLogCold,
       'monoLogTorch': monoLogTorch,
-      'monoFigure': monoFigure,
-      'monoFigureCold': monoFigureCold,
       'monoToken': monoToken,
       'monoTokenHostile': monoTokenHostile,
       'monoSlotMeta': monoSlotMeta,

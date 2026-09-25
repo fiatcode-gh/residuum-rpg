@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/combat_panel.dart';
 import 'package:residuum_app/game/crawl_action_row.dart';
-import 'package:residuum_app/game/crawl_header.dart';
+import 'package:residuum_app/game/crawl_hud.dart';
 import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
-import 'package:residuum_app/game/hero_panel.dart';
 import 'package:residuum_app/game/log_drawer.dart';
 import 'package:residuum_app/game/map_callout.dart';
 import 'package:residuum_content/content.dart';
@@ -44,7 +42,11 @@ Actor _actor(String id, Position at, {String glyph = '@', int speed = 10}) =>
 
 /// A quiet room with nothing nearby, so `isBattleOpen` is false and the
 /// action bar's only slot is Pack.
-GameState _exploringGame() {
+GameState _exploringGame({
+  Map<String, Spell> spells = const {},
+  Set<String> knownSpells = const {},
+  int mana = 0,
+}) {
   final map = FloorMap.parse(_arena);
   final visible = computeFov(map, _heroAt, fovRadius);
   return GameState(
@@ -56,6 +58,9 @@ GameState _exploringGame() {
     buildFloor: (depth) => throw StateError('this arena has no floor below'),
     visible: visible,
     explored: {...visible},
+    spells: spells,
+    knownSpells: knownSpells,
+    mana: mana,
   );
 }
 
@@ -87,9 +92,15 @@ GameState _battleGame({
 
 /// A visible ghoul two cells away, outside engagement range — known but not
 /// adjacent, so tapping it inspects rather than bumps.
-GameState _watchedGame() => _exploringGame().copyWith(
-  monsters: [_actor('ghoul-1', const Position(4, 2), glyph: 'g')],
-);
+GameState _watchedGame({
+  Map<String, Spell> spells = const {},
+  Set<String> knownSpells = const {},
+  int mana = 0,
+}) => _exploringGame(
+  spells: spells,
+  knownSpells: knownSpells,
+  mana: mana,
+).copyWith(monsters: [_actor('ghoul-1', const Position(4, 2), glyph: 'g')]);
 
 /// [_exploringGame] plus a gather node underfoot — the note-invariance
 /// proof's other half.
@@ -165,56 +176,88 @@ Future<void> _tapTile(WidgetTester tester, Position tile) async {
 
 void main() {
   testWidgets(
-    'exploration renders header, map, hero panel and peek in the mock '
-    'order, each at its own fixed height, and the map clears its floor',
+    'regions run HUD, map, log peek, bar top to bottom, each clear of the '
+    'safe body',
     (tester) async {
       await _openCrawl(tester, _exploringGame());
 
-      final header = tester.getRect(find.byType(CrawlHeader));
+      final hud = tester.getRect(find.byKey(crawlHudKey));
       final map = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      final heroPanel = tester.getRect(find.byType(HeroPanel));
       final peek = tester.getRect(find.byKey(logPeekKey));
       final bar = tester.getRect(find.byKey(actionRowKey));
+      final surfaceHeight =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
 
-      expect(header.height, closeTo(88, 0.01));
-      expect(heroPanel.height, closeTo(102, 0.01));
-      expect(peek.height, closeTo(96, 0.01));
-      expect(bar.height, closeTo(60, 0.01));
-      expect(map.height, greaterThanOrEqualTo(394.0));
-
-      expect(header.bottom, closeTo(map.top, 0.01));
-      expect(map.bottom + crawlPanelGap, closeTo(heroPanel.top, 0.01));
-      expect(heroPanel.bottom + crawlGap, closeTo(peek.top, 0.01));
+      expect(hud.top, closeTo(34.9, 0.5));
+      expect(hud.bottom, closeTo(map.top, 0.01));
+      expect(map.bottom + crawlPanelGap, closeTo(peek.top, 0.01));
       expect(peek.bottom + crawlGap, closeTo(bar.top, 0.01));
+      expect(
+        bar.bottom + crawlBottomGap,
+        closeTo(surfaceHeight - crawlGestureClear, 0.5),
+      );
     },
   );
 
   testWidgets(
-    'battle renders header, timeline, map, combat panel and peek in the '
-    'mock order, each at its own fixed height, and the map still clears its '
-    'floor',
+    'the HUD and its HP, mana and gold rects are identical in exploration, '
+    'Watched, battle and armed',
     (tester) async {
+      const knownSpells = {'firebolt'};
+      final bloc = await _openCrawl(
+        tester,
+        _exploringGame(spells: spellsById, knownSpells: knownSpells, mana: 10),
+      );
+      final hud = tester.getRect(find.byKey(crawlHudKey));
+      final hp = tester.getRect(find.byKey(hpMeterKey));
+      final mana = tester.getRect(find.byKey(manaMeterKey));
+      final gold = tester.getRect(find.byKey(crawlGoldKey));
+
+      bloc.add(const SkillArmed('firebolt'));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(find.byKey(crawlHudKey)), hud);
+      expect(tester.getRect(find.byKey(hpMeterKey)), hp);
+      expect(tester.getRect(find.byKey(manaMeterKey)), mana);
+      expect(tester.getRect(find.byKey(crawlGoldKey)), gold);
+
+      await _openCrawl(
+        tester,
+        _watchedGame(spells: spellsById, knownSpells: knownSpells, mana: 10),
+      );
+      expect(tester.getRect(find.byKey(crawlHudKey)), hud);
+      expect(tester.getRect(find.byKey(hpMeterKey)), hp);
+      expect(tester.getRect(find.byKey(manaMeterKey)), mana);
+      expect(tester.getRect(find.byKey(crawlGoldKey)), gold);
+
+      await _openCrawl(
+        tester,
+        _battleGame(spells: spellsById, knownSpells: knownSpells, mana: 10),
+      );
+      expect(tester.getRect(find.byKey(crawlHudKey)), hud);
+      expect(tester.getRect(find.byKey(hpMeterKey)), hp);
+      expect(tester.getRect(find.byKey(manaMeterKey)), mana);
+      expect(tester.getRect(find.byKey(crawlGoldKey)), gold);
+    },
+  );
+
+  testWidgets(
+    'the map rect is identical in exploration, Watched and armed, and '
+    "differs from battle by exactly the dock's height",
+    (tester) async {
+      final bloc = await _openCrawl(tester, _exploringGame());
+      final mapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
+
+      bloc.add(const SkillArmed('firebolt'));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRect);
+
+      await _openCrawl(tester, _watchedGame());
+      expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRect);
+
       await _openCrawl(tester, _battleGame());
-
-      final header = tester.getRect(find.byType(CrawlHeader));
+      final battleMapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
       final dock = tester.getRect(find.byKey(const Key('dock-backing')));
-      final map = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      final combatPanel = tester.getRect(find.byType(CombatPanel));
-      final peek = tester.getRect(find.byKey(logPeekKey));
-      final bar = tester.getRect(find.byKey(actionRowKey));
-
-      expect(header.height, closeTo(88, 0.01));
-      expect(dock.height, closeTo(58, 0.01));
-      expect(combatPanel.height, closeTo(124, 0.01));
-      expect(peek.height, closeTo(96, 0.01));
-      expect(bar.height, closeTo(60, 0.01));
-      expect(map.height, greaterThanOrEqualTo(306.5));
-
-      expect(header.bottom, closeTo(dock.top, 0.01));
-      expect(dock.bottom, closeTo(map.top, 0.01));
-      expect(map.bottom + crawlPanelGap, closeTo(combatPanel.top, 0.01));
-      expect(combatPanel.bottom + crawlGap, closeTo(peek.top, 0.01));
-      expect(peek.bottom + crawlGap, closeTo(bar.top, 0.01));
+      expect(mapRect.height - battleMapRect.height, closeTo(dock.height, 0.5));
     },
   );
 

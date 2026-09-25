@@ -10,15 +10,13 @@ import '../town/town_bloc.dart';
 import '../world/world_bloc.dart';
 import 'action_icon.dart';
 import 'battle_view.dart';
-import 'combat_panel.dart';
 import 'crawl_action_row.dart';
-import 'crawl_header.dart';
+import 'crawl_hud.dart';
 import 'crawl_style.dart';
 import 'crawl_surfaces.dart';
 import 'dungeon_palette.dart';
 import 'dungeon_scene.dart';
 import 'game_bloc.dart';
-import 'hero_panel.dart';
 import 'log_drawer.dart';
 import 'log_line.dart';
 import 'grid_geometry.dart';
@@ -75,7 +73,7 @@ class GameScreen extends StatelessWidget {
                     children: [
                       Column(
                         children: [
-                          CrawlHeader(
+                          CrawlHud(
                             state: state,
                             dungeon: bloc.dungeon,
                             day: bloc.day,
@@ -166,13 +164,6 @@ class GameScreen extends StatelessWidget {
                                           ),
                                         ),
                                         const SizedBox(height: crawlPanelGap),
-                                        state.isBattleOpen
-                                            ? CombatPanel(state: state)
-                                            : HeroPanel(
-                                                state: state,
-                                                heroLabel: bloc.heroLabel,
-                                              ),
-                                        const SizedBox(height: crawlGap),
                                         LogPeek(
                                           key: logPeekKey,
                                           state: state,

@@ -673,7 +673,6 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     int worldSeed = 1,
     List<LogLine> log = const [],
     this.dungeon,
-    this.heroLabel,
     this.day,
     this.stepDelay = const Duration(milliseconds: 90),
   }) : super(
@@ -723,18 +722,11 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   /// constant belongs beside [stepDelay].
   final NodeId? dungeon;
 
-  /// The hero's own name, or null when the app has none to give.
-  ///
-  /// **A run constant beside [dungeon], for the same reason.** `main.dart`
-  /// reads it once from the save document at the two places every crawl is
-  /// opened; nothing in the crawl itself ever changes it (PLAN.md E4).
-  final String? heroLabel;
-
   /// The in-world day this crawl opened on, or null when the app has none
   /// to give.
   ///
-  /// **A run constant beside [dungeon] and [heroLabel], for the same
-  /// reason (PLAN.md E4).** `main.dart` reads it once from `WorldBloc` at
+  /// **A run constant beside [dungeon], for the same reason (PLAN.md E4).**
+  /// `main.dart` reads it once from `WorldBloc` at
   /// the two places every crawl is opened; no `WorldBloc` handler can
   /// change `world.day` while a crawl route sits on top of the world
   /// screen — the one handler that advances it (`_onDayWalked`) only ever

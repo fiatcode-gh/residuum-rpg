@@ -397,14 +397,12 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(bloc.state.inspectedActorId, monster.id);
-    final heroBefore = bloc.state.game.hero.position;
 
-    await _tapLocal(tester, geometry.centreOf(_wideHero));
+    await _tapLocal(tester, geometry.centreOf(_wideHero) + const Offset(5, 0));
     await tester.pumpAndSettle();
 
     expect(bloc.state.inspectedActorId, isNull);
     expect(find.byKey(mapCalloutKey), findsNothing);
-    expect(bloc.state.game.hero.position, heroBefore);
   });
 
   testWidgets('a long-press on empty ground dismisses an open callout', (

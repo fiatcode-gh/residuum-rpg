@@ -46,7 +46,6 @@ const Color crawlFrame = Color(0xFF2E3A3F);
 const Color crawlDivider = Color(0xFF1F272C);
 const Color crawlChipBorder = Color(0xFF4A5054);
 const Color crawlMeterTrack = Color(0xFF131C1E);
-const Color crawlGoldRule = Color(0x47D6C280);
 const Color crawlCalloutFill = Color(0xF00B1215);
 
 const double gutter = 12;
@@ -160,22 +159,6 @@ const TextStyle displaySheetTitle = TextStyle(
   fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
 );
 
-/// PLAN.md G2 display role added on demand (Task 10): the crawl header's
-/// `RESIDUUM` wordmark, the brand — excluded from semantics for that
-/// reason — rather than a fact the crawl reads off state.
-const TextStyle displayWordmark = TextStyle(
-  inherit: false,
-  fontFamily: displayFace,
-  fontSize: 23,
-  letterSpacing: 6,
-  fontWeight: FontWeight.w500,
-  fontVariations: [FontVariation('wght', 500)],
-  height: 1.0,
-  textBaseline: TextBaseline.alphabetic,
-  color: crawlHero,
-  fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
-);
-
 /// PLAN.md G2 display role added on demand (Task 08): the hero panel's
 /// column captions (`WEAPON`, `ARMOUR`, `QUICK`, `PACK`) are this unit's
 /// first consumer.
@@ -205,18 +188,6 @@ const TextStyle displayName = TextStyle(
   height: 1.13,
   textBaseline: TextBaseline.alphabetic,
   color: crawlEnemy,
-  fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
-);
-const TextStyle displayNameCold = TextStyle(
-  inherit: false,
-  fontFamily: displayFace,
-  fontSize: 15,
-  letterSpacing: 0.3,
-  fontWeight: FontWeight.w500,
-  fontVariations: [FontVariation('wght', 500)],
-  height: 1.13,
-  textBaseline: TextBaseline.alphabetic,
-  color: crawlCold,
   fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
 );
 
@@ -492,28 +463,6 @@ const TextStyle monoLogTorch = TextStyle(
   height: 1.43,
   textBaseline: TextBaseline.alphabetic,
   color: crawlTorch,
-  fontFeatures: [FontFeature.tabularFigures()],
-);
-const TextStyle monoFigure = TextStyle(
-  inherit: false,
-  fontFamily: monoFace,
-  fontSize: 20,
-  letterSpacing: 0,
-  fontWeight: FontWeight.w600,
-  height: 1.1,
-  textBaseline: TextBaseline.alphabetic,
-  color: crawlHero,
-  fontFeatures: [FontFeature.tabularFigures()],
-);
-const TextStyle monoFigureCold = TextStyle(
-  inherit: false,
-  fontFamily: monoFace,
-  fontSize: 20,
-  letterSpacing: 0,
-  fontWeight: FontWeight.w600,
-  height: 1.1,
-  textBaseline: TextBaseline.alphabetic,
-  color: crawlCold,
   fontFeatures: [FontFeature.tabularFigures()],
 );
 const TextStyle monoToken = TextStyle(
