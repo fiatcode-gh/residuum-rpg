@@ -6,7 +6,7 @@ import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
-import 'package:residuum_app/game/map_callout.dart';
+import 'package:residuum_app/game/target_card.dart';
 import 'package:residuum_core/core.dart';
 
 /// Widget proof for `map_touch.dart::resolveMapTap`, wired through the real
@@ -95,7 +95,7 @@ void main() {
   );
 
   testWidgets(
-    'a tap 18 dp off a far monster centre opens the map callout, not the '
+    'a tap 18 dp off a far monster centre opens the target card, not the '
     'sheet',
     (tester) async {
       final monster = Actor(
@@ -120,7 +120,7 @@ void main() {
 
       expect(bloc.state.inspectedActorId, 'ghoul-1');
       expect(find.byType(BottomSheet), findsNothing);
-      expect(find.byKey(mapCalloutKey), findsOneWidget);
+      expect(find.byKey(targetCardKey), findsOneWidget);
       expect(bloc.state.game.hero.position, _hero);
     },
   );
@@ -138,7 +138,7 @@ void main() {
       await _tapLocal(tester, local);
       await tester.pumpAndSettle();
 
-      expect(find.text('strikes adjacent'), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
       expect(identical(bloc.state, stateBefore), isTrue);
     },
   );

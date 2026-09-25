@@ -18,7 +18,6 @@ import 'grid_geometry.dart';
 import 'log_drawer.dart';
 import 'log_line.dart';
 import 'log_row.dart';
-import 'map_callout.dart';
 import 'map_overlays.dart';
 import 'map_touch.dart';
 
@@ -76,14 +75,8 @@ class GameScreen extends StatelessWidget {
                           if (state.isBattleOpen)
                             BattleDock(
                               state: state,
-                              onActorSelected: (actor) {
-                                final presentation = state.presentationOf(
-                                  actor.id,
-                                );
-                                if (presentation == null) return;
-                                bloc.add(TimelineActorSelected(actor.id));
-                                showEnemyInfo(context, actor, presentation);
-                              },
+                              onActorSelected: (actor) =>
+                                  bloc.add(TimelineActorSelected(actor.id)),
                             ),
                           Expanded(
                             child: LayoutBuilder(
@@ -126,10 +119,6 @@ class GameScreen extends StatelessWidget {
                                                               geometry,
                                                               local,
                                                             ),
-                                                  ),
-                                                  MapCallout(
-                                                    state: state,
-                                                    size: size,
                                                   ),
                                                   MapOverlays(
                                                     bloc: bloc,
@@ -202,12 +191,6 @@ class GameScreen extends StatelessWidget {
   );
 }
 
-/// Routes a map tap by intent (`map_touch.dart::resolveMapTap`): a cell means
-/// the bloc decides — move, bump or cast — and an inspect names the map
-/// callout's target, at no turn cost. A tap that resolves to a cell or to
-/// nothing dismisses an open callout first: the bloc's own no-op returns
-/// (an unexplored cell, a non-adjacent wall, no path) never emit, so the
-/// dismissal has to come from here, not from whatever `TileTapped` decides.
 void _onMapTap(
   GameBloc bloc,
   GameViewState state,
@@ -229,9 +212,6 @@ void _onMapTap(
   }
 }
 
-/// Names the map callout's target under the long-press, at no turn cost.
-/// A long-press that resolves to nothing dismisses an open callout too,
-/// the same rule [_onMapTap] applies.
 void _onMapLongPress(
   GameBloc bloc,
   GameViewState state,

@@ -9,8 +9,8 @@ import 'package:residuum_app/game/log_drawer.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
-import 'package:residuum_app/game/map_callout.dart';
 import 'package:residuum_app/game/map_overlays.dart';
+import 'package:residuum_app/game/target_card.dart';
 import 'package:residuum_app/style/tokens.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
@@ -213,7 +213,8 @@ void main() {
     );
 
     testWidgets(
-      'a timeline actor token with nothing armed opens the enemy info',
+      'a timeline actor token with nothing armed selects it and shows its '
+      'card',
       (tester) async {
         // arrange - the D90 standoff: the spitter three tiles out
         final game = battleGame(
@@ -242,13 +243,35 @@ void main() {
         await tester.tap(find.byKey(const Key('timeline-actor-spitter-1-1')));
         await tester.pumpAndSettle();
 
-        // assert - the numbers on a sheet; nothing else happened
-        expect(find.text('the spitter'), findsWidgets);
-        expect(find.text('Wounds 4 / 4'), findsOneWidget);
-        expect(find.text('2–3'), findsOneWidget);
-        expect(find.text('Speed 20'), findsOneWidget);
-        expect(find.text('Resists fire'), findsOneWidget);
-        expect(find.text('Burns at frost'), findsOneWidget);
+        // assert - the numbers on the card; nothing else happened
+        expect(bloc.state.selectedActorId, 'spitter-1');
+        expect(find.byType(BottomSheet), findsNothing);
+        final card = find.byKey(targetCardKey);
+        expect(card, findsOneWidget);
+        expect(
+          find.descendant(of: card, matching: find.text('The spitter')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: card, matching: find.text('HP 4/4')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: card, matching: find.text('ATK 2–3  SPD 20')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: card, matching: find.text('Ranged, reach 3')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: card, matching: find.text('Resists fire')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: card, matching: find.text('Burns at frost')),
+          findsOneWidget,
+        );
         expect(bloc.state.log.length, logBefore);
         expect(bloc.state.game.hero.position, const Position(1, 1));
         expect(bloc.state.game.monsters.single.hp, 4);
@@ -555,8 +578,8 @@ void main() {
       },
     );
     testWidgets(
-      'a duplicate survivor keeps its suffix in the timeline and inspect after '
-      'a sibling dies',
+      'a duplicate survivor keeps its suffix in the timeline and the target '
+      'card after a sibling dies',
       (tester) async {
         // arrange - both identities are visible before a lethal map action.
         final bloc = await _pushGame(
@@ -605,18 +628,12 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
+        expect(bloc.state.selectedActorId, 'ghoul-2');
+        expect(find.byType(BottomSheet), findsNothing);
+        final card = find.byKey(targetCardKey);
+        expect(card, findsOneWidget);
         expect(
-          find.descendant(
-            of: find.byType(BottomSheet),
-            matching: find.text('the ghoul²'),
-          ),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: find.byType(BottomSheet),
-            matching: find.text('g²'),
-          ),
+          find.descendant(of: card, matching: find.text('The ghoul²')),
           findsOneWidget,
         );
       },
@@ -725,11 +742,11 @@ void main() {
       await tester.tap(laterToken);
       await tester.pumpAndSettle();
       expect(bloc.state.selectedActorId, 'ghoul-6');
+      expect(find.byType(BottomSheet), findsNothing);
+      final card = find.byKey(targetCardKey);
+      expect(card, findsOneWidget);
       expect(
-        find.descendant(
-          of: find.byType(BottomSheet),
-          matching: find.text('the ghoul⁶'),
-        ),
+        find.descendant(of: card, matching: find.text('The ghoul⁶')),
         findsOneWidget,
       );
       expect(find.byType(DungeonSceneHost), findsOneWidget);
@@ -948,44 +965,60 @@ void main() {
       _expectAction('wait', label: 'Wait');
     });
 
-    testWidgets('a timeline actor token opens enemy info, never the bump', (
-      tester,
-    ) async {
-      // arrange - the ghoul adjacent; nothing armed
-      final game = battleGame(
-        monsters: [
-          ghoulAt(
-            const Position(1, 2),
-            speed: 20,
-            resists: const {DamageType.fire},
-            vulnerableTo: const {DamageType.frost},
-          ),
-        ],
-        knownSpells: const {'firebolt'},
-        mana: 10,
-      );
-      final bloc = await _pushGame(tester, game);
-      final gameBefore = bloc.state.game;
-      final logBefore = bloc.state.log;
+    testWidgets(
+      'a timeline actor token selects it and shows its card, never the bump',
+      (tester) async {
+        // arrange - the ghoul adjacent; nothing armed
+        final game = battleGame(
+          monsters: [
+            ghoulAt(
+              const Position(1, 2),
+              speed: 20,
+              resists: const {DamageType.fire},
+              vulnerableTo: const {DamageType.frost},
+            ),
+          ],
+          knownSpells: const {'firebolt'},
+          mana: 10,
+        );
+        final bloc = await _pushGame(tester, game);
+        final gameBefore = bloc.state.game;
+        final logBefore = bloc.state.log;
 
-      // act
-      await tester.tap(find.byKey(const Key('timeline-actor-ghoul-1-1')));
-      await tester.pumpAndSettle();
+        // act
+        await tester.tap(find.byKey(const Key('timeline-actor-ghoul-1-1')));
+        await tester.pumpAndSettle();
 
-      // assert - the sheet and selection are view-only: no swing, no claws
-      expect(bloc.state.selectedActorId, 'ghoul-1');
-      expect(bloc.state.cameraFocus, const Position(1, 2));
-      expect(bloc.state.game, same(gameBefore));
-      expect(bloc.state.log, same(logBefore));
-      expect(find.text('strikes adjacent'), findsOneWidget);
-      expect(find.text('3–3'), findsOneWidget);
-      expect(find.text('Resists fire'), findsOneWidget);
-      expect(find.text('Burns at frost'), findsOneWidget);
-      expect(find.textContaining('You hit the ghoul'), findsNothing);
-      expect(bloc.state.game.monsters.single.hp, 10);
-      expect(bloc.state.game.hero.hp, 20);
-      expect(bloc.state.armedSpellId, isNull);
-    });
+        // assert - the card and selection are view-only: no swing, no claws
+        expect(bloc.state.selectedActorId, 'ghoul-1');
+        expect(bloc.state.cameraFocus, const Position(1, 2));
+        expect(bloc.state.game, same(gameBefore));
+        expect(bloc.state.log, same(logBefore));
+        expect(find.byType(BottomSheet), findsNothing);
+        final card = find.byKey(targetCardKey);
+        expect(card, findsOneWidget);
+        expect(
+          find.descendant(of: card, matching: find.text('Melee only')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: card, matching: find.text('ATK 3–3  SPD 20')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: card, matching: find.text('Resists fire')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: card, matching: find.text('Burns at frost')),
+          findsOneWidget,
+        );
+        expect(find.textContaining('You hit the ghoul'), findsNothing);
+        expect(bloc.state.game.monsters.single.hp, 10);
+        expect(bloc.state.game.hero.hp, 20);
+        expect(bloc.state.armedSpellId, isNull);
+      },
+    );
 
     testWidgets('armed Attack and a marked map tap is the bump', (
       tester,
@@ -1236,7 +1269,7 @@ void main() {
   });
 
   group('map inspect and recenter', () {
-    testWidgets('a tap on a distant monster opens the map callout', (
+    testWidgets('a tap on a distant monster opens the target card', (
       tester,
     ) async {
       // arrange - the spitter three tiles out, nothing armed
@@ -1250,25 +1283,25 @@ void main() {
 
       expect(bloc.state.inspectedActorId, 'spitter-1');
       expect(find.byType(BottomSheet), findsNothing);
-      expect(find.byKey(mapCalloutKey), findsOneWidget);
-      final callout = find.byKey(mapCalloutKey);
+      expect(find.byKey(targetCardKey), findsOneWidget);
+      final card = find.byKey(targetCardKey);
       expect(
-        find.descendant(of: callout, matching: find.text('HP 4/4')),
+        find.descendant(of: card, matching: find.text('HP 4/4')),
         findsOneWidget,
       );
       expect(
-        find.descendant(of: callout, matching: find.text('ATK 2–3  SPD 5')),
+        find.descendant(of: card, matching: find.text('ATK 2–3  SPD 5')),
         findsOneWidget,
       );
       expect(
-        find.descendant(of: callout, matching: find.text('Reach 3')),
+        find.descendant(of: card, matching: find.text('Ranged, reach 3')),
         findsOneWidget,
       );
       expect(bloc.state.log.length, logBefore);
       expect(bloc.state.game.hero.position, const Position(1, 1));
     });
 
-    testWidgets('a long-press on a monster opens the map callout', (
+    testWidgets('a long-press on a monster opens the target card', (
       tester,
     ) async {
       // arrange - the spitter three tiles out
@@ -1286,7 +1319,7 @@ void main() {
 
       expect(bloc.state.inspectedActorId, 'spitter-1');
       expect(find.byType(BottomSheet), findsNothing);
-      expect(find.byKey(mapCalloutKey), findsOneWidget);
+      expect(find.byKey(targetCardKey), findsOneWidget);
       expect(bloc.state.log.length, logBefore);
     });
 

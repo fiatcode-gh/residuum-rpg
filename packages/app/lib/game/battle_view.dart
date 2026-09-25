@@ -3,9 +3,7 @@ import 'package:residuum_core/core.dart';
 
 import '../style/tokens.dart';
 import 'activation_timeline.dart';
-import 'actor_presentation.dart';
 import 'crawl_style.dart';
-import 'crawl_surfaces.dart';
 import 'game_bloc.dart';
 
 /// The battle dock: a compact, accessible view of the upcoming activations
@@ -228,55 +226,5 @@ class _TimelinePill extends StatelessWidget {
         Text(word, style: style),
       ],
     ),
-  );
-}
-
-/// Opens the enemy's numbers over the crawl: name, glyph, wounds, attack,
-/// reach, speed, and what the creature's make of.
-///
-/// The presentation label is supplied by the encounter-local identity context;
-/// stats and resistances still come directly from [monster].
-void showEnemyInfo(
-  BuildContext context,
-  Actor monster,
-  ActorPresentation presentation,
-) {
-  showCrawlSheet<void>(
-    context,
-    children: (sheetContext) => [
-      Row(
-        children: [
-          Text(presentation.glyphLabel, style: textGlyph),
-          const SizedBox(width: 10),
-          Expanded(child: Text(presentation.displayName, style: textLine)),
-        ],
-      ),
-      const SizedBox(height: 8),
-      _EnemyInfoLine('Wounds ${monster.hp} / ${monster.maxHp}'),
-      _EnemyInfoLine('${monster.attackMin}–${monster.attackMax}'),
-      _EnemyInfoLine(
-        monster.reach > 1
-            ? 'strikes at range ${monster.reach}'
-            : 'strikes adjacent',
-      ),
-      _EnemyInfoLine('Speed ${monster.speed}'),
-      for (final type in monster.resists)
-        _EnemyInfoLine('Resists ${type.word}'),
-      for (final type in monster.vulnerableTo)
-        _EnemyInfoLine('Burns at ${type.word}'),
-    ],
-  );
-}
-
-/// One line of the enemy sheet, in the text face and dim.
-class _EnemyInfoLine extends StatelessWidget {
-  const _EnemyInfoLine(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 2),
-    child: Text(text, style: textLine),
   );
 }

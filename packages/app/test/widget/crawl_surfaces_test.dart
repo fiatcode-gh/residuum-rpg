@@ -238,21 +238,6 @@ void main() {
       expect(sheetColor, isNot(bareColor));
     });
 
-    testWidgets('the enemy info sheet renders on panel', (tester) async {
-      // arrange
-      final bareColor = await _bareBottomSheetColor(tester);
-
-      // act - select the timeline token, which opens the enemy sheet
-      await _openCrawl(tester, _battleWithOverflowScene());
-      await tester.tap(find.byKey(const Key('timeline-actor-ghoul-1-1')));
-      await tester.pumpAndSettle();
-
-      // assert
-      final sheetColor = _routeSurfaceColor(tester, BottomSheet);
-      expect(sheetColor, panel);
-      expect(sheetColor, isNot(bareColor));
-    });
-
     testWidgets('the completion confirm renders on panel', (tester) async {
       // arrange
       final bareColor = await _bareDialogColor(tester);

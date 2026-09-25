@@ -9,6 +9,7 @@ import 'grid_geometry.dart';
 import 'map_overlay_layout.dart';
 import 'place_actions.dart';
 import 'place_popup.dart';
+import 'target_card.dart';
 
 const recenterKey = Key('recenter');
 
@@ -68,6 +69,7 @@ class MapOverlays extends StatelessWidget {
       );
     }
 
+    final cardAvoid = [?popupRect, ...avoid];
     return Stack(
       children: [
         if (popupRect != null)
@@ -78,6 +80,9 @@ class MapOverlays extends StatelessWidget {
             height: popupRect.height,
             child: PlacePopup(bloc: bloc, state: state, width: popupRect.width),
           ),
+        Positioned.fill(
+          child: TargetCard(state: state, size: size, avoid: cardAvoid),
+        ),
         if (showRecenter)
           Positioned(
             right: 8,

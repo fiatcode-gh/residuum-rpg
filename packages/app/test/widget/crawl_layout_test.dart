@@ -10,7 +10,7 @@ import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
 import 'package:residuum_app/game/log_drawer.dart';
-import 'package:residuum_app/game/map_callout.dart';
+import 'package:residuum_app/game/target_card.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -301,7 +301,7 @@ void main() {
   });
 
   testWidgets(
-    'inspecting a far monster opens the map callout without moving the map',
+    'inspecting a far monster opens the target card without moving the map',
     (tester) async {
       await _openCrawl(tester, _exploringGame());
       final mapRectNoInspect = tester.getRect(find.byKey(dungeonSceneSlotKey));
@@ -314,7 +314,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(BottomSheet), findsNothing);
-      expect(find.byKey(mapCalloutKey), findsOneWidget);
+      expect(find.byKey(targetCardKey), findsOneWidget);
       expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRectBefore);
     },
   );

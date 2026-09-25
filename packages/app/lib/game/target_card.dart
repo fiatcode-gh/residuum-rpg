@@ -1,36 +1,31 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../style/tokens.dart';
+import 'crawl_meter.dart';
 import 'crawl_style.dart';
 import 'game_bloc.dart';
 import 'grid_geometry.dart';
+import 'map_overlay_layout.dart';
 import 'target_facts.dart';
 
-const mapCalloutKey = Key('map-callout');
+const targetCardKey = Key('target-card');
 
-/// PLAN.md Task 12 decision 3: an anchored card beside an inspected
-/// monster's cell, with a leader line back to it — replacing the bottom
-/// sheet a map tap or long-press used to open. Shown only while
-/// [GameViewState.inspectedActor] names a monster whose cell rect still
-/// intersects the map slot; panning, stepping, dying or otherwise leaving
-/// sight removes the card exactly as `inspectedActor`'s own
-/// alive/visible/known test says it should — the same guard
-/// [GameViewState.selectedActor] already carries.
-///
-/// [size] is the map slot's own size, the same box `GameScreen`'s recenter
-/// check frames its [GridGeometry] against, so the card and the glyphs it
-/// points at agree on where the cell actually is.
-class MapCallout extends StatelessWidget {
-  const MapCallout({required this.state, required this.size, super.key});
+class TargetCard extends StatelessWidget {
+  const TargetCard({
+    required this.state,
+    required this.size,
+    this.avoid = const [],
+    super.key,
+  });
 
   final GameViewState state;
   final Size size;
+  final List<Rect> avoid;
 
   @override
   Widget build(BuildContext context) {
-    final actor = state.inspectedActor;
+    final actor =
+        state.inspectedActor ?? (state.isBattleOpen ? state.targetActor : null);
     if (actor == null) return const SizedBox.shrink();
     final name = state.presentationOf(actor.id)?.displayName;
     if (name == null) return const SizedBox.shrink();
@@ -47,53 +42,50 @@ class MapCallout extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final resists = actor.resists;
-    final vulnerable = actor.vulnerableTo;
-    final lineCount = 2 + resists.length + vulnerable.length;
+    final lines = targetFactLines(actor);
     final scale = crawlScale(context);
     final height =
         crawlCalloutPadding * 2 +
         crawlCalloutNameRow * scale +
         crawlCalloutGap +
         crawlCalloutHpRow * scale +
-        crawlCalloutGap +
-        crawlCalloutLineHeight * scale * lineCount;
+        crawlCalloutBarRow +
+        crawlCalloutLineHeight * scale * lines.length;
+    const width = crawlCalloutWidth;
 
-    var flipped = false;
-    var left = cellRect.right + crawlCalloutMargin;
-    if (left + crawlCalloutWidth > size.width - crawlCalloutEdgeClamp) {
-      flipped = true;
-      left = cellRect.left - crawlCalloutMargin - crawlCalloutWidth;
-    }
-    var below = false;
-    var top = cellRect.top - crawlCalloutLeaderGap - height;
-    if (top < crawlCalloutEdgeClamp) {
-      below = true;
-      top = cellRect.bottom + crawlCalloutLeaderGap;
-    }
-    left = left.clamp(
-      crawlCalloutEdgeClamp,
-      math.max(
-        crawlCalloutEdgeClamp,
-        size.width - crawlCalloutEdgeClamp - crawlCalloutWidth,
-      ),
-    );
-    top = top.clamp(
-      crawlCalloutEdgeClamp,
-      math.max(
-        crawlCalloutEdgeClamp,
-        size.height - crawlCalloutEdgeClamp - height,
-      ),
+    final hero = geometry.rectOf(state.game.hero.position);
+    final cardRect = placeMapOverlay(
+      map: size,
+      size: Size(width, height),
+      hero: hero,
+      preferred: [
+        Offset(
+          cellRect.right + crawlCalloutMargin,
+          cellRect.top - crawlCalloutLeaderGap - height,
+        ),
+        Offset(
+          cellRect.left - crawlCalloutMargin - width,
+          cellRect.top - crawlCalloutLeaderGap - height,
+        ),
+        Offset(
+          cellRect.right + crawlCalloutMargin,
+          cellRect.bottom + crawlCalloutLeaderGap,
+        ),
+        Offset(
+          cellRect.left - crawlCalloutMargin - width,
+          cellRect.bottom + crawlCalloutLeaderGap,
+        ),
+      ],
+      avoid: [cellRect, ...avoid],
     );
 
-    final cardRect = Offset(left, top) & Size(crawlCalloutWidth, height);
     final cellCorner = Offset(
-      flipped ? cellRect.left : cellRect.right,
-      below ? cellRect.bottom : cellRect.top,
+      cardRect.center.dx >= cellRect.center.dx ? cellRect.right : cellRect.left,
+      cardRect.center.dy >= cellRect.center.dy ? cellRect.bottom : cellRect.top,
     );
     final cardCorner = Offset(
-      flipped ? cardRect.right : cardRect.left,
-      below ? cardRect.top : cardRect.bottom,
+      cellRect.center.dx >= cardRect.center.dx ? cardRect.right : cardRect.left,
+      cellRect.center.dy >= cardRect.center.dy ? cardRect.bottom : cardRect.top,
     );
 
     final hp = actor.hp.clamp(0, actor.maxHp);
@@ -107,7 +99,7 @@ class MapCallout extends StatelessWidget {
           ),
         ),
         Positioned(
-          key: mapCalloutKey,
+          key: targetCardKey,
           left: cardRect.left,
           top: cardRect.top,
           width: cardRect.width,
@@ -139,12 +131,15 @@ class MapCallout extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: crawlCalloutGap),
-                    SizedBox(
-                      height: crawlCalloutHpRow * scale,
-                      child: Text('HP $hp/${actor.maxHp}', style: monoData),
+                    CrawlMeter(
+                      label: 'HP',
+                      value: hp,
+                      ceiling: actor.maxHp,
+                      barHeight: 5,
+                      fill: crawlEnemy,
                     ),
                     const SizedBox(height: crawlCalloutGap),
-                    for (final line in targetFactLines(actor)) _MetaLine(line),
+                    for (final line in lines) _MetaLine(line),
                   ],
                 ),
               ),
@@ -156,8 +151,6 @@ class MapCallout extends StatelessWidget {
   }
 }
 
-/// One `monoMeta` fact line (PLAN.md G11 "callout"): the fixed-height row
-/// the card's height formula counts one [crawlCalloutLineHeight] for.
 class _MetaLine extends StatelessWidget {
   const _MetaLine(this.text);
 
@@ -175,9 +168,6 @@ class _MetaLine extends StatelessWidget {
   );
 }
 
-/// The 1 dp gold leader (PLAN.md Task 12 decision 3): the cell's own corner
-/// on the card's side, to the card's nearest corner, with a 2.5 dp dot at
-/// the cell end.
 class _LeaderPainter extends CustomPainter {
   const _LeaderPainter({required this.from, required this.to});
 

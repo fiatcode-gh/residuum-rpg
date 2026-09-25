@@ -7,7 +7,10 @@ import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
-import 'package:residuum_app/game/map_callout.dart';
+import 'package:residuum_app/game/map_overlay_layout.dart';
+import 'package:residuum_app/game/place_popup.dart';
+import 'package:residuum_app/game/target_card.dart';
+import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 import '../support/phone.dart';
@@ -24,11 +27,13 @@ const _roomArena = '''
 ##########''';
 const _hero = Position(1, 1);
 const _farMonster = Position(7, 3);
+const _nearGhoul = Position(1, 2);
+const _farSpitter = Position(4, 1);
 
 /// A room close to the map slot's own width, so a monster comfortably
-/// clear of the hero renders its callout comfortably clear of the hero's
-/// own adjacent tiles too — unlike [_roomArena], whose centring margins put
-/// a flipped card back over the room it was tapped from.
+/// clear of the hero renders its card comfortably clear of the hero's own
+/// adjacent tiles too — unlike [_roomArena], whose centring margins put a
+/// flipped card back over the room it was tapped from.
 String _wideRoomArena(int rows) {
   final wall = '#' * 24;
   final floor = List.generate(rows, (_) => '#${'.' * 22}#').join('\n');
@@ -64,11 +69,43 @@ Actor _ghoul(
   reach: reach,
 );
 
+Actor _spitter(
+  Position at, {
+  String id = 'spitter-1',
+  int hp = 4,
+  int maxHp = 4,
+  int attackMin = 2,
+  int attackMax = 3,
+  int speed = 5,
+  int reach = 3,
+  Set<DamageType> resists = const {},
+  Set<DamageType> vulnerableTo = const {},
+}) => Actor(
+  id: id,
+  name: 'the spitter',
+  glyph: 'p',
+  position: at,
+  hp: hp,
+  maxHp: maxHp,
+  attackMin: attackMin,
+  attackMax: attackMax,
+  speed: speed,
+  energy: actThreshold,
+  reach: reach,
+  resists: resists,
+  vulnerableTo: vulnerableTo,
+);
+
+List<Item> _oneSword() => const [
+  Item(id: 'floor-loot', base: ironSword, rarity: Rarity.common),
+];
+
 GameState _gameState({
   required String ascii,
   required Position heroAt,
   List<Actor> monsters = const [],
   Set<Position>? visible,
+  Map<Position, List<Item>> groundItems = const {},
 }) {
   final map = FloorMap.parse(ascii);
   final seen = visible ?? computeFov(map, heroAt, fovRadius);
@@ -92,6 +129,7 @@ GameState _gameState({
     visible: seen,
     explored: {...seen},
     buildFloor: (depth) => throw StateError('this arena has no floor below'),
+    groundItems: groundItems,
   );
 }
 
@@ -165,42 +203,57 @@ Future<void> _longPressLocal(WidgetTester tester, Offset local) async {
   await tester.longPressAt(topLeft + local);
 }
 
-/// Pumps a standalone [MapCallout] over a fixed [size] box anchored at the
+/// Taps the timeline token whose word matches [name], through the dock's
+/// own real hit target, so the timeline's own tap wiring — not a guessed
+/// key — is what the test exercises.
+Future<void> _tapTimelineActor(WidgetTester tester, String name) async {
+  await tester.tap(
+    find.ancestor(
+      of: find.descendant(
+        of: find.byKey(const Key('dock-backing')),
+        matching: find.text(name),
+      ),
+      matching: find.byType(InkWell),
+    ),
+  );
+}
+
+/// Pumps a standalone [TargetCard] over a fixed [size] box anchored at the
 /// surface's own origin, so [WidgetTester.getRect] reads in the same local
 /// space [GridGeometry] does. [textScaler] feeds the ambient `MediaQuery`
-/// a physical device's system text size would turn — `MapCallout` itself
+/// a physical device's system text size would turn — [TargetCard] itself
 /// is pumped outside `GameScreen`'s own clamp here, so the test supplies
 /// an already-clamped value directly.
-Future<Rect> _pumpCallout(
+Future<Rect> _pumpCard(
   WidgetTester tester,
   GameViewState state,
   Size size, {
   TextScaler? textScaler,
 }) async {
-  final callout = MaterialApp(
+  final card = MaterialApp(
     home: Align(
       alignment: Alignment.topLeft,
       child: SizedBox(
         width: size.width,
         height: size.height,
-        child: MapCallout(state: state, size: size),
+        child: TargetCard(state: state, size: size),
       ),
     ),
   );
   await tester.pumpWidget(
     textScaler == null
-        ? callout
+        ? card
         : MediaQuery(
             data: MediaQueryData(textScaler: textScaler),
-            child: callout,
+            child: card,
           ),
   );
-  return tester.getRect(find.byKey(mapCalloutKey));
+  return tester.getRect(find.byKey(targetCardKey));
 }
 
 void main() {
   testWidgets(
-    'a tap 18 dp off a far known monster opens the callout with its facts, '
+    'a tap 18 dp off a far known monster opens the card with its facts, '
     'no sheet, and marks the cell with the heavy reticle',
     (tester) async {
       final monster = _ghoul(
@@ -223,24 +276,25 @@ void main() {
 
       expect(bloc.state.inspectedActorId, monster.id);
       expect(find.byType(BottomSheet), findsNothing);
-      final callout = find.byKey(mapCalloutKey);
-      expect(callout, findsOneWidget);
+      final card = find.byKey(targetCardKey);
+      expect(card, findsOneWidget);
       expect(
-        find.descendant(of: callout, matching: find.text('The ghoul')),
+        find.descendant(of: card, matching: find.text('The ghoul')),
         findsOneWidget,
       );
       expect(
-        find.descendant(of: callout, matching: find.text('HP 6/8')),
+        find.descendant(of: card, matching: find.text('HP 6/8')),
         findsOneWidget,
       );
       expect(
-        find.descendant(of: callout, matching: find.text('ATK 2–4  SPD 7')),
+        find.descendant(of: card, matching: find.text('ATK 2–4  SPD 7')),
         findsOneWidget,
       );
       expect(
-        find.descendant(of: callout, matching: find.text('Adjacent')),
+        find.descendant(of: card, matching: find.text('Melee only')),
         findsOneWidget,
       );
+      expect(find.text('Adjacent'), findsNothing);
 
       final cell = DungeonSceneSnapshot.fromViewState(bloc.state).cells
           .singleWhere((c) => c.entity == monster.id);
@@ -263,17 +317,15 @@ void main() {
     expect(bloc.state.inspectedActorId, monster.id);
     final gameBefore = bloc.state.game;
 
-    await tester.tapAt(tester.getCenter(find.byKey(mapCalloutKey)));
+    await tester.tapAt(tester.getCenter(find.byKey(targetCardKey)));
     await tester.pumpAndSettle();
 
     expect(bloc.state.inspectedActorId, monster.id);
     expect(bloc.state.game, same(gameBefore));
-    expect(find.byKey(mapCalloutKey), findsOneWidget);
+    expect(find.byKey(targetCardKey), findsOneWidget);
   });
 
-  testWidgets('tapping empty blank space dismisses the callout', (
-    tester,
-  ) async {
+  testWidgets('tapping empty blank space dismisses the card', (tester) async {
     final monster = _ghoul(_farMonster);
     final bloc = await _openCrawl(
       tester,
@@ -295,11 +347,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(bloc.state.inspectedActorId, isNull);
-    expect(find.byKey(mapCalloutKey), findsNothing);
+    expect(find.byKey(targetCardKey), findsNothing);
   });
 
   testWidgets(
-    'tapping a floor cell dismisses the callout and still steps the hero',
+    'tapping a floor cell dismisses the card and still steps the hero',
     (tester) async {
       final monster = _ghoul(_wideFarMonster);
       final bloc = await _openCrawl(
@@ -317,19 +369,19 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(bloc.state.inspectedActorId, monster.id);
-      expect(find.byKey(mapCalloutKey), findsOneWidget);
+      expect(find.byKey(targetCardKey), findsOneWidget);
 
       final adjacent = _wideHero.step(Direction.south);
       await _tapLocal(tester, geometry.centreOf(adjacent));
       await tester.pumpAndSettle();
 
       expect(bloc.state.inspectedActorId, isNull);
-      expect(find.byKey(mapCalloutKey), findsNothing);
+      expect(find.byKey(targetCardKey), findsNothing);
       expect(bloc.state.game.hero.position, adjacent);
     },
   );
 
-  testWidgets('a long-press on the monster opens the callout', (tester) async {
+  testWidgets('a long-press on the monster opens the card', (tester) async {
     final monster = _ghoul(_farMonster);
     final bloc = await _openCrawl(
       tester,
@@ -341,11 +393,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(bloc.state.inspectedActorId, monster.id);
-    expect(find.byKey(mapCalloutKey), findsOneWidget);
+    expect(find.byKey(targetCardKey), findsOneWidget);
   });
 
   testWidgets(
-    'tapping a distant known wall dismisses the callout, without moving the '
+    'tapping a distant known wall dismisses the card, without moving the '
     'hero or touching the log',
     (tester) async {
       final monster = _ghoul(_wideFarMonster);
@@ -372,13 +424,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(bloc.state.inspectedActorId, isNull);
-      expect(find.byKey(mapCalloutKey), findsNothing);
+      expect(find.byKey(targetCardKey), findsNothing);
       expect(bloc.state.game.hero.position, heroBefore);
       expect(bloc.state.log, logBefore);
     },
   );
 
-  testWidgets("tapping the hero's own cell dismisses an open callout", (
+  testWidgets("tapping the hero's own cell dismisses an open card", (
     tester,
   ) async {
     final monster = _ghoul(_wideFarMonster);
@@ -402,10 +454,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(bloc.state.inspectedActorId, isNull);
-    expect(find.byKey(mapCalloutKey), findsNothing);
+    expect(find.byKey(targetCardKey), findsNothing);
   });
 
-  testWidgets('a long-press on empty ground dismisses an open callout', (
+  testWidgets('a long-press on empty ground dismisses an open card', (
     tester,
   ) async {
     final monster = _ghoul(_wideFarMonster);
@@ -431,30 +483,35 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(bloc.state.inspectedActorId, isNull);
-    expect(find.byKey(mapCalloutKey), findsNothing);
+    expect(find.byKey(targetCardKey), findsNothing);
     expect(bloc.state.game.hero.position, heroBefore);
   });
 
-  testWidgets('a timeline actor tap still opens the sheet in battle', (
-    tester,
-  ) async {
-    const adjacent = Position(1, 2);
-    final monster = _ghoul(adjacent);
-    final bloc = await _openCrawl(
-      tester,
-      _gameState(ascii: _roomArena, heroAt: _hero, monsters: [monster]),
-    );
-    expect(bloc.state.isBattleOpen, isTrue);
+  testWidgets(
+    'a timeline actor tap selects it and shows its card, opening no sheet',
+    (tester) async {
+      final monster = _ghoul(_nearGhoul);
+      final bloc = await _openCrawl(
+        tester,
+        _gameState(ascii: _roomArena, heroAt: _hero, monsters: [monster]),
+      );
+      expect(bloc.state.isBattleOpen, isTrue);
 
-    await tester.tap(find.byKey(const Key('timeline-actor-ghoul-1-1')));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('timeline-actor-ghoul-1-1')));
+      await tester.pumpAndSettle();
 
-    expect(find.byType(BottomSheet), findsOneWidget);
-    expect(bloc.state.inspectedActorId, isNull);
-    expect(find.byKey(mapCalloutKey), findsNothing);
-  });
+      expect(bloc.state.selectedActorId, 'ghoul-1');
+      expect(find.byType(BottomSheet), findsNothing);
+      final card = find.byKey(targetCardKey);
+      expect(card, findsOneWidget);
+      expect(
+        find.descendant(of: card, matching: find.text('The ghoul')),
+        findsOneWidget,
+      );
+    },
+  );
 
-  testWidgets('the map rect is unchanged with and without the callout', (
+  testWidgets('the map rect is unchanged with and without the card', (
     tester,
   ) async {
     await _openCrawl(tester, _gameState(ascii: _roomArena, heroAt: _hero));
@@ -472,13 +529,127 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(mapCalloutKey), findsOneWidget);
+    expect(find.byKey(targetCardKey), findsOneWidget);
     expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRectBefore);
   });
 
   testWidgets(
-    'a monster near the right edge flips the card left, still inside the '
-    'slot',
+    'with nothing inspected or selected in battle, the card names the '
+    'nearest known monster',
+    (tester) async {
+      final ghoul = _ghoul(_nearGhoul);
+      final spitter = _spitter(_farSpitter);
+      final bloc = await _openCrawl(
+        tester,
+        _gameState(
+          ascii: _roomArena,
+          heroAt: _hero,
+          monsters: [ghoul, spitter],
+        ),
+      );
+      expect(bloc.state.isBattleOpen, isTrue);
+      expect(bloc.state.inspectedActorId, isNull);
+      expect(bloc.state.selectedActorId, isNull);
+
+      final card = find.byKey(targetCardKey);
+      expect(card, findsOneWidget);
+      expect(
+        find.descendant(of: card, matching: find.text('The ghoul')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'a timeline token tap for a farther actor shows that actor on the card '
+    'instead',
+    (tester) async {
+      final ghoul = _ghoul(_nearGhoul);
+      final spitter = _spitter(_farSpitter);
+      final bloc = await _openCrawl(
+        tester,
+        _gameState(
+          ascii: _roomArena,
+          heroAt: _hero,
+          monsters: [ghoul, spitter],
+        ),
+      );
+
+      await _tapTimelineActor(tester, 'the spitter');
+      await tester.pumpAndSettle();
+
+      expect(bloc.state.selectedActorId, 'spitter-1');
+      expect(find.byType(BottomSheet), findsNothing);
+      final card = find.byKey(targetCardKey);
+      expect(card, findsOneWidget);
+      expect(
+        find.descendant(of: card, matching: find.text('The spitter')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: card, matching: find.text('The ghoul')),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('the card words a longer reach as ranged, never as a distance', (
+    tester,
+  ) async {
+    final spitter = _spitter(
+      _farSpitter,
+      resists: const {DamageType.fire},
+      vulnerableTo: const {DamageType.frost},
+    );
+    await _openCrawl(
+      tester,
+      _gameState(ascii: _roomArena, heroAt: _hero, monsters: [spitter]),
+    );
+
+    final card = find.byKey(targetCardKey);
+    expect(card, findsOneWidget);
+    expect(
+      find.descendant(of: card, matching: find.text('Ranged, reach 3')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: card, matching: find.text('Resists fire')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: card, matching: find.text('Burns at frost')),
+      findsOneWidget,
+    );
+    expect(find.text('Adjacent'), findsNothing);
+  });
+
+  testWidgets(
+    'the card and the place pop-up never overlap when the hero is engaged '
+    'standing on an item',
+    (tester) async {
+      final monster = _ghoul(_nearGhoul);
+      final bloc = await _openCrawl(
+        tester,
+        _gameState(
+          ascii: _roomArena,
+          heroAt: _hero,
+          monsters: [monster],
+          groundItems: {_hero: _oneSword()},
+        ),
+      );
+      expect(bloc.state.isBattleOpen, isTrue);
+
+      final card = find.byKey(targetCardKey);
+      final popup = find.byKey(placePopupKey);
+      expect(card, findsOneWidget);
+      expect(popup, findsOneWidget);
+      expect(tester.getRect(card).overlaps(tester.getRect(popup)), isFalse);
+    },
+  );
+
+  testWidgets(
+    'a monster near the right floor edge keeps the card inside the slot, '
+    "clear of the hero's block and the target cell",
     (tester) async {
       const size = Size(392.7, 441.8);
       const heroAt = Position(5, 5);
@@ -495,7 +666,7 @@ void main() {
         inspectedActorId: 'ghoul-1',
       );
 
-      final cardRect = await _pumpCallout(tester, state, size);
+      final cardRect = await _pumpCard(tester, state, size);
 
       final geometry = GridGeometry.camera(
         size,
@@ -505,8 +676,10 @@ void main() {
         state.pan,
       );
       final cellRect = geometry.rectOf(monsterAt);
+      final heroRect = geometry.rectOf(heroAt);
 
-      expect(cardRect.right, lessThanOrEqualTo(cellRect.left));
+      expect(cardRect.overlaps(heroBlock(heroRect)), isFalse);
+      expect(cardRect.overlaps(cellRect), isFalse);
       expect(cardRect.left, greaterThanOrEqualTo(8));
       expect(cardRect.top, greaterThanOrEqualTo(8));
       expect(cardRect.right, lessThanOrEqualTo(size.width - 8));
@@ -515,8 +688,8 @@ void main() {
   );
 
   testWidgets(
-    'a monster near the top edge places the card below, still inside the '
-    'slot',
+    'a monster near the top floor edge keeps the card inside the slot, '
+    "clear of the hero's block and the target cell",
     (tester) async {
       const size = Size(392.7, 441.8);
       const heroAt = Position(6, 10);
@@ -533,7 +706,7 @@ void main() {
         inspectedActorId: 'ghoul-1',
       );
 
-      final cardRect = await _pumpCallout(tester, state, size);
+      final cardRect = await _pumpCard(tester, state, size);
 
       final geometry = GridGeometry.camera(
         size,
@@ -543,8 +716,10 @@ void main() {
         state.pan,
       );
       final cellRect = geometry.rectOf(monsterAt);
+      final heroRect = geometry.rectOf(heroAt);
 
-      expect(cardRect.top, greaterThanOrEqualTo(cellRect.bottom));
+      expect(cardRect.overlaps(heroBlock(heroRect)), isFalse);
+      expect(cardRect.overlaps(cellRect), isFalse);
       expect(cardRect.left, greaterThanOrEqualTo(8));
       expect(cardRect.top, greaterThanOrEqualTo(8));
       expect(cardRect.right, lessThanOrEqualTo(size.width - 8));
@@ -552,7 +727,56 @@ void main() {
     },
   );
 
-  testWidgets('a known actor that has left sight renders no callout', (
+  const directions = <String, (int, int)>{
+    'north': (0, -1),
+    'south': (0, 1),
+    'east': (1, 0),
+    'west': (-1, 0),
+    'northeast': (1, -1),
+    'northwest': (-1, -1),
+    'southeast': (1, 1),
+    'southwest': (-1, 1),
+  };
+  for (final entry in directions.entries) {
+    testWidgets(
+      'a target adjacent ${entry.key} of a centred hero never overlaps the '
+      "hero's own block or its cell",
+      (tester) async {
+        const size = Size(392.7, 441.8);
+        const heroAt = Position(20, 20);
+        final (dx, dy) = entry.value;
+        final monsterAt = Position(heroAt.x + dx, heroAt.y + dy);
+        final game = _clampedGameState(
+          columns: 40,
+          rows: 40,
+          heroAt: heroAt,
+          monsterAt: monsterAt,
+        );
+        final state = GameViewState(
+          game: game,
+          log: const [],
+          inspectedActorId: 'ghoul-1',
+        );
+
+        final cardRect = await _pumpCard(tester, state, size);
+
+        final geometry = GridGeometry.camera(
+          size,
+          40,
+          40,
+          state.cameraFocus,
+          state.pan,
+        );
+        final cellRect = geometry.rectOf(monsterAt);
+        final heroRect = geometry.rectOf(heroAt);
+
+        expect(cardRect.overlaps(heroBlock(heroRect)), isFalse);
+        expect(cardRect.overlaps(cellRect), isFalse);
+      },
+    );
+  }
+
+  testWidgets('a known actor that has left sight renders no card', (
     tester,
   ) async {
     const size = Size(392.7, 441.8);
@@ -577,17 +801,17 @@ void main() {
           child: SizedBox(
             width: size.width,
             height: size.height,
-            child: MapCallout(state: state, size: size),
+            child: TargetCard(state: state, size: size),
           ),
         ),
       ),
     );
 
-    expect(find.byKey(mapCalloutKey), findsNothing);
+    expect(find.byKey(targetCardKey), findsNothing);
   });
 
   testWidgets(
-    "the callout's name, HP and fact rows stay unclipped at 1.3x text scale",
+    "the card's name and fact rows stay unclipped at 1.3x text scale",
     (tester) async {
       const size = Size(392.7, 441.8);
       const heroAt = Position(6, 5);
@@ -605,7 +829,7 @@ void main() {
       );
 
       const scaler = TextScaler.linear(1.3);
-      await _pumpCallout(tester, state, size, textScaler: scaler);
+      await _pumpCard(tester, state, size, textScaler: scaler);
 
       double naturalHeight(Finder finder) {
         final text = tester.widget<Text>(finder);
@@ -617,14 +841,9 @@ void main() {
         return painter.height;
       }
 
-      final callout = find.byKey(mapCalloutKey);
-      for (final label in [
-        'The ghoul',
-        'HP 10/10',
-        'ATK 3–3  SPD 10',
-        'Adjacent',
-      ]) {
-        final finder = find.descendant(of: callout, matching: find.text(label));
+      final card = find.byKey(targetCardKey);
+      for (final label in ['The ghoul', 'ATK 3–3  SPD 10', 'Melee only']) {
+        final finder = find.descendant(of: card, matching: find.text(label));
         expect(
           tester.getSize(finder).height,
           greaterThanOrEqualTo(naturalHeight(finder) - 0.5),

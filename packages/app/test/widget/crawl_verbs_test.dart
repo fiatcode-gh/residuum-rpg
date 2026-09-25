@@ -6,7 +6,7 @@ import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
-import 'package:residuum_app/game/map_callout.dart';
+import 'package:residuum_app/game/target_card.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_app/world/world_bloc.dart';
 import 'package:residuum_content/content.dart';
@@ -278,7 +278,7 @@ void main() {
     expect(bloc.state.game.hero.position, const Position(5, 1));
   });
 
-  testWidgets('inspect: a map tap on a watched monster opens its callout', (
+  testWidgets('inspect: a map tap on a watched monster opens its card', (
     tester,
   ) async {
     await _pushCrawl(tester, _mapScene());
@@ -286,7 +286,7 @@ void main() {
     await _tapTile(tester, const Position(5, 2));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(mapCalloutKey), findsOneWidget);
+    expect(find.byKey(targetCardKey), findsOneWidget);
   });
 
   testWidgets('cast: the Spells pop-up arms Firebolt and a map tap casts it', (

@@ -75,24 +75,13 @@ double crawlScale(BuildContext context) =>
 /// vocabulary (PLAN.md G8).
 enum CrawlSlotState { available, disabled, armed }
 
-/// PLAN.md Task 12 map callout internals (decision 3): the card's fixed
-/// geometry in dp. [crawlCalloutWidth] stays independent of `crawlScale` —
-/// the callout sits over the dense map rather than the fixed chrome
-/// column, so text scale never grows the card's width. Its text-row
-/// heights do scale (Unit 16.5 acceptance I3): a fixed height for a single
-/// line of text clips at a larger system text size, so `crawlCalloutNameRow`,
-/// `crawlCalloutHpRow` and `crawlCalloutLineHeight` each grow by
-/// `crawlScale` just as the fixed-chrome regions do; the padding and gaps
-/// around them do not. Height is `crawlCalloutPadding * 2 +
-/// (crawlCalloutNameRow + crawlCalloutHpRow) * crawlScale(context) +
-/// crawlCalloutGap * 2 + crawlCalloutLineHeight * crawlScale(context) * k`,
-/// `k = 2 + resists.length + vulnerableTo.length`.
 const double crawlCalloutWidth = 172;
 const double crawlCalloutPadding = 10;
 const double crawlCalloutNameRow = 17;
 const double crawlCalloutGap = 4;
 const double crawlCalloutHpRow = 13;
 const double crawlCalloutLineHeight = 14;
+const double crawlCalloutBarRow = 13;
 
 /// The gap between a cell's edge and the card placed beside it, and the
 /// margin every card edge stays clear of the map slot's own edges.
