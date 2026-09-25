@@ -5410,3 +5410,13 @@ request exists, and the integration choice is the user's.
   `3611cddb…`. The vivo I2219 dropped off wireless ADB before install; the
   device still holds the `9db8ea5` APK (`67ad98ca…`). Next: reconnect,
   install, then DEV-EXP-2, DEV-BAT-2 (PLAN 9.4) and the user's sign-off.
+- **DEV-EXP-2 PASS** on the vivo I2219 at `848ecc9`
+  (`.flow/evidence/848ecc9/DEV-EXP-2/`): no card on bare floor; the card
+  sits on the bottom edge at full width with a leader line to the hero for
+  Pick up, Mine, Gather, Descend+Leave, Ascend+Leave; it moves to the top
+  edge when the hero is panned low; taps and drags outside it reach the map;
+  Wait while Watched advances the game; the log row holds only the log; the
+  menu shows no counts; the map is 569.8 dp in exploration and Watched and
+  pixel-identical to the `9db8ea5` build. Main inspected `59_descend` and
+  `20_drag_test`. Not captured: the full-pack line (unit-tested and
+  widget-tested).
