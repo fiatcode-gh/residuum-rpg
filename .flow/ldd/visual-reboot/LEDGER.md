@@ -5390,3 +5390,8 @@ request exists, and the integration choice is the user's.
   `InventoryFull` sentence constant. Red came from mutations M1–M5 (each
   broke a geometric test, files restored by hash), not a separate
   pre-change run; accepted. Suite 1292/1292, analyze clean.
+- Task 12 accepted: `e5f23b6` menu slots show only icon above label,
+  centred; counts gone; armed Spells frame 3 dp plus ", armed" in its
+  semantics label. Red observed at HEAD (two Texts, off-centre, 1.5 vs 3).
+- **Main gates at `e5f23b6`:** format 0 changed, analyze clean, full suite
+  1295/1295, core/content unchanged. Next: scoped review of Tasks 11–12.
