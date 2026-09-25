@@ -342,6 +342,68 @@ void main() {
     },
   );
 
+  testWidgets('an armed cast fires at the tile actually tapped, not simply the '
+      'nearest legal target', (tester) async {
+    final game = _crawl(
+      monsters: [
+        _actor('ghoul-1', _adjacentToHero, glyph: 'g'),
+        _actor('ghoul-2', _distantTile, glyph: 'g'),
+      ],
+      knownSpells: const {'firebolt'},
+      mana: 10,
+    );
+    final bloc = await _openCrawl(tester, game);
+
+    await tester.tap(_slot('menu-spells'));
+    await tester.pumpAndSettle();
+    await tester.tap(_slot('spell:firebolt'));
+    await tester.pumpAndSettle();
+
+    expect(bloc.state.armedTargets, {'ghoul-1', 'ghoul-2'});
+
+    await _tapTile(tester, _distantTile);
+    await tester.pumpAndSettle();
+
+    Actor monster(String id) =>
+        bloc.state.game.monsters.firstWhere((actor) => actor.id == id);
+    expect(monster('ghoul-2').hp, lessThan(10));
+    expect(monster('ghoul-1').hp, 10);
+    expect(bloc.state.armedSpellId, isNull);
+  });
+
+  testWidgets('arming a second spell disarms the first', (tester) async {
+    final bloc = await _openCrawl(
+      tester,
+      _battleGame(knownSpells: const {'firebolt', 'bind'}, mana: 10),
+    );
+
+    await tester.tap(_slot('menu-spells'));
+    await tester.pumpAndSettle();
+    await tester.tap(_slot('spell:firebolt'));
+    await tester.pumpAndSettle();
+    expect(bloc.state.armedSpellId, 'firebolt');
+
+    await tester.tap(_slot('menu-spells'));
+    await tester.pumpAndSettle();
+    await tester.tap(_slot('spell:bind'));
+    await tester.pumpAndSettle();
+
+    expect(bloc.state.armedSpellId, 'bind');
+    await tester.tap(_slot('menu-spells'));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: _slot('spell:bind'), matching: find.text('— armed')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: _slot('spell:firebolt'),
+        matching: find.text('— armed'),
+      ),
+      findsNothing,
+    );
+  });
+
   testWidgets(
     'Firebolt with nothing in sight is shown refused, and its tap logs the '
     'refusal without spending a turn',
@@ -418,6 +480,30 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(bloc.state.armedSpellId, isNull);
+    },
+  );
+
+  testWidgets(
+    'the overflow sheet arms a spell that has no row on the shelf itself',
+    (tester) async {
+      final bloc = await _openCrawl(
+        tester,
+        _battleGame(
+          knownSpells: const {'firebolt', 'mend', 'ward', 'bind'},
+          mana: 10,
+        ),
+      );
+
+      await tester.tap(_slot('menu-spells'));
+      await tester.pumpAndSettle();
+      expect(_slot('spell:bind'), findsNothing);
+
+      await tester.tap(_slot('spells-overflow'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('overflow-bind')));
+      await tester.pumpAndSettle();
+
+      expect(bloc.state.armedSpellId, 'bind');
     },
   );
 }
