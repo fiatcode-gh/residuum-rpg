@@ -70,8 +70,9 @@ GameState _stairsScene() {
 }
 
 /// The outermost-ring road scene: a live monster not holding reach, loot
-/// underfoot, two potions carried — the road's own five-control density
-/// (`Pick up`, `Drink` ×2, `Pack` ×2, `Wait`, `Flee`).
+/// underfoot, two potions carried — the road's own three-control row
+/// (`Pick up`, `Drink` ×2, `Pack` ×2), plus Wait and Flee beside the log
+/// row (PLAN.md G8), both of which this scene also offers.
 GameState _roadScene() {
   final map = FloorMap.parse(_roadArena);
   const heroAt = Position(0, 1);
@@ -207,8 +208,6 @@ List<String> _controlOrder(WidgetTester tester) {
     'pack',
     'pick-up',
     'gather',
-    'wait',
-    'flee',
     'move-on',
     'ascend',
     'descend',
@@ -372,7 +371,7 @@ void main() {
           _stairsScene(),
           ['pick-up', 'drink', 'pack', 'ascend', 'leave-dungeon'],
         ),
-        'road': (_roadScene(), ['pick-up', 'drink', 'pack', 'wait', 'flee']),
+        'road': (_roadScene(), ['pick-up', 'drink', 'pack']),
         'stairs down': (
           _stairsDownScene(),
           ['pack', 'descend', 'leave-dungeon'],

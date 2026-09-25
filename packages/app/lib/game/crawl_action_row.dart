@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../style/tokens.dart';
 import 'action_icon.dart';
+import 'crawl_slot.dart';
 import 'crawl_style.dart';
 
 /// One verb the crawl action bar can offer.
@@ -82,9 +83,13 @@ class CrawlActionBar extends StatelessWidget {
                       _barSlots;
             final slots = <Widget>[
               for (final action in actions)
-                _ActionSlot(
+                CrawlSlot(
                   key: ValueKey(action.id),
-                  action: action,
+                  label: action.label,
+                  mark: action.mark,
+                  onPressed: action.onPressed,
+                  armed: action.armed,
+                  metadata: action.metadata,
                   width: width,
                   height: barHeight,
                 ),
@@ -142,118 +147,4 @@ class _InertFrame extends StatelessWidget {
       ),
     ),
   );
-}
-
-/// One slot: mark above word, even width, bordered and filled by its
-/// [CrawlSlotState] so available, disabled and armed read without a hue.
-class _ActionSlot extends StatelessWidget {
-  const _ActionSlot({
-    required this.action,
-    required this.width,
-    required this.height,
-    super.key,
-  });
-
-  final CrawlAction action;
-  final double width;
-  final double height;
-
-  CrawlSlotState get _state => action.armed
-      ? CrawlSlotState.armed
-      : action.onPressed == null
-      ? CrawlSlotState.disabled
-      : CrawlSlotState.available;
-
-  @override
-  Widget build(BuildContext context) {
-    final state = _state;
-    final fill = state == CrawlSlotState.disabled
-        ? crawlPanelFill
-        : crawlSlotFill;
-    final frameColor = switch (state) {
-      CrawlSlotState.available => crawlFrame,
-      CrawlSlotState.disabled => crawlDivider,
-      CrawlSlotState.armed => crawlCold,
-    };
-    final frameWidth = state == CrawlSlotState.armed ? 1.5 : hairline;
-    final labelStyle = switch (state) {
-      CrawlSlotState.available => textSlot,
-      CrawlSlotState.disabled => textSlotDisabled,
-      CrawlSlotState.armed => textSlotArmed,
-    };
-    final metadataText = action.armed ? '— armed' : action.metadata;
-    final semanticsLabel = action.metadata.isEmpty
-        ? action.label
-        : '${action.label} ${action.metadata}';
-    return Semantics(
-      button: true,
-      enabled: action.onPressed != null,
-      label: semanticsLabel,
-      onTap: action.onPressed,
-      child: ExcludeSemantics(
-        child: SizedBox(
-          width: width,
-          height: height,
-          child: Material(
-            color: fill,
-            shape: RoundedRectangleBorder(
-              side: BorderSide(color: frameColor, width: frameWidth),
-              borderRadius: BorderRadius.circular(radius),
-            ),
-            child: Container(
-              decoration: state != CrawlSlotState.armed
-                  ? null
-                  : BoxDecoration(
-                      borderRadius: BorderRadius.circular(radius),
-                      boxShadow: [
-                        BoxShadow(
-                          color: crawlCold.withValues(alpha: 0.45),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-              child: InkWell(
-                onTap: action.onPressed,
-                borderRadius: BorderRadius.circular(radius),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 7),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Opacity(
-                        opacity: state == CrawlSlotState.disabled
-                            ? crawlDisabledIconOpacity
-                            : 1,
-                        child: SizedBox(
-                          height: crawlSlotMark,
-                          child: ActionMarkView(
-                            action.mark,
-                            size: crawlSlotMark,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            action.label,
-                            maxLines: 1,
-                            style: labelStyle,
-                          ),
-                        ),
-                      ),
-                      if (metadataText.isNotEmpty)
-                        Text(metadataText, style: monoSlotMeta),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

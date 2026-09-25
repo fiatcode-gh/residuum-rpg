@@ -12,6 +12,7 @@ import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/log_drawer.dart';
 import 'package:residuum_app/game/log_line.dart';
+import 'package:residuum_app/game/pack_screen.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
@@ -206,7 +207,7 @@ void main() {
       expect(tester.getRect(find.byKey(actionRowKey)), actionRect);
     }
 
-    expect(peekRect.height, crawlEventsHeight);
+    expect(peekRect.height, crawlLogRowHeight);
     reportStableCrawlGeometry('closed');
     final innerStackHeight = mapRect.height + 2 * crawlGap + peekRect.height;
 
@@ -259,7 +260,7 @@ void main() {
       await _pushGame(tester, bloc);
 
       final peek = find.byKey(logPeekKey);
-      expect(tester.getRect(peek).height, crawlEventsHeight);
+      expect(tester.getRect(peek).height, crawlLogRowHeight);
       expect(
         find.descendant(of: peek, matching: find.text('RECENT EVENTS')),
         findsOneWidget,
@@ -511,7 +512,8 @@ void main() {
     expect(iconRect.left, greaterThanOrEqualTo(drawerRect.left));
   });
 
-  testWidgets('the action bar stays hit-testable while the drawer is open', (
+  testWidgets('the action row stays hit-testable while the drawer is open '
+      '(Wait itself moved into the log row the drawer covers — PLAN.md G8)', (
     tester,
   ) async {
     await onTheTargetPhone(tester);
@@ -521,16 +523,16 @@ void main() {
     );
     addTearDown(bloc.close);
     await _pushGame(tester, bloc);
-    expect(find.text('Wait'), findsOneWidget);
+    expect(find.byKey(const ValueKey('pack')), findsOneWidget);
 
     await tester.tap(find.byKey(logPeekKey));
     await tester.pumpAndSettle();
     expect(bloc.state.logDrawerExtent, LogDrawerExtent.half);
 
-    await tester.tap(find.text('Wait'));
+    await tester.tap(find.byKey(const ValueKey('pack')));
     await tester.pumpAndSettle();
 
-    expect(_inDrawer('You hold your ground.'), findsOneWidget);
+    expect(find.byType(CrawlPackScreen), findsOneWidget);
   });
 
   testWidgets('follow holds the reader at newest while active', (tester) async {

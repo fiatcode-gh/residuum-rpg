@@ -525,6 +525,9 @@ class GameViewState {
   /// reach would be the interface lying about the rules.
   bool get isBattleOpen => monstersHoldingReach.isNotEmpty;
 
+  bool get offersWait =>
+      !game.isGameOver && (isBattleOpen || enemiesInSight > 0);
+
   /// Whether there is nothing below this floor.
   ///
   /// **What makes leaving here an ending rather than a pause.** A delve with a

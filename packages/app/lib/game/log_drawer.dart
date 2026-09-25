@@ -69,71 +69,64 @@ class LogPeek extends StatelessWidget {
         onTap: state.game.isGameOver
             ? null
             : () => bloc.add(const LogDrawerHandlePulled()),
-        child: SizedBox(
-          width: double.infinity,
-          height: crawlEventsHeight * crawlScale(context),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: crawlPanelFill,
+            border: Border.all(color: crawlFrame, width: hairline),
+            borderRadius: BorderRadius.circular(radius),
+          ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: crawlGutter),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: crawlPanelFill,
-                border: Border.all(color: crawlFrame, width: hairline),
-                borderRadius: BorderRadius.circular(radius),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  gutter,
-                  crawlPanelPadding,
-                  gutter,
-                  rhythm,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      height: 16 * crawlScale(context),
-                      child: Row(
-                        children: [
-                          const Expanded(
-                            child: Text('RECENT EVENTS', style: displaySection),
-                          ),
-                          Text('${log.length} entries', style: monoMeta),
-                          const SizedBox(width: rhythm),
-                          const Icon(
-                            Icons.unfold_more,
-                            size: 16,
-                            color: crawlTextDim,
-                          ),
-                        ],
+            padding: const EdgeInsets.fromLTRB(
+              gutter,
+              crawlPanelPadding,
+              gutter,
+              rhythm,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  height: 16 * crawlScale(context),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text('RECENT EVENTS', style: displaySection),
                       ),
-                    ),
-                    const SizedBox(height: 3),
-                    Container(height: hairline, color: crawlDivider),
-                    const SizedBox(height: rhythm),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (var index = 0; index < shown.length; index++)
-                            SizedBox(
-                              height: crawlLogLine * crawlScale(context),
-                              child: Opacity(
-                                opacity: index == shown.length - 1 ? 1 : 0.72,
-                                child: Text(
-                                  shown[index].sentence,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: logTint(shown[index].category),
-                                ),
-                              ),
+                      Text('${log.length} entries', style: monoMeta),
+                      const SizedBox(width: rhythm),
+                      const Icon(
+                        Icons.unfold_more,
+                        size: 16,
+                        color: crawlTextDim,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Container(height: hairline, color: crawlDivider),
+                const SizedBox(height: rhythm),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var index = 0; index < shown.length; index++)
+                        SizedBox(
+                          height: crawlLogLine * crawlScale(context),
+                          child: Opacity(
+                            opacity: index == shown.length - 1 ? 1 : 0.72,
+                            child: Text(
+                              shown[index].sentence,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: logTint(shown[index].category),
                             ),
-                        ],
-                      ),
-                    ),
-                  ],
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),

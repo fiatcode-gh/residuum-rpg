@@ -19,6 +19,7 @@ import 'dungeon_scene.dart';
 import 'game_bloc.dart';
 import 'log_drawer.dart';
 import 'log_line.dart';
+import 'log_row.dart';
 import 'grid_geometry.dart';
 import 'map_callout.dart';
 import 'map_touch.dart';
@@ -164,8 +165,8 @@ class GameScreen extends StatelessWidget {
                                           ),
                                         ),
                                         const SizedBox(height: crawlPanelGap),
-                                        LogPeek(
-                                          key: logPeekKey,
+                                        LogRow(
+                                          key: logRowKey,
                                           state: state,
                                           bloc: bloc,
                                         ),
@@ -338,9 +339,10 @@ class _NotesOverlay extends StatelessWidget {
 ///
 /// Exploration and the combat shelf shared no row before this unit — a hero
 /// mid-fight saw the combat shelf under the map and the exploration row
-/// beneath it, and Drink was live on both. The Drink and Wait entries below
-/// carry the merge's whole mechanism: each gains the guard its other half
-/// already had, so both render from exactly one guard, never two.
+/// beneath it, and Drink was live on both. The Drink entry below carries the
+/// merge's own mechanism: it gains the guard its other half already had, so
+/// it renders from exactly one guard, never two. Wait and Flee left this row
+/// for the log row beside them (PLAN.md G8, Task 05).
 List<CrawlAction> _actionsFor(
   BuildContext context,
   GameBloc bloc,
@@ -380,13 +382,6 @@ List<CrawlAction> _actionsFor(
         mark: const ShippedMark(ActionIcon.more),
         onPressed: () => _openSpellsOverflow(context, bloc, state),
       ),
-    if (isBattleOpen)
-      CrawlAction(
-        id: 'wait',
-        label: 'Wait',
-        mark: const ShippedMark(ActionIcon.wait),
-        onPressed: () => bloc.add(const WaitPressed()),
-      ),
     if (state.canPickUp)
       CrawlAction(
         id: 'pick-up',
@@ -423,20 +418,6 @@ List<CrawlAction> _actionsFor(
         ),
       ),
     ),
-    if (state.isEncounter && !state.isRoadClear && !isBattleOpen)
-      CrawlAction(
-        id: 'wait',
-        label: 'Wait',
-        mark: const ShippedMark(ActionIcon.wait),
-        onPressed: () => bloc.add(const WaitPressed()),
-      ),
-    if (state.canFlee)
-      CrawlAction(
-        id: 'flee',
-        label: 'Flee',
-        mark: const FontMark(Icons.directions_run),
-        onPressed: () => bloc.add(const FleePressed()),
-      ),
     if (state.isRoadClear)
       CrawlAction(
         id: 'move-on',

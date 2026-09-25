@@ -2984,6 +2984,92 @@ void _lootTests() {
     );
   });
 
+  group('offersWait', () {
+    test('is false with nothing in sight', () {
+      final bloc = walker(arenaGame(heroAt: const Position(1, 1)));
+      addTearDown(bloc.close);
+
+      expect(bloc.state.offersWait, isFalse);
+    });
+
+    test('is true while Watched: a visible monster not holding reach', () {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(3, 1))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      expect(bloc.state.isBattleOpen, isFalse);
+      expect(bloc.state.enemiesInSight, greaterThan(0));
+      expect(bloc.state.offersWait, isTrue);
+    });
+
+    test('is true in battle', () {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(1, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      expect(bloc.state.isBattleOpen, isTrue);
+      expect(bloc.state.offersWait, isTrue);
+    });
+
+    test('is false once the game is over, even mid-battle', () {
+      final bloc = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(1, 2))],
+        ).copyWith(isGameOver: true),
+        stepDelay: Duration.zero,
+      );
+      addTearDown(bloc.close);
+
+      expect(bloc.state.offersWait, isFalse);
+    });
+
+    test('is false on a road with monsters, none of which is visible '
+        '(Q1 default: the contract limits Wait to combat and Watched)', () {
+      final map = FloorMap.parse(wideArena);
+      const heroAt = Position(1, 1);
+      final visible = computeFov(map, heroAt, fovRadius);
+      final bloc = GameBloc(
+        game: GameState(
+          map: map,
+          hero: Actor(
+            id: 'hero',
+            name: 'you',
+            glyph: '@',
+            position: heroAt,
+            hp: 20,
+            maxHp: 20,
+            attackMin: 4,
+            attackMax: 4,
+            speed: 10,
+            energy: actThreshold,
+          ),
+          monsters: [ghoul(const Position(23, 1))],
+          rng: Rng(1),
+          lootRng: Rng(2),
+          buildFloor: _noFloorBelow,
+          visible: visible,
+          explored: {...visible},
+          isEncounter: true,
+        ),
+        stepDelay: Duration.zero,
+      );
+      addTearDown(bloc.close);
+
+      expect(bloc.state.enemiesInSight, 0);
+      expect(bloc.state.isRoadClear, isFalse);
+      expect(bloc.state.offersWait, isFalse);
+    });
+  });
+
   group('the wait verb on the crawl screen', () {
     blocTest<GameBloc, GameViewState>(
       'a wait spends the turn and the world ticks',
@@ -3000,6 +3086,39 @@ void _lootTests() {
         expect(bloc.state.game.hero.hp, lessThan(20));
       },
     );
+
+    test('ends the Watched stall (UXW-BAT 27-32): a visible monster 3+ cells '
+        'away and not holding reach closes in or opens the fight', () async {
+      final bloc = walker(
+        arenaGame(
+          ascii: wideArena,
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(5, 1))],
+        ),
+      );
+      addTearDown(bloc.close);
+      final before = bloc.state;
+      expect(before.isBattleOpen, isFalse);
+      expect(before.enemiesInSight, greaterThan(0));
+      final distanceBefore = before.game.hero.position.chebyshevTo(
+        before.game.monsters.single.position,
+      );
+      expect(distanceBefore, greaterThanOrEqualTo(3));
+
+      final next = bloc.stream.first;
+      bloc.add(const WaitPressed());
+      final after = await next;
+
+      expect(logSentences(after).first, 'You hold your ground.');
+      final distanceAfter = after.game.hero.position.chebyshevTo(
+        after.game.monsters.single.position,
+      );
+      expect(
+        distanceAfter < distanceBefore || after.isBattleOpen,
+        isTrue,
+        reason: 'the monster must close in or the fight must open',
+      );
+    });
 
     blocTest<GameBloc, GameViewState>(
       'a reach-holder shoots a waiting hero',

@@ -15,8 +15,14 @@ const double crawlTouchTarget = 48;
 /// NEXT's.
 const double crawlTimelineHeight = 58;
 const double crawlTokenHeight = 24;
-const double crawlEventsHeight = 96;
 const double crawlLogLine = 15;
+
+/// PLAN.md G8: the log row's own fixed height, and the side controls beside
+/// the log peek — [crawlSideControlWidth] wide, separated from the peek by
+/// [crawlSideControlGap].
+const double crawlLogRowHeight = 104;
+const double crawlSideControlWidth = 64;
+const double crawlSideControlGap = 6;
 const double crawlLogSheetHeight = 345;
 const double crawlLogSheetHeader = 40;
 const double crawlLogRowPadding = 1.5;
@@ -36,7 +42,7 @@ const double crawlBottomGap = 6;
 const double crawlActionBarHeight = 60;
 const double crawlSlotGap = 7;
 const double crawlSlotPeek = 18;
-const double crawlSlotMark = 22;
+const double crawlSlotMark = 20;
 
 const double crawlPanelGap = 6;
 const double crawlPanelRadius = 6;

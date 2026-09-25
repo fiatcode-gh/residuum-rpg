@@ -5,6 +5,7 @@ import 'package:residuum_app/game/crawl_action_row.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/game/log_row.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -83,10 +84,12 @@ Future<GameBloc> _openBattle(WidgetTester tester, GameState game) async {
 Finder _shelfText(String id, String label) =>
     find.descendant(of: _shelfButton(id), matching: find.text(label));
 
-/// The chip carrying [id], scoped to the action row so a same-worded surface
-/// elsewhere never satisfies this finder by accident.
+/// The chip carrying [id]: scoped to the log row for `wait`, which moved
+/// beside the recent-events peek (PLAN.md G8), and to the action row for
+/// everything else, so a same-worded surface elsewhere never satisfies this
+/// finder by accident.
 Finder _shelfButton(String id) => find.descendant(
-  of: find.byKey(actionRowKey),
+  of: find.byKey(id == 'wait' ? logRowKey : actionRowKey),
   matching: find.byKey(ValueKey(id)),
 );
 
