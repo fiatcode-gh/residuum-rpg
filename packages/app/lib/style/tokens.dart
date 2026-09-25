@@ -159,9 +159,6 @@ const TextStyle displaySheetTitle = TextStyle(
   fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
 );
 
-/// PLAN.md G2 display role added on demand (Task 08): the hero panel's
-/// column captions (`WEAPON`, `ARMOUR`, `QUICK`, `PACK`) are this unit's
-/// first consumer.
 const TextStyle displayLabel = TextStyle(
   inherit: false,
   fontFamily: displayFace,
@@ -175,9 +172,6 @@ const TextStyle displayLabel = TextStyle(
   fontFeatures: [FontFeature.liningFigures(), FontFeature.tabularFigures()],
 );
 
-/// PLAN.md G2 display role added on demand (Task 09): the combat panel's
-/// target name, warm for the common case and cold for the callout Task 12
-/// gives an inspected-but-not-selected actor.
 const TextStyle displayName = TextStyle(
   inherit: false,
   fontFamily: displayFace,
@@ -266,9 +260,6 @@ const TextStyle textLabelStrong = TextStyle(
   fontFeatures: [FontFeature.tabularFigures()],
 );
 
-/// PLAN.md G2 slot roles (action bar, Task 06): the action bar's own slot
-/// label is these three roles' only consumer. Same invariants as every
-/// role above.
 const TextStyle textSlot = TextStyle(
   inherit: false,
   fontFamily: textFace,
@@ -319,16 +310,6 @@ const TextStyle textDetailDim = TextStyle(
   color: dim,
   fontFeatures: [FontFeature.tabularFigures()],
 );
-const TextStyle textGlyph = TextStyle(
-  inherit: false,
-  fontFamily: textFace,
-  fontSize: 18,
-  fontWeight: FontWeight.w400,
-  height: 1.00,
-  textBaseline: TextBaseline.alphabetic,
-  color: ink,
-  fontFeatures: [FontFeature.tabularFigures()],
-);
 const TextStyle textMicro = TextStyle(
   inherit: false,
   fontFamily: textFace,
@@ -366,17 +347,6 @@ const TextStyle monoMeta = TextStyle(
   color: crawlTextDim,
   fontFeatures: [FontFeature.tabularFigures()],
 );
-const TextStyle monoMetaCold = TextStyle(
-  inherit: false,
-  fontFamily: monoFace,
-  fontSize: 11,
-  letterSpacing: 0.3,
-  fontWeight: FontWeight.w400,
-  height: 1.27,
-  textBaseline: TextBaseline.alphabetic,
-  color: crawlCold,
-  fontFeatures: [FontFeature.tabularFigures()],
-);
 const TextStyle monoChip = TextStyle(
   inherit: false,
   fontFamily: monoFace,
@@ -395,28 +365,6 @@ const TextStyle monoData = TextStyle(
   letterSpacing: 0,
   fontWeight: FontWeight.w400,
   height: 1.13,
-  textBaseline: TextBaseline.alphabetic,
-  color: crawlText,
-  fontFeatures: [FontFeature.tabularFigures()],
-);
-const TextStyle monoDataDim = TextStyle(
-  inherit: false,
-  fontFamily: monoFace,
-  fontSize: 11.5,
-  letterSpacing: 0,
-  fontWeight: FontWeight.w400,
-  height: 1.13,
-  textBaseline: TextBaseline.alphabetic,
-  color: crawlTextDim,
-  fontFeatures: [FontFeature.tabularFigures()],
-);
-const TextStyle monoItem = TextStyle(
-  inherit: false,
-  fontFamily: monoFace,
-  fontSize: 10.5,
-  letterSpacing: 0,
-  fontWeight: FontWeight.w400,
-  height: 1.24,
   textBaseline: TextBaseline.alphabetic,
   color: crawlText,
   fontFeatures: [FontFeature.tabularFigures()],

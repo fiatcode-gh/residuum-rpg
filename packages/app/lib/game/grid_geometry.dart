@@ -12,9 +12,6 @@ const double mapCellHeight = 30;
 
 /// Projects the crawl's tile grid onto the screen, and screen points back
 /// onto it.
-///
-/// `GridGeometry` stays the single projection and hit-test authority;
-/// rendering layers never install input handlers of their own.
 class GridGeometry {
   const GridGeometry({
     required this.cellWidth,
@@ -74,10 +71,6 @@ class GridGeometry {
     );
   }
 
-  /// The pan the camera would actually apply on [columns] × [rows] cells
-  /// once bounded so the viewport's own centre stays over the floor:
-  /// `_DungeonScene`'s drag tracks this, not the raw finger delta, so a
-  /// reverse drag after overshooting a bound moves the camera immediately.
   static Offset clampPan(
     Size size,
     int columns,

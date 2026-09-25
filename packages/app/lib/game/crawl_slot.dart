@@ -4,13 +4,6 @@ import '../style/tokens.dart';
 import 'action_icon.dart';
 import 'crawl_style.dart';
 
-/// One framed control: mark above word, bordered and filled by its
-/// [CrawlSlotState] so available, disabled and armed read without a hue
-/// (PLAN.md G8, extracted from the action bar's own `_ActionSlot`).
-///
-/// The action bar and the log row's Wait and Flee controls both draw from
-/// this one widget, so a change to what "available", "disabled" or "armed"
-/// looks like never has to be made twice.
 class CrawlSlot extends StatelessWidget {
   const CrawlSlot({
     required this.label,
@@ -24,25 +17,16 @@ class CrawlSlot extends StatelessWidget {
     super.key,
   });
 
-  /// What the slot says.
   final String label;
 
-  /// The verb's mark (PLAN.md G9): a shipped icon or a Material glyph.
   final ActionMark mark;
 
-  /// What tapping the slot dispatches, or null when the verb is offered but
-  /// cannot be taken right now.
   final VoidCallback? onPressed;
 
-  /// Whether the slot has nothing to offer right now — dimmed rather than
-  /// removed, so tapping it can still say why.
   final bool dimmed;
 
-  /// Whether this specific slot is the one currently armed.
   final bool armed;
 
-  /// Secondary changing information rendered below [label]; replaced by the
-  /// armed caption while [armed] is true.
   final String metadata;
 
   final double width;

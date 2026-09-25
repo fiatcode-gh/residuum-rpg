@@ -175,23 +175,6 @@ Future<bool> showCrawlConfirm(
   return confirmed ?? false;
 }
 
-/// Opens an anchored crawl pop-up (PLAN.md G9): a borderless, transparent
-/// route whose only content is [builder]'s own [crawlFrameDecoration]
-/// surface, placed just above the tapped [anchorContext]'s own slot rather
-/// than centred like [showCrawlConfirm] — the bottom menu's slots sit at the
-/// very edge of the screen, so a centred dialog would cover the hand that
-/// opened it.
-///
-/// The barrier is transparent rather than absent so an outside tap still
-/// closes the pop-up without reaching the map underneath — [barrierColor]
-/// and [barrierDismissible] are independent knobs, and zero alpha only
-/// answers the first. `transitionDuration: Duration.zero` is deliberate:
-/// PLAN.md G9 calls for no transition, so the pop-up appears and disappears
-/// exactly on the tap that opens or closes it.
-///
-/// The explicit [Theme] wrap is [showCrawlSheet]'s own reason: a route
-/// pushed on the root navigator never inherits `GameScreen`'s ambient
-/// [Theme] by widget-tree capture.
 Future<T?> showCrawlPopup<T>(
   BuildContext anchorContext, {
   required WidgetBuilder builder,

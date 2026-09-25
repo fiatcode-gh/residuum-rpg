@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
 
 import '../art/art_assets.dart';
@@ -8,16 +9,8 @@ import 'crawl_style.dart';
 import 'crawl_surfaces.dart';
 import 'game_bloc.dart';
 
-/// One kind of potion carried, grouped by [Item.displayName] (PLAN.md G9):
-/// [item] is the first of its kind the pack holds, and [count] is how many
-/// answer to that name. Today the pack carries one kind at most — the
-/// Healing Potion — but a second consumable would group the same way rather
-/// than earning the Quick pop-up a second code path.
 typedef PotionKind = ({Item item, int count});
 
-/// Every potion kind the pack carries, in first-appearance order — the same
-/// order the Quick pop-up lists them in. Books and gear never qualify:
-/// [BaseItem.isPotion] is what "a drink" means throughout the crawl.
 List<PotionKind> potionKinds(List<Item> inventory) {
   final order = <String>[];
   final byName = <String, PotionKind>{};
@@ -35,12 +28,6 @@ List<PotionKind> potionKinds(List<Item> inventory) {
   return [for (final name in order) byName[name]!];
 }
 
-/// Opens the Quick pop-up anchored on the menu's own Quick slot (PLAN.md
-/// G9): every potion kind carried, or the reason there is nothing to drink.
-/// Reading `bloc.state` through a live [BlocBuilder] — rather than the
-/// snapshot [potionKinds] was called with to dim the slot — means a pack
-/// that changes while the pop-up is open (draining the last potion mid-turn)
-/// never leaves a stale row behind.
 Future<void> openQuickPopup(BuildContext anchor, GameBloc bloc) =>
     showCrawlPopup<void>(
       anchor,
@@ -53,28 +40,28 @@ class _QuickPopupBody extends StatelessWidget {
   final GameBloc bloc;
 
   @override
-  Widget build(BuildContext context) {
-    final kinds = potionKinds(bloc.state.game.inventory);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(bottom: crawlPanelPadding),
-          child: Text('QUICK', style: displaySection),
-        ),
-        if (kinds.isEmpty)
-          const Text('You carry nothing to drink.', style: textLineDim)
-        else
-          for (final kind in kinds) _QuickRow(kind: kind, bloc: bloc),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => BlocBuilder<GameBloc, GameViewState>(
+    bloc: bloc,
+    builder: (context, state) {
+      final kinds = potionKinds(state.game.inventory);
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: crawlPanelPadding),
+            child: Text('QUICK', style: displaySection),
+          ),
+          if (kinds.isEmpty)
+            const Text('You carry nothing to drink.', style: textLineDim)
+          else
+            for (final kind in kinds) _QuickRow(kind: kind, bloc: bloc),
+        ],
+      );
+    },
+  );
 }
 
-/// One carried kind: its mark, name and count, keyed by the item it would
-/// drink first (PLAN.md G9). Tapping pops the pop-up, then dispatches —
-/// the same order every crawl choice reads its state and acts in.
 class _QuickRow extends StatelessWidget {
   const _QuickRow({required this.kind, required this.bloc});
 
@@ -88,7 +75,12 @@ class _QuickRow extends StatelessWidget {
       key: ValueKey('drink:${item.id}'),
       onTap: () {
         Navigator.of(context).pop();
-        bloc.add(DrinkPressed(item.id));
+        for (final current in potionKinds(bloc.state.game.inventory)) {
+          if (current.item.displayName == item.displayName) {
+            bloc.add(DrinkPressed(current.item.id));
+            return;
+          }
+        }
       },
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: crawlPopupRowMinHeight),

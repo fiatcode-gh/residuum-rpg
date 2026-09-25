@@ -74,13 +74,14 @@ class MapOverlays extends StatelessWidget {
       final width = math.min(size.width - 16, crawlPlacePopupWidth);
       final height = placePopupHeight(state, scale);
       final hc = hero.center;
+      final block = heroBlock(hero);
       popupRect = placeMapOverlay(
         map: size,
         size: Size(width, height),
         hero: hero,
         preferred: [
-          Offset(hc.dx - width / 2, hero.bottom + 6),
-          Offset(hc.dx - width / 2, hero.top - 6 - height),
+          Offset(hc.dx - width / 2, block.bottom + 6),
+          Offset(hc.dx - width / 2, block.top - 6 - height),
         ],
         avoid: avoid,
       );

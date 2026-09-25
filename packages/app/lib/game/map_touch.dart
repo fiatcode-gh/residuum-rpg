@@ -8,10 +8,6 @@ import 'grid_geometry.dart';
 /// monster" is, amended by A1 to a 48 dp target.
 const double mapTouchRadius = 24;
 
-/// PLAN.md §2 G4: how far from the hero's own centre a bare tap still
-/// steps the hero one cell, by dominant axis, rather than falling through
-/// to a cell tap or an auto-walk. Unlike [mapTouchRadius] this is a box on
-/// each axis, not a disc.
 const double mapStepReach = 48;
 
 /// What a map tap or long-press resolves to, once the touch point's
@@ -72,8 +68,6 @@ Actor? _nearest(
 Iterable<Actor> _known(GameViewState state) =>
     state.game.monsters.where((m) => state.inspectTargetAt(m.position) != null);
 
-/// A bump on an adjacent monster, or the sheet on a distant one: identical
-/// for a tap and a long-press once a monster is chosen.
 MapTouch _meleeOrInspect(Actor actor, Position hero) =>
     actor.position.isOrthogonallyAdjacentTo(hero)
     ? MapTouchCell(actor.position)

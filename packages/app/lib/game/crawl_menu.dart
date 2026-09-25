@@ -13,16 +13,8 @@ import 'pack_screen.dart';
 import 'quick_popup.dart';
 import 'spells_popup.dart';
 
-/// The bottom menu's only test handle (PLAN.md G9): four slots keyed by
-/// their own stable id, always in the same order.
 const crawlMenuKey = Key('crawl-menu');
 
-/// The crawl's one persistent menu (PLAN.md G9, settled decision 1): four
-/// equal slots — `Quests`, `Spells`, `Quick`, `Hero` — in this order in
-/// every crawl state. A slot with nothing to offer right now is dimmed,
-/// never removed, and every slot's [CrawlSlot.onPressed] stays non-null: a
-/// dimmed slot opens its own pop-up, which says why nothing is on offer,
-/// rather than teaching the player to guess at a control that does nothing.
 class CrawlMenu extends StatelessWidget {
   const CrawlMenu({required this.state, required this.bloc, super.key});
 
@@ -100,9 +92,6 @@ class CrawlMenu extends StatelessWidget {
   }
 }
 
-/// One menu slot, wrapped in its own [Builder] so [onOpen] is handed the
-/// slot's own [BuildContext] rather than the menu row's — `showCrawlPopup`
-/// anchors on exactly the [RenderBox] that context resolves to.
 class _MenuSlot extends StatelessWidget {
   const _MenuSlot({
     required this.id,
@@ -142,8 +131,6 @@ class _MenuSlot extends StatelessWidget {
   );
 }
 
-/// Opens the Quests pop-up (PLAN.md G9, settled decision 5): there is no
-/// quest system yet, so the pop-up says so and nothing else.
 Future<void> _openQuestsPopup(BuildContext anchor) => showCrawlPopup<void>(
   anchor,
   builder: (context) => const Column(

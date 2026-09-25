@@ -287,6 +287,31 @@ void main() {
     );
   });
 
+  testWidgets(
+    'a potion drunk while Quick is open updates the row without closing it',
+    (tester) async {
+      final bloc = await _openCrawl(
+        tester,
+        _exploringGame(
+          inventory: const [
+            Item(id: 'potion-1', base: healingPotion, rarity: Rarity.common),
+            Item(id: 'potion-2', base: healingPotion, rarity: Rarity.common),
+          ],
+        ),
+      );
+
+      await tester.tap(_slot('menu-quick'));
+      await tester.pumpAndSettle();
+      expect(find.text('×2 · heals 10'), findsOneWidget);
+
+      bloc.add(const DrinkPressed('potion-1'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('×2 · heals 10'), findsNothing);
+      expect(find.text('×1 · heals 10'), findsOneWidget);
+    },
+  );
+
   testWidgets('Mend casts straight from the row outside combat', (
     tester,
   ) async {

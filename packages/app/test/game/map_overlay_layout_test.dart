@@ -135,13 +135,14 @@ void main() {
       for (final topLeft in positions) {
         final hero = topLeft & cell;
         final hc = hero.center;
+        final block = heroBlock(hero);
         final placed = placeMapOverlay(
           map: map,
           size: popup,
           hero: hero,
           preferred: [
-            Offset(hc.dx - popup.width / 2, hero.bottom + 6),
-            Offset(hc.dx - popup.width / 2, hero.top - 6 - popup.height),
+            Offset(hc.dx - popup.width / 2, block.bottom + 6),
+            Offset(hc.dx - popup.width / 2, block.top - 6 - popup.height),
           ],
         );
         expect(

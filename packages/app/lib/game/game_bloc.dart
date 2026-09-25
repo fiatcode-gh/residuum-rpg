@@ -93,11 +93,6 @@ final class MapPanned extends GameBlocEvent {
   final Offset delta;
 }
 
-/// What the player armed on the map or the shelf: the spell the next legal
-/// target tap will cast.
-///
-/// A view-scoped fact, not a rule: the armed id names the aim the next tap
-/// applies, and the tap that reaches it decides cast, disarm or move.
 final class SkillArmed extends GameBlocEvent {
   const SkillArmed(this.spellId);
 
@@ -152,26 +147,12 @@ final class TimelineActorSelected extends GameBlocEvent {
   final String actorId;
 }
 
-/// The player tapped or long-pressed a far known monster on the map: name
-/// it the callout's own target, at no turn cost.
-///
-/// A map-scoped cousin of [TimelineActorSelected] rather than a reuse of
-/// it: the timeline still opens the sheet, and this opens `MapCallout`
-/// instead (PLAN.md Task 12 decision 2) — two different surfaces naming
-/// two different fields, so neither can silently open the other's.
 final class ActorInspected extends GameBlocEvent {
   const ActorInspected(this.actorId);
 
   final String actorId;
 }
 
-/// The player's next map interaction or action after opening a callout:
-/// dismisses it, at no turn cost.
-///
-/// `GameScreen` dispatches this only when a callout is actually open
-/// (PLAN.md Task 12 decision 2); every other handler already drops
-/// [GameViewState.inspectedActorId] by construction, so this is the one
-/// handler a still-open callout needs.
 final class InspectDismissed extends GameBlocEvent {
   const InspectDismissed();
 }
@@ -249,11 +230,6 @@ class GameViewState {
   final ActorIdentityContext actorIdentity;
   final String? selectedActorId;
 
-  /// The monster a map tap or long-press named for the callout (PLAN.md
-  /// Task 12 decision 1), or null when no callout is open. The same
-  /// constructor-drop convention as [pan] and [armedSpellId]: no handler
-  /// but `_onActorInspected` names this, so a step, pan, recenter, log
-  /// action or arm dismisses the callout by construction.
   final String? inspectedActorId;
 
   /// The tiles still to walk. Empty when the hero is not walking.
@@ -337,9 +313,6 @@ class GameViewState {
     return null;
   }
 
-  /// The monster [inspectedActorId] names, so long as it is still alive,
-  /// visible and known — the same test [selectedActor] applies, since a
-  /// callout can show nothing the map itself would refuse to show.
   Actor? get inspectedActor {
     final inspectedId = inspectedActorId;
     if (inspectedId == null) return null;
@@ -356,14 +329,6 @@ class GameViewState {
 
   Position get cameraFocus => selectedActor?.position ?? game.hero.position;
 
-  /// The actor the combat panel names: an inspected or timeline-selected
-  /// actor's own choice always wins over a guess, and failing that, in
-  /// battle, the nearest monster the hero can currently inspect — ties
-  /// broken reading order and then id, so two identical crawls point the
-  /// panel at the same ghoul (PLAN.md U16.5 Task 09 decision 1).
-  ///
-  /// Outside battle with nothing selected there is nothing to guess at, so
-  /// this is null rather than falling back to whatever the hero last saw.
   Actor? get targetActor =>
       inspectedActor ??
       selectedActor ??
@@ -581,11 +546,6 @@ class GameViewState {
   /// What is left of the hero's ward, or zero when none stands.
   int get warded => game.warded;
 
-  /// Every known spell, in the order shared by the crawl shelf and Spells room.
-  ///
-  /// School first and then name, so a spell keeps its place in the list from one
-  /// surface to the next. Position is information a player relies on, which is
-  /// the whole reason those surfaces use a fixed order.
   List<Spell> get knownSpells =>
       knownSpellsInOrder(game.knownSpells, game.spells);
 
@@ -707,16 +667,6 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   /// constant belongs beside [stepDelay].
   final NodeId? dungeon;
 
-  /// The in-world day this crawl opened on, or null when the app has none
-  /// to give.
-  ///
-  /// **A run constant beside [dungeon], for the same reason (PLAN.md E4).**
-  /// `main.dart` reads it once from `WorldBloc` at
-  /// the two places every crawl is opened; no `WorldBloc` handler can
-  /// change `world.day` while a crawl route sits on top of the world
-  /// screen — the one handler that advances it (`_onDayWalked`) only ever
-  /// runs while travelling, and travelling and a crawl route are mutually
-  /// exclusive on screen.
   final int? day;
 
   /// Decides what a map tap means, in exactly one place.
@@ -827,10 +777,6 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     );
   }
 
-  /// Names the map's callout target, at no turn cost — the same
-  /// alive/visible/known guard [_onTimelineActorSelected] applies, and the
-  /// same field list it carries, so [selectedActorId] stays exactly what
-  /// it was (PLAN.md Task 12 decision 1).
   void _onActorInspected(ActorInspected event, Emitter<GameViewState> emit) {
     final actor = state.game.monsters
         .where((monster) => monster.id == event.actorId)
@@ -860,11 +806,6 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     );
   }
 
-  /// Closes an open callout, at no turn cost. A no-op when none is open,
-  /// for the same reason [_onLogDrawerClosed] is: `GameScreen` dispatches
-  /// this on every map interaction that resolves to nothing, and a bloc
-  /// that re-emitted an identical state each time would rebuild the whole
-  /// screen for nothing.
   void _onInspectDismissed(
     InspectDismissed event,
     Emitter<GameViewState> emit,

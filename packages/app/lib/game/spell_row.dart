@@ -3,20 +3,6 @@ import 'package:residuum_core/core.dart';
 
 import '../style/surfaces.dart';
 
-/// One known spell: what it is, what it costs, and — where a cast is offered —
-/// whether it can be cast now.
-///
-/// **The school is a marking and a word, never a colour.** The author is
-/// deuteranomalous and the standing rule is that no category may be carried by
-/// hue alone, so a Wrath row says so twice — the glyph and the word — and reads
-/// correctly in greyscale and aloud.
-///
-/// One grammar for every screen that lists known spells, carried here because
-/// a fourth private copy was the threshold the craft rules forbid. The dedicated
-/// Spells room reads alone, while the Unit 3 shelf overflow offers the cast
-/// action. The Pack has no known-spell list and keeps only its carried-item
-/// actions. Text styles are parameters rather than decisions, so a screen keeps
-/// the type it shipped with and the lift moves no pixel.
 class SpellRow extends StatelessWidget {
   const SpellRow({
     super.key,

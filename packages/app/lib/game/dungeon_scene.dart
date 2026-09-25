@@ -204,10 +204,6 @@ class _DungeonScene extends FlameGame
   MapTouchCallback _onLongPress;
   final Map<GlyphRenderId, _GlyphComponent> _glyphs = {};
 
-  /// The camera's own clamped record of the drag, not the raw finger
-  /// delta: a drag that overshoots a bound keeps this pinned at the bound,
-  /// so a reverse drag moves the camera on its first update instead of
-  /// having to travel the overshoot back first.
   Offset _dragPan = Offset.zero;
 
   @override

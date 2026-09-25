@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:residuum_core/core.dart';
 
 import '../art/art_assets.dart';
@@ -8,16 +9,10 @@ import 'crawl_style.dart';
 import 'crawl_surfaces.dart';
 import 'game_bloc.dart';
 import 'spell_row.dart';
+import 'target_facts.dart';
 
-/// How many known spells the Spells pop-up readies before the overflow
-/// (PLAN.md G9, moved from the retired action bar).
 const int readiedSpellCount = 3;
 
-/// What tapping a spell row does (PLAN.md G9, moved from the action bar's
-/// own `_onSpell`): a cast the rules would refuse dispatches anyway, so the
-/// refusal reaches the log the way every other refusal does and no turn is
-/// spent; Mend and Ward always cast, since they never need a target; every
-/// other legal spell arms — a second choice of the same spell disarms it.
 void chooseSpell(GameBloc bloc, Spell spell) {
   final state = bloc.state;
   final refused = state.castRefusal(spell) != null;
@@ -28,10 +23,6 @@ void chooseSpell(GameBloc bloc, Spell spell) {
   }
 }
 
-/// Opens the Spells pop-up anchored on the menu's own Spells slot (PLAN.md
-/// G9): the readied spells, each with its cost and effect, or why nothing
-/// is on offer. Available in and out of combat — the rules decide whether a
-/// cast lands, never this pop-up.
 Future<void> openSpellsPopup(BuildContext anchor, GameBloc bloc) =>
     showCrawlPopup<void>(
       anchor,
@@ -45,49 +36,48 @@ class _SpellsPopupBody extends StatelessWidget {
   final GameBloc bloc;
 
   @override
-  Widget build(BuildContext context) {
-    final state = bloc.state;
-    final known = state.knownSpells;
-    final readied = known.take(readiedSpellCount);
-    final overflow = known.length - readiedSpellCount;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(bottom: crawlPanelPadding),
-          child: Text('SPELLS', style: displaySection),
-        ),
-        if (known.isEmpty)
-          const Text('You know no spells yet.', style: textLineDim)
-        else ...[
-          for (final spell in readied)
-            _SpellRow(
-              spell: spell,
-              armed: state.armedSpellId == spell.id,
-              refusal: state.castRefusal(spell),
-              onChoose: () {
-                Navigator.of(context).pop();
-                chooseSpell(bloc, spell);
-              },
-            ),
-          if (overflow > 0)
-            _SpellsOverflowRow(
-              count: overflow,
-              onOpen: () {
-                Navigator.of(context).pop();
-                openGrimoire(anchor, bloc, state);
-              },
-            ),
+  Widget build(BuildContext context) => BlocBuilder<GameBloc, GameViewState>(
+    bloc: bloc,
+    builder: (context, state) {
+      final known = state.knownSpells;
+      final readied = known.take(readiedSpellCount);
+      final overflow = known.length - readiedSpellCount;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: crawlPanelPadding),
+            child: Text('SPELLS', style: displaySection),
+          ),
+          if (known.isEmpty)
+            const Text('You know no spells yet.', style: textLineDim)
+          else ...[
+            for (final spell in readied)
+              _SpellRow(
+                spell: spell,
+                armed: state.armedSpellId == spell.id,
+                refusal: state.castRefusal(spell),
+                onChoose: () {
+                  Navigator.of(context).pop();
+                  chooseSpell(bloc, spell);
+                },
+              ),
+            if (overflow > 0)
+              _SpellsOverflowRow(
+                count: overflow,
+                onOpen: () {
+                  Navigator.of(context).pop();
+                  openGrimoire(anchor, bloc, state);
+                },
+              ),
+          ],
         ],
-      ],
-    );
-  }
+      );
+    },
+  );
 }
 
-/// One readied spell: its mark, name and cost, keyed `spell:<id>` (PLAN.md
-/// G9). A row a cast would refuse still reads and still taps — the refusal
-/// is the pop-up's own way of saying why, never a greyed-out dead end.
 class _SpellRow extends StatelessWidget {
   const _SpellRow({
     required this.spell,
@@ -111,7 +101,7 @@ class _SpellRow extends StatelessWidget {
     final meta = armed
         ? '— armed'
         : refusal != null
-        ? _capitalised(refusal!)
+        ? capitaliseFirst(refusal!)
         : '${spell.manaCost} mana${effectOf(spell)}';
     return InkWell(
       key: ValueKey('spell:${spell.id}'),
@@ -146,8 +136,6 @@ class _SpellRow extends StatelessWidget {
   }
 }
 
-/// The row that opens the full grimoire behind the readied three (PLAN.md
-/// G9).
 class _SpellsOverflowRow extends StatelessWidget {
   const _SpellsOverflowRow({required this.count, required this.onOpen});
 
@@ -175,14 +163,6 @@ class _SpellsOverflowRow extends StatelessWidget {
   );
 }
 
-/// The first letter capitalised, the rest untouched — how a refusal reads as
-/// a pop-up row's metadata rather than the log's own trailing-period sentence.
-String _capitalised(String text) =>
-    text.isEmpty ? text : '${text[0].toUpperCase()}${text.substring(1)}';
-
-/// Opens the full grimoire behind the pop-up's own readied three (moved
-/// verbatim from the retired action bar's `_openSpellsOverflow`): every
-/// known spell, so nothing a hero knows is ever unreachable.
 Future<void> openGrimoire(
   BuildContext context,
   GameBloc bloc,
@@ -206,8 +186,6 @@ Future<void> openGrimoire(
   ],
 );
 
-/// One row of the overflow grimoire: what the pop-up's row would cast, in
-/// full — the school and name a row's marking can only abbreviate.
 class _OverflowRow extends StatelessWidget {
   const _OverflowRow({
     required this.spell,

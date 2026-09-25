@@ -4,10 +4,6 @@ import 'package:residuum_core/core.dart';
 import '../art/art_assets.dart';
 import '../style/tokens.dart';
 
-/// One mark the action bar (and, later, a panel) can draw for a verb or a
-/// spell (PLAN.md G9): either one of the game's own shipped icons, or a
-/// Material glyph tinted [crawlGold] — Plex Mono has no geometric marks, so
-/// this sealed pair is the whole non-map iconography.
 sealed class ActionMark {
   const ActionMark();
 }
@@ -53,11 +49,6 @@ class ActionMarkView extends StatelessWidget {
   };
 }
 
-/// The mark a known spell shows on the action bar (PLAN.md G9). The two
-/// spells with a shipped asset keep it; every other spell draws by what it
-/// does, since a spell's [Spell.kind] is what its mark should say —
-/// `frost-lance`, the only other bolt the game ships, gets its own glyph so
-/// it never collides with the shipped Firebolt mark.
 ActionMark spellMark(Spell spell) {
   final shipped = ActionIcon.forSpell(spell.id);
   if (shipped != null) return ShippedMark(shipped);

@@ -292,6 +292,31 @@ void main() {
     expect(popupRect.overlaps(heroBlock(heroRect)), isFalse);
   });
 
+  testWidgets('the pop-up sits directly under the hero block, centred on '
+      'the hero', (tester) async {
+    final bloc = await _openCrawl(
+      tester,
+      _dungeon(groundItems: {_heroAt: _oneSword()}),
+    );
+
+    final mapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
+    final popupRect = tester
+        .getRect(find.byKey(placePopupKey))
+        .shift(-mapRect.topLeft);
+    final geometry = GridGeometry.camera(
+      mapRect.size,
+      bloc.state.game.map.width,
+      bloc.state.game.map.height,
+      bloc.state.cameraFocus,
+      bloc.state.pan,
+    );
+    final heroRect = geometry.rectOf(bloc.state.game.hero.position);
+    final block = heroBlock(heroRect);
+
+    expect(popupRect.top, closeTo(block.bottom + 6, 0.5));
+    expect(popupRect.center.dx, closeTo(heroRect.center.dx, 0.5));
+  });
+
   testWidgets('the map rect never changes for the pop-up appearing', (
     tester,
   ) async {

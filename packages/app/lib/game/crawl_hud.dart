@@ -100,9 +100,6 @@ class CrawlHud extends StatelessWidget {
   }
 }
 
-/// The header's second line (PLAN.md G11): depth (omitted on an
-/// encounter), the place, and the day (omitted when null), separated by
-/// `  |  ` in `monoMeta`.
 class _MetaLine extends StatelessWidget {
   const _MetaLine({required this.state, required this.dungeon, this.day});
 
@@ -134,8 +131,6 @@ class _MetaLine extends StatelessWidget {
   }
 }
 
-/// The header's chip row (PLAN.md G9, G11): battle, condition, ward, each
-/// its own fixed shape and word, in that order.
 class _ChipsRow extends StatelessWidget {
   const _ChipsRow({required this.state});
 
@@ -228,8 +223,6 @@ String _placeName(GameViewState state, NodeId? dungeon) {
   return residuumWorld.nodeAt(dungeon).name;
 }
 
-/// One status chip (PLAN.md G8 "Header internals"): an 8 dp
-/// [ChipMarkPainter] shape, then its word, framed and filled.
 class _StatusChip extends StatelessWidget {
   const _StatusChip({
     required this.mark,
@@ -270,9 +263,6 @@ class _StatusChip extends StatelessWidget {
   );
 }
 
-/// The status chips' whole shape vocabulary (PLAN.md G9): shape and weight
-/// carry the fact, never hue alone, so greyscale reading keeps every chip
-/// apart.
 enum ChipMark {
   diamond,
   ring,
@@ -283,8 +273,6 @@ enum ChipMark {
   square,
 }
 
-/// Draws one [ChipMark] inside its 8 dp box (PLAN.md G9 status-chip
-/// shapes).
 class ChipMarkPainter extends CustomPainter {
   const ChipMarkPainter(this.mark, this.color);
 

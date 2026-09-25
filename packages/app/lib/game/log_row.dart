@@ -7,14 +7,8 @@ import 'crawl_style.dart';
 import 'game_bloc.dart';
 import 'log_drawer.dart';
 
-/// The log row's only test handle (PLAN.md G8).
 const logRowKey = Key('log-row');
 
-/// The framed recent-events peek beside the crawl's combat-time controls
-/// (PLAN.md G8): Wait while the hero is Watched or fighting, and Flee
-/// alongside it while fleeing is legal. The row's own height never changes
-/// whether the side column shows nothing, one control or both — only the
-/// log narrows to make room for it.
 class LogRow extends StatelessWidget {
   const LogRow({required this.state, required this.bloc, super.key});
 
@@ -46,8 +40,6 @@ class LogRow extends StatelessWidget {
   }
 }
 
-/// Wait on top, Flee on the bottom, each slot rendered or held open as an
-/// empty gap so Wait never moves down to meet a missing Flee.
 class _SideControls extends StatelessWidget {
   const _SideControls({
     required this.state,
