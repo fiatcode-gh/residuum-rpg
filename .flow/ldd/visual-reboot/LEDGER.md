@@ -5358,3 +5358,11 @@ request exists, and the integration choice is the user's.
   map rectangle constant. Main inspected `11_autowalk1` (Watched + Wait) and
   `92_toward_stairs` (stairs pop-up). Gaps: no herb node found; recenter
   not tapped on depth 2 (the pan clamp stopped before the hero left).
+- **DEV-BAT PASS** (`.flow/evidence/9db8ea5/DEV-BAT/`): the map rectangle
+  does not move when a fight starts or ends; the strip shows NOW/NEXT with
+  `+2`/`+3` cues and no clipping; the target card sits beside the target,
+  never over the hero, reading "Melee only"; tap melee, Wait by the log,
+  two-tap drink in battle, the Spells notice in battle, and Move on after a
+  cleared road all work. Main inspected `16a-battle-engaged-3actors`. Not
+  exercised: Flee (not offered in two road fights), a ranged monster's
+  "Ranged, reach N", the death screen. Next: user DEV-FINGER and sign-off.
