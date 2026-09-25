@@ -5420,3 +5420,15 @@ request exists, and the integration choice is the user's.
   pixel-identical to the `9db8ea5` build. Main inspected `59_descend` and
   `20_drag_test`. Not captured: the full-pack line (unit-tested and
   widget-tested).
+- **DEV-BAT-2** (`.flow/evidence/848ecc9/DEV-BAT-2/`): PASS for Wait in the
+  card with the strip on top, top-edge flip below the strip (dungeon), target
+  card never over the action card, Move on with the hero's surroundings
+  open, dimmed Spells notice, the log drawer covering the card, and an
+  unchanged map rectangle (≈570 dp). Flee was not offered in three ambushes
+  (it needs the literal ring edge). **Defect D1 (Important):** on a crowded
+  road fight (`+4` in the strip) with the hero panned low, the target card
+  sat over the turn-order strip (`crop_stripoverlap.png`, Main inspected).
+  Likely the least-overlap fallback in `placeMapOverlay`: the fallback
+  corners are computed from the area top, which includes the strip, and the
+  strip is only a soft avoid there. Routed to a correction owner; device
+  re-check of battle placement follows.
