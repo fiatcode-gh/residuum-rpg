@@ -86,11 +86,6 @@ final class CastPressed extends GameBlocEvent {
   final String? targetId;
 }
 
-/// Drink the first potion the hero is carrying, so the common case is one tap.
-final class QuickDrinkPressed extends GameBlocEvent {
-  const QuickDrinkPressed();
-}
-
 /// The player dragged the map by [delta].
 final class MapPanned extends GameBlocEvent {
   const MapPanned(this.delta);
@@ -564,18 +559,6 @@ class GameViewState {
     for (final id in MaterialId.values) id: countOf(game.materials, id),
   };
 
-  /// The potion a quick drink would reach for, or null when none is carried.
-  Item? get firstPotion {
-    for (final item in game.inventory) {
-      if (item.base.isPotion) return item;
-    }
-    return null;
-  }
-
-  /// How many potions are in the pack, for the quick-drink control to count.
-  int get potionCount =>
-      game.inventory.where((item) => item.base.isPotion).length;
-
   /// How many monsters the hero can see right now.
   ///
   /// **The single home of "something is watching."** The Engaged indicator and
@@ -701,7 +684,6 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     on<DropPressed>(_onDropPressed);
     on<ReadPressed>(_onReadPressed);
     on<CastPressed>(_onCastPressed);
-    on<QuickDrinkPressed>(_onQuickDrinkPressed);
     on<MapPanned>(_onMapPanned);
     on<SkillArmed>(_onSkillArmed);
     on<SystemBackPressed>(_onSystemBackPressed);
@@ -939,15 +921,6 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
 
   void _onCastPressed(CastPressed event, Emitter<GameViewState> emit) =>
       _act(CastSpellAction(event.spellId, targetId: event.targetId), emit);
-
-  void _onQuickDrinkPressed(
-    QuickDrinkPressed event,
-    Emitter<GameViewState> emit,
-  ) {
-    final potion = state.firstPotion;
-    if (potion == null) return;
-    _act(DrinkAction(potion.id), emit);
-  }
 
   /// Arms or disarms a skill without spending a turn.
   ///

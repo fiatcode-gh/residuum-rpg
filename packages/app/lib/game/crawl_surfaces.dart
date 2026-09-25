@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../style/tokens.dart';
@@ -171,4 +173,75 @@ Future<bool> showCrawlConfirm(
     ),
   );
   return confirmed ?? false;
+}
+
+/// Opens an anchored crawl pop-up (PLAN.md G9): a borderless, transparent
+/// route whose only content is [builder]'s own [crawlFrameDecoration]
+/// surface, placed just above the tapped [anchorContext]'s own slot rather
+/// than centred like [showCrawlConfirm] — the bottom menu's slots sit at the
+/// very edge of the screen, so a centred dialog would cover the hand that
+/// opened it.
+///
+/// The barrier is transparent rather than absent so an outside tap still
+/// closes the pop-up without reaching the map underneath — [barrierColor]
+/// and [barrierDismissible] are independent knobs, and zero alpha only
+/// answers the first. `transitionDuration: Duration.zero` is deliberate:
+/// PLAN.md G9 calls for no transition, so the pop-up appears and disappears
+/// exactly on the tap that opens or closes it.
+///
+/// The explicit [Theme] wrap is [showCrawlSheet]'s own reason: a route
+/// pushed on the root navigator never inherits `GameScreen`'s ambient
+/// [Theme] by widget-tree capture.
+Future<T?> showCrawlPopup<T>(
+  BuildContext anchorContext, {
+  required WidgetBuilder builder,
+}) {
+  final anchorBox = anchorContext.findRenderObject()! as RenderBox;
+  final anchorTopLeft = anchorBox.localToGlobal(Offset.zero);
+  final anchorSize = anchorBox.size;
+  final screenSize = MediaQuery.sizeOf(anchorContext);
+  final safeTop = MediaQuery.paddingOf(anchorContext).top;
+  final width = math.min(
+    crawlPopupWidth,
+    screenSize.width - crawlPopupEdgeMargin * 2,
+  );
+  final anchorCentre = anchorTopLeft.dx + anchorSize.width / 2;
+  final left = (anchorCentre - width / 2).clamp(
+    crawlPopupEdgeMargin,
+    screenSize.width - crawlPopupEdgeMargin - width,
+  );
+  final bottomEdge = anchorTopLeft.dy - crawlPopupGap;
+  final maxHeight = math.max(0.0, bottomEdge - safeTop - crawlPopupEdgeMargin);
+  return showGeneralDialog<T>(
+    context: anchorContext,
+    barrierDismissible: true,
+    barrierLabel: 'Close',
+    barrierColor: const Color(0x00000000),
+    transitionDuration: Duration.zero,
+    pageBuilder: (dialogContext, _, _) => Stack(
+      children: [
+        Positioned(
+          left: left,
+          width: width,
+          bottom: screenSize.height - bottomEdge,
+          child: Theme(
+            data: residuumTheme,
+            child: Material(
+              type: MaterialType.transparency,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                child: DecoratedBox(
+                  decoration: crawlFrameDecoration,
+                  child: Padding(
+                    padding: const EdgeInsets.all(crawlPopupPadding),
+                    child: SingleChildScrollView(child: builder(dialogContext)),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }

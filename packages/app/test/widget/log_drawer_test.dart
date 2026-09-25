@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/crawl_action_row.dart';
+import 'package:residuum_app/game/crawl_menu.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/event_messages.dart';
 import 'package:residuum_app/game/game_bloc.dart';
@@ -141,7 +141,7 @@ void main() {
     await _pushGame(tester, bloc);
 
     final peekTop = tester.getTopLeft(find.byKey(logPeekKey)).dy;
-    final controlsTop = tester.getTopLeft(find.byKey(actionRowKey)).dy;
+    final controlsTop = tester.getTopLeft(find.byKey(crawlMenuKey)).dy;
     expect(peekTop, lessThan(controlsTop));
   });
 
@@ -200,11 +200,11 @@ void main() {
 
     final mapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
     final peekRect = tester.getRect(find.byKey(logPeekKey));
-    final actionRect = tester.getRect(find.byKey(actionRowKey));
+    final actionRect = tester.getRect(find.byKey(crawlMenuKey));
     void reportStableCrawlGeometry(String extent) {
       expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRect);
       expect(tester.getRect(find.byKey(logPeekKey)), peekRect);
-      expect(tester.getRect(find.byKey(actionRowKey)), actionRect);
+      expect(tester.getRect(find.byKey(crawlMenuKey)), actionRect);
     }
 
     expect(peekRect.height, crawlLogRowHeight);
@@ -523,13 +523,13 @@ void main() {
     );
     addTearDown(bloc.close);
     await _pushGame(tester, bloc);
-    expect(find.byKey(const ValueKey('pack')), findsOneWidget);
+    expect(find.byKey(const ValueKey('menu-hero')), findsOneWidget);
 
     await tester.tap(find.byKey(logPeekKey));
     await tester.pumpAndSettle();
     expect(bloc.state.logDrawerExtent, LogDrawerExtent.half);
 
-    await tester.tap(find.byKey(const ValueKey('pack')));
+    await tester.tap(find.byKey(const ValueKey('menu-hero')));
     await tester.pumpAndSettle();
 
     expect(find.byType(CrawlPackScreen), findsOneWidget);

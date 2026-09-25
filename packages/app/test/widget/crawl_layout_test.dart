@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/crawl_action_row.dart';
 import 'package:residuum_app/game/crawl_hud.dart';
+import 'package:residuum_app/game/crawl_menu.dart';
 import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
@@ -107,45 +107,6 @@ GameState _watchedGame({
 GameState _noteScene() =>
     _exploringGame().copyWith(nodes: {_heroAt: GatherKind.oreVein});
 
-const _openArena = '''
-...
-...
-...''';
-
-/// The bar's own worst case, lit all at once: drink, the three readied
-/// spells, the overflow, wait, pick up, gather, pack, flee, descend and
-/// leave — twelve slots deep, none of which the map floor may ever answer
-/// to.
-GameState _twelveActionScene() {
-  final map = FloorMap.parse(_openArena);
-  const heroAt = Position(0, 0);
-  final visible = computeFov(map, heroAt, fovRadius);
-  return GameState(
-    map: map,
-    hero: _actor('hero', heroAt),
-    monsters: [_actor('ghoul-1', const Position(1, 0), glyph: 'g')],
-    rng: Rng(1),
-    lootRng: Rng(2),
-    buildFloor: (depth) => throw StateError('this arena has no floor below'),
-    visible: visible,
-    explored: {...visible},
-    isEncounter: true,
-    stairsDown: heroAt,
-    nodes: {heroAt: GatherKind.oreVein},
-    groundItems: {
-      heroAt: [
-        const Item(id: 'floor-loot', base: ironSword, rarity: Rarity.common),
-      ],
-    },
-    inventory: const [
-      Item(id: 'potion-1', base: healingPotion, rarity: Rarity.common),
-    ],
-    spells: spellsById,
-    knownSpells: const {'firebolt', 'mend', 'ward', 'bind'},
-    mana: 10,
-  );
-}
-
 Future<GameBloc> _openCrawl(WidgetTester tester, GameState game) async {
   await onTheTargetPhone(tester);
   final bloc = GameBloc(game: game, stepDelay: Duration.zero);
@@ -184,7 +145,7 @@ void main() {
       final hud = tester.getRect(find.byKey(crawlHudKey));
       final map = tester.getRect(find.byKey(dungeonSceneSlotKey));
       final peek = tester.getRect(find.byKey(logPeekKey));
-      final bar = tester.getRect(find.byKey(actionRowKey));
+      final bar = tester.getRect(find.byKey(crawlMenuKey));
       final surfaceHeight =
           tester.view.physicalSize.height / tester.view.devicePixelRatio;
 
@@ -296,41 +257,6 @@ void main() {
     expect(bloc.state.armedSpellId, 'firebolt');
     expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), unarmedMapRect);
   });
-
-  testWidgets(
-    'the action row\'s own legal-action count never moves the map, from the '
-    'battle floor of wait and pack to all twelve slots lit',
-    (tester) async {
-      await _openCrawl(tester, _battleGame());
-      final fewActionsMapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      expect(find.byKey(const ValueKey('wait')), findsOneWidget);
-      expect(find.byKey(const ValueKey('pack')), findsOneWidget);
-      expect(find.byKey(const ValueKey('drink')), findsNothing);
-
-      await _openCrawl(tester, _twelveActionScene());
-      final twelveActionMapRect = tester.getRect(
-        find.byKey(dungeonSceneSlotKey),
-      );
-      for (final id in [
-        'drink',
-        'spell:firebolt',
-        'spell:mend',
-        'spell:ward',
-        'spells-overflow',
-        'wait',
-        'pick-up',
-        'gather',
-        'pack',
-        'flee',
-        'descend',
-        'leave-dungeon',
-      ]) {
-        expect(find.byKey(ValueKey(id)), findsOneWidget, reason: id);
-      }
-
-      expect(twelveActionMapRect, fewActionsMapRect);
-    },
-  );
 
   testWidgets(
     'cycling the log extent peek, half, full and back leaves the map slot '

@@ -315,7 +315,6 @@ void main() {
 
       // assert - dock up: map, timeline, bar, HP and log all on one screen
       expect(tester.takeException(), isNull);
-      _expectAction('spell:firebolt', label: '✳ Firebolt', metadata: '2 mana');
       expect(find.byType(BattleDock), findsOneWidget);
       expect(find.textContaining('Engaged'), findsOneWidget);
       await _tapTile(tester, const Position(1, 2));
@@ -330,7 +329,6 @@ void main() {
 
       // assert - dock down: the crawl, unchanged; the log row still speaks
       expect(bloc.state.game.monsters, isEmpty);
-      expect(find.byKey(const ValueKey('spell:firebolt')), findsNothing);
       expect(find.byType(BattleDock), findsNothing);
       expect(find.text('Wait'), findsNothing);
       expect(find.byType(DungeonSceneHost), findsOneWidget);
@@ -762,7 +760,9 @@ void main() {
         );
         final bloc = await _pushGame(tester, game);
 
-        // act - arm the spell from the shelf
+        // act - arm the spell from the Spells pop-up
+        await tester.tap(_action('menu-spells'));
+        await tester.pumpAndSettle();
         await tester.tap(_action('spell:firebolt'));
         await tester.pumpAndSettle();
 
@@ -789,10 +789,20 @@ void main() {
 
       // act
       await _pushGame(tester, game);
+      await tester.tap(_action('menu-spells'));
+      await tester.pumpAndSettle();
 
       // assert - school order first (Wrath before Mending), then name
-      _expectAction('spell:firebolt', label: '✳ Firebolt', metadata: '2 mana');
-      _expectAction('spell:mend', label: '✚ Mend', metadata: '3 mana');
+      _expectAction(
+        'spell:firebolt',
+        label: '✳ Firebolt',
+        metadata: '2 mana ·  · 2-4 fire △',
+      );
+      _expectAction(
+        'spell:mend',
+        label: '✚ Mend',
+        metadata: '3 mana ·  · heals 8',
+      );
     });
 
     testWidgets('a non-caster sees the shelf, with no Attack row', (
@@ -820,11 +830,15 @@ void main() {
       final bloc = await _pushGame(tester, game);
 
       // act
+      await tester.tap(_action('menu-spells'));
+      await tester.pumpAndSettle();
       await tester.tap(_action('spell:firebolt'));
       await tester.pumpAndSettle();
 
       // assert
       expect(bloc.state.armedSpellId, 'firebolt');
+      await tester.tap(_action('menu-spells'));
+      await tester.pumpAndSettle();
       expect(
         find.descendant(
           of: _action('spell:firebolt'),
@@ -867,7 +881,9 @@ void main() {
       );
       final bloc = await _pushGame(tester, game);
 
-      // act - arm from the shelf, then tap the adjacent ghoul's tile on the map
+      // act - arm from the pop-up, then tap the adjacent ghoul's tile on the map
+      await tester.tap(_action('menu-spells'));
+      await tester.pumpAndSettle();
       await tester.tap(_action('spell:firebolt'));
       await tester.pumpAndSettle();
       await _tapTile(tester, const Position(1, 2));
@@ -891,14 +907,24 @@ void main() {
       final bloc = await _pushGame(tester, game);
 
       // act
+      await tester.tap(_action('menu-spells'));
+      await tester.pumpAndSettle();
       await tester.tap(_action('spell:firebolt'));
+      await tester.pumpAndSettle();
+      await tester.tap(_action('menu-spells'));
       await tester.pumpAndSettle();
       await tester.tap(_action('spell:firebolt'));
       await tester.pumpAndSettle();
 
       // assert
       expect(bloc.state.armedSpellId, isNull);
-      _expectAction('spell:firebolt', label: '✳ Firebolt', metadata: '2 mana');
+      await tester.tap(_action('menu-spells'));
+      await tester.pumpAndSettle();
+      _expectAction(
+        'spell:firebolt',
+        label: '✳ Firebolt',
+        metadata: '2 mana ·  · 2-4 fire △',
+      );
     });
 
     testWidgets('the shelf reads the spell first, then Wait', (tester) async {
@@ -909,10 +935,16 @@ void main() {
         mana: 10,
       );
       await _pushGame(tester, game);
+      await tester.tap(_action('menu-spells'));
+      await tester.pumpAndSettle();
 
       expect(_action('spell:firebolt'), findsOneWidget);
       expect(_action('wait'), findsOneWidget);
-      _expectAction('spell:firebolt', label: '✳ Firebolt', metadata: '2 mana');
+      _expectAction(
+        'spell:firebolt',
+        label: '✳ Firebolt',
+        metadata: '2 mana ·  · 2-4 fire △',
+      );
       _expectAction('wait', label: 'Wait');
     });
 
@@ -985,13 +1017,19 @@ void main() {
       final bloc = await _pushGame(tester, game);
 
       // act
+      await tester.tap(_action('menu-spells'));
+      await tester.pumpAndSettle();
       await tester.tap(_action('spell:firebolt'));
+      await tester.pumpAndSettle();
+      await tester.tap(_action('menu-spells'));
       await tester.pumpAndSettle();
       await tester.tap(_action('spell:bind'));
       await tester.pumpAndSettle();
 
       // assert - one armed slot at a time
       expect(bloc.state.armedSpellId, 'bind');
+      await tester.tap(_action('menu-spells'));
+      await tester.pumpAndSettle();
       expect(
         find.descendant(
           of: _action('spell:bind'),
@@ -1044,7 +1082,9 @@ void main() {
       );
     });
 
-    testWidgets('a refused armed cast speaks in the log', (tester) async {
+    testWidgets('a refused cast speaks in the log without arming', (
+      tester,
+    ) async {
       // arrange - the pool cannot pay for the shot
       final game = battleGame(
         monsters: [ghoulAt(const Position(1, 2))],
@@ -1053,13 +1093,15 @@ void main() {
       );
       final bloc = await _pushGame(tester, game);
 
-      // act - arm and cast anyway; the button stays tappable
+      // act - the row still taps, but the rules refuse a shot the pool can't
+      // pay for, the same way every other refusal reaches the log
+      await tester.tap(_action('menu-spells'));
+      await tester.pumpAndSettle();
       await tester.tap(_action('spell:firebolt'));
       await tester.pumpAndSettle();
-      await _tapTile(tester, const Position(1, 2));
-      await tester.pumpAndSettle();
 
-      // assert
+      // assert - refused outright, never armed
+      expect(bloc.state.armedSpellId, isNull);
       expect(find.text('not enough mana'), findsNothing);
       expect(
         logSentences(bloc.state)
@@ -1087,16 +1129,26 @@ void main() {
         mana: 10,
       );
       await _pushGame(tester, game);
+      await tester.tap(_action('menu-spells'));
+      await tester.pumpAndSettle();
 
-      // assert - the shelf shows the readied three and counts the overflow
-      _expectAction('spell:firebolt', label: '✳ Firebolt', metadata: '2 mana');
+      // assert - the pop-up shows the readied three and counts the overflow
+      _expectAction(
+        'spell:firebolt',
+        label: '✳ Firebolt',
+        metadata: '2 mana ·  · 2-4 fire △',
+      );
       _expectAction(
         'spell:frost-lance',
         label: '✳ Frost Lance',
-        metadata: '4 mana',
+        metadata: '4 mana ·  · 4-7 frost ◇',
       );
-      _expectAction('spell:mend', label: '✚ Mend', metadata: '3 mana');
-      _expectAction('spells-overflow', label: '+3');
+      _expectAction(
+        'spell:mend',
+        label: '✚ Mend',
+        metadata: '3 mana ·  · heals 8',
+      );
+      _expectAction('spells-overflow', label: '+3 more spells');
       expect(_action('spell:bind'), findsNothing);
     });
 
@@ -1113,6 +1165,8 @@ void main() {
         mana: 10,
       );
       await _pushGame(tester, game);
+      await tester.pumpAndSettle();
+      await tester.tap(_action('menu-spells'));
       await tester.pumpAndSettle();
 
       // act
@@ -1145,6 +1199,8 @@ void main() {
       );
       final bloc = await _pushGame(tester, game);
       await tester.pumpAndSettle();
+      await tester.tap(_action('menu-spells'));
+      await tester.pumpAndSettle();
 
       // act
       await tester.tap(_action('spells-overflow'));
@@ -1168,6 +1224,8 @@ void main() {
       final bloc = await _pushGame(tester, game);
 
       // act
+      await tester.tap(_action('menu-spells'));
+      await tester.pumpAndSettle();
       await tester.tap(_action('spell:mend'));
       await tester.pumpAndSettle();
 

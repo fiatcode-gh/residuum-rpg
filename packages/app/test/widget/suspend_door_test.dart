@@ -227,14 +227,17 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      final pack = find.byKey(const ValueKey('pack'));
+      final pack = find.byKey(const ValueKey('menu-hero'));
       expect(pack, findsOneWidget);
       expect(
-        find.descendant(of: pack, matching: find.text('Pack')),
+        find.descendant(of: pack, matching: find.text('Hero')),
         findsOneWidget,
       );
       expect(
-        find.descendant(of: pack, matching: find.text('×${carried + 1}')),
+        find.descendant(
+          of: pack,
+          matching: find.text('${carried + 1}/$inventoryCap'),
+        ),
         findsOneWidget,
       );
       expect(app.saved!.inside, isTrue);

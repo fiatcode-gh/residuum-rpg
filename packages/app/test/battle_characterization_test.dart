@@ -114,14 +114,14 @@ void main() {
       expect(find.byType(GameScreen), findsOneWidget);
       expect(find.text('Engaged 1'), findsOneWidget);
       expect(find.textContaining('Watched'), findsNothing);
-      final pack = find.byKey(const ValueKey('pack'));
+      final pack = find.byKey(const ValueKey('menu-hero'));
       expect(pack, findsOneWidget);
       expect(
-        find.descendant(of: pack, matching: find.text('Pack')),
+        find.descendant(of: pack, matching: find.text('Hero')),
         findsOneWidget,
       );
       expect(
-        find.descendant(of: pack, matching: find.text('×0')),
+        find.descendant(of: pack, matching: find.text('0/$inventoryCap')),
         findsOneWidget,
       );
     });

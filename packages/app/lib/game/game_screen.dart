@@ -2,16 +2,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:residuum_core/core.dart';
 
-import '../art/art_assets.dart';
 import '../style/tokens.dart';
 import '../world/world_bloc.dart';
-import 'action_icon.dart';
 import 'battle_view.dart';
-import 'crawl_action_row.dart';
 import 'crawl_exits.dart';
 import 'crawl_hud.dart';
+import 'crawl_menu.dart';
 import 'crawl_style.dart';
 import 'crawl_surfaces.dart';
 import 'dungeon_palette.dart';
@@ -24,8 +21,6 @@ import 'log_row.dart';
 import 'map_callout.dart';
 import 'map_overlays.dart';
 import 'map_touch.dart';
-import 'pack_screen.dart';
-import 'spell_row.dart';
 
 class GameScreen extends StatelessWidget {
   const GameScreen({required this.palette, super.key});
@@ -186,9 +181,10 @@ class GameScreen extends StatelessWidget {
                               },
                             ),
                           ),
-                          CrawlActionBar(
-                            key: actionRowKey,
-                            actions: _actionsFor(context, bloc, state),
+                          CrawlMenu(
+                            key: crawlMenuKey,
+                            state: state,
+                            bloc: bloc,
                           ),
                           const SizedBox(height: crawlBottomGap),
                         ],
@@ -253,82 +249,6 @@ void _onMapLongPress(
   }
 }
 
-/// The crawl's one action row: every verb that applies, each appearing only
-/// when it can do something.
-///
-/// A chip that is visible but inert teaches the player nothing; a chip that
-/// appears exactly when it applies is how the rules explain themselves. The
-/// pack is the exception and is always reachable, because looking at what you
-/// are carrying is not an action and should never be gated.
-///
-/// Exploration and the combat shelf shared no row before this unit — a hero
-/// mid-fight saw the combat shelf under the map and the exploration row
-/// beneath it, and Drink was live on both. The Drink entry below carries the
-/// merge's own mechanism: it gains the guard its other half already had, so
-/// it renders from exactly one guard, never two. Wait and Flee left this row
-/// for the log row beside them (PLAN.md G8, Task 05).
-List<CrawlAction> _actionsFor(
-  BuildContext context,
-  GameBloc bloc,
-  GameViewState state,
-) {
-  final isBattleOpen = state.isBattleOpen;
-  final firstPotion = state.firstPotion;
-  final readied = state.knownSpells.take(readiedSpellCount);
-  return [
-    if (isBattleOpen && firstPotion != null)
-      CrawlAction(
-        id: 'drink',
-        label: 'Drink',
-        metadata: '×${state.potionCount}',
-        mark: const ShippedMark(ActionIcon.potion),
-        onPressed: state.game.isGameOver
-            ? null
-            : () => bloc.add(const QuickDrinkPressed()),
-      ),
-    if (isBattleOpen)
-      for (final spell in readied)
-        CrawlAction(
-          id: 'spell:${spell.id}',
-          label: '${spell.school.schoolMarking} ${spell.name}',
-          metadata: '${spell.manaCost} mana',
-          mark: spellMark(spell),
-          armable: true,
-          armed: state.armedSpellId == spell.id,
-          onPressed: () => _onSpell(bloc, state, spell),
-        ),
-    if (isBattleOpen && state.knownSpells.length > readiedSpellCount)
-      CrawlAction(
-        id: 'spells-overflow',
-        label: '+${state.knownSpells.length - readiedSpellCount}',
-        mark: const ShippedMark(ActionIcon.more),
-        onPressed: () => _openSpellsOverflow(context, bloc, state),
-      ),
-    if (!isBattleOpen && firstPotion != null)
-      CrawlAction(
-        id: 'drink',
-        label: 'Drink',
-        metadata: '×${state.potionCount}',
-        mark: const ShippedMark(ActionIcon.potion),
-        onPressed: state.game.isGameOver
-            ? null
-            : () => bloc.add(const QuickDrinkPressed()),
-      ),
-    CrawlAction(
-      id: 'pack',
-      label: 'Pack',
-      metadata: '×${state.game.inventory.length}',
-      mark: const ShippedMark(ActionIcon.pack),
-      onPressed: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) =>
-              BlocProvider.value(value: bloc, child: const CrawlPackScreen()),
-        ),
-      ),
-    ),
-  ];
-}
-
 class _DeathOverlay extends StatelessWidget {
   const _DeathOverlay({required this.state});
 
@@ -358,77 +278,4 @@ class _DeathOverlay extends StatelessWidget {
       ),
     ),
   );
-}
-
-/// What tapping a spell chip or overflow row does: Mend and Ward cast
-/// straight from the row since they never need a target; everything else
-/// arms — a second tap on the same chip disarms.
-void _onSpell(GameBloc bloc, GameViewState state, Spell spell) {
-  if (spell.kind == SpellKind.mend || spell.kind == SpellKind.ward) {
-    bloc.add(CastPressed(spell.id));
-  } else {
-    bloc.add(SkillArmed(state.armedSpellId == spell.id ? null : spell.id));
-  }
-}
-
-/// Opens the full grimoire behind the row's overflow chip: every known
-/// spell, so nothing a hero knows is unreachable from the row.
-Future<void> _openSpellsOverflow(
-  BuildContext context,
-  GameBloc bloc,
-  GameViewState state,
-) => showCrawlSheet<void>(
-  context,
-  children: (sheetContext) => [
-    const Padding(
-      padding: EdgeInsets.only(bottom: crawlPanelPadding),
-      child: Text('Spells', style: displayPanel),
-    ),
-    for (final spell in state.knownSpells)
-      _OverflowRow(
-        spell: spell,
-        armed: state.armedSpellId == spell.id,
-        onCast: () {
-          Navigator.of(sheetContext).pop();
-          _onSpell(bloc, state, spell);
-        },
-      ),
-  ],
-);
-
-/// One row of the overflow grimoire: what the row's chip would cast, in
-/// full — the school and name a chip's marking can only abbreviate.
-class _OverflowRow extends StatelessWidget {
-  const _OverflowRow({
-    required this.spell,
-    required this.armed,
-    required this.onCast,
-  });
-
-  final Spell spell;
-  final bool armed;
-  final VoidCallback onCast;
-
-  @override
-  Widget build(BuildContext context) {
-    return SpellRow(
-      spell: spell,
-      style: textLine,
-      dimStyle: textDetailDim,
-      detail: effectOf(spell),
-      trailing: TextButton(
-        key: Key('overflow-${spell.id}'),
-        onPressed: onCast,
-        style: TextButton.styleFrom(
-          side: armed
-              ? const BorderSide(color: crawlCold, width: hairline * 1.5)
-              : null,
-        ),
-        child: Text(
-          armed ? '— armed' : spell.school.schoolMarking,
-          style: textLine,
-        ),
-      ),
-    );
-  }
 }

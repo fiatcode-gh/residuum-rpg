@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/crawl_action_row.dart';
 import 'package:residuum_app/game/crawl_hud.dart';
+import 'package:residuum_app/game/crawl_menu.dart';
 import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
@@ -71,7 +71,7 @@ void main() {
     tester.view.padding = FakeViewPadding.zero;
     await _openCrawl(tester);
 
-    final barBottom = tester.getBottomLeft(find.byKey(actionRowKey)).dy;
+    final barBottom = tester.getBottomLeft(find.byKey(crawlMenuKey)).dy;
     final threshold =
         _surfaceHeight(tester) - crawlGestureClear - crawlBottomGap;
     expect(barBottom, lessThanOrEqualTo(threshold + 0.5));
@@ -87,7 +87,7 @@ void main() {
       );
       await _openCrawl(tester);
 
-      final barBottom = tester.getBottomLeft(find.byKey(actionRowKey)).dy;
+      final barBottom = tester.getBottomLeft(find.byKey(crawlMenuKey)).dy;
       final clearance = _surfaceHeight(tester) - barBottom - crawlBottomGap;
       expect(clearance, closeTo(insetDp, 0.5));
     },

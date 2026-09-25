@@ -34,15 +34,25 @@ const double crawlHudHeight = 80;
 const double crawlDisabledIconOpacity = 0.45;
 
 /// PLAN.md G8: the crawl's fixed-chrome rhythm — the gutter around every
-/// fixed region, the gaps between them, and the action bar's own geometry.
-/// Amendment A1 does not touch G8.
+/// fixed region, the gaps between them, and the bottom menu's own geometry
+/// (PLAN.md G9).
 const double crawlGutter = 8;
 const double crawlGap = 7;
 const double crawlBottomGap = 6;
-const double crawlActionBarHeight = 60;
+const double crawlMenuHeight = 56;
 const double crawlSlotGap = 7;
-const double crawlSlotPeek = 18;
 const double crawlSlotMark = 20;
+
+/// PLAN.md G9: `showCrawlPopup`'s own fixed geometry — the anchored width,
+/// the gap kept between the popup and its anchor, the margin its edges
+/// (and the maximum-height reserve above it) stay clear of the screen's
+/// own edges, its internal padding, and the minimum height every row
+/// inside it keeps, in the same visual family as the place pop-up.
+const double crawlPopupWidth = 280;
+const double crawlPopupGap = 6;
+const double crawlPopupEdgeMargin = 8;
+const double crawlPopupPadding = 10;
+const double crawlPopupRowMinHeight = 48;
 
 const double crawlPanelGap = 6;
 const double crawlPanelRadius = 6;

@@ -1,0 +1,423 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/crawl_menu.dart';
+import 'package:residuum_app/game/dungeon_palette.dart';
+import 'package:residuum_app/game/dungeon_scene.dart';
+import 'package:residuum_app/game/game_bloc.dart';
+import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/game/grid_geometry.dart';
+import 'package:residuum_content/content.dart';
+import 'package:residuum_core/core.dart';
+
+import '../support/phone.dart';
+
+const _arena = '''
+#######
+#.....#
+#.....#
+#.....#
+#######''';
+
+const _heroAt = Position(2, 2);
+const _adjacentToHero = Position(3, 2);
+const _distantTile = Position(5, 2);
+
+Actor _actor(
+  String id,
+  Position at, {
+  String glyph = '@',
+  int hp = 10,
+  int speed = 10,
+}) => Actor(
+  id: id,
+  name: id,
+  glyph: glyph,
+  position: at,
+  hp: hp,
+  maxHp: 20,
+  attackMin: 4,
+  attackMax: 4,
+  speed: speed,
+  energy: actThreshold,
+);
+
+GameState _crawl({
+  List<Actor> monsters = const [],
+  List<Item> inventory = const [],
+  Set<String> knownSpells = const {},
+  int mana = 0,
+  int heroHp = 20,
+  Set<Position>? visible,
+}) {
+  final map = FloorMap.parse(_arena);
+  final seen = visible ?? computeFov(map, _heroAt, fovRadius);
+  return GameState(
+    map: map,
+    hero: _actor('hero', _heroAt, hp: heroHp),
+    monsters: monsters,
+    rng: Rng(1),
+    lootRng: Rng(2),
+    visible: seen,
+    explored: {...seen},
+    buildFloor: (depth) => throw StateError('this arena has no floor below'),
+    spells: spellsById,
+    knownSpells: knownSpells,
+    mana: mana,
+    inventory: inventory,
+  );
+}
+
+/// A quiet room with nothing nearby, so `isBattleOpen` is false and nothing
+/// is Watched.
+GameState _exploringGame({
+  List<Item> inventory = const [],
+  Set<String> knownSpells = const {},
+  int mana = 0,
+  int heroHp = 20,
+}) => _crawl(
+  inventory: inventory,
+  knownSpells: knownSpells,
+  mana: mana,
+  heroHp: heroHp,
+);
+
+/// A visible ghoul two cells away, outside engagement range — known but not
+/// adjacent, so the hero is Watched rather than engaged.
+GameState _watchedGame() =>
+    _crawl(monsters: [_actor('ghoul-1', _distantTile, glyph: 'g')]);
+
+/// The hero and one live ghoul stand adjacent, so `isBattleOpen` is true.
+GameState _battleGame({
+  Set<String> knownSpells = const {},
+  int mana = 0,
+  List<Item> inventory = const [],
+  int heroHp = 20,
+}) => _crawl(
+  monsters: [_actor('ghoul-1', _adjacentToHero, glyph: 'g')],
+  knownSpells: knownSpells,
+  mana: mana,
+  inventory: inventory,
+  heroHp: heroHp,
+);
+
+Future<GameBloc> _openCrawl(WidgetTester tester, GameState game) async {
+  await onTheTargetPhone(tester);
+  final bloc = GameBloc(game: game, stepDelay: Duration.zero);
+  addTearDown(bloc.close);
+  await tester.pumpWidget(
+    MaterialApp(
+      home: BlocProvider.value(
+        value: bloc,
+        child: const GameScreen(palette: DungeonPalette.crypt),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return bloc;
+}
+
+Finder _slot(String id) => find.byKey(ValueKey(id));
+
+/// Taps one tile of the arena, through the scene's own geometry — the same
+/// camera every crawl test taps through.
+Future<void> _tapTile(WidgetTester tester, Position tile) async {
+  final scene = find.byKey(dungeonSceneKey);
+  final size = tester.getSize(scene);
+  final geometry = GridGeometry.camera(size, 7, 5, _heroAt);
+  final local = geometry.centreOf(tile);
+  await tester.tapAt(tester.getTopLeft(scene) + local);
+}
+
+void main() {
+  testWidgets(
+    'the four slots read Quests, Spells, Quick, Hero in that order, with an '
+    'identical menu rect, in exploration, Watched, battle and armed',
+    (tester) async {
+      await _openCrawl(
+        tester,
+        _exploringGame(knownSpells: const {'firebolt'}, mana: 10),
+      );
+      final menuRect = tester.getRect(find.byKey(crawlMenuKey));
+      final order = [
+        for (final id in [
+          'menu-quests',
+          'menu-spells',
+          'menu-quick',
+          'menu-hero',
+        ])
+          tester.getTopLeft(_slot(id)).dx,
+      ];
+      expect(order, [order[0], order[1], order[2], order[3]]..sort());
+
+      await _openCrawl(tester, _watchedGame());
+      expect(tester.getRect(find.byKey(crawlMenuKey)), menuRect);
+
+      await _openCrawl(
+        tester,
+        _battleGame(knownSpells: const {'firebolt'}, mana: 10),
+      );
+      expect(tester.getRect(find.byKey(crawlMenuKey)), menuRect);
+
+      final armedBloc = await _openCrawl(
+        tester,
+        _battleGame(knownSpells: const {'firebolt'}, mana: 10),
+      );
+      armedBloc.add(const SkillArmed('firebolt'));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(find.byKey(crawlMenuKey)), menuRect);
+    },
+  );
+
+  testWidgets('Spells is dimmed with no known spells and its tap says so', (
+    tester,
+  ) async {
+    await _openCrawl(tester, _exploringGame());
+
+    await tester.tap(_slot('menu-spells'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('You know no spells yet.'), findsOneWidget);
+  });
+
+  testWidgets('Quick is dimmed with nothing carried and its tap says so', (
+    tester,
+  ) async {
+    await _openCrawl(tester, _exploringGame());
+
+    await tester.tap(_slot('menu-quick'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('You carry nothing to drink.'), findsOneWidget);
+  });
+
+  testWidgets('Quests is always dimmed and shows the coming-soon notice', (
+    tester,
+  ) async {
+    await _openCrawl(tester, _exploringGame());
+
+    await tester.tap(_slot('menu-quests'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Quests are coming soon.'), findsOneWidget);
+  });
+
+  testWidgets('an outside tap closes a pop-up without moving the hero', (
+    tester,
+  ) async {
+    final bloc = await _openCrawl(tester, _exploringGame());
+    final heroBefore = bloc.state.game.hero.position;
+
+    await tester.tap(_slot('menu-quests'));
+    await tester.pumpAndSettle();
+    expect(find.text('Quests are coming soon.'), findsOneWidget);
+
+    await tester.tapAt(const Offset(4, 4));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Quests are coming soon.'), findsNothing);
+    expect(bloc.state.game.hero.position, heroBefore);
+  });
+
+  testWidgets('the system back gesture closes an open pop-up', (tester) async {
+    await _openCrawl(tester, _exploringGame());
+
+    await tester.tap(_slot('menu-quests'));
+    await tester.pumpAndSettle();
+    expect(find.text('Quests are coming soon.'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Quests are coming soon.'), findsNothing);
+  });
+
+  testWidgets('Hero opens the pack screen and back returns to the crawl', (
+    tester,
+  ) async {
+    await _openCrawl(tester, _exploringGame());
+
+    await tester.tap(_slot('menu-hero'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pack'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.byKey(crawlMenuKey), findsOneWidget);
+  });
+
+  Future<void> expectTwoTapDrink(WidgetTester tester, GameState game) async {
+    final bloc = await _openCrawl(tester, game);
+    final hpBefore = bloc.state.game.hero.hp;
+
+    await tester.tap(_slot('menu-quick'));
+    await tester.pumpAndSettle();
+    await tester.tap(_slot('drink:potion-1'));
+    await tester.pumpAndSettle();
+
+    expect(bloc.state.game.hero.hp, greaterThan(hpBefore));
+    expect(
+      bloc.state.log.map((line) => line.sentence),
+      contains(contains('drink')),
+    );
+    expect(find.text('Common Healing Potion'), findsNothing);
+  }
+
+  testWidgets('drinking in exploration takes exactly two taps', (tester) async {
+    await expectTwoTapDrink(
+      tester,
+      _exploringGame(
+        heroHp: 10,
+        inventory: const [
+          Item(id: 'potion-1', base: healingPotion, rarity: Rarity.common),
+        ],
+      ),
+    );
+  });
+
+  testWidgets('drinking in battle takes exactly two taps', (tester) async {
+    await expectTwoTapDrink(
+      tester,
+      _battleGame(
+        heroHp: 10,
+        inventory: const [
+          Item(id: 'potion-1', base: healingPotion, rarity: Rarity.common),
+        ],
+      ),
+    );
+  });
+
+  testWidgets('Mend casts straight from the row outside combat', (
+    tester,
+  ) async {
+    final bloc = await _openCrawl(
+      tester,
+      _exploringGame(knownSpells: const {'mend'}, mana: 10),
+    );
+    final manaBefore = bloc.state.game.mana;
+
+    await tester.tap(_slot('menu-spells'));
+    await tester.pumpAndSettle();
+    await tester.tap(_slot('spell:mend'));
+    await tester.pumpAndSettle();
+
+    expect(bloc.state.game.mana, lessThan(manaBefore));
+    expect(bloc.state.armedSpellId, isNull);
+    expect(
+      bloc.state.log.map((line) => line.sentence),
+      contains(contains('mend')),
+    );
+  });
+
+  testWidgets(
+    'Firebolt with a visible monster arms from the Spells slot, and a map '
+    'tap on the monster casts it',
+    (tester) async {
+      final bloc = await _openCrawl(
+        tester,
+        _battleGame(knownSpells: const {'firebolt'}, mana: 10),
+      );
+
+      await tester.tap(_slot('menu-spells'));
+      await tester.pumpAndSettle();
+      await tester.tap(_slot('spell:firebolt'));
+      await tester.pumpAndSettle();
+
+      expect(bloc.state.armedSpellId, 'firebolt');
+      expect(bloc.state.armedTargets, contains('ghoul-1'));
+      expect(
+        find.descendant(
+          of: _slot('menu-spells'),
+          matching: find.text('— armed'),
+        ),
+        findsOneWidget,
+      );
+
+      final hpBefore = bloc.state.game.monsters.single.hp;
+      await _tapTile(tester, _adjacentToHero);
+      await tester.pumpAndSettle();
+
+      expect(bloc.state.armedSpellId, isNull);
+      expect(bloc.state.game.monsters.single.hp, lessThan(hpBefore));
+    },
+  );
+
+  testWidgets(
+    'Firebolt with nothing in sight is shown refused, and its tap logs the '
+    'refusal without spending a turn',
+    (tester) async {
+      final bloc = await _openCrawl(
+        tester,
+        _exploringGame(knownSpells: const {'firebolt'}, mana: 10),
+      );
+      final gameBefore = bloc.state.game;
+
+      await tester.tap(_slot('menu-spells'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: _slot('spell:firebolt'),
+          matching: find.text('No enemy in sight'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(_slot('spell:firebolt'));
+      await tester.pumpAndSettle();
+
+      expect(bloc.state.game, same(gameBefore));
+      expect(bloc.state.armedSpellId, isNull);
+      expect(
+        bloc.state.log.map((line) => line.sentence),
+        contains('No enemy in sight.'),
+      );
+    },
+  );
+
+  testWidgets(
+    'five known spells show three readied rows and an overflow that opens '
+    'the grimoire listing all five, and choosing the armed spell again '
+    'disarms it',
+    (tester) async {
+      final bloc = await _openCrawl(
+        tester,
+        _battleGame(
+          knownSpells: const {'firebolt', 'mend', 'ward', 'bind', 'banish'},
+          mana: 20,
+        ),
+      );
+
+      await tester.tap(_slot('menu-spells'));
+      await tester.pumpAndSettle();
+      expect(find.text('+2 more spells'), findsOneWidget);
+
+      await tester.tap(_slot('spells-overflow'));
+      await tester.pumpAndSettle();
+      for (final id in ['firebolt', 'mend', 'ward', 'bind', 'banish']) {
+        expect(find.byKey(Key('overflow-$id')), findsOneWidget, reason: id);
+      }
+      await tester.tapAt(const Offset(4, 4));
+      await tester.pumpAndSettle();
+
+      await tester.tap(_slot('menu-spells'));
+      await tester.pumpAndSettle();
+      await tester.tap(_slot('spell:firebolt'));
+      await tester.pumpAndSettle();
+      expect(bloc.state.armedSpellId, 'firebolt');
+
+      await tester.tap(_slot('menu-spells'));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: _slot('spell:firebolt'),
+          matching: find.text('— armed'),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(_slot('spell:firebolt'));
+      await tester.pumpAndSettle();
+
+      expect(bloc.state.armedSpellId, isNull);
+    },
+  );
+}

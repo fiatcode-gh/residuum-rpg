@@ -792,41 +792,6 @@ void main() {
     });
   });
 
-  group('GameBloc counting potions', () {
-    test('counts the potions in the pack and nothing else', () {
-      // arrange
-      final bloc = walker(
-        arenaGame(
-          heroAt: const Position(1, 1),
-          inventory: [
-            _item('kit-1', _potion),
-            _item('kit-2', _sword),
-            _item('kit-3', _potion),
-          ],
-        ),
-      );
-
-      // act
-      final count = bloc.state.potionCount;
-
-      // assert
-      expect(count, 2);
-      addTearDown(bloc.close);
-    });
-
-    test('counts none with an empty pack', () {
-      // arrange
-      final bloc = walker(arenaGame(heroAt: const Position(1, 1)));
-
-      // act
-      final count = bloc.state.potionCount;
-
-      // assert
-      expect(count, 0);
-      addTearDown(bloc.close);
-    });
-  });
-
   group('GameBloc descending', () {
     blocTest<GameBloc, GameViewState>(
       'the descend button only offers itself on the stairs',
@@ -1715,7 +1680,7 @@ void _lootTests() {
 
   group('GameBloc drinking', () {
     blocTest<GameBloc, GameViewState>(
-      'the quick drink heals and logs the amount',
+      'DrinkPressed heals and logs the amount',
       build: () => GameBloc(
         game: arenaGame(
           heroAt: const Position(3, 2),
@@ -1723,7 +1688,7 @@ void _lootTests() {
           inventory: [_item('kit-1', _potion)],
         ),
       ),
-      act: (bloc) => bloc.add(const QuickDrinkPressed()),
+      act: (bloc) => bloc.add(const DrinkPressed('kit-1')),
       expect: () => [
         isA<GameViewState>()
             .having((s) => s.game.hero.hp, 'hp', 15)
@@ -1734,21 +1699,6 @@ void _lootTests() {
       ],
     );
 
-    test('the quick drink does nothing at all with no potion carried', () {
-      // arrange
-      final bloc = GameBloc(
-        game: arenaGame(heroAt: const Position(3, 2), heroHp: 5),
-      );
-
-      // act
-      bloc.add(const QuickDrinkPressed());
-
-      // assert
-      expect(bloc.state.firstPotion, isNull);
-      expect(bloc.state.game.hero.hp, 5);
-      addTearDown(bloc.close);
-    });
-
     blocTest<GameBloc, GameViewState>(
       'a potion drunk at full health is wasted, and the log admits it',
       build: () => GameBloc(
@@ -1757,11 +1707,25 @@ void _lootTests() {
           inventory: [_item('kit-1', _potion)],
         ),
       ),
-      act: (bloc) => bloc.add(const QuickDrinkPressed()),
+      act: (bloc) => bloc.add(const DrinkPressed('kit-1')),
       expect: () => [
         isA<GameViewState>().having(logSentences, 'log', [
           'You drink Common Healing Potion. Nothing was wrong with you.',
         ]),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a non-carried id is refused and logged, and no turn is spent',
+      build: () =>
+          GameBloc(game: arenaGame(heroAt: const Position(3, 2), heroHp: 5)),
+      act: (bloc) => bloc.add(const DrinkPressed('missing-id')),
+      expect: () => [
+        isA<GameViewState>().having((s) => s.game.hero.hp, 'hp', 5).having(
+          logSentences,
+          'log',
+          ['You are not carrying that.'],
+        ),
       ],
     );
   });
@@ -1866,7 +1830,7 @@ void _lootTests() {
 
       // assert
       expect(state.attack, (3, 5));
-      expect(state.firstPotion, isNotNull);
+      expect(state.game.inventory.any((item) => item.base.isPotion), isTrue);
       expect(state.game.equipment[EquipSlot.mainHand], isNotNull);
       addTearDown(bloc.close);
     });
@@ -2841,7 +2805,7 @@ void _lootTests() {
       ),
       act: (bloc) {
         bloc.add(const SkillArmed('firebolt'));
-        bloc.add(const QuickDrinkPressed());
+        bloc.add(const DrinkPressed('potion-1'));
       },
       expect: () => [
         isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
