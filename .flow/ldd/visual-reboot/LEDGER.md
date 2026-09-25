@@ -5406,3 +5406,7 @@ request exists, and the integration choice is the user's.
   inset) and N3 (full-pack test did not check the card's line) fixed in a
   test-only commit; Main ran format, analyze and the full suite (1295/1295).
   N4 (verbs computed three times per build) parked.
+- APK for the amendment built at `596f784` (code `6454271`), sha256
+  `3611cddb…`. The vivo I2219 dropped off wireless ADB before install; the
+  device still holds the `9db8ea5` APK (`67ad98ca…`). Next: reconnect,
+  install, then DEV-EXP-2, DEV-BAT-2 (PLAN 9.4) and the user's sign-off.
