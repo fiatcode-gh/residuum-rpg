@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/action_card.dart';
+import 'package:residuum_app/game/event_messages.dart';
 import 'package:residuum_app/game/crawl_exits.dart';
 import 'package:residuum_app/game/crawl_surfaces.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
@@ -277,8 +278,27 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Pick up'), findsNothing);
-      expect(find.textContaining('Here:'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(actionCardKey),
+          matching: find.text('Pick up'),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(actionCardKey),
+          matching: find.textContaining('Here:'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(actionCardKey),
+          matching: find.text(inventoryFullSentence),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Wait alone while Watched', (tester) async {
@@ -543,15 +563,18 @@ void main() {
         addTearDown(bloc.close);
         await tester.pumpWidget(
           MaterialApp(
-            home: MediaQuery(
-              data: MediaQueryData(textScaler: TextScaler.linear(1.3)),
-              child: MultiBlocProvider(
-                providers: [
-                  BlocProvider.value(value: town),
-                  BlocProvider.value(value: world),
-                  BlocProvider.value(value: bloc),
-                ],
-                child: const GameScreen(palette: DungeonPalette.crypt),
+            home: Builder(
+              builder: (context) => MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(textScaler: TextScaler.linear(1.3)),
+                child: MultiBlocProvider(
+                  providers: [
+                    BlocProvider.value(value: town),
+                    BlocProvider.value(value: world),
+                    BlocProvider.value(value: bloc),
+                  ],
+                  child: const GameScreen(palette: DungeonPalette.crypt),
+                ),
               ),
             ),
           ),

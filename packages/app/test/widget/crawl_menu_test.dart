@@ -119,9 +119,11 @@ Future<GameBloc> _openCrawl(
   await tester.pumpWidget(
     textScaler == null
         ? app
-        : MediaQuery(
-            data: MediaQueryData(textScaler: textScaler),
-            child: app,
+        : Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+              child: app,
+            ),
           ),
   );
   await tester.pumpAndSettle();
