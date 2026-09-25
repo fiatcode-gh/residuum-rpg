@@ -1,7 +1,7 @@
 # Unit 16.6 Contract — Crawl Controls and Layout Revamp
 
-Status: **approved 2026-09-24; amended the same day (touch-target rule, from
-review of a discarded first execution).**
+Status: **approved 2026-09-24; amended 2026-09-24 (touch-target rule) and
+2026-09-25 (action card, from the user's device feedback).**
 
 Observed head: `4b8bd10` (`main`, Units 16 and 16.5 merged). Feature branch
 `residuum-visual-reboot-16.6`.
@@ -22,9 +22,10 @@ over mock parity, and the art direction stays.**
 ## Outcome
 
 The crawl screen is organised around the player's thumb: fixed information
-at the top, a map big enough to tap, the log with a small combat-time Wait
-next to it, and a bottom menu that never changes. Actions tied to a place
-appear on the map where they happen. The palette, type roles, glyph
+at the top, a map big enough to tap, the log, and a bottom menu that never
+changes. Actions tied to the moment (place actions, Wait, Flee) sit in one
+action card pinned to the map's bottom edge, with a leader line to the hero.
+The palette, type roles, glyph
 rendering, light and fog are unchanged.
 
 ## Settled decisions (user, 2026-09-24)
@@ -42,14 +43,18 @@ rendering, light and fog are unchanged.
    crawl pack screen, so inventory, equip and drop stay reachable.
 5. **Quests** is built now and, when tapped, shows a "coming soon" notice.
    The game has no quest system yet; the user chose to show the slot anyway.
-6. **Wait** moves next to the recent-events log as a small control. It is
-   visible in combat and while the hero is Watched, and nowhere else.
-   **Flee** sits next to Wait when fleeing is legal.
+6. **Wait and Flee live in the action card** (item 8), not beside the log.
+   Wait shows in combat and while the hero is Watched; Flee shows when
+   fleeing is legal. (User, 2026-09-25: the log-side placement was
+   rejected; a later shield "block" action is expected to join the card.)
 7. **Top HUD replaces the `RESIDUUM` wordmark:** HP bar, mana bar (when
    spells are known) and gold, identical in every crawl state.
-8. **Place actions are on-map pop-ups**, in the same visual family as the
-   monster inspect callout: Pick up, Mine, Gather, Descend `>`, Ascend `<`,
-   Leave or Done, and Move on.
+8. **One action card, pinned to the map's bottom edge** (user, 2026-09-25):
+   Pick up, Mine, Gather, Descend `>`, Ascend `<`, Leave or Finish, Move on,
+   Flee and Wait share one card in the target card's visual family — the
+   same frame, and a thin leader line from the card to the hero. It never
+   floats beside the hero, so the area around the hero stays open while
+   exploring (for example on a cleared road where Move on is offered).
 9. **Battle information floats over the map:** the turn order as a strip
    along the top edge of the map, and the target's facts in a card next to
    the target. The fixed combat panel is removed.
@@ -77,10 +82,8 @@ Architect proposals carried from the discussion (part of this approval):
    exploration, Watched, battle and armed states.
 2. **Map.** Everything between the HUD and the log row. **Its rectangle is
    identical in exploration, Watched, battle and armed states.**
-3. **Log row.** The framed recent-events peek, with its truthful count and
-   expand control. In combat or while Watched, a small Wait control (and
-   Flee when legal) sits at the log's side. The row's height does not change
-   when Wait appears.
+3. **Log row.** The framed recent-events peek, full width, with its truthful
+   count and expand control. Nothing else sits in this row.
 4. **Bottom menu.** Four framed slots: `Quests`, `Spells`, `Quick`, `Hero`.
    A slot with nothing to offer right now is dimmed, never removed.
 
@@ -106,14 +109,19 @@ the contextual action bar.
   through the existing drink action.
 - Nothing carried: the slot is dimmed, and tapping it says so.
 
-### 4. On-map place pop-ups
+### 4. Action card
 
-- When the hero stands where a place action applies, a pop-up anchored by the
-  hero shows what is here (for example `Here: Common Iron Helm and 1 more`,
-  `Underfoot: ore vein`) and one button per legal place action.
-- Several applicable actions share one pop-up.
-- The pop-up takes input only inside its own bounds, never covers the hero,
-  and does not stop the map from being tapped or panned.
+- The card appears whenever at least one of its actions applies: a place
+  action (with what is here, for example `Here: Common Iron Helm and 1 more`,
+  `Underfoot: ore vein`), Wait, or Flee. One button per legal action;
+  several actions share the card.
+- It is pinned to the map's bottom edge, full map width less the map margin,
+  with a leader line to the hero's cell. If the hero's cell or its four
+  neighbours would be covered there (the player has panned the hero low), the
+  card pins to the top edge instead, below the turn-order strip.
+- It takes input only inside its own bounds and does not stop the map from
+  being tapped or panned. The target card and the card never overlap.
+- The map rectangle does not change when the card appears or goes.
 
 ### 5. Battle overlays
 
@@ -154,8 +162,8 @@ Mark superseded in `units/unit-13/VISUAL-SYSTEM.md` and the ledger's locked
 section: the 16×20 dp cell, the Unit 16.5 fixed-chrome-by-mode rule and its
 45%/35% map floors, the five-slot contextual action bar, the three-column
 hero and combat panels, and the four-region rule's "action shelf = verbs"
-(verbs now split between the bottom menu, the log-side Wait/Flee and on-map
-pop-ups). Historical entries are not rewritten.
+(verbs now split between the bottom menu, the action card and the map
+itself). Historical entries are not rewritten.
 
 ## Protected boundaries
 
@@ -201,10 +209,12 @@ pop-ups). Historical entries are not rewritten.
 5. Spells: an untargeted spell casts outside combat; a targeted spell arms,
    shows reticles and casts on tap; refusals are visible.
 6. Quick: drinking takes exactly two taps, in and out of combat.
-7. While Watched in a dungeon, Wait is visible and ends the stall from the
-   walkthrough (UXW-BAT 27–32) without special taps.
-8. Place pop-ups appear exactly when their action applies, never cover the
-   hero, and leave the rest of the map tappable.
+7. While Watched in a dungeon, Wait is visible in the action card and ends
+   the stall from the walkthrough (UXW-BAT 27–32) without special taps.
+8. The action card appears exactly when one of its actions applies, sits on
+   the map's bottom edge (top edge when the hero is there) with a leader line
+   to the hero, never covers the hero or its neighbours, and leaves the rest
+   of the map tappable. The log row holds only the log.
 9. Turn-order strip and target card: no silent clipping with four or more
    actors; reach cannot be read as distance.
 10. Map cells are about 24×30 dp. On the physical phone, the user taps each
@@ -217,9 +227,10 @@ pop-ups). Historical entries are not rewritten.
 12. Formatter, analyzer and the full app suite pass. New or changed
     availability rules have bloc tests; pop-ups, notices and full-screen
     have widget tests where a bloc test cannot observe them.
-13. Device review on the vivo I2505: colour-first, with user sign-off. Both
-    save slots are backed up before any install and restored byte-identically
-    afterwards.
+13. Device review on the vivo I2505 or I2219 (whichever is attached):
+    colour-first, with user sign-off. User-owned save slots are backed up
+    before any install and restored byte-identically afterwards; a phone
+    that had no app before is returned to having none.
 
 ## Authorization boundary
 
