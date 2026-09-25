@@ -8,6 +8,7 @@ import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
+import 'package:residuum_app/game/turn_order_strip.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -175,11 +176,11 @@ void main() {
       await _openCrawl(tester, _worstLegalBattleOnATallFloor());
 
       expect(
-        find.byKey(const Key('dock-backing')),
+        find.byType(TurnOrderStrip),
         findsOneWidget,
         reason:
-            'BattleDock must be mounted for this to be the contract\'s '
-            'worst-legal-battle density',
+            'the turn-order strip must be mounted for this to be the '
+            "contract's worst-legal-battle density",
       );
 
       final mapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));

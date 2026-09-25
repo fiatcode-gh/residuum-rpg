@@ -203,21 +203,6 @@ Future<void> _longPressLocal(WidgetTester tester, Offset local) async {
   await tester.longPressAt(topLeft + local);
 }
 
-/// Taps the timeline token whose word matches [name], through the dock's
-/// own real hit target, so the timeline's own tap wiring — not a guessed
-/// key — is what the test exercises.
-Future<void> _tapTimelineActor(WidgetTester tester, String name) async {
-  await tester.tap(
-    find.ancestor(
-      of: find.descendant(
-        of: find.byKey(const Key('dock-backing')),
-        matching: find.text(name),
-      ),
-      matching: find.byType(InkWell),
-    ),
-  );
-}
-
 /// Pumps a standalone [TargetCard] over a fixed [size] box anchored at the
 /// surface's own origin, so [WidgetTester.getRect] reads in the same local
 /// space [GridGeometry] does. [textScaler] feeds the ambient `MediaQuery`
@@ -561,8 +546,7 @@ void main() {
   );
 
   testWidgets(
-    'a timeline token tap for a farther actor shows that actor on the card '
-    'instead',
+    'selecting a farther actor shows that actor on the card instead',
     (tester) async {
       final ghoul = _ghoul(_nearGhoul);
       final spitter = _spitter(_farSpitter);
@@ -575,7 +559,7 @@ void main() {
         ),
       );
 
-      await _tapTimelineActor(tester, 'the spitter');
+      bloc.add(const TimelineActorSelected('spitter-1'));
       await tester.pumpAndSettle();
 
       expect(bloc.state.selectedActorId, 'spitter-1');

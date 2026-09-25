@@ -10,10 +10,8 @@ const double crawlGestureClear = 18;
 /// floats over the map rather than sitting in a framed row (PLAN.md G3).
 const double crawlTouchTarget = 48;
 
-/// PLAN.md G8 timeline internals (Task 11): the battle dock's own fixed
-/// height, and the fixed height of every pill it draws — NOW's, and each of
-/// NEXT's.
-const double crawlTimelineHeight = 58;
+const double crawlStripHeight = 48;
+const double crawlStripPadding = 8;
 const double crawlTokenHeight = 24;
 const double crawlLogLine = 15;
 

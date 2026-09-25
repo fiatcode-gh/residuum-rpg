@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../style/tokens.dart';
 import '../world/world_bloc.dart';
-import 'battle_view.dart';
 import 'crawl_exits.dart';
 import 'crawl_hud.dart';
 import 'crawl_menu.dart';
@@ -72,12 +71,6 @@ class GameScreen extends StatelessWidget {
                             dungeon: bloc.dungeon,
                             day: bloc.day,
                           ),
-                          if (state.isBattleOpen)
-                            BattleDock(
-                              state: state,
-                              onActorSelected: (actor) =>
-                                  bloc.add(TimelineActorSelected(actor.id)),
-                            ),
                           Expanded(
                             child: LayoutBuilder(
                               builder: (overlayContext, overlayConstraints) {

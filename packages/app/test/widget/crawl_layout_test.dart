@@ -10,6 +10,7 @@ import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
 import 'package:residuum_app/game/log_drawer.dart';
+import 'package:residuum_app/game/log_row.dart';
 import 'package:residuum_app/game/target_card.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
@@ -107,24 +108,47 @@ GameState _watchedGame({
 GameState _noteScene() =>
     _exploringGame().copyWith(nodes: {_heroAt: GatherKind.oreVein});
 
-Future<GameBloc> _openCrawl(WidgetTester tester, GameState game) async {
+Future<GameBloc> _openCrawl(
+  WidgetTester tester,
+  GameState game, {
+  TextScaler? textScaler,
+}) async {
   await onTheTargetPhone(tester);
   final bloc = GameBloc(game: game, stepDelay: Duration.zero);
   addTearDown(bloc.close);
-  await tester.pumpWidget(
-    MaterialApp(
-      home: BlocProvider.value(
-        value: bloc,
-        child: const GameScreen(palette: DungeonPalette.crypt),
-      ),
+  final app = MaterialApp(
+    home: BlocProvider.value(
+      value: bloc,
+      child: const GameScreen(palette: DungeonPalette.crypt),
     ),
+  );
+  await tester.pumpWidget(
+    textScaler == null
+        ? app
+        : MediaQuery(
+            data: MediaQueryData(textScaler: textScaler),
+            child: app,
+          ),
   );
   await tester.pumpAndSettle();
   return bloc;
 }
 
-double _surfaceWidth(WidgetTester tester) =>
-    tester.view.physicalSize.width / tester.view.devicePixelRatio;
+/// The hero engaged by four monsters at once — the worst case the strip's
+/// own `+N` cue exists for.
+GameState _crowdedBattleGame({
+  Map<String, Spell> spells = const {},
+  Set<String> knownSpells = const {},
+  int mana = 0,
+}) => _exploringGame(spells: spells, knownSpells: knownSpells, mana: mana)
+    .copyWith(
+      monsters: [
+        _actor('ghoul-1', const Position(1, 2), glyph: 'g'),
+        _actor('ghoul-2', const Position(3, 2), glyph: 'g'),
+        _actor('ghoul-3', const Position(2, 1), glyph: 'g'),
+        _actor('ghoul-4', const Position(2, 3), glyph: 'g'),
+      ],
+    );
 
 /// Taps one tile of the exploration arena, through the scene's own geometry.
 Future<void> _tapTile(WidgetTester tester, Position tile) async {
@@ -137,22 +161,22 @@ Future<void> _tapTile(WidgetTester tester, Position tile) async {
 
 void main() {
   testWidgets(
-    'regions run HUD, map, log peek, bar top to bottom, each clear of the '
+    'regions run HUD, map, log row, bar top to bottom, each clear of the '
     'safe body',
     (tester) async {
       await _openCrawl(tester, _exploringGame());
 
       final hud = tester.getRect(find.byKey(crawlHudKey));
       final map = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      final peek = tester.getRect(find.byKey(logPeekKey));
+      final logRow = tester.getRect(find.byKey(logRowKey));
       final bar = tester.getRect(find.byKey(crawlMenuKey));
       final surfaceHeight =
           tester.view.physicalSize.height / tester.view.devicePixelRatio;
 
       expect(hud.top, closeTo(34.9, 0.5));
       expect(hud.bottom, closeTo(map.top, 0.01));
-      expect(map.bottom + crawlPanelGap, closeTo(peek.top, 0.01));
-      expect(peek.bottom + crawlGap, closeTo(bar.top, 0.01));
+      expect(map.bottom + crawlPanelGap, closeTo(logRow.top, 0.01));
+      expect(logRow.bottom + crawlGap, closeTo(bar.top, 0.01));
       expect(
         bar.bottom + crawlBottomGap,
         closeTo(surfaceHeight - crawlGestureClear, 0.5),
@@ -161,8 +185,8 @@ void main() {
   );
 
   testWidgets(
-    'the HUD and its HP, mana and gold rects are identical in exploration, '
-    'Watched, battle and armed',
+    'the HUD, map, log row and menu rects are identical, and the menu '
+    'order unchanged, in exploration, armed, Watched and battle',
     (tester) async {
       const knownSpells = {'firebolt'};
       final bloc = await _openCrawl(
@@ -173,68 +197,49 @@ void main() {
       final hp = tester.getRect(find.byKey(hpMeterKey));
       final mana = tester.getRect(find.byKey(manaMeterKey));
       final gold = tester.getRect(find.byKey(crawlGoldKey));
+      final map = tester.getRect(find.byKey(dungeonSceneSlotKey));
+      final logRow = tester.getRect(find.byKey(logRowKey));
+      final menu = tester.getRect(find.byKey(crawlMenuKey));
+      const menuSlotIds = [
+        'menu-quests',
+        'menu-spells',
+        'menu-quick',
+        'menu-hero',
+      ];
+      final menuOrder = [
+        for (final id in menuSlotIds)
+          tester.getTopLeft(find.byKey(ValueKey(id))).dx,
+      ];
+
+      void expectSameLayout() {
+        expect(tester.getRect(find.byKey(crawlHudKey)), hud);
+        expect(tester.getRect(find.byKey(hpMeterKey)), hp);
+        expect(tester.getRect(find.byKey(manaMeterKey)), mana);
+        expect(tester.getRect(find.byKey(crawlGoldKey)), gold);
+        expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), map);
+        expect(tester.getRect(find.byKey(logRowKey)), logRow);
+        expect(tester.getRect(find.byKey(crawlMenuKey)), menu);
+        expect([
+          for (final id in menuSlotIds)
+            tester.getTopLeft(find.byKey(ValueKey(id))).dx,
+        ], menuOrder);
+      }
 
       bloc.add(const SkillArmed('firebolt'));
       await tester.pumpAndSettle();
-      expect(tester.getRect(find.byKey(crawlHudKey)), hud);
-      expect(tester.getRect(find.byKey(hpMeterKey)), hp);
-      expect(tester.getRect(find.byKey(manaMeterKey)), mana);
-      expect(tester.getRect(find.byKey(crawlGoldKey)), gold);
+      expectSameLayout();
 
       await _openCrawl(
         tester,
         _watchedGame(spells: spellsById, knownSpells: knownSpells, mana: 10),
       );
-      expect(tester.getRect(find.byKey(crawlHudKey)), hud);
-      expect(tester.getRect(find.byKey(hpMeterKey)), hp);
-      expect(tester.getRect(find.byKey(manaMeterKey)), mana);
-      expect(tester.getRect(find.byKey(crawlGoldKey)), gold);
+      expectSameLayout();
 
       await _openCrawl(
         tester,
         _battleGame(spells: spellsById, knownSpells: knownSpells, mana: 10),
       );
-      expect(tester.getRect(find.byKey(crawlHudKey)), hud);
-      expect(tester.getRect(find.byKey(hpMeterKey)), hp);
-      expect(tester.getRect(find.byKey(manaMeterKey)), mana);
-      expect(tester.getRect(find.byKey(crawlGoldKey)), gold);
-    },
-  );
-
-  testWidgets(
-    'the map rect is identical in exploration, Watched and armed, and '
-    "differs from battle by exactly the dock's height",
-    (tester) async {
-      final bloc = await _openCrawl(tester, _exploringGame());
-      final mapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
-
-      bloc.add(const SkillArmed('firebolt'));
-      await tester.pumpAndSettle();
-      expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRect);
-
-      await _openCrawl(tester, _watchedGame());
-      expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRect);
-
-      await _openCrawl(tester, _battleGame());
-      final battleMapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      final dock = tester.getRect(find.byKey(const Key('dock-backing')));
-      expect(mapRect.height - battleMapRect.height, closeTo(dock.height, 0.5));
-    },
-  );
-
-  testWidgets(
-    'the map spans the full width and the timeline is inset by the gutter '
-    'on both sides',
-    (tester) async {
-      await _openCrawl(tester, _battleGame());
-      final width = _surfaceWidth(tester);
-      final map = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      final dock = tester.getRect(find.byKey(const Key('dock-backing')));
-
-      expect(map.left, 0);
-      expect(map.right, closeTo(width, 0.01));
-      expect(dock.left, closeTo(crawlGutter, 0.01));
-      expect(dock.right, closeTo(width - crawlGutter, 0.01));
+      expectSameLayout();
     },
   );
 
@@ -318,4 +323,21 @@ void main() {
       expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRectBefore);
     },
   );
+
+  testWidgets('a crowded battle with every spell readied fits the screen at an '
+      'ambient text scale the crawl clamps down to 1.3', (tester) async {
+    await _openCrawl(
+      tester,
+      _crowdedBattleGame(
+        spells: spellsById,
+        knownSpells: spellsById.keys.toSet(),
+        mana: 20,
+      ),
+      textScaler: const TextScaler.linear(2),
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(crawlHudKey), findsOneWidget);
+    expect(find.byKey(crawlMenuKey), findsOneWidget);
+  });
 }

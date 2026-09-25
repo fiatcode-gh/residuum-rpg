@@ -6,7 +6,9 @@ import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
+import 'package:residuum_app/game/map_overlays.dart';
 import 'package:residuum_app/game/target_card.dart';
+import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
 /// Widget proof for `map_touch.dart::resolveMapTap`, wired through the real
@@ -140,6 +142,112 @@ void main() {
 
       expect(find.byType(BottomSheet), findsNothing);
       expect(identical(bloc.state, stateBefore), isTrue);
+    },
+  );
+
+  testWidgets('the recenter affordance resets the pan', (tester) async {
+    const wideArena = '''
+######################################################################
+#....................................................................#
+######################################################################''';
+    final map = FloorMap.parse(wideArena);
+    final seen = computeFov(map, const Position(1, 1), fovRadius);
+    final game = GameState(
+      map: map,
+      hero: Actor(
+        id: 'hero',
+        name: 'you',
+        glyph: '@',
+        position: const Position(1, 1),
+        hp: 20,
+        maxHp: 20,
+        attackMin: 4,
+        attackMax: 4,
+        speed: 10,
+        energy: actThreshold,
+      ),
+      monsters: const [],
+      rng: Rng(1),
+      lootRng: Rng(2),
+      visible: seen,
+      explored: {...seen},
+      buildFloor: (depth) => throw StateError('no floor below'),
+      spells: spellsById,
+    );
+    final bloc = await _openCrawl(tester, game);
+    bloc.add(const MapPanned(Offset(-2000, 0)));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(recenterKey), findsOneWidget);
+    await tester.tap(find.byKey(recenterKey));
+    await tester.pumpAndSettle();
+    expect(bloc.state.pan, Offset.zero);
+    expect(find.byKey(recenterKey), findsNothing);
+  });
+
+  testWidgets(
+    'a distant selected actor makes recenter return focus to the hero',
+    (tester) async {
+      const wideArena = '''
+######################################################################
+#....................................................................#
+######################################################################''';
+      final map = FloorMap.parse(wideArena);
+      const heroPosition = Position(1, 1);
+      const actorPosition = Position(60, 1);
+      final monster = Actor(
+        id: 'ghoul-1',
+        name: 'the ghoul',
+        glyph: 'g',
+        position: actorPosition,
+        hp: 10,
+        maxHp: 10,
+        attackMin: 3,
+        attackMax: 3,
+        speed: 10,
+        energy: actThreshold,
+      );
+      final seen = {heroPosition, actorPosition};
+      final game = GameState(
+        map: map,
+        hero: Actor(
+          id: 'hero',
+          name: 'you',
+          glyph: '@',
+          position: heroPosition,
+          hp: 20,
+          maxHp: 20,
+          attackMin: 4,
+          attackMax: 4,
+          speed: 10,
+          energy: actThreshold,
+        ),
+        monsters: [monster],
+        rng: Rng(1),
+        lootRng: Rng(2),
+        visible: seen,
+        explored: seen,
+        buildFloor: (depth) => throw StateError('no floor below'),
+        spells: spellsById,
+      );
+      final bloc = await _openCrawl(tester, game);
+      final gameBefore = bloc.state.game;
+      final logBefore = bloc.state.log;
+      bloc.add(const TimelineActorSelected('ghoul-1'));
+      await tester.pumpAndSettle();
+
+      expect(bloc.state.selectedActorId, 'ghoul-1');
+      expect(bloc.state.cameraFocus, actorPosition);
+      expect(find.byKey(recenterKey), findsOneWidget);
+
+      await tester.tap(find.byKey(recenterKey));
+      await tester.pumpAndSettle();
+
+      expect(bloc.state.selectedActorId, isNull);
+      expect(bloc.state.cameraFocus, heroPosition);
+      expect(bloc.state.game, same(gameBefore));
+      expect(bloc.state.log, same(logBefore));
+      expect(find.byKey(recenterKey), findsNothing);
     },
   );
 }

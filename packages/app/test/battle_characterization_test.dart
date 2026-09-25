@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/battle_view.dart';
+import 'package:residuum_app/game/turn_order_strip.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
@@ -138,7 +138,7 @@ void main() {
       // assert
       expect(find.text('Watched 1'), findsOneWidget);
       expect(find.textContaining('Engaged'), findsNothing);
-      expect(find.byType(BattleDock), findsNothing);
+      expect(find.byType(TurnOrderStrip), findsNothing);
     });
 
     testWidgets('nothing in sight leaves no battle chip', (tester) async {

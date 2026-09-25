@@ -10,6 +10,7 @@ import 'map_overlay_layout.dart';
 import 'place_actions.dart';
 import 'place_popup.dart';
 import 'target_card.dart';
+import 'turn_order_strip.dart';
 
 const recenterKey = Key('recenter');
 
@@ -47,7 +48,23 @@ class MapOverlays extends StatelessWidget {
     );
     final hero = geometry.rectOf(state.game.hero.position);
     final showRecenter = _heroOffScreen(state, size);
-    final avoid = [if (showRecenter) recenterRect(size)];
+
+    Rect? stripRect;
+    var stripFlipped = false;
+    if (state.isBattleOpen) {
+      final stripHeight = crawlStripHeight * crawlScale(context);
+      final topStrip = Rect.fromLTWH(0, 0, size.width, stripHeight);
+      stripFlipped = topStrip.overlaps(hero);
+      final stripWidth = stripFlipped ? size.width - 64 : size.width;
+      stripRect = Rect.fromLTWH(
+        0,
+        stripFlipped ? size.height - stripHeight : 0,
+        stripWidth,
+        stripHeight,
+      );
+    }
+
+    final avoid = [if (showRecenter) recenterRect(size), ?stripRect];
 
     final facts = placeFacts(state);
     final verbs = placeVerbsFor(state);
@@ -72,6 +89,19 @@ class MapOverlays extends StatelessWidget {
     final cardAvoid = [?popupRect, ...avoid];
     return Stack(
       children: [
+        if (stripRect != null)
+          Positioned(
+            left: stripRect.left,
+            top: stripRect.top,
+            width: stripRect.width,
+            height: stripRect.height,
+            child: TurnOrderStrip(
+              state: state,
+              onActorSelected: (actor) =>
+                  bloc.add(TimelineActorSelected(actor.id)),
+              flipped: stripFlipped,
+            ),
+          ),
         if (popupRect != null)
           Positioned(
             left: popupRect.left,

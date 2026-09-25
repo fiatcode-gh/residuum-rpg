@@ -88,9 +88,9 @@ Finder _drawerList() => find.descendant(
 );
 
 /// Pushes the real [GameScreen] over the real [bloc], following
-/// `battle_view_test.dart`'s shape: `MaterialApp` → `TextButton` → a pushed
-/// `MultiBlocProvider` carrying a fresh `TownBloc` alongside it. [textScaler]
-/// feeds the ambient `MediaQuery` `GameScreen`'s own
+/// `turn_order_strip_test.dart`'s shape: `MaterialApp` → `TextButton` → a
+/// pushed `MultiBlocProvider` carrying a fresh `TownBloc` alongside it.
+/// [textScaler] feeds the ambient `MediaQuery` `GameScreen`'s own
 /// `MediaQuery.withClampedTextScaling` clamps against, the same knob a
 /// physical device's system text size would turn.
 Future<void> _pushGame(
