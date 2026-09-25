@@ -93,3 +93,14 @@ const double crawlCalloutEdgeClamp = 8;
 /// The leader line's stroke width and its dot's radius at the cell end.
 const double crawlCalloutLeaderWidth = 1;
 const double crawlCalloutDotRadius = 2.5;
+
+/// PLAN.md G10: the place pop-up's own fixed geometry, in the same visual
+/// family as the callout ([crawlCalloutFill], [crawlFrame], [crawlCalloutPadding]
+/// and [crawlCalloutLineHeight] are shared rather than duplicated).
+const double crawlPlacePopupWidth = 300;
+const double crawlPlaceButtonHeight = 48;
+const double crawlPlaceButtonGap = 6;
+
+/// The margin every map overlay's edge stays clear of the map slot's own
+/// edges, and the gap `placeMapOverlay`'s corner candidates sit at.
+const double crawlOverlayMargin = 8;

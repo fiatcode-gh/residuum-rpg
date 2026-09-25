@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/crawl_exits.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/style/surfaces.dart';
 import 'package:residuum_app/world/world_screen.dart';

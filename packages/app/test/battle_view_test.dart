@@ -10,6 +10,7 @@ import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
 import 'package:residuum_app/game/map_callout.dart';
+import 'package:residuum_app/game/map_overlays.dart';
 import 'package:residuum_app/style/tokens.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
