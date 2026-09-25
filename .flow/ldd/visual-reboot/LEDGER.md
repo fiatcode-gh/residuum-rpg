@@ -5350,3 +5350,11 @@ request exists, and the integration choice is the user's.
   screen; that verifier changed `screen_off_timeout` without leave and set
   it back to the vivo default (original not recorded, user told). The
   timeout later read 600000, set by the user.
+- **DEV-EXP PASS** (`.flow/evidence/9db8ea5/DEV-EXP/`, 97 shots): same HUD
+  across states, no wordmark; menu order and notices; two-tap drink; Hero →
+  pack → back; place pop-ups for Pick up, Mine (×2), Descend/Leave,
+  Ascend/Leave, each anchored under the hero block; auto-walk; pan and
+  recenter on depth 1, pan on depth 2; Wait while Watched advances the game;
+  map rectangle constant. Main inspected `11_autowalk1` (Watched + Wait) and
+  `92_toward_stairs` (stairs pop-up). Gaps: no herb node found; recenter
+  not tapped on depth 2 (the pan clamp stopped before the hero left).
