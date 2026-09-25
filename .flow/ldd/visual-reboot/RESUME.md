@@ -2,22 +2,26 @@
 
 **Units 16 and 16.5 are accepted and merged to `main` (`4b8bd10`, PR #25).**
 
-**Active: Unit 16.6 "crawl controls and layout revamp" — restarted
-2026-09-24 in the controlling session.** A separate session's Tasks 01–03
-were reverted by the user's choice (ledger "Unit 16.6 restart"); its head is
-kept as `backup/u166-other-session-0f8e4e0` and its artifacts in
-`.flow/evidence/u166-other-session/`. Branch `residuum-visual-reboot-16.6`
-is back at `4b8bd10` with no production edits.
+**Active: Unit 16.6 "crawl controls and layout revamp" — implemented,
+correction round.** Branch `residuum-visual-reboot-16.6`, Tasks 01–10
+committed (`2be5f62`…`27aa0f8`), final gates green at `27aa0f8` (1290
+tests). Acceptance review (`'/var/home/dhemas/.omp/profiles/anthropic/agent/sessions/-Development-Projects-fiatcode-gh-residuum-rpg/2026-09-24T05-01-52-133Z_01a0d1ca-9e85-7000-af1c-8b22995156f6/AccU166.md'` receipt summarised in the
+ledger) returned CHANGES-REQUIRED: F1 the place pop-up is not anchored to
+the hero (lands in a map corner); F2–F5 minors (orphan tokens, stale and
+new app dartdoc, non-live pop-up bodies, a duplicate helper).
 
-- Contract and plan restored to the revisions approved here, then amended
-  once (floor-only near-hero step; exact far-cell auto-walk as a 48 dp
-  exception). Current approvals are bound in `flow_gate`, scope
-  `visual-reboot/unit-16.6`.
-- Device: the vivo I2505 (`192.168.18.149:42999`) holds the `4b8bd10` debug
-  APK and the user's saves, equal to `.flow/evidence/4b8bd10/save-backup/`.
-  A second device is sometimes attached: always pass `-s`.
-- **Next: fresh `flow-plan-executor` per task, starting at
-  `plan-tasks/01-full-screen.md`;** Checkpoint A after Task 03.
+- A fresh executor is running one batched correction (F1–F5). Then: Main
+  gates, one scoped closure review, `flow_gate accept`, then the device gate
+  (PLAN section 6: DEV-FS, DEV-EXP, DEV-BAT, and the user's DEV-FINGER).
+- Device: the vivo I2219 (serial
+  `adb-10DF1Q03JJ000HK-LUqZxk (2)._adb-tls-connect._tcp`) holds the
+  `5b6376b` APK; it had no app before (`.flow/evidence/5b6376b/device-state-before.md`),
+  so uninstall at unit end. The I2505 was not attached; its figures are
+  unproven. CP-A passed on the I2219 (`.flow/evidence/5b6376b/CP-A/`).
+- Hygiene: `b536349` also carries the staged ledger files; split it at
+  integration. Commits from now on use `git commit -- <paths>`.
+- The discarded first execution lives on `backup/u166-other-session-0f8e4e0`
+  and in `.flow/evidence/u166-other-session/`.
 
 Parked follow-ups (folded into 16.6 recon where relevant): an upright wall
 `#` if wanted, an 8 dp map gutter, the hero-panel left-column gap, spell

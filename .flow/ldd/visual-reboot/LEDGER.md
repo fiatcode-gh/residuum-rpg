@@ -43,10 +43,11 @@ The epic was opened from an approved external planning handoff:
   references.
 - **Units 16 and 16.5 are accepted and merged to `main`** as `4b8bd10`
   (PR #25).
-- **Unit 16.6 is paused before Checkpoint A** on
-  `residuum-visual-reboot-16.6`. Contract `31edb858` and plan `d4cb78a7`
-  are approved. The fresh Task 03 void-tap correction executor is active;
-  device work follows its proof and a new scoped acceptance review.
+- **Unit 16.6 is implemented and in correction** on
+  `residuum-visual-reboot-16.6` (restarted 2026-09-24; see "Unit 16.6
+  restart"). Tasks 01–10 committed, final gates green at `27aa0f8`;
+  acceptance review CHANGES-REQUIRED (F1 pop-up anchoring, F2–F5 minors),
+  one correction round executing. Device gate follows closure.
 
 ## Epic status
 
@@ -66,9 +67,9 @@ The epic was opened from an approved external planning handoff:
 | Unit 11 — dungeon scene recomposition | Unit 10 | **merged** to `main` | `dart format` clean, `flutter analyze` clean, full app 884 tests; `Medium_Phone` colour/greyscale capsules; both save slots restored SHA-256 MATCH | merged by PR #21 at `60909e6` (code `824f53f`); contract: `units/unit-11/CONTRACT.md`; plan: `units/unit-11/PLAN.md`; later task receipts and acceptance were never written to this ledger — the PR record is the surviving evidence |
 | Unit 12 — crawl interface visual grammar | Unit 11 | **merged** to `main` | see decision log | merged by PR #22 at `907a4a8` |
 | Units 12.5–15 | see decision log | code of Units 13–14 merged by PR #23 `4033de5`, Unit 15 by PR #24 `374ee77`; Unit 12.5 was a device gate (see decision log) | see decision log and RESUME | U13 visual system and U14 type authority are partly superseded by U16.5 |
-| Unit 16 — ASCII atmospheric crawl parity | Unit 15 | **implemented, not accepted** | package gates passed; one exploration device capsule; parity failed | `b301f27` on `residuum-visual-reboot-16`; contract: `units/unit-16/CONTRACT.md` |
-| Unit 16.5 — ASCII crawl full parity | Unit 16 | **contract approved; planning** | pending | contract: `units/unit-16.5/CONTRACT.md`; accepted together with U16 |
-| Unit 16.6 — crawl controls and layout revamp | Units 16, 16.5 | **Task 03 correction executing** | Approved contract and plan; correction adds floor-only step hit and diagonal-void regression while retaining exact far-cell auto-walk | Full Green and fresh code review before corrected-head Checkpoint A |
+| Unit 16 — ASCII atmospheric crawl parity | Unit 15 | **merged** to `main` with 16.5 | accepted together with U16.5 | merged by PR #25 at `4b8bd10`; contract: `units/unit-16/CONTRACT.md` |
+| Unit 16.5 — ASCII crawl full parity | Unit 16 | **merged** to `main` | 1252 app tests; user visual sign-off on the vivo | merged by PR #25 at `4b8bd10`; contract: `units/unit-16.5/CONTRACT.md` |
+| Unit 16.6 — crawl controls and layout revamp | Units 16, 16.5 | **implemented; correction round** | 1290 app tests, analyze/format clean, CP-A on the I2219; acceptance review CHANGES-REQUIRED | contract and plan: `units/unit-16.6/`; device gate DEV-FS/EXP/BAT/FINGER pending |
 
 Completed units are ordered **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11**.
 Unit 12 follows Unit 11 and consumes its renderer as a closed dependency.
@@ -85,7 +86,9 @@ log drawer; no unit reordering is needed.
   texture).
 - Four-region responsibility rule: map = space/targets, timeline = time,
   log = causality, action shelf = verbs. No concern duplicated across
-  regions.
+  regions. **"Action shelf = verbs" is superseded by Unit 16.6:** verbs
+  live on the bottom menu, the log-side Wait/Flee, on-map place pop-ups and
+  the map itself.
 - Map-first melee (tap adjacent enemy); explicit Attack shelf control is
   removed once direct melee is proven; long-press/timeline token inspect,
   never long-press-only.
@@ -5275,3 +5278,54 @@ request exists, and the integration choice is the user's.
   moved to `crawl_exits.dart`; notes overlay and the six place verbs left
   the action row; `crawl_controls_test.dart` deleted (retired presentation).
   Suite 1279/1279, format and analyze clean.
+- Task 07 accepted: `bed095b` persistent menu Quests / Spells / Quick /
+  Hero, Spells and Quick pop-ups, Quests coming-soon, contextual action bar
+  and quick-drink state deleted, `crawl_verbs_test` reaches every verb. The
+  first executor yielded on its request budget with production done; a
+  fresh executor finished the test migration (crawl_verbs_test created
+  fresh because Task 06 had already deleted its `git mv` source; accepted).
+  A refused cast now dispatches on the first tap (no arm-then-refuse).
+- **A4:** PLAN G9's row template `'${manaCost} mana · ${effectOf(spell)}'`
+  doubled the separator (`effectOf` starts with ` · `), and the executor
+  pinned the doubled text in 10 assertions. Fixed in `b536349`. Suite
+  1293/1293, analyze clean.
+- Task 08 accepted: `4f5197a` target card over the map (`target_card.dart`,
+  placed by `placeMapOverlay`, avoids the place pop-up and hero block),
+  enemy sheet removed, reach reads "Melee only" / "Ranged, reach N". The
+  executor yielded on its request budget before committing; Main ran the
+  remaining gates (battle_view 38/38, analyze clean, format 0 changed, full
+  suite 1304/1304) and committed the app paths only. Executor fixes
+  accepted: `Positioned.fill` around the card (a bare child collapsed the
+  overlay Stack to 0×0 when the card was hidden, breaking hit tests for the
+  pop-up and recenter); `crawlCalloutBarRow` 13 not 12 (0.1 px overflow at
+  text scale 1.3).
+- **Hygiene trap:** `b536349` (sonic's separator fix) also committed every
+  staged ledger file, because a plain `git commit` takes the whole index.
+  Content is correct. Split that commit at integration. Every future brief
+  must say `git commit -- <paths>`. The Task 08 executor also used
+  `git stash` for a bisect; the stash is empty and nothing was lost.
+- Task 09 accepted: `fd2197e` turn-order strip over the top of the map
+  (`turn_order_strip.dart`, `+N` cue, no scroll), dock row removed; the map
+  rectangle is identical in exploration, Watched, battle and armed. The
+  executor deleted `battle_view_test.dart` outright instead of renaming and
+  rewriting it; Main's audit found that it dropped non-dock coverage. A
+  fresh executor classified all 42 old tests and restored the three real
+  gaps (cast lands on the tapped target, second arm disarms the first,
+  overflow arms an unshelved spell) in `b458cc3`. Suite 1290/1290, analyze
+  clean.
+- Task 10 accepted: `27aa0f8` VISUAL-SYSTEM supersession blockquotes (four-
+  region verbs, readied spells/Flee, cell and step rule, fixed chrome, action
+  shelf) plus a section 8 bullet; the design spec had nothing to supersede.
+  Main corrected the step-rule wording (box, floor-only, exact far cell).
+- **Main final gates at `27aa0f8`:** format 146 files 0 changed, analyze
+  clean, full app suite 1290/1290; `packages/core` and `packages/content`
+  unchanged since `4b8bd10`. Next: one `flow-acceptance-reviewer` pass.
+- **Acceptance review at `27aa0f8`: CHANGES-REQUIRED.** F1 (Important): the
+  place pop-up's preferred offsets are hero-cell-relative, not hero-block-
+  relative, so both candidates always overlap the block and placement falls
+  to a map corner (probe: top-left exploring, bottom-left in battle); the
+  test used the same wrong offsets. F2 orphan tokens; F3 stale dartdoc and
+  new app dartdoc against G11 (no waiver: delete); F4 pop-up bodies are
+  build-time snapshots; F5 duplicate capitalise helper; F6 Main's ledger and
+  VISUAL-SYSTEM items (done by Main now). Items 1–7, 9, 11 (code), 12 PASS;
+  8 PARTIAL on F1. One batched correction dispatched.

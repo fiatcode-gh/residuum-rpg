@@ -208,8 +208,9 @@ Behaviour and accessibility, unchanged:
 
 > **Superseded by Unit 16.6 (2026-09-24):** the map cell is
 > `mapCellWidth = 24` dp x `mapCellHeight = 30` dp; the camera keeps the
-> hero centred on every floor with bounded pan; a tap within 48 dp of the
-> hero steps by dominant axis, and monsters keep a 24 dp radius. See
+> hero centred on every floor with bounded pan; a tap on a floor cell inside
+> the 48 dp box around the hero steps by dominant axis, a farther tap
+> auto-walks to the exact tapped cell, and monsters keep a 24 dp radius. See
 > `units/unit-16.6/CONTRACT.md`.
 - the map is `Expanded`: chrome is paid for in map height, and the measured
   dp budget (exploration 331.1, typical combat 438.1, worst legal 580.95
