@@ -5329,3 +5329,15 @@ request exists, and the integration choice is the user's.
   build-time snapshots; F5 duplicate capitalise helper; F6 Main's ledger and
   VISUAL-SYSTEM items (done by Main now). Items 1–7, 9, 11 (code), 12 PASS;
   8 PARTIAL on F1. One batched correction dispatched.
+- Correction `4de51c3` (F1–F5): the pop-up is anchored under or over the
+  hero block (Red: top 8.0 vs 334.0); orphan tokens deleted; app dartdoc
+  added by this unit is 0 lines against `4b8bd10`; Spells and Quick bodies
+  read live state; one capitalise helper. Suite 1268/1268 (−24
+  parameterised role-table cases, +2 tests), analyze and format clean.
+- **Scoped closure review: CLOSED** (F1–F6). A sweep over three map sizes
+  found no overlap of the hero block, step box or strip on the target map.
+  N1 (Minor, parked): a stale dartdoc on `_dialogButtonSpacing` in
+  `crawl_surfaces.dart` still names the action bar. Accepted via
+  `flow_gate` at `4de51c3`. Next: device gate on the vivo I2219 (the I2505
+  is not attached), capsules DEV-FS, DEV-EXP, DEV-BAT, then the user's
+  DEV-FINGER.
