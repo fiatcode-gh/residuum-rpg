@@ -5377,3 +5377,16 @@ request exists, and the integration choice is the user's.
   for wait button placement is bad, I don't like it there". Not yet signed
   off; these reopen the contract (place pop-up form, Flee and Wait
   placement).
+- **Amendment (2026-09-25) from the user's device feedback**, contract and
+  plan re-approved: one action card pinned to the map's bottom edge (top
+  when the hero is there) with a leader line to the hero holds Pick up,
+  Mine/Gather, Move on, Ascend, Descend, Leave/Finish, Flee and Wait; the
+  log row is the log only; menu slots show icon and label only, centred;
+  Q7 full pack shows the fact plus "You cannot carry any more."; Q8 the
+  armed Spells slot gets a 3 dp frame (and ", armed" for screen readers).
+- Task 11 accepted: `6d2a94f` action card; place pop-up and log-side
+  Wait/Flee deleted; target card placed only in the area the card leaves;
+  recenter lifts above the card; the full-pack line reuses the
+  `InventoryFull` sentence constant. Red came from mutations M1–M5 (each
+  broke a geometric test, files restored by hash), not a separate
+  pre-change run; accepted. Suite 1292/1292, analyze clean.
