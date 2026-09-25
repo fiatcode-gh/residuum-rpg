@@ -120,10 +120,6 @@ void main() {
         find.descendant(of: pack, matching: find.text('Hero')),
         findsOneWidget,
       );
-      expect(
-        find.descendant(of: pack, matching: find.text('0/$inventoryCap')),
-        findsOneWidget,
-      );
     });
 
     testWidgets('a monster in sight beyond reach reads as watched', (

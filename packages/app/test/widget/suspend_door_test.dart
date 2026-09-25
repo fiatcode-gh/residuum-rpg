@@ -233,13 +233,6 @@ void main() {
         find.descendant(of: pack, matching: find.text('Hero')),
         findsOneWidget,
       );
-      expect(
-        find.descendant(
-          of: pack,
-          matching: find.text('${carried + 1}/$inventoryCap'),
-        ),
-        findsOneWidget,
-      );
       expect(app.saved!.inside, isTrue);
       expect(app.saved!.run!.inventory, hasLength(carried + 1));
       expect(app.saved!.run!.gold, lessThan(500));

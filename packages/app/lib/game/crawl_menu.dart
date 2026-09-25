@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:residuum_core/core.dart';
 
 import '../art/art_assets.dart';
 import '../style/tokens.dart';
@@ -25,7 +24,6 @@ class CrawlMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final height = crawlMenuHeight * crawlScale(context);
     final kinds = potionKinds(state.game.inventory);
-    final potionTotal = kinds.fold(0, (sum, kind) => sum + kind.count);
     return SizedBox(
       height: height,
       child: Padding(
@@ -61,7 +59,6 @@ class CrawlMenu extends StatelessWidget {
                   label: 'Quick',
                   mark: const ShippedMark(ActionIcon.potion),
                   dimmed: kinds.isEmpty,
-                  metadata: potionTotal > 0 ? '×$potionTotal' : '',
                   width: width,
                   height: height,
                   onOpen: (anchor) => openQuickPopup(anchor, bloc),
@@ -71,7 +68,6 @@ class CrawlMenu extends StatelessWidget {
                   id: 'menu-hero',
                   label: 'Hero',
                   mark: const FontMark(Icons.person),
-                  metadata: '${state.game.inventory.length}/$inventoryCap',
                   width: width,
                   height: height,
                   onOpen: (anchor) => Navigator.of(anchor).push(
@@ -102,7 +98,6 @@ class _MenuSlot extends StatelessWidget {
     required this.onOpen,
     this.dimmed = false,
     this.armed = false,
-    this.metadata = '',
   });
 
   final String id;
@@ -112,7 +107,6 @@ class _MenuSlot extends StatelessWidget {
   final double height;
   final bool dimmed;
   final bool armed;
-  final String metadata;
   final void Function(BuildContext anchor) onOpen;
 
   @override
@@ -123,7 +117,6 @@ class _MenuSlot extends StatelessWidget {
       mark: mark,
       dimmed: dimmed,
       armed: armed,
-      metadata: metadata,
       width: width,
       height: height,
       onPressed: () => onOpen(anchorContext),

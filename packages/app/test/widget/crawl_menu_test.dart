@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/action_icon.dart';
 import 'package:residuum_app/game/crawl_menu.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
@@ -101,17 +102,27 @@ GameState _battleGame({
   heroHp: heroHp,
 );
 
-Future<GameBloc> _openCrawl(WidgetTester tester, GameState game) async {
+Future<GameBloc> _openCrawl(
+  WidgetTester tester,
+  GameState game, {
+  TextScaler? textScaler,
+}) async {
   await onTheTargetPhone(tester);
   final bloc = GameBloc(game: game, stepDelay: Duration.zero);
   addTearDown(bloc.close);
-  await tester.pumpWidget(
-    MaterialApp(
-      home: BlocProvider.value(
-        value: bloc,
-        child: const GameScreen(palette: DungeonPalette.crypt),
-      ),
+  final app = MaterialApp(
+    home: BlocProvider.value(
+      value: bloc,
+      child: const GameScreen(palette: DungeonPalette.crypt),
     ),
+  );
+  await tester.pumpWidget(
+    textScaler == null
+        ? app
+        : MediaQuery(
+            data: MediaQueryData(textScaler: textScaler),
+            child: app,
+          ),
   );
   await tester.pumpAndSettle();
   return bloc;
@@ -127,6 +138,36 @@ Future<void> _tapTile(WidgetTester tester, Position tile) async {
   final geometry = GridGeometry.camera(size, 7, 5, _heroAt);
   final local = geometry.centreOf(tile);
   await tester.tapAt(tester.getTopLeft(scene) + local);
+}
+
+/// The armed-state frame width painted on [slot]'s `Material`, read from the
+/// widget the crawl actually painted, never a hex/width literal.
+BorderSide _frameOf(WidgetTester tester, Finder slot) =>
+    (tester
+                .widget<Material>(
+                  find.descendant(of: slot, matching: find.byType(Material)),
+                )
+                .shape!
+            as RoundedRectangleBorder)
+        .side;
+
+/// Fails unless [slot]'s mark sits centred above its label, both centred on
+/// the slot's own horizontal centre.
+void _expectCentred(WidgetTester tester, Finder slot) {
+  final slotRect = tester.getRect(slot);
+  final markRect = tester.getRect(
+    find.descendant(of: slot, matching: find.byType(ActionMarkView)),
+  );
+  final labelRect = tester.getRect(
+    find.descendant(of: slot, matching: find.byType(Text)),
+  );
+  final centreX = slotRect.center.dx;
+  expect(markRect.center.dx, closeTo(centreX, 0.5));
+  expect(labelRect.center.dx, closeTo(centreX, 0.5));
+  expect(markRect.bottom, lessThanOrEqualTo(labelRect.top));
+  final gapAbove = markRect.top - slotRect.top;
+  final gapBelow = slotRect.bottom - labelRect.bottom;
+  expect((gapAbove - gapBelow).abs(), lessThanOrEqualTo(1.0));
 }
 
 void main() {
@@ -350,13 +391,6 @@ void main() {
 
       expect(bloc.state.armedSpellId, 'firebolt');
       expect(bloc.state.armedTargets, contains('ghoul-1'));
-      expect(
-        find.descendant(
-          of: _slot('menu-spells'),
-          matching: find.text('— armed'),
-        ),
-        findsOneWidget,
-      );
 
       final hpBefore = bloc.state.game.monsters.single.hp;
       await _tapTile(tester, _adjacentToHero);
@@ -529,6 +563,116 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(bloc.state.armedSpellId, 'bind');
+    },
+  );
+
+  testWidgets(
+    'each slot shows only its mark and label, with no metadata text and no '
+    'count in its semantics label',
+    (tester) async {
+      final bloc = await _openCrawl(
+        tester,
+        _battleGame(
+          knownSpells: const {'firebolt'},
+          mana: 10,
+          inventory: const [
+            Item(id: 'potion-1', base: healingPotion, rarity: Rarity.common),
+            Item(id: 'potion-2', base: healingPotion, rarity: Rarity.common),
+          ],
+        ),
+      );
+      await tester.tap(_slot('menu-spells'));
+      await tester.pumpAndSettle();
+      await tester.tap(_slot('spell:firebolt'));
+      await tester.pumpAndSettle();
+      expect(bloc.state.armedSpellId, 'firebolt');
+
+      const expectedLabels = {
+        'menu-quests': 'Quests, unavailable',
+        'menu-spells': 'Spells, armed',
+        'menu-quick': 'Quick',
+        'menu-hero': 'Hero',
+      };
+      final handle = tester.ensureSemantics();
+      try {
+        for (final entry in expectedLabels.entries) {
+          final slot = _slot(entry.key);
+          expect(
+            find.descendant(of: slot, matching: find.byType(Text)),
+            findsOneWidget,
+            reason: entry.key,
+          );
+          for (final needle in ['×', '/', 'armed']) {
+            expect(
+              find.descendant(of: slot, matching: find.textContaining(needle)),
+              findsNothing,
+              reason: '${entry.key} contains "$needle"',
+            );
+          }
+          expect(
+            tester.getSemantics(slot).label,
+            entry.value,
+            reason: entry.key,
+          );
+        }
+      } finally {
+        handle.dispose();
+      }
+    },
+  );
+
+  testWidgets(
+    'the mark sits above the label, both centred in the slot, at text scale '
+    '1.0 and 1.3',
+    (tester) async {
+      final game = _battleGame(
+        knownSpells: const {'firebolt'},
+        mana: 10,
+        inventory: const [
+          Item(id: 'potion-1', base: healingPotion, rarity: Rarity.common),
+          Item(id: 'potion-2', base: healingPotion, rarity: Rarity.common),
+        ],
+      );
+      const slotIds = ['menu-quests', 'menu-spells', 'menu-quick', 'menu-hero'];
+
+      await _openCrawl(tester, game);
+      for (final id in slotIds) {
+        _expectCentred(tester, _slot(id));
+      }
+
+      await _openCrawl(tester, game, textScaler: const TextScaler.linear(1.3));
+      for (final id in slotIds) {
+        _expectCentred(tester, _slot(id));
+      }
+    },
+  );
+
+  testWidgets(
+    'the armed Spells slot frame is 3 dp; the other slots and disarming '
+    'stay thinner',
+    (tester) async {
+      final bloc = await _openCrawl(
+        tester,
+        _battleGame(knownSpells: const {'firebolt'}, mana: 10),
+      );
+
+      await tester.tap(_slot('menu-spells'));
+      await tester.pumpAndSettle();
+      await tester.tap(_slot('spell:firebolt'));
+      await tester.pumpAndSettle();
+      expect(bloc.state.armedSpellId, 'firebolt');
+
+      expect(_frameOf(tester, _slot('menu-spells')).width, 3);
+      for (final id in ['menu-quests', 'menu-quick', 'menu-hero']) {
+        expect(_frameOf(tester, _slot(id)).width, isNot(3), reason: id);
+      }
+
+      await tester.tap(_slot('menu-spells'));
+      await tester.pumpAndSettle();
+      await tester.tap(_slot('spell:firebolt'));
+      await tester.pumpAndSettle();
+      expect(bloc.state.armedSpellId, isNull);
+      expect(_frameOf(tester, _slot('menu-spells')).width, isNot(3));
     },
   );
 }

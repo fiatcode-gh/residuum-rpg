@@ -11,7 +11,6 @@ class CrawlSlot extends StatelessWidget {
     required this.onPressed,
     this.dimmed = false,
     this.armed = false,
-    this.metadata = '',
     required this.width,
     required this.height,
     super.key,
@@ -26,8 +25,6 @@ class CrawlSlot extends StatelessWidget {
   final bool dimmed;
 
   final bool armed;
-
-  final String metadata;
 
   final double width;
   final double height;
@@ -49,15 +46,15 @@ class CrawlSlot extends StatelessWidget {
       CrawlSlotState.disabled => crawlDivider,
       CrawlSlotState.armed => crawlCold,
     };
-    final frameWidth = state == CrawlSlotState.armed ? 1.5 : hairline;
+    final frameWidth = state == CrawlSlotState.armed ? 3.0 : hairline;
     final labelStyle = switch (state) {
       CrawlSlotState.available => textSlot,
       CrawlSlotState.disabled => textSlotDisabled,
       CrawlSlotState.armed => textSlotArmed,
     };
-    final metadataText = armed ? '— armed' : metadata;
-    final baseLabel = metadata.isEmpty ? label : '$label $metadata';
-    final semanticsLabel = dimmed ? '$baseLabel, unavailable' : baseLabel;
+    var semanticsLabel = label;
+    if (dimmed) semanticsLabel = '$semanticsLabel, unavailable';
+    if (armed) semanticsLabel = '$semanticsLabel, armed';
     return Semantics(
       button: true,
       enabled: onPressed != null,
@@ -88,32 +85,28 @@ class CrawlSlot extends StatelessWidget {
               child: InkWell(
                 onTap: onPressed,
                 borderRadius: BorderRadius.circular(radius),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Opacity(
-                        opacity: state == CrawlSlotState.disabled
-                            ? crawlDisabledIconOpacity
-                            : 1,
-                        child: SizedBox(
-                          height: crawlSlotMark,
-                          child: ActionMarkView(mark, size: crawlSlotMark),
-                        ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    Opacity(
+                      opacity: state == CrawlSlotState.disabled
+                          ? crawlDisabledIconOpacity
+                          : 1,
+                      child: SizedBox(
+                        height: crawlSlotMark,
+                        child: ActionMarkView(mark, size: crawlSlotMark),
                       ),
-                      const SizedBox(height: 2),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(label, maxLines: 1, style: labelStyle),
-                        ),
+                    ),
+                    const SizedBox(height: 2),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(label, maxLines: 1, style: labelStyle),
                       ),
-                      if (metadataText.isNotEmpty)
-                        Text(metadataText, style: monoSlotMeta),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
