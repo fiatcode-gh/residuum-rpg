@@ -801,6 +801,10 @@ back up and restore whatever is there), `adb -s "$DEV" install -r …`.
   into a narrow band: both edges touch the hero block and the smaller
   overlap is taken. Reaching five buttons in combat needs loot and a node on
   a stairs cell; accepted as residual unless Main asks otherwise.
+  In that regime the target card can also land on the hero block's
+  neighbour cell holding the adjacent target (review N1), so a tap on that
+  target meets its own card until the player pans. 0 cases at text scale
+  1.0 on either phone in the review's probe.
 - The card covers the lower map band (≈ 76–190 dp) while it shows; a
   distant monster there needs a pan to be tapped. The target cell's card
   may draw its leader across the action card.

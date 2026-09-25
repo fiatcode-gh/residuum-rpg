@@ -5395,3 +5395,14 @@ request exists, and the integration choice is the user's.
   semantics label. Red observed at HEAD (two Texts, off-centre, 1.5 vs 3).
 - **Main gates at `e5f23b6`:** format 0 changed, analyze clean, full suite
   1295/1295, core/content unchanged. Next: scoped review of Tasks 11–12.
+- **Amendment review AccU166b: ACCEPT-WITH-MINORS** at `e5f23b6`. Probe:
+  7260 rendered samples over four map sizes; map and log rows never move;
+  the card pins bottom exactly when that misses the hero block, else top
+  (below the strip in battle); the leader runs hero edge to card; the
+  target card never overlaps the action card; recenter never overlaps
+  either. Residuals only in the accepted PLAN 9.6 regime (5+ buttons at text
+  scale ≥ 1.2 in battle), where N1 the target card can land on the adjacent
+  target's cell; parked in PLAN 9.6. N2 (1.3 test cases dropped the phone
+  inset) and N3 (full-pack test did not check the card's line) fixed in a
+  test-only commit; Main ran format, analyze and the full suite (1295/1295).
+  N4 (verbs computed three times per build) parked.
