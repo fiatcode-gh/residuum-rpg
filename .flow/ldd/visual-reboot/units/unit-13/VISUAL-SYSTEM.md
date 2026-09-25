@@ -141,6 +141,10 @@ families; nothing outside them is pre-authorized.
 | Dungeon structure | stair art, door art, per-biome prop family (3 biomes × ~4 props), placed light-source art | dungeon renderer |
 | Creature art | one per monster family in `packages/content` | dungeon renderer |
 
+> **Superseded by Unit 16.6 (2026-09-24):** the action shelf is retired;
+> verb and spell marks appear on the bottom menu, the pop-ups and the
+> log-side controls. See `units/unit-16.6/CONTRACT.md`.
+
 > **Superseded by Unit 16.5 (2026-09-23):** the "Dungeon structure" row's
 > stair art, door art, per-biome prop family and placed light-source art are
 > not planned. Dungeon structure is typographic glyphs (`#` walls, `·`
@@ -174,11 +178,22 @@ Behaviour and accessibility, unchanged:
 - the four-region rule: map = space and targets, timeline = time, log =
   causality, action shelf = verbs, no concern duplicated; combat has one
   action row;
+
+> **Superseded by Unit 16.6 (2026-09-24):** verbs are split between the
+> persistent bottom menu (Quests, Spells, Quick, Hero), the log-side
+> Wait/Flee, on-map place pop-ups and the map itself; turn order and the
+> target card float over the map; there is no action row. See
+> `units/unit-16.6/CONTRACT.md`.
 - melee is map-first; a targeted spell is `arm → map target → tap`;
 - circle means selection, square means targeting — shape, never hue;
 - activation repetition and hidden-actor secrecy;
 - authoritative action vocabulary and counts; `readiedSpellCount` is 3, so
   eleven chips is the true row ceiling and `Flee` never appears in a crawl;
+
+> **Superseded by Unit 16.6 (2026-09-24):** readied spells live in the
+> Spells pop-up (three, plus the grimoire); Flee sits beside the log
+> whenever fleeing is legal; there is no chip row or ceiling. See
+> `units/unit-16.6/CONTRACT.md`.
 - the game's own words win over the mock's caption text: `Gear` not
   `Equipment`, the real attribute set, the real door set;
 - no important state by hue alone; every screen reads in greyscale;
@@ -190,6 +205,12 @@ Behaviour and accessibility, unchanged:
 > touch-intent resolution within a 24 dp radius (a 48 dp effective target,
 > `map_touch.dart`), not by large fixed cells. See
 > `units/unit-16.5/CONTRACT.md`.
+
+> **Superseded by Unit 16.6 (2026-09-24):** the map cell is
+> `mapCellWidth = 24` dp x `mapCellHeight = 30` dp; the camera keeps the
+> hero centred on every floor with bounded pan; a tap within 48 dp of the
+> hero steps by dominant axis, and monsters keep a 24 dp radius. See
+> `units/unit-16.6/CONTRACT.md`.
 - the map is `Expanded`: chrome is paid for in map height, and the measured
   dp budget (exploration 331.1, typical combat 438.1, worst legal 580.95
   against a 600 ceiling) is the real constraint on every chrome change.
@@ -198,6 +219,12 @@ Behaviour and accessibility, unchanged:
 > map floor is at least 45% of logical height in exploration and at least
 > 35% in battle. The 600 dp worst-legal-chrome ceiling and `_fitFor` are
 > retired. See `units/unit-16.5/CONTRACT.md`.
+
+> **Superseded by Unit 16.6 (2026-09-24):** the chrome is one fixed
+> composition in every crawl state (HUD, map, log row, bottom menu); the
+> map rectangle is identical in exploration, Watched, battle and armed;
+> the 45%/35% floors, the five-slot contextual bar and the three-column
+> hero and combat panels are retired. See `units/unit-16.6/CONTRACT.md`.
 
 ## 8. Superseded
 
@@ -237,6 +264,9 @@ Behaviour and accessibility, unchanged:
 - **Monospace retired / 36 dp camera cell / 600 dp chrome ceiling /
   ink-only light** — superseded by Unit 16.5 (2026-09-23), see
   units/unit-16.5/CONTRACT.md.
+- **16 × 20 dp cell / fixed chrome by mode / five-slot bar / hero and
+  combat panels / "action shelf = verbs"** — superseded by Unit 16.6
+  (2026-09-24), see units/unit-16.6/CONTRACT.md.
 
 ## 9. Settled by the user, 2026-09-18
 
