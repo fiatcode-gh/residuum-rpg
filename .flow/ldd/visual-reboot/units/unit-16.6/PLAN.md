@@ -1,6 +1,7 @@
 # U16.6 — Crawl Controls and Layout Revamp: execution plan
 
-Status: **execution-grade, awaiting user plan approval.** Governing WHAT/WHY:
+Status: **execution-grade; Tasks 01–10 implemented and accepted; §9
+amendment (Tasks 11–12, 2026-09-25) awaiting user plan approval.** Governing WHAT/WHY:
 [CONTRACT.md](CONTRACT.md), approved via `flow_gate` (sha256 `d0bae5fa…`).
 Evidence: [recon.md](recon.md), `.flow/evidence/4b8bd10/UXW-EXP/`,
 `.flow/evidence/4b8bd10/UXW-BAT/`. Decisions: LEDGER "Unit 16.6 intake".
@@ -632,3 +633,196 @@ up, Q5 verifier plays down, Q6 keep). These are locked; do not reopen.
   knowledge) is covered under COR/TTC.
 - Residual risks deliberately left to device evidence: §8; open WHAT
   questions: §7.
+
+## 9. Amendment 2026-09-25 — action card and icon-only menu slots
+
+Governing: contract amended at `f1db13f` (action card: settled decisions 6
+and 8, scope §1 item 3, §4, acceptance 7 and 8) and `87344e7` (scope §1
+item 4: menu slots icon above label, no metadata). Derived from head
+`87344e7`; app code last changed at `4de51c3` (`git diff --stat 4de51c3 --
+packages` empty). Dirty state assumed: none outside `.flow/`. Tasks 01–10
+and the `4de51c3` correction stay as implemented and accepted; this section
+supersedes only the locks named here.
+
+### Superseded locks
+
+- G5: `LogRow` is the log only (no side controls); composition otherwise
+  unchanged.
+- G6 rows `wait`, `flee` and the place-verb row: surface is the **action
+  card**; availability owner is `cardVerbsFor(state)` over the unchanged
+  `canPickUp`, `canGather`, `isRoadClear`, `canAscend`, `canDescend`,
+  `canLeave`, `canFlee`, `offersWait`. Ids and labels unchanged.
+- G8: the side-controls paragraph is retired. `CrawlSlot` loses metadata
+  (G13).
+- G9: the metadata column of the menu table is retired (Spells armed keeps
+  its frame and glow, not the `— armed` text).
+- G10: the place pop-up bullet is replaced by G12; the target card's
+  `avoid` loses the pop-up rect and gains an `area`; the recenter pill may
+  lift above the card.
+- §6 capsules for this amendment: §9.4.
+
+### G12 Action card (Task 11)
+
+- **Content and order:** `cardVerbsFor` = Pick up, Mine/Gather, Move on,
+  Ascend `<`, Descend `>`, Leave/Finish, Flee, Wait (the place order Task
+  06 shipped, then Flee, then Wait last). Facts above the buttons as the
+  pop-up had them. Shown iff any verb or fact applies (Q4 kept; Q7).
+- **Buttons:** `CrawlSlot`, 48 dp tall, four per row, fixed width
+  `(W − 16 − 20 − 18) / 4` (≈ 84.7 dp at 392.7 dp), rows start-aligned.
+  Four per row keeps every realistic combat set on one row: in combat at
+  most Wait + Flee + Pick up (road) or Wait + Pick up + stairs + Leave
+  (dungeon).
+- **Height:** `20 + facts × 14·s + (facts && verbs ? 6 : 0) + rows × 48 +
+  (rows − 1) × 6`, `rows = ⌈verbs / 4⌉`. Examples (widget dp, test profile,
+  map ≈ 561.9 at s 1.0, ≈ 489.9 at s 1.3; executor re-reads by probe):
+  Wait alone 68; 2 facts + 4 verbs at 1.3: 110.4; largest reachable (3
+  facts + 5 verbs) 170 at 1.0, 182.6 at 1.3.
+- **Placement:** bottom edge, `left = 8`, `width = W − 16`,
+  `bottom = H − 8` (above a flipped strip: `strip.top − 8`). If that rect
+  overlaps `heroBlock(hero)` (hero cell, four neighbours, diagonals, +4 dp),
+  top edge: `top = 8`, or `strip.bottom + 8` under the top strip. If both
+  overlap, the smaller block overlap wins, ties to the bottom.
+  **Guarantee** (proved by sweep): never over the hero block at s 1.0 for
+  every reachable content, and at s 1.3 for up to four buttons, with or
+  without the strip. Beyond that (five buttons at s ≥ ~1.2 in battle) a
+  ≈ 15 dp band of hero positions exists where both edges touch the block;
+  see §9.6.
+- **Leader line:** `LeaderPainter` shared with the target card (gold at
+  0.7 alpha, 1 dp, 2.5 dp dot at the hero end), vertical from the centre of
+  the hero cell's edge facing the card to the card's facing edge, the card
+  end clamped 6 dp inside the card's corners. Hidden when the hero cell is
+  outside the map (panned away); the card stays.
+- **Frame:** `crawlCalloutDecoration`, shared by both cards.
+- **Coexistence:** strip (unchanged rule; the card sits clear of it on
+  either edge); target card placed only inside the map band the action card
+  leaves free (`placeMapOverlay(area:)`), so they never overlap on any pass;
+  recenter pill lifts to `card.top − 8` when it would overlap; armed
+  targeting unchanged (a tap inside the card is absorbed and does not
+  disarm; a spell target under the card needs a pan); the half and full
+  log drawer still cover the lower map and the card, as they covered
+  Wait/Flee (one tap closes).
+- **Map rectangle:** unchanged; the log row keeps 104 × s, now full-width
+  peek.
+
+### G13 Menu slots (Task 12)
+
+`CrawlSlot` renders mark above label, centred both ways, nothing else;
+semantics label is the word (`, unavailable` when dimmed). The menu drops
+`×N`, `n/cap` and `— armed`.
+
+### 9.1 Task graph
+
+```
+(accepted 01–10, correction 4de51c3, DEV-FS/EXP/BAT/FINGER at 9db8ea5)
+ → 11 action-card        (CardVerb/cardVerbsFor, ActionCard, placement, leader,
+                          target-card area, log row full width, VISUAL-SYSTEM)
+ → 12 menu-slots         (CrawlSlot icon+label only; menu metadata removed)
+ → Main: LEDGER/RESUME, final gates, scoped acceptance, §9.4 device re-check,
+         user sign-off
+```
+
+11 and 12 share no file (`crawl_slot.dart` is used, not edited, by 11) and
+either order leaves a valid handoff; run them one at a time in this
+checkout, 11 first, one fresh `flow-plan-executor` each. Task 11 holds the
+card, the log row and the target-card area together: removing Wait/Flee
+from the log row without the card (or the pop-up without the card) leaves
+a verb unreachable, and the card cannot land without the target card
+avoiding it (contract §4), so no valid intermediate handoff exists.
+
+### 9.2 Proof map (amended rows)
+
+| AC | proof |
+|---|---|
+| 3 menu | T12 `crawl_menu_test` (one Text per slot, semantics word, centring at 1.0/1.3); DEV-EXP-2 |
+| 4 every verb | T11 `crawl_verbs_test` (card-scoped finders) |
+| 7 Watched Wait | existing bloc stall test; T11 `action_card_test` Wait case; DEV-EXP-2 |
+| 8 action card | T11 `action_card_verbs_test`, `map_overlay_layout_test` (rules, sweep, leader, area), `action_card_test` (edge-pinned rect, top fallback, below strip, leader, no overflow at 1.3, map still tappable), `log_row_test` (peek full width); mutation witnesses M1–M5; DEV-EXP-2, DEV-BAT-2 |
+| 9 strip + card | T11 `target_card_test` (no overlap with the action card) |
+
+### 9.3 Gates
+
+Main, once after Task 12, from `packages/app`: format check, analyze, full
+suite (§5), `git diff --stat 4b8bd10 -- packages/core packages/content`
+empty, zero-hit grep for Task 11 item 8 and Task 12's `metadata`. The
+acceptance at `4de51c3` is reopened for the changed surface: one scoped
+`flow-acceptance-reviewer` pass over Tasks 11–12 against this section and
+contract items 1.3, 1.4, §4, AC 3, 4, 7, 8, 9, including a placement probe
+(untracked) over three map sizes like the `4de51c3` closure.
+
+### 9.4 Device re-check (Main, vivo I2219)
+
+Serial `DEV='adb-10DF1Q03JJ000HK-LUqZxk (2)._adb-tls-connect._tcp'` (quote
+it). Checkpoint file `.flow/checkpoints/<head>.md` before the first ADB
+command; `flutter build apk --debug`; §6.2 backup (the app is installed
+from DEV-FS/EXP/BAT; any saves on it are the verifier's or the user's —
+back up and restore whatever is there), `adb -s "$DEV" install -r …`.
+
+- **DEV-EXP-2** (fresh game, synthetic input): no card on a bare floor;
+  card at the map's bottom edge, full width, leader to the hero, for Pick
+  up, Mine or Gather, Descend + Leave, Ascend + Leave; the hero and its
+  four neighbours clear; drag the hero low → card moves to the top edge;
+  taps and drags outside the card reach the map; Watched → Wait in the card,
+  one tap advances the game; the log row is the full-width log in
+  exploration and Watched; menu slots show icon above word, no `×N`/`n/cap`
+  with potions carried; map rectangle measured (px ÷ 2.75) equal across
+  states and to the `9db8ea5` figure.
+- **DEV-BAT-2**: road fight: Wait (and Flee when at the ring edge) in the
+  card, strip at the top, card at the bottom; pan the hero low in battle →
+  card below the strip; inspected target card never overlapping the action
+  card; cleared road → Move on in the card and the area around the hero
+  open (the user's complaint); Spells slot armed shows frame/glow only;
+  half drawer open → note that it covers the card, close it, Wait works.
+- Reused with rationale: **DEV-FS** (no native, `SafeArea` or menu hit-box
+  change: slot rects are unchanged by G13) and **DEV-FINGER** steps 1–5
+  (`map_touch.dart`, camera and step box unchanged; the card never covers
+  the hero block at s 1.0). The user's sign-off round re-checks feel.
+- Evidence under `.flow/evidence/<head>/DEV-EXP-2/` and `/DEV-BAT-2/`;
+  independent scoring against contract §4 and AC 3, 7, 8; §6.2 restore with
+  `MATCH`; at unit end the app is uninstalled (the phone had none before).
+- **User sign-off** on the device: card position and leader, Wait/Flee
+  placement, cleared-road exploring, menu slots. Record verbatim.
+
+### 9.5 Contract questions for Main (WHAT)
+
+- **Q7 Fact-only card.** AC 8 says the card appears "exactly when one of its
+  actions applies"; Q4 (user, 2026-09-24) kept the `Here:` fact without Pick
+  up on a full pack. *Default: keep Q4* (the card shows the fact alone). The
+  alternative is one line in Task 11: shown iff `cardVerbsFor` is non-empty.
+- **Q8 Armed Spells slot.** "No count or other metadata" removes the
+  `— armed` text; the armed frame and glow stay. *Default: remove.* The
+  alternative keeps a metadata exception for armed.
+
+### 9.6 Residual risks
+
+- Five or more buttons at text scale ≥ ~1.2 in battle with the hero panned
+  into a narrow band: both edges touch the hero block and the smaller
+  overlap is taken. Reaching five buttons in combat needs loot and a node on
+  a stairs cell; accepted as residual unless Main asks otherwise.
+- The card covers the lower map band (≈ 76–190 dp) while it shows; a
+  distant monster there needs a pan to be tapped. The target cell's card
+  may draw its leader across the action card.
+- The open log drawer covers the card (as it covered Wait/Flee).
+- Button labels shrink to fit in 84.7 dp at s 1.3 (`Descend >` the
+  longest); readability is a device check.
+
+### Plan quality gate (amendment)
+
+- **COR — PASS.** One availability owner (`cardVerbsFor`) over unchanged
+  getters; one placement owner (`map_overlay_layout.dart`) with a total,
+  deterministic two-edge rule; target card confined to the free band so no
+  pass can overlap the card; recenter lifted; every overlay child
+  `Positioned`; map rect and log row height unchanged; no bloc change; every
+  intermediate commit keeps every verb reachable.
+- **TTC — PASS.** Rules, sweep guarantees, leader and area are unit-tested
+  with literal expectations; widget tests derive expectations from the map
+  rect and margins, not the implementation; value-level Red on peek width
+  and menu slot content/centring; M1–M5 mutation witnesses prove the
+  geometric assertions can fail; retired presentation tests are rewritten
+  to behaviour (log row, menu metadata), not re-pinned.
+- **CRF — PASS.** Renames instead of aliases; deletes the pop-up, side
+  controls, their constants, the private painter and duplicated decoration;
+  shares one painter and one decoration between two cards; no block-action
+  hook; `CrawlSlot` narrows to what the menu and card use.
+- **SEC — SKIP.** Offline presentation only; no trust boundary or secrecy
+  surface changes (the card shows only the hero's own cell).
+- Residual risks left to device evidence: §9.6; WHAT questions: §9.5.
