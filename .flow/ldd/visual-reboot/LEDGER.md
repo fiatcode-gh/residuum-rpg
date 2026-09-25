@@ -5366,3 +5366,14 @@ request exists, and the integration choice is the user's.
   cleared road all work. Main inspected `16a-battle-engaged-3actors`. Not
   exercised: Flee (not offered in two road fights), a ranged monster's
   "Ranged, reach N", the death screen. Next: user DEV-FINGER and sign-off.
+- **DEV-FINGER (user, vivo I2219, 2026-09-25): "1-5 are good."** Steps: four
+  neighbour steps, void tap does not step, exact far-cell auto-walk, pan +
+  recenter, repeat on a deeper floor. User feedback, verbatim:
+  "make pickup/gather/mine/move-on/flee behaves like enemy info panel. with
+  a line pointing the hero and a box outside the map instead of blocking the
+  map. Because I noticed when encountering enemies while travelling, "move
+  on" box is shown on the map while I still want to explore the area. Doing
+  this will also make the experience more uniform" and "turns out my idea
+  for wait button placement is bad, I don't like it there". Not yet signed
+  off; these reopen the contract (place pop-up form, Flee and Wait
+  placement).
