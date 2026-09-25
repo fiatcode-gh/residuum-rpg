@@ -782,15 +782,18 @@ back up and restore whatever is there), `adb -s "$DEV" install -r …`.
 - **User sign-off** on the device: card position and leader, Wait/Flee
   placement, cleared-road exploring, menu slots. Record verbatim.
 
-### 9.5 Contract questions for Main (WHAT)
+### 9.5 Contract questions for Main (WHAT) — resolved by the user, 2026-09-25
 
-- **Q7 Fact-only card.** AC 8 says the card appears "exactly when one of its
-  actions applies"; Q4 (user, 2026-09-24) kept the `Here:` fact without Pick
-  up on a full pack. *Default: keep Q4* (the card shows the fact alone). The
-  alternative is one line in Task 11: shown iff `cardVerbsFor` is non-empty.
-- **Q8 Armed Spells slot.** "No count or other metadata" removes the
-  `— armed` text; the armed frame and glow stay. *Default: remove.* The
-  alternative keeps a metadata exception for armed.
+- **Q7 Fact-only card: show the fact, and say the pack is full.** With a
+  full pack and an item underfoot, the card shows the `Here:` fact with no
+  Pick up button, plus the fact line `You cannot carry any more.` (the
+  existing `InventoryFull` log sentence in `event_messages.dart`, reused
+  verbatim so the two cannot drift). The line appears only when
+  `itemsUnderfoot` is non-empty and the inventory is at `inventoryCap`.
+- **Q8 Armed Spells slot: heavier frame, no text.** The `— armed` text is
+  removed; while a spell is armed the Spells slot's frame is 3 dp (twice the
+  1.5 dp armed frame) in `crawlCold`, plus the existing glow, so armed reads
+  by shape, not hue alone.
 
 ### 9.6 Residual risks
 

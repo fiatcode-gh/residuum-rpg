@@ -51,11 +51,15 @@ the menu height, tokens.
    (Padding horizontal 4, FittedBox scaleDown, one line)]`, centred
    horizontally and vertically in the slot; no top padding. Nothing else is
    rendered in a slot.
-2. Armed state keeps its cold frame (1.5 dp `crawlCold`), glow and
-   `textSlotArmed` label; the `— armed` text is removed with the rest of the
-   metadata (see PLAN §9 Q8).
+2. Armed state keeps its cold glow and `textSlotArmed` label; **the armed
+   frame becomes 3 dp `crawlCold`** (was 1.5 dp) so armed reads by shape as
+   well as hue (PLAN §9 Q8, user). The `— armed` text is removed with the
+   rest of the metadata. Proof: with a spell armed, the Spells slot's border
+   width is 3 and the other slots' is not; disarming returns it.
 3. Semantics: `button: true`, `enabled: onPressed != null`, label = `label`,
-   plus `', unavailable'` when dimmed. No count.
+   plus `', unavailable'` when dimmed and `', armed'` on the Spells slot while
+   a spell is armed (the word the screen removed stays for screen readers).
+   No count.
 4. `crawl_menu.dart`: `_MenuSlot.metadata` and `potionTotal` are deleted;
    `kinds` stays (Quick dimming). No other change.
 5. No new dartdoc or body comments (G11).

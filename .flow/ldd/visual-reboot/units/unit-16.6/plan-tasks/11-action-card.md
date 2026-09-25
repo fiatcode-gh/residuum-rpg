@@ -72,8 +72,12 @@ card's content, map touch, the log drawer, the camera. Do not add a
    `offersWait` and `canFlee` outside `game_bloc.dart` are in
    `cardVerbsFor`.
 2. **Shown iff** `cardVerbsFor(s).isNotEmpty || placeFacts(s).isNotEmpty`
-   (the pop-up's rule, so a full pack still shows the `Here:` fact without a
-   button, PLAN §7 Q4; see §9 Q7).
+   (the pop-up's rule, PLAN §7 Q4). **Q7 (user):** when `itemsUnderfoot` is
+   non-empty and the inventory is at `inventoryCap`, `placeFacts` appends
+   `You cannot carry any more.`, the `InventoryFull` sentence from
+   `event_messages.dart` read from that one source, not a copied literal.
+   Proof: a test with a full pack on an item shows the `Here:` fact and that
+   line, and no Pick up button; with one free slot the line is absent.
 3. **Card body** (`action_card.dart`): `actionCardKey = Key('action-card')`,
    `actionCardLeaderKey = Key('action-card-leader')`.
    `ActionCard({required GameBloc bloc, required GameViewState state, required double width})`:

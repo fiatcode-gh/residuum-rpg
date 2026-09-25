@@ -87,7 +87,9 @@ Architect proposals carried from the discussion (part of this approval):
 4. **Bottom menu.** Four framed slots: `Quests`, `Spells`, `Quick`, `Hero`.
    A slot with nothing to offer right now is dimmed, never removed. Each
    slot shows only its icon above its label, centred in the slot, with no
-   count or other metadata (user, 2026-09-25).
+   count or other metadata (user, 2026-09-25). While a spell is armed the
+   Spells slot's frame is heavier as well as cold blue, so armed is carried
+   by shape, not hue alone.
 
 Removed from the crawl: the wordmark, the hero panel, the combat panel and
 the contextual action bar.
@@ -116,7 +118,9 @@ the contextual action bar.
 - The card appears whenever at least one of its actions applies: a place
   action (with what is here, for example `Here: Common Iron Helm and 1 more`,
   `Underfoot: ore vein`), Wait, or Flee. One button per legal action;
-  several actions share the card.
+  several actions share the card. With a full pack, an item underfoot still
+  shows its `Here:` fact with no Pick up button and a line saying the pack
+  is full (user, 2026-09-25).
 - It is pinned to the map's bottom edge, full map width less the map margin,
   with a leader line to the hero's cell. If the hero's cell or its four
   neighbours would be covered there (the player has panned the hero low), the
@@ -213,7 +217,8 @@ itself). Historical entries are not rewritten.
 6. Quick: drinking takes exactly two taps, in and out of combat.
 7. While Watched in a dungeon, Wait is visible in the action card and ends
    the stall from the walkthrough (UXW-BAT 27–32) without special taps.
-8. The action card appears exactly when one of its actions applies, sits on
+8. The action card appears exactly when one of its actions applies (or, with
+   a full pack, to report what is underfoot and that the pack is full), sits on
    the map's bottom edge (top edge when the hero is there) with a leader line
    to the hero, never covers the hero or its neighbours, and leaves the rest
    of the map tappable. The log row holds only the log.
