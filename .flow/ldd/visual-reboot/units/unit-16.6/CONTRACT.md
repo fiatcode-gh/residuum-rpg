@@ -85,7 +85,9 @@ Architect proposals carried from the discussion (part of this approval):
 3. **Log row.** The framed recent-events peek, full width, with its truthful
    count and expand control. Nothing else sits in this row.
 4. **Bottom menu.** Four framed slots: `Quests`, `Spells`, `Quick`, `Hero`.
-   A slot with nothing to offer right now is dimmed, never removed.
+   A slot with nothing to offer right now is dimmed, never removed. Each
+   slot shows only its icon above its label, centred in the slot, with no
+   count or other metadata (user, 2026-09-25).
 
 Removed from the crawl: the wordmark, the hero panel, the combat panel and
 the contextual action bar.
