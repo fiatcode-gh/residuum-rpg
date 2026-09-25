@@ -326,4 +326,273 @@ void main() {
       expect(lifted.height, crawlTouchTarget);
     });
   });
+
+  group('target card vs the strip (D1)', () {
+    test('on a real device layout, a melee target next to a hero panned low '
+        'still lands the card clear of the turn-order strip', () {
+      const map = Size(392.7, 557.9);
+      const cellSize = Size(24, 30);
+      const cardSize = Size(172, 95);
+      const actionCardHeight = 68.0;
+      const stripHeight = 48.0;
+
+      // Hero centred horizontally, low enough that the padded hero block
+      // still misses the bottom-pinned action card (it never flips) but
+      // covers every other legal corner of the old, strip-blind area.
+      final hero = const Offset(184.35, 384) & cellSize;
+      final targetCell =
+          Offset(hero.left + cellSize.width, hero.top) & cellSize;
+      final strip = Rect.fromLTWH(0, 0, map.width, stripHeight);
+      final card = placeActionCard(
+        map: map,
+        height: actionCardHeight,
+        hero: hero,
+        strip: strip,
+      );
+      expect(
+        card.overlaps(heroBlock(hero)),
+        isFalse,
+        reason:
+            'sanity: the action card must stay pinned to the bottom, '
+            'matching the field report — a flipped card is a different '
+            'scenario',
+      );
+
+      final area = targetCardArea(
+        map: map,
+        hero: hero,
+        actionCard: card,
+        strip: strip,
+      );
+
+      final placed = placeMapOverlay(
+        area: area,
+        size: cardSize,
+        hero: hero,
+        preferred: [
+          Offset(
+            targetCell.right + crawlCalloutMargin,
+            targetCell.top - crawlCalloutLeaderGap - cardSize.height,
+          ),
+          Offset(
+            targetCell.left - crawlCalloutMargin - cardSize.width,
+            targetCell.top - crawlCalloutLeaderGap - cardSize.height,
+          ),
+          Offset(
+            targetCell.right + crawlCalloutMargin,
+            targetCell.bottom + crawlCalloutLeaderGap,
+          ),
+          Offset(
+            targetCell.left - crawlCalloutMargin - cardSize.width,
+            targetCell.bottom + crawlCalloutLeaderGap,
+          ),
+        ],
+        avoid: [targetCell],
+      );
+
+      expect(
+        placed.overlaps(strip),
+        isFalse,
+        reason:
+            'D1: the target card must never cover the turn-order '
+            'strip',
+      );
+      expect(placed.overlaps(heroBlock(hero)), isFalse);
+      expect(placed.overlaps(card), isFalse);
+    });
+  });
+
+  group('targetCardArea', () {
+    test('is the full map when there is no strip and no action card', () {
+      const map = Size(300, 400);
+      final hero = const Offset(140, 140) & const Size(24, 30);
+      expect(
+        targetCardArea(map: map, hero: hero),
+        Rect.fromLTRB(0, 0, map.width, map.height),
+      );
+    });
+
+    test('excludes the strip\'s rows from the top when it sits at the top', () {
+      const map = Size(300, 400);
+      final hero = const Offset(140, 300) & const Size(24, 30);
+      const strip = Rect.fromLTWH(0, 0, 300, 48);
+      expect(
+        targetCardArea(map: map, hero: hero, strip: strip),
+        const Rect.fromLTRB(0, 48, 300, 400),
+      );
+    });
+
+    test('excludes the strip\'s rows from the bottom when it is flipped', () {
+      const map = Size(300, 400);
+      final hero = const Offset(140, 20) & const Size(24, 30);
+      const strip = Rect.fromLTWH(0, 352, 300, 48);
+      expect(
+        targetCardArea(map: map, hero: hero, strip: strip),
+        const Rect.fromLTRB(0, 0, 300, 352),
+      );
+    });
+
+    test('excludes the action card\'s rows from the bottom when it sits below '
+        'the hero', () {
+      const map = Size(300, 400);
+      final hero = const Offset(140, 140) & const Size(24, 30);
+      const actionCard = Rect.fromLTWH(8, 300, 284, 50);
+      expect(
+        targetCardArea(map: map, hero: hero, actionCard: actionCard),
+        const Rect.fromLTRB(0, 0, 300, 300),
+      );
+    });
+
+    test('excludes the action card\'s rows from the top when it is flipped '
+        'above the hero', () {
+      const map = Size(300, 400);
+      final hero = const Offset(140, 300) & const Size(24, 30);
+      const actionCard = Rect.fromLTWH(8, 8, 284, 50);
+      expect(
+        targetCardArea(map: map, hero: hero, actionCard: actionCard),
+        const Rect.fromLTRB(0, 58, 300, 400),
+      );
+    });
+
+    test('excludes both the strip and the action card at once', () {
+      const map = Size(300, 400);
+      final hero = const Offset(140, 300) & const Size(24, 30);
+      const strip = Rect.fromLTWH(0, 0, 300, 48);
+      const actionCard = Rect.fromLTWH(8, 340, 284, 50);
+      expect(
+        targetCardArea(
+          map: map,
+          hero: hero,
+          actionCard: actionCard,
+          strip: strip,
+        ),
+        const Rect.fromLTRB(0, 48, 300, 340),
+      );
+    });
+  });
+
+  group('the target card never covers the strip, the hero block or the '
+      'action card (D1 sweep)', () {
+    test('across hero and target positions on both target map sizes, with '
+        'the strip and action card present', () {
+      const cellSize = Size(24, 30);
+      const offsets = [
+        Offset(1, 0),
+        Offset(-1, 0),
+        Offset(0, 1),
+        Offset(0, -1),
+        Offset(2, 2),
+        Offset(-2, -2),
+      ];
+
+      void sweep(Size map, double scale, double actionHeight, Size card) {
+        final stripHeight = crawlStripHeight * scale;
+        final heroLefts = [
+          0.0,
+          (map.width - cellSize.width) / 2,
+          map.width - cellSize.width,
+        ];
+        for (final heroLeft in heroLefts) {
+          for (
+            var heroTop = 0.0;
+            heroTop <= map.height - cellSize.height;
+            heroTop += 8
+          ) {
+            final hero = Offset(heroLeft, heroTop) & cellSize;
+            final topBand = Rect.fromLTWH(0, 0, map.width, stripHeight);
+            final flipped = topBand.overlaps(hero);
+            final stripWidth = flipped ? map.width - 64 : map.width;
+            final strip = Rect.fromLTWH(
+              0,
+              flipped ? map.height - stripHeight : 0,
+              stripWidth,
+              stripHeight,
+            );
+            final actionCard = placeActionCard(
+              map: map,
+              height: actionHeight,
+              hero: hero,
+              strip: strip,
+            );
+            final area = targetCardArea(
+              map: map,
+              hero: hero,
+              actionCard: actionCard,
+              strip: strip,
+            );
+
+            for (final offset in offsets) {
+              final targetCell =
+                  Offset(
+                    hero.left + offset.dx * cellSize.width,
+                    hero.top + offset.dy * cellSize.height,
+                  ) &
+                  cellSize;
+              final placed = placeMapOverlay(
+                area: area,
+                size: card,
+                hero: hero,
+                preferred: [
+                  Offset(
+                    targetCell.right + crawlCalloutMargin,
+                    targetCell.top - crawlCalloutLeaderGap - card.height,
+                  ),
+                  Offset(
+                    targetCell.left - crawlCalloutMargin - card.width,
+                    targetCell.top - crawlCalloutLeaderGap - card.height,
+                  ),
+                  Offset(
+                    targetCell.right + crawlCalloutMargin,
+                    targetCell.bottom + crawlCalloutLeaderGap,
+                  ),
+                  Offset(
+                    targetCell.left - crawlCalloutMargin - card.width,
+                    targetCell.bottom + crawlCalloutLeaderGap,
+                  ),
+                  Offset(
+                    hero.center.dx - card.width / 2,
+                    heroBlock(hero).bottom + crawlCalloutLeaderGap,
+                  ),
+                  Offset(
+                    hero.center.dx - card.width / 2,
+                    heroBlock(hero).top - crawlCalloutLeaderGap - card.height,
+                  ),
+                ],
+                avoid: [targetCell],
+              );
+              final reason = 'map $map scale $scale hero $hero offset $offset';
+              expect(placed.overlaps(strip), isFalse, reason: 'strip: $reason');
+              expect(
+                placed.overlaps(heroBlock(hero)),
+                isFalse,
+                reason: 'hero block: $reason',
+              );
+              expect(
+                placed.overlaps(actionCard),
+                isFalse,
+                reason: 'action card: $reason',
+              );
+            }
+          }
+        }
+      }
+
+      // Whenever a target card can show, `game.monsters` is non-empty, so
+      // `isRoadClear` (needs an empty floor) is always false and `moveOn`
+      // never joins the verb list — the only verbs left to co-occur with
+      // a target are pickUp, gather, ascend xor descend, flee and wait,
+      // 4 at most, so the card never grows past one row of buttons. 3
+      // fact lines (underfoot node, an item here, a full pack) is this
+      // shape's own ceiling (`placeFacts`), and the bestiary never gives
+      // a monster more than 1 resist and 1 vulnerability, so 4 lines is
+      // the target card's own ceiling too. The map heights below are
+      // `dungeonSceneSlotKey`'s measured size under `onTheTargetPhone` at
+      // each text scale — taller than the plan's own planning figures,
+      // which this sweep does not repin.
+      sweep(const Size(392.7, 557.9), 1.0, 68, const Size(172, 95));
+      sweep(const Size(392.7, 557.9), 1.0, 116, const Size(172, 123));
+      sweep(const Size(392.7, 520.8), 1.3, 68, const Size(172, 112.4));
+      sweep(const Size(392.7, 520.8), 1.3, 110.4, const Size(172, 112.4));
+    });
+  });
 }

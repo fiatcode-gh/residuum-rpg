@@ -57,6 +57,7 @@ class TargetCard extends StatelessWidget {
     const width = crawlCalloutWidth;
 
     final hero = geometry.rectOf(state.game.hero.position);
+    final block = heroBlock(hero);
     final cardRect = placeMapOverlay(
       area: area ?? (Offset.zero & size),
       size: Size(width, height),
@@ -77,6 +78,14 @@ class TargetCard extends StatelessWidget {
         Offset(
           cellRect.left - crawlCalloutMargin - width,
           cellRect.bottom + crawlCalloutLeaderGap,
+        ),
+        Offset(
+          hero.center.dx - width / 2,
+          block.bottom + crawlCalloutLeaderGap,
+        ),
+        Offset(
+          hero.center.dx - width / 2,
+          block.top - crawlCalloutLeaderGap - height,
         ),
       ],
       avoid: [cellRect, ...avoid],

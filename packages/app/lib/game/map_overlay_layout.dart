@@ -102,6 +102,25 @@ Rect placeActionCard({
   return _overlapArea(bottom, block) <= _overlapArea(top, block) ? bottom : top;
 }
 
+Rect targetCardArea({
+  required Size map,
+  required Rect hero,
+  Rect? actionCard,
+  Rect? strip,
+}) {
+  final stripAtTop = strip != null && strip.center.dy < map.height / 2;
+  var top = stripAtTop ? strip.bottom : 0.0;
+  var bottom = strip != null && !stripAtTop ? strip.top : map.height;
+  if (actionCard != null) {
+    if (actionCard.center.dy >= hero.center.dy) {
+      bottom = math.min(bottom, actionCard.top);
+    } else {
+      top = math.max(top, actionCard.bottom);
+    }
+  }
+  return Rect.fromLTRB(0, top, map.width, bottom);
+}
+
 (Offset, Offset)? actionCardLeader({
   required Size map,
   required Rect card,

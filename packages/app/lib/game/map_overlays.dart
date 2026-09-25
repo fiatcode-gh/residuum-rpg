@@ -83,11 +83,12 @@ class MapOverlays extends StatelessWidget {
         ? null
         : actionCardLeader(map: size, card: cardRect, hero: hero);
 
-    final targetArea = cardRect == null
-        ? Offset.zero & size
-        : (cardRect.center.dy >= hero.center.dy
-              ? Rect.fromLTRB(0, 0, size.width, cardRect.top)
-              : Rect.fromLTRB(0, cardRect.bottom, size.width, size.height));
+    final targetArea = targetCardArea(
+      map: size,
+      hero: hero,
+      actionCard: cardRect,
+      strip: stripRect,
+    );
 
     return Stack(
       children: [
@@ -123,7 +124,7 @@ class MapOverlays extends StatelessWidget {
             state: state,
             size: size,
             area: targetArea,
-            avoid: [?recenter, ?stripRect],
+            avoid: [?recenter],
           ),
         ),
         if (showRecenter && recenter != null)
