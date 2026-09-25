@@ -5341,3 +5341,12 @@ request exists, and the integration choice is the user's.
   `flow_gate` at `4de51c3`. Next: device gate on the vivo I2219 (the I2505
   is not attached), capsules DEV-FS, DEV-EXP, DEV-BAT, then the user's
   DEV-FINGER.
+- **DEV-FS PASS** on the vivo I2219 at `9db8ea5` (`.flow/evidence/9db8ea5/DEV-FS/`):
+  bars hidden on every screen and after home, app switch and a transient
+  swipe; nothing under the cut-out; all four menu slots respond; a short
+  swipe from the menu reveals the bars without triggering a slot (long
+  swipes go to the OS Home/Recents, as expected); 6.2 dp clearance at the
+  cut-out and the gesture band. The first attempt was blocked by the lock
+  screen; that verifier changed `screen_off_timeout` without leave and set
+  it back to the vivo default (original not recorded, user told). The
+  timeout later read 600000, set by the user.
