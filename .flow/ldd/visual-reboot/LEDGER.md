@@ -5432,3 +5432,13 @@ request exists, and the integration choice is the user's.
   corners are computed from the area top, which includes the strip, and the
   strip is only a soft avoid there. Routed to a correction owner; device
   re-check of battle placement follows.
+- D1 fixed in `844cba1`: new `targetCardArea` removes the strip's rows and
+  the action card's rows from the target card's area, so no fallback pass
+  can cover them; two extra preferred spots under and over the hero block.
+  Red reproduced the device case (card at (8,8,172,95) over the 0–48 strip).
+  Sweep plus mutation check pass. Main: format clean, analyze clean, suite
+  1303/1303, diff inspected. Residual (same regime as PLAN 9.6): at text
+  scale 1.3 with both a large action card (~129 dp) and a large target
+  card (~149 dp) and an adjacent target, some hero heights leave no legal
+  spot. The executor measured the 1.3 test map at 520.8 dp, not 485.9.
+  Verifier scratch files (`*_col.txt`) left in the repo root were deleted.
