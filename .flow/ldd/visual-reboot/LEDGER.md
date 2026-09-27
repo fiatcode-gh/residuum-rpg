@@ -5453,3 +5453,9 @@ request exists, and the integration choice is the user's.
   (geometry: no side room for a 172 dp card beside a centred hero). Main
   accepted this and recorded it in PLAN 9.6. The user's phones run font
   scale 1.0. Main gates: format clean, analyze clean, 1305/1305.
+- APK with the D1 fix built at `1f40a7e` (code `7d99bea`), sha256
+  `4bfc880c…`. The vivo I2219 is off ADB again. Still owed on the device:
+  a short battle-placement re-check (target card vs strip and action card
+  after D1; DEV-BAT-2 evidence predates it), restoring the saves from
+  `.flow/evidence/848ecc9/save-backup/`, then the user's sign-off and the
+  uninstall at unit end.
