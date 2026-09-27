@@ -805,6 +805,16 @@ back up and restore whatever is there), `adb -s "$DEV" install -r …`.
   neighbour cell holding the adjacent target (review N1), so a tap on that
   target meets its own card until the player pans. 0 cases at text scale
   1.0 on either phone in the review's probe.
+- **Text scale 1.3 in battle (D1 follow-up, accepted by Main 2026-09-26):**
+  after `844cba1` and `7d99bea` the target card never covers the strip,
+  the action card or the hero cell at any scale, and never covers the
+  adjacent target at scale 1.0 (full grid swept). At scale 1.3 with tall
+  cards it can still cover the adjacent target's cell for some hero
+  positions: 34 of 90 swept (map × facts × button rows × target lines)
+  combinations, mostly with 2 button rows and 3–4-line targets. A centred
+  hero on a 392.7 dp map leaves no side room for the 172 dp card, and at
+  1.3 there is not always vertical room. The player pans once to reach the
+  target. The exact set is asserted in `map_overlay_layout_test.dart`.
 - The card covers the lower map band (≈ 76–190 dp) while it shows; a
   distant monster there needs a pan to be tapped. The target cell's card
   may draw its leader across the action card.

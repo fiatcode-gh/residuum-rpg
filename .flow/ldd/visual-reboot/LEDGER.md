@@ -5442,3 +5442,14 @@ request exists, and the integration choice is the user's.
   card (~149 dp) and an adjacent target, some hero heights leave no legal
   spot. The executor measured the 1.3 test map at 520.8 dp, not 485.9.
   Verifier scratch files (`*_col.txt`) left in the repo root were deleted.
+- D1 closure review (CloseD1): NOT-CLOSED. D1 was fixed at scale 1.0, but
+  at scale 1.3 the fix moved the fallback from the strip onto the adjacent
+  target's cell for ordinary 3–4-line cards (F1). Correction `7d99bea`: a
+  fallback pass that keeps the target cell clear whenever possible; the
+  sweep covers facts 0–4 × up to 5 buttons × 2–4-line targets; the
+  comment is fixed (F2); a widget test guards the `targetCardArea` wiring
+  (F3). Scale 1.0: 0 hits of strip, action card, hero or target cell.
+  Scale 1.3: the target cell is still covered in 34 of 90 combinations
+  (geometry: no side room for a 172 dp card beside a centred hero). Main
+  accepted this and recorded it in PLAN 9.6. The user's phones run font
+  scale 1.0. Main gates: format clean, analyze clean, 1305/1305.
