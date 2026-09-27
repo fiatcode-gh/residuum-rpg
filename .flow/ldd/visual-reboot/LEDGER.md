@@ -5459,3 +5459,12 @@ request exists, and the integration choice is the user's.
   after D1; DEV-BAT-2 evidence predates it), restoring the saves from
   `.flow/evidence/848ecc9/save-backup/`, then the user's sign-off and the
   uninstall at unit end.
+- **DEV-BAT-3 PASS** on the AVD Medium_Phone (user-directed; the vivo was
+  off ADB) at `e913b8d`, APK `4bfc880c…` (`.flow/evidence/e913b8d/DEV-BAT-3/`):
+  D1 reproduced as closely as possible (Engaged 3, `+5` in the strip, hero
+  panned low, action card flipped under the strip). Four target-card
+  placements with no overlap of the strip, action card, hero or adjacent
+  target. The map rectangle is the same in exploration and battle. Main
+  inspected `02_D1_scenario_reproduced_flip`. AVD saves backed up to
+  `.flow/evidence/e913b8d/avd-save-backup/`, not yet restored; the user
+  signs off on the AVD first. Next: user sign-off.
