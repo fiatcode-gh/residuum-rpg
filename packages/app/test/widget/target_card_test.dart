@@ -10,6 +10,7 @@ import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
 import 'package:residuum_app/game/map_overlay_layout.dart';
 import 'package:residuum_app/game/target_card.dart';
+import 'package:residuum_app/game/turn_order_strip.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -870,6 +871,89 @@ void main() {
           reason: '"$label" clips at 1.3x text scale',
         );
       }
+    },
+  );
+
+  testWidgets(
+    'the target card never lands on the turn-order strip when the hero '
+    'is panned low in battle (D1 wiring, F3)',
+    (tester) async {
+      await onTheTargetPhone(tester);
+      const heroAt = Position(2, 30);
+      const wolfAt = Position(3, 30);
+      final map = FloorMap.parse(
+        List.generate(
+          61,
+          (row) => row == 0 || row == 60 ? '#######' : '#.....#',
+        ).join('\n'),
+      );
+      final direWolf = Actor(
+        id: 'dire-wolf',
+        name: 'the dire wolf',
+        glyph: 'w',
+        position: wolfAt,
+        hp: 14,
+        maxHp: 14,
+        attackMin: 4,
+        attackMax: 6,
+        speed: 10,
+        energy: actThreshold,
+        resists: const {DamageType.fire},
+        vulnerableTo: const {DamageType.frost},
+      );
+      final game = GameState(
+        map: map,
+        hero: Actor(
+          id: 'hero',
+          name: 'you',
+          glyph: '@',
+          position: heroAt,
+          hp: 20,
+          maxHp: 20,
+          attackMin: 4,
+          attackMax: 4,
+          speed: 10,
+          energy: actThreshold,
+        ),
+        monsters: [direWolf],
+        rng: Rng(1),
+        lootRng: Rng(2),
+        visible: {heroAt, wolfAt},
+        explored: {heroAt, wolfAt},
+        buildFloor: (depth) => throw StateError('no floor below'),
+        stairsDown: heroAt,
+        nodes: {heroAt: GatherKind.oreVein},
+        groundItems: {
+          heroAt: const [
+            Item(id: 'floor-loot', base: ironSword, rarity: Rarity.common),
+          ],
+        },
+      );
+      final bloc = GameBloc(game: game, stepDelay: Duration.zero);
+      addTearDown(bloc.close);
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.3)),
+          child: MaterialApp(
+            home: BlocProvider.value(
+              value: bloc,
+              child: const GameScreen(palette: DungeonPalette.crypt),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(bloc.state.isBattleOpen, isTrue);
+
+      final card = find.byKey(targetCardKey);
+      final strip = find.byType(TurnOrderStrip);
+      expect(card, findsOneWidget);
+      expect(strip, findsOneWidget);
+
+      bloc.add(const MapPanned(Offset(0, -30)));
+      await tester.pumpAndSettle();
+
+      expect(tester.getRect(card).overlaps(tester.getRect(strip)), isFalse);
     },
   );
 }

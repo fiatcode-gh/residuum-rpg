@@ -98,7 +98,24 @@ void main() {
       expect(placed, const Rect.fromLTWH(8, 8, 30, 20));
     });
 
-    test('pass 4 picks the candidate with the smallest hero overlap when '
+    test('pass 3 keeps the avoid list clear even after giving up the padded '
+        'block, before falling back to the hero cell alone (F1)', () {
+      // Two candidates each miss the hero cell but sit inside its padded
+      // block, like a melee target's own cell always does. `avoid`
+      // covers the first one (standing in for the target's own cell) —
+      // the second, later candidate must win instead of the first.
+      final hero = Offset(100, 100) & const Size(20, 20);
+      final placed = placeMapOverlay(
+        area: const Rect.fromLTWH(60, 60, 100, 100),
+        size: const Size(20, 20),
+        hero: hero,
+        preferred: const [Offset(76, 100), Offset(120, 100)],
+        avoid: const [Rect.fromLTWH(76, 100, 20, 20)],
+      );
+      expect(placed, const Rect.fromLTWH(120, 100, 20, 20));
+    });
+
+    test('pass 5 picks the candidate with the smallest hero overlap when '
         'none can miss it', () {
       // Both candidates sit inside the hero's own padded block, and both
       // the hero cell itself, but the hero's rectangle overlaps the right
@@ -471,28 +488,56 @@ void main() {
     });
   });
 
-  group('the target card never covers the strip, the hero block or the '
-      'action card (D1 sweep)', () {
-    test('across hero and target positions on both target map sizes, with '
-        'the strip and action card present', () {
+  group('the target card never covers the strip, the action card, the hero '
+      'cell or the target cell (D1/F1 sweep)', () {
+    test('across the full content grid, on every target-phone map size, '
+        'with the strip and action card present', () {
       const cellSize = Size(24, 30);
+      const cardWidth = 172.0;
       const offsets = [
         Offset(1, 0),
         Offset(-1, 0),
         Offset(0, 1),
         Offset(0, -1),
-        Offset(2, 2),
-        Offset(-2, -2),
+        Offset(1, 1),
+        Offset(1, -1),
+        Offset(-1, 1),
+        Offset(-1, -1),
       ];
 
-      void sweep(Size map, double scale, double actionHeight, Size card) {
+      double actionHeightFor(int facts, int rows, double scale) {
+        if (facts == 0 && rows == 0) return 0;
+        return crawlCalloutPadding * 2 +
+            facts * crawlCalloutLineHeight * scale +
+            (facts > 0 && rows > 0 ? crawlActionCardGap : 0) +
+            rows * crawlTouchTarget +
+            (rows > 1 ? (rows - 1) * crawlActionCardGap : 0);
+      }
+
+      double targetHeightFor(int lines, double scale) =>
+          crawlCalloutPadding * 2 +
+          crawlCalloutNameRow * scale +
+          crawlCalloutGap +
+          crawlCalloutHpRow * scale +
+          crawlCalloutBarRow +
+          crawlCalloutLineHeight * scale * lines;
+
+      void sweep(
+        Size map,
+        double scale,
+        int facts,
+        int rows,
+        int lines, {
+        required bool expectTargetCellClear,
+      }) {
+        final actionHeight = actionHeightFor(facts, rows, scale);
+        final card = Size(cardWidth, targetHeightFor(lines, scale));
         final stripHeight = crawlStripHeight * scale;
-        final heroLefts = [
-          0.0,
-          (map.width - cellSize.width) / 2,
-          map.width - cellSize.width,
-        ];
-        for (final heroLeft in heroLefts) {
+        for (
+          var heroLeft = 0.0;
+          heroLeft <= map.width - cellSize.width;
+          heroLeft += 12
+        ) {
           for (
             var heroTop = 0.0;
             heroTop <= map.height - cellSize.height;
@@ -520,6 +565,7 @@ void main() {
               actionCard: actionCard,
               strip: strip,
             );
+            final block = heroBlock(hero);
 
             for (final offset in offsets) {
               final targetCell =
@@ -551,48 +597,132 @@ void main() {
                   ),
                   Offset(
                     hero.center.dx - card.width / 2,
-                    heroBlock(hero).bottom + crawlCalloutLeaderGap,
+                    block.bottom + crawlCalloutLeaderGap,
                   ),
                   Offset(
                     hero.center.dx - card.width / 2,
-                    heroBlock(hero).top - crawlCalloutLeaderGap - card.height,
+                    block.top - crawlCalloutLeaderGap - card.height,
                   ),
                 ],
                 avoid: [targetCell],
               );
-              final reason = 'map $map scale $scale hero $hero offset $offset';
+              final reason =
+                  'map $map scale $scale facts $facts rows $rows '
+                  'lines $lines hero $hero offset $offset';
               expect(placed.overlaps(strip), isFalse, reason: 'strip: $reason');
-              expect(
-                placed.overlaps(heroBlock(hero)),
-                isFalse,
-                reason: 'hero block: $reason',
-              );
               expect(
                 placed.overlaps(actionCard),
                 isFalse,
                 reason: 'action card: $reason',
               );
+              expect(
+                placed.overlaps(hero),
+                isFalse,
+                reason: 'hero cell: $reason',
+              );
+              if (expectTargetCellClear) {
+                expect(
+                  placed.overlaps(targetCell),
+                  isFalse,
+                  reason: 'target cell: $reason',
+                );
+              }
             }
           }
         }
       }
 
-      // Whenever a target card can show, `game.monsters` is non-empty, so
-      // `isRoadClear` (needs an empty floor) is always false and `moveOn`
-      // never joins the verb list — the only verbs left to co-occur with
-      // a target are pickUp, gather, ascend xor descend, flee and wait,
-      // 4 at most, so the card never grows past one row of buttons. 3
-      // fact lines (underfoot node, an item here, a full pack) is this
-      // shape's own ceiling (`placeFacts`), and the bestiary never gives
-      // a monster more than 1 resist and 1 vulnerability, so 4 lines is
-      // the target card's own ceiling too. The map heights below are
-      // `dungeonSceneSlotKey`'s measured size under `onTheTargetPhone` at
-      // each text scale — taller than the plan's own planning figures,
-      // which this sweep does not repin.
-      sweep(const Size(392.7, 557.9), 1.0, 68, const Size(172, 95));
-      sweep(const Size(392.7, 557.9), 1.0, 116, const Size(172, 123));
-      sweep(const Size(392.7, 520.8), 1.3, 68, const Size(172, 112.4));
-      sweep(const Size(392.7, 520.8), 1.3, 110.4, const Size(172, 112.4));
+      // `cardVerbsFor` can reach 5 in combat (loot, a gatherable node
+      // and stairs on one tile, plus flee and wait — `moveOn` alone
+      // needs an empty floor, which cannot hold a target); rows =
+      // ⌈verbs / 4⌉, so 1–4 verbs is one row (identical height) and 5 is
+      // two, so `rows` sweeps the verb axis without repeating a height.
+      // `placeFacts` can reach 4 (`doneAtTheBottom`, the node, `Here:`,
+      // the full-pack sentence); no bestiary entry carries more than 1
+      // resist and 1 vulnerability, so 4 lines is `targetFactLines`'s
+      // own ceiling too.
+      //
+      // The strip, the action card and the hero's own cell are proven
+      // clear over the whole grid, both text scales, both 1.3 map
+      // heights (measured under `onTheTargetPhone`: 557.9 at 1.0; 1.3
+      // gave 520.8, the plan's own figure is 489.9 — both probed). The
+      // target cell is proven clear over the whole grid at 1.0. At 1.3
+      // a narrow band of hero positions exists, for the combinations
+      // listed in `dirty520`/`dirty489` below, where the target cell is
+      // the only place left for the card — measured directly, not a
+      // derived rule (a facts-only or verbs-only card is not
+      // sufficient on its own: `0,2,*` and `4,0,4` are both in the
+      // dirty sets). This is Main's decision, recorded next to PLAN
+      // §9.6's existing 5-button acceptance, not asserted here.
+      for (final facts in [0, 1, 2, 3, 4]) {
+        for (final rows in [0, 1, 2]) {
+          for (final lines in [2, 3, 4]) {
+            sweep(
+              const Size(392.7, 557.9),
+              1.0,
+              facts,
+              rows,
+              lines,
+              expectTargetCellClear: true,
+            );
+            final dirty520 = const {
+              '0,2,4',
+              '1,2,3',
+              '1,2,4',
+              '2,1,4',
+              '2,2,3',
+              '2,2,4',
+              '3,1,4',
+              '3,2,3',
+              '3,2,4',
+              '4,1,3',
+              '4,1,4',
+              '4,2,2',
+              '4,2,3',
+              '4,2,4',
+            };
+            final dirty489 = const {
+              '0,2,3',
+              '0,2,4',
+              '1,1,4',
+              '1,2,3',
+              '1,2,4',
+              '2,1,4',
+              '2,2,2',
+              '2,2,3',
+              '2,2,4',
+              '3,1,3',
+              '3,1,4',
+              '3,2,2',
+              '3,2,3',
+              '3,2,4',
+              '4,0,4',
+              '4,1,3',
+              '4,1,4',
+              '4,2,2',
+              '4,2,3',
+              '4,2,4',
+            };
+            final key = '$facts,$rows,$lines';
+            sweep(
+              const Size(392.7, 520.8),
+              1.3,
+              facts,
+              rows,
+              lines,
+              expectTargetCellClear: !dirty520.contains(key),
+            );
+            sweep(
+              const Size(392.7, 489.9),
+              1.3,
+              facts,
+              rows,
+              lines,
+              expectTargetCellClear: !dirty489.contains(key),
+            );
+          }
+        }
+      }
     });
   });
 }

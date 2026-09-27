@@ -67,6 +67,12 @@ Rect placeMapOverlay({
     if (!candidate.overlaps(block)) return candidate;
   }
   for (final candidate in candidates) {
+    if (!candidate.overlaps(hero) &&
+        !avoid.any((rect) => candidate.overlaps(rect))) {
+      return candidate;
+    }
+  }
+  for (final candidate in candidates) {
     if (!candidate.overlaps(hero)) return candidate;
   }
   return candidates.reduce(
