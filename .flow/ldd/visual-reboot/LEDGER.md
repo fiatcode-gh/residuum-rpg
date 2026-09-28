@@ -5515,3 +5515,11 @@ request exists, and the integration choice is the user's.
 - AVD saves restored from `.flow/evidence/e913b8d/avd-save-backup/`: both
   slots MATCH by sha256 (`18995c4a…`, `8909f70c…`); tmp files removed. The
   app is launched on the AVD for the user's check.
+- User on the AVD (2026-09-28): asked why the ACTIONS buttons sat far below
+  a single fact line, and chose buttons directly under the text with the
+  bar height kept. PLAN G14 amended and re-approved. Fix `d3901e8`: the
+  fact lines render as drawn, the 6 dp gap only after text, and the unused
+  space falls to the bottom. Red: off by 28/14/48 dp in the 1-fact, 2-fact
+  and Wait-only cases. Main gates: format clean, analyze clean, 1304/1304,
+  diff inspected. APK `470dca63…` installed on the AVD over the user's
+  restored saves (`install -r` keeps app data).
