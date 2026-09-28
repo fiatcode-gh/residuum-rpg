@@ -5559,3 +5559,8 @@ request exists, and the integration choice is the user's.
   `4b8bd10`, not pushed. `b536349` mixes an app fix with ledger files and
   should be split before a pull request. Next: user's integration choice;
   Unit 16.7 (Hero screen) follows.
+- `b536349` split locally (user: "go"): the app fix is now `9fabced`
+  `fix(app): single separator in spell pop-up rows` and the ledger files
+  that commit had swept in are `3dd05c2`. The branch was rebased, so every
+  later hash changed; the final tree is byte-identical to the pre-split
+  head, kept as `backup/u166-before-split`. Still not pushed.
