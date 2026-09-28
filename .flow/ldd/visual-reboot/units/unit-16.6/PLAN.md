@@ -1,7 +1,7 @@
 # U16.6 — Crawl Controls and Layout Revamp: execution plan
 
-Status: **execution-grade; Tasks 01–10 implemented and accepted; §9
-amendment (Tasks 11–12, 2026-09-25) awaiting user plan approval.** Governing WHAT/WHY:
+Status: **execution-grade; Tasks 01–12 implemented and accepted; §10
+amendment (Tasks 13–14, 2026-09-28) awaiting user plan approval.** Governing WHAT/WHY:
 [CONTRACT.md](CONTRACT.md), approved via `flow_gate` (sha256 `d0bae5fa…`).
 Evidence: [recon.md](recon.md), `.flow/evidence/4b8bd10/UXW-EXP/`,
 `.flow/evidence/4b8bd10/UXW-BAT/`. Decisions: LEDGER "Unit 16.6 intake".
@@ -843,3 +843,319 @@ back up and restore whatever is there), `adb -s "$DEV" install -r …`.
 - **SEC — SKIP.** Offline presentation only; no trust boundary or secrecy
   surface changes (the card shows only the hero's own cell).
 - Residual risks left to device evidence: §9.6; WHAT questions: §9.5.
+
+## 10. Amendment 2026-09-28 — action bar row, events strip, full log page
+
+Governing: contract amended at `75d8330` (settled decisions 8 and 12, scope
+§1 items 2–3, §4, new §4a, the protected-boundary exception for the hero's
+step line, acceptance 7–8). Derived from head `75d8330`; app code last
+changed at `7d99bea` (`git diff --stat 7d99bea 75d8330 -- packages` empty).
+Dirty state assumed: only the user's untracked `tmp1.png` at the repo root
+(not touched, not staged). Tasks 01–12 and the `844cba1`/`7d99bea` D1
+corrections stay as accepted; this section supersedes only the locks named
+here.
+
+### Superseded locks
+
+- **G5 composition** → G14 (Task 13, intermediate) and G15.1 (Task 14, final).
+- **G8 log row** is retired by Task 14 (the events strip and the log page
+  replace `LogRow`, `LogPeek` and the half/full drawer).
+- **G10**: the recenter pill lifts above the events strip; the flipped
+  turn-order strip sits on the events strip's top edge; the target card's
+  `area` loses the action-card carve-out (Task 13) and gains the events
+  strip carve-out (Task 14).
+- **G12 action card** is retired entirely: no on-map card, no pinning, no
+  leader for it, no recenter lift over it, no target-card carve-out for it.
+  Its verbs, ids, labels, marks, dispatch, `cardVerbsFor`/`placeFacts`
+  ownership and the Q7 full-pack line carry over unchanged to the bar.
+- **§9.6 residuals** tied to the card (five buttons in battle, the target
+  card on the adjacent target at 1.3, the card covering the lower map band,
+  the drawer covering the card) lapse with the card; the target-card sweep
+  is re-run in Tasks 13–14 without the card.
+
+### G14 Action bar (Task 13)
+
+- **Row.** `ActionBar(key: actionBarKey, bloc, state)` in its own fixed row
+  between the map and the bottom menu, full width, `crawlGutter` (8) side
+  padding, frame `crawlFrameDecoration` (panel fill, 1 dp `crawlFrame`,
+  radius 6), inner padding `crawlActionBarPadding` (6) on all sides. It is
+  not on the map, absorbs nothing on the map, and has no leader.
+- **Constant height** `actionBarHeight(s) = 2·6 + 16·s + 4 + 3·14·s + 6 + 48
+  = 70 + 58·s` → **128.0 dp at s 1.0, 145.4 dp at s 1.3**, in every state.
+  It is sized for the worst reachable content: 3 fact lines (e.g.
+  `doneAtTheBottom` + `Here:` + the full-pack line, or `Underfoot:` +
+  `Here:` + full-pack; a node never sits on stairs, `GatherKind` docs) and
+  one row of up to 4 buttons (dungeon: Pick up, Ascend or Descend, Leave,
+  Wait; road: Pick up, Move on or Flee, Wait — Move on excludes Wait).
+- **Body, top to bottom:** title row `16·s` with `ACTIONS` in
+  `displaySection` (the display role, letter-spaced capitals, the role the
+  old `RECENT EVENTS` peek title used); gap 4; fact zone `3 × 14·s` holding
+  the fact lines (`monoMeta`, one line each, ellipsis, `crawlCalloutLineHeight
+  × s` tall) or, when `cardVerbsFor` and `placeFacts` are both empty, the
+  quiet line `actionBarIdle = 'Nothing to do here.'` (`monoMeta`); gap 6;
+  button row 48 tall. The zones never collapse: an empty fact zone or an
+  empty button row keeps its height.
+- **Fact lines total over fixtures:** more than 3 facts (only reachable in a
+  fixture with a node on stairs) render as `facts[0]`, `facts[1]`, and
+  `facts.sublist(2).join(' · ')` on the third line.
+- **Buttons:** one row, `n = max(4, verbs.length)` equal slots,
+  `buttonWidth = (inner − (n − 1) × 6) / n` (inner = row width − 16 − 12;
+  ≈ 86.7 dp at 392.7 dp for n 4, ≈ 68.1 for the fixture-only n 5), start
+  aligned, `CrawlSlot(height: crawlTouchTarget)`; labels, marks and
+  dispatch exactly as `ActionCard._button` today.
+- **Map rectangle**: Task 13 shrinks it by the new row (intermediate state),
+  Task 14 grows it back by the removed log row; at each handoff it is
+  identical across exploration, Watched, battle and armed, with or without
+  verbs, and (Task 14) with the log page open or closed.
+
+### G15 Events strip, full log page, no step line (Task 14)
+
+1. **Final composition** (inside the existing `SafeArea` →
+   `withClampedTextScaling(1.3)` → `BlocBuilder`):
+   ```
+   Stack[
+     Column[ CrawlHud; Expanded(key: dungeonSceneSlotKey, LayoutBuilder →
+               Stack[DungeonSceneHost, MapOverlays]);
+             SizedBox(crawlPanelGap 6); ActionBar(key: actionBarKey);
+             SizedBox(crawlGap 7); CrawlMenu; SizedBox(crawlBottomGap 6) ],
+     if (state.logOpen) Positioned.fill(LogPage(key: logPageKey, …)),
+     if (game over) _DeathOverlay ]
+   ```
+   The inner drawer `LayoutBuilder`/`Stack`, `LogRow` and its gaps are gone.
+2. **Log state** (`game_bloc.dart`): `LogDrawerExtent` is deleted;
+   `GameViewState.logOpen` (`bool`, default false, forced false on
+   game-over by construction) replaces `logDrawerExtent` at every
+   construction site; `_followsAt(game, logOpen, following) => following
+   || game.isGameOver || !logOpen` (same invariant: closed anchors to
+   newest). Events: `LogOpened` (inert on game-over, silent when already
+   open; like today's handle it carries pan/walk/arm/selection and clears
+   inspection) replaces `LogDrawerHandlePulled`; `LogClosed` (silent when
+   closed) replaces `LogDrawerClosed`; `LogFollowBroken`/`LogFollowResumed`
+   and `_unreadAfter` unchanged.
+3. **Events strip** (`EventsStrip`, `event_log.dart`, key `eventsStripKey =
+   Key('events-strip')`): map-local rect `eventsStripRect(map, s) =
+   Rect.fromLTWH(0, H − h, W, h)`, `h = 6 + 3 × crawlLogLine(15) × s + 4`
+   → **55.0 dp at 1.0, 68.5 at 1.3**. Content: the last `min(3, n)` log
+   lines, oldest first, bottom-aligned (newest always in the bottom slot),
+   each `crawlLogLine × s` tall, `maxLines: 1`, ellipsis, style
+   `logTint(category)` (mono role, category tint), opacity by age
+   `[1.0, 0.7, 0.45]` (newest first); horizontal padding 8; decoration
+   `crawlEventsStripDecoration` = a vertical gradient from `Color(0x000B1215)`
+   (top) to `crawlCalloutFill` (bottom), **no border, no title, no count**.
+   `GestureDetector(behavior: opaque, onTap: game over ? null : LogOpened)`
+   in `Semantics(button, enabled: !gameOver, label: 'Open the message log')`,
+   placed as `Positioned.fromRect` inside `MapOverlays`, so every gesture
+   inside its rect is its own and every gesture outside reaches the map.
+   **Empty log → no strip widget at all** (nothing painted, no hit area);
+   its rect still drives the geometry below so nothing jumps when the first
+   line arrives.
+4. **Placement** (`map_overlay_layout.dart`, pure; `events` is always
+   `eventsStripRect`):
+   - `recenterRect(Size map, {required Rect events})` =
+     `Rect.fromLTWH(W − 8 − 48, events.top − 8 − 48, 48, 48)`.
+   - `({Rect rect, bool flipped}) turnOrderStripRect({required Size map,
+     required double height, required Rect hero, required Rect events})`:
+     top band `Rect.fromLTWH(0, 0, W, height)`; flipped iff it overlaps
+     `hero` (unchanged rule); flipped rect `Rect.fromLTWH(0, events.top −
+     height, W − 64, height)` (the 64 dp inset keeps the recenter column
+     clear, as today). Replaces the inline computation in `MapOverlays`.
+   - `targetCardArea({required Size map, required Rect events, Rect? strip})`
+     = `Rect.fromLTRB(0, top, W, bottom)`, `top = strip at top ? strip.bottom
+     : 0`, `bottom = strip flipped ? strip.top : events.top`
+     (`stripAtTop = strip.center.dy < H / 2`, as today). Both strips are
+     hard area constraints (D1 lesson); the recenter stays a soft `avoid`,
+     as accepted in G10.
+5. **`MapOverlays` children, paint order, each `Positioned`**: turn-order
+   strip (battle); events strip (log non-empty); `Positioned.fill(TargetCard(
+   area: targetCardArea(…), avoid: [?recenter]))`; recenter pill.
+6. **Full log page** (`LogPage`, today's `LogDrawer` body): full SafeArea
+   body, `BlockSemantics(Material(color: crawlPanelFill))`, horizontal
+   padding `gutter`; header row `crawlTouchTarget` (48) tall:
+   `RECENT EVENTS` (`displaySheetTitle`), spacer, `N entries` (`monoMeta`),
+   gap, close control `logCloseKey` 48 × 48 (`Icons.close` 18,
+   `crawlTextDim`, `Semantics(button, 'Close the message log')`) →
+   `LogClosed`; hairline divider; the list, scrollbar, `_LogRow`
+   (pictogram + mono sentence, category word in semantics), unread pill
+   `logUnreadKey` and the follow/jump logic **moved verbatim**. No handle,
+   no pill, no resize. It is an in-screen full page, not a pushed
+   `Navigator` route (see 10.6 D9).
+7. **System back** (`GameScreen` `PopScope`): `didPop` → nothing; else
+   `state.logOpen ? LogClosed() : SystemBackPressed()`. Back while the page
+   is open closes it and appends nothing.
+8. **Step line** (`event_messages.dart`): the hero arm of `ActorMoved` is
+   deleted so `ActorMoved() => null` covers every actor; `_bearing` is
+   deleted (no other caller). Every other sentence and category unchanged.
+
+### 10.1 Planning figures (widget dp, `onTheTargetPhone`; executor re-reads by untracked probe)
+
+| state | map @ s 1.0 | map @ s 1.3 |
+|---|---:|---:|
+| today (`7d99bea`, measured in the D1 sweep) | 557.9 | 520.8 |
+| after Task 13 (log row + bar) ≈ −bar −6 | 423.9 | 369.4 |
+| after Task 14 (bar only) ≈ today + 104·s − bar | **533.9** | **510.6** |
+
+Device estimate at s 1.0: 569.8 → ≈ 545.8 dp (≈ 18.2 rows of 30 dp); the
+events strip covers the bottom 55 dp of it. These are estimates, not
+assertions: tests compare rects across states and use the literal row
+heights of G14/G15 only.
+
+### 10.2 Task graph
+
+```
+(accepted 01–12, D1 corrections 844cba1/7d99bea, DEV-BAT-3 at e913b8d)
+ → 13 action-bar-row      (ActionBar row between map and menu; on-map card, its
+                           placement, leader and target-card carve-out deleted;
+                           VISUAL-SYSTEM "action card" → "action bar")
+ → 14 events-strip-log-page (events strip over the map bottom; full log page;
+                           logOpen/LogOpened/LogClosed; log row and drawer deleted;
+                           recenter/flipped strip/target area avoid the strip;
+                           back closes the page; step line removed)
+ → Main: LEDGER/RESUME, gates 10.4, scoped acceptance, device re-check 10.5,
+         user sign-off
+```
+
+Strictly sequential, one fresh `flow-plan-executor` per brief, this
+checkout, no isolation. 13 then 14: the reverse order would make Task 14
+re-place the on-map card around the strip only for Task 13 to delete it.
+Task 13's handoff (map, log row, bar, menu) is a valid, fully tested state
+with every verb reachable. Task 14 keeps the strip, page, bloc rename and
+back rule together because deleting the drawer without the page (or the
+page without `logOpen`) leaves the log unreachable or the follow/unread
+invariant keyed on a deleted extent; no valid intermediate handoff exists.
+The step-line removal is a separate Red→Green cluster folded into Task 14
+because it is a one-arm deletion plus three test edits, not a task.
+
+### 10.3 Proof map (amended rows)
+
+| AC | proof |
+|---|---|
+| 1 map rect identical | T13/T14 `crawl_layout_test` (4 states, with/without verbs, page open/closed); device 10.5 |
+| 4 every verb | T13 `crawl_verbs_test` scoped to `actionBarKey` |
+| 7 Watched Wait | existing bloc stall test; T13 `action_bar_test` Wait case; DEV-EXP-3 |
+| 8 bar + strip + page + steps | T13 `action_bar_test` (title, quiet line, facts, full-pack, constant rect at 1.0/1.3, between map and menu, no verb inside the map slot, 1.3 largest content), `map_overlay_layout_test` (area, recenter); T14 `event_log_test` (strip rect/lines/order/fade/tint/no frame, empty log, taps inside/outside, page open/close/back/follow/unread), `event_log_state_test`, `map_overlay_layout_test` (strip, recenter, flip, area, sweep), `game_bloc_test`/`log_line_test` (no step line); mutation witnesses; DEV-EXP-3, DEV-BAT-4 |
+| 9 strip + target card | T13/T14 sweeps and `target_card_test` (never over either strip or the hero) |
+
+### 10.4 Gates
+
+Main, once after Task 14, from `packages/app`: format check, analyze, full
+suite (§5), `git diff --stat 4b8bd10 -- packages/core packages/content`
+empty, and a zero-hit grep in `lib` and `test` for every symbol Tasks 13–14
+delete. The `7d99bea` acceptance is reopened for the changed surface: one
+scoped `flow-acceptance-reviewer` pass over Tasks 13–14 against this
+section and contract §1.2–1.3, §4, §4a, AC 1, 4, 7, 8, 9, including an
+untracked placement probe over the real target-card heights (2–4 fact
+lines at s 1.0 and 1.3) on the final widget map sizes and the device
+estimate, with both strips present.
+
+### 10.5 Device re-check (Main)
+
+Device: the vivo I2505 `DEV='adb-10DG1E044B000B4-t0c6h3._adb-tls-connect._tcp'`
+(quote it), the user's own phone holding the user's saves; if it is off ADB
+and the user directs, the AVD `emulator-5554` (its own saves are backed up
+at `.flow/evidence/e913b8d/avd-save-backup/` and still owed a restore).
+
+1. Write `.flow/checkpoints/<head>.md` before the first ADB command; build
+   `flutter build apk --debug`; record the APK sha256.
+2. §6.2 backup to `.flow/evidence/<head>/save-backup/` **before install**;
+   compare with `.flow/evidence/6971881/i2505-save-backup/`
+   (`save.json` `bff83295…`, `save-previous.json` `b23d9787…`). A difference
+   means the user has played since: the fresh pull is the truth and the one
+   restored. `adb -s "$DEV" install -r …` (keeps app data).
+3. **DEV-EXP-3** (fresh game, synthetic input): the `ACTIONS` bar between the
+   map and the menu; the quiet line on bare floor; Pick up, Mine or Gather,
+   Descend + Leave, Ascend + Leave with their facts; Watched → Wait in the
+   bar, one tap advances; bar rect (px) identical in bare, loot, Watched
+   states; map rect (px ÷ dpr) identical in exploration and Watched; no
+   action overlay on the map; events strip over the map's bottom edge, three
+   lines, newest at the bottom, older fading, no frame/title/count; a
+   five-cell walk adds no log line; tap on the strip opens the full page
+   (pictograms, sentences, close), close returns, system back closes it,
+   system back on the crawl still refuses with its line; taps and drags just
+   above the strip reach the map; recenter shows above the strip.
+4. **DEV-BAT-4**: a road fight: turn-order strip at the top, events strip at
+   the bottom, target card never over either strip or the hero; hero panned
+   to the top edge → the turn-order strip flips onto the events strip's top
+   edge, clear of the recenter; Wait (and Flee at the ring edge if reached)
+   in the bar; map rect equal to exploration; the page opens and closes in
+   battle.
+5. Reused with rationale: **DEV-FS** (no native, `SafeArea` or menu change;
+   the menu row keeps its rect) and **DEV-FINGER** steps 1–5 (`map_touch.dart`,
+   the camera and the step box are unchanged; the hero sits at the map centre
+   far above the strip at zero pan). The user's sign-off round re-checks feel.
+6. Evidence under `.flow/evidence/<head>/DEV-EXP-3/` and `/DEV-BAT-4/`;
+   independent scoring against contract §4, §4a and AC 1, 7, 8, 9; §6.2
+   restore from this round's backup with `MATCH` on both slots; the app
+   stays installed on the I2505 (it is the user's phone).
+7. **User sign-off** on the device: bar placement and height, quiet line,
+   strip legibility over the map, the full log page, steps not logged.
+   Record verbatim. Still owed outside this plan: the AVD restore, and the
+   I2219 restore and uninstall (checkpoint `6971881`).
+
+### 10.6 Decisions for Main and the user (defaults applied; the plan proceeds on them)
+
+- **D9 In-screen full page, not a pushed route.** The page is a full-body
+  layer driven by `logOpen`: game-over closes it by construction, the
+  follow/unread invariant stays keyed on bloc state, back is routed by the
+  existing `PopScope`, no second `BlocProvider`. Visually it is a full page
+  with no transition. If a `Navigator` route (with a slide-in) is wanted,
+  G15 items 1, 6, 7 change and Task 14 needs re-planning of those items.
+- **D10 Bar height 128 dp at s 1.0** (map ≈ −24 dp versus today, +104 from
+  the log row, −128 for the bar) so the worst reachable content (title,
+  three fact lines, four buttons) shows without truncation. Cheaper
+  alternative: `ACTIONS` to the left of the facts instead of above them →
+  108 dp (map ≈ −4 dp), but `doneAtTheBottom` then ellipsizes by about one
+  character at s 1.0. Default: 128 dp, title above.
+- **D11 Strip legibility backdrop.** A soft top-to-bottom gradient (clear to
+  the callout fill), no border, keeps the three lines readable over bright
+  glyphs. Default: yes; the device capsule records legibility.
+- **D12 Empty log → no strip** (and no tap area). Default: yes.
+- **D13 The page keeps `RECENT EVENTS` and `N entries`** (today's expanded
+  style); only the strip drops the title and count. Default: yes.
+
+### 10.7 Residual risks
+
+- While the player has panned the hero into the bottom 55 dp, the hero's
+  lower neighbours sit under the strip and a tap there opens the log rather
+  than stepping; a drag starting on the strip does not pan. Recenter (above
+  the strip) or a pan fixes it; at zero pan the hero is at the map centre.
+- Strip lines ellipsize at one line each; long sentences read in full on
+  the page.
+- The bar's empty zones (no facts, no buttons) are the common exploring
+  state; its height is the contract's constant-height rule, not waste to
+  trim.
+- Target-card placement at s 1.3 on the final map is expected clear of the
+  target cell (the old dirty sets arose only with an action card on the
+  map; `0,*,*` rows were clean), but it is proved by the Task 14 sweep, not
+  assumed; a non-empty set escalates to Main.
+- `LogOpened` still clears inspection (today's handle does). Unchanged
+  behaviour, now reached by one tap on the strip.
+
+### Plan quality gate (amendment 2026-09-28)
+
+- **COR — PASS.** One availability owner (`cardVerbsFor`/`placeFacts`,
+  unchanged); the bar's height is a pure function of text scale only, sized
+  to the reachable maxima and total over fixtures (fact join, `n = max(4,
+  count)`); one placement owner with both strips as hard target-card area
+  constraints and recenter/flipped strip derived from the events rect; the
+  follow/unread invariant keeps its shape on `logOpen`; game-over closes
+  the page by construction; back closes the page before it refuses; every
+  overlay child `Positioned`; empty log adds no hit area; Task 13's handoff
+  keeps every verb and the log reachable.
+- **TTC — PASS.** Value-level Red at the prior head for each cluster
+  (literal finders for the bar title, quiet line, verbs outside the map
+  slot, strip key, page key, log row absent; the step bloc test);
+  geometric expectations from the map slot rect and the plan's literal
+  heights, never from `actionBarHeight`/`eventsStripRect`; sweeps over the
+  real target-card heights at both scales; mutation witnesses in both
+  briefs; retired presentation (card pinning, leader, drawer cycle, peek
+  count, log row) deleted or rewritten to behaviour, not re-pinned.
+- **CRF — PASS.** Deletes the on-map card path, the drawer extents, the
+  handle, the log row and the step line's helper instead of shimming;
+  renames where the old name would lie (`ActionBar`, `LogPage`,
+  `event_log.dart`, `logOpen`); keeps `cardVerbsFor`/`CardVerb` because
+  they name the verb set Main and the contract cite; `turnOrderStripRect`
+  extracted only because the sweep and `MapOverlays` both need it.
+- **SEC — SKIP.** Offline presentation; no trust boundary. The only secrecy
+  surface (hidden actors) is untouched: the strip shows lines the log
+  already holds.
+- Residual risks: 10.7; decisions with defaults: 10.6.
