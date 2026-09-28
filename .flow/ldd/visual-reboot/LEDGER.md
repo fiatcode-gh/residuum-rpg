@@ -5485,3 +5485,12 @@ request exists, and the integration choice is the user's.
   map at both scales found no hit on strip, events, hero or target cell.
   Final widget map 533.9 dp at s1.0 (device estimate 545.8). Main gates:
   format clean, analyze clean, 1299/1299, core/content unchanged.
+- **Swap review AccU166c: ACCEPT-WITH-MINORS** at `3d181a3`. Probe (14/14):
+  map rect identical in six states (533.9 dp s1.0, 475.7 s1.3); the quiet
+  line only on bare floor; the strip at the map bottom, 3 lines at opacity
+  0.45/0.7/1.0, absent on an empty log, taps only inside; Back closes the
+  page first; follow/unread hold; no step lines while blocked and watched
+  lines remain; sweeps found no target-card overlap of the strip, its own
+  cell or the turn strip. M1 (a stale dartdoc naming the log peek) and M2
+  (a stale test doc) parked. APK `5d8d5d3e…` built. Next: DEV-EXP-3 and
+  DEV-BAT-4 on the AVD (the only device attached), then the user's check.
