@@ -1,7 +1,8 @@
 # Unit 16.6 Contract — Crawl Controls and Layout Revamp
 
-Status: **approved 2026-09-24; amended 2026-09-24 (touch-target rule) and
-2026-09-25 (action card, from the user's device feedback).**
+Status: **approved 2026-09-24; amended 2026-09-24 (touch-target rule),
+2026-09-25 (action card) and 2026-09-28 (action bar below the map, events
+strip over it), each from the user's device feedback.**
 
 Observed head: `4b8bd10` (`main`, Units 16 and 16.5 merged). Feature branch
 `residuum-visual-reboot-16.6`.
@@ -22,10 +23,9 @@ over mock parity, and the art direction stays.**
 ## Outcome
 
 The crawl screen is organised around the player's thumb: fixed information
-at the top, a map big enough to tap, the log, and a bottom menu that never
-changes. Actions tied to the moment (place actions, Wait, Flee) sit in one
-action card pinned to the map's bottom edge, with a leader line to the hero.
-The palette, type roles, glyph
+at the top, a map big enough to tap with the latest events fading over its
+bottom edge, an `ACTIONS` bar for the moment's actions (place actions, Wait,
+Flee), and a bottom menu that never changes. The palette, type roles, glyph
 rendering, light and fog are unchanged.
 
 ## Settled decisions (user, 2026-09-24)
@@ -43,24 +43,31 @@ rendering, light and fog are unchanged.
    crawl pack screen, so inventory, equip and drop stay reachable.
 5. **Quests** is built now and, when tapped, shows a "coming soon" notice.
    The game has no quest system yet; the user chose to show the slot anyway.
-6. **Wait and Flee live in the action card** (item 8), not beside the log.
+6. **Wait and Flee live in the action bar** (item 8), not beside the log.
    Wait shows in combat and while the hero is Watched; Flee shows when
    fleeing is legal. (User, 2026-09-25: the log-side placement was
-   rejected; a later shield "block" action is expected to join the card.)
+   rejected; a later shield "block" action is expected to join the bar.)
 7. **Top HUD replaces the `RESIDUUM` wordmark:** HP bar, mana bar (when
    spells are known) and gold, identical in every crawl state.
-8. **One action card, pinned to the map's bottom edge** (user, 2026-09-25):
-   Pick up, Mine, Gather, Descend `>`, Ascend `<`, Leave or Finish, Move on,
-   Flee and Wait share one card in the target card's visual family — the
-   same frame, and a thin leader line from the card to the hero. It never
-   floats beside the hero, so the area around the hero stays open while
-   exploring (for example on a cleared road where Move on is offered).
+8. **One action bar in a fixed row below the map** (user, 2026-09-25,
+   revised 2026-09-28): Pick up, Mine, Gather, Descend `>`, Ascend `<`,
+   Leave or Finish, Move on, Flee and Wait share one framed bar titled
+   `ACTIONS` (display role, spaced capitals). It sits between the map and
+   the bottom menu, takes no space on the map and has no leader line. The
+   row keeps its height when nothing applies and then shows a quiet line
+   saying so.
 9. **Battle information floats over the map:** the turn order as a strip
    along the top edge of the map, and the target's facts in a card next to
    the target. The fixed combat panel is removed.
 10. **Full-screen:** the app hides the Android status and navigation bars.
 11. **The map is big enough to tap the floor next to the hero accurately;**
     drag to pan stays a feature.
+12. **Events float over the map's bottom edge as a compact strip** (user,
+   2026-09-28): the last three log lines, newest at the bottom, older lines
+   fading toward the top; no frame, no title, no entry count. Tapping the
+   strip opens the full event history as a full page in today's expanded
+   style (category icons, mono sentences). Hero steps (`You step <dir>.`) no
+   longer write a log line at all.
 
 Architect proposals carried from the discussion (part of this approval):
 
@@ -80,10 +87,11 @@ Architect proposals carried from the discussion (part of this approval):
    (`Depth N/M | place | Day D`) and the existing status chips (battle or
    watch state, HP condition, ward). Same position and content in
    exploration, Watched, battle and armed states.
-2. **Map.** Everything between the HUD and the log row. **Its rectangle is
-   identical in exploration, Watched, battle and armed states.**
-3. **Log row.** The framed recent-events peek, full width, with its truthful
-   count and expand control. Nothing else sits in this row.
+2. **Map.** Everything between the HUD and the action bar row. **Its
+   rectangle is identical in exploration, Watched, battle and armed
+   states.** The events strip floats over its bottom edge.
+3. **Action bar row.** The framed `ACTIONS` bar (scope item 4), full width,
+   constant height.
 4. **Bottom menu.** Four framed slots: `Quests`, `Spells`, `Quick`, `Hero`.
    A slot with nothing to offer right now is dimmed, never removed. Each
    slot shows only its icon above its label, centred in the slot, with no
@@ -113,21 +121,29 @@ the contextual action bar.
   through the existing drink action.
 - Nothing carried: the slot is dimmed, and tapping it says so.
 
-### 4. Action card
+### 4. Action bar
 
-- The card appears whenever at least one of its actions applies: a place
-  action (with what is here, for example `Here: Common Iron Helm and 1 more`,
-  `Underfoot: ore vein`), Wait, or Flee. One button per legal action;
-  several actions share the card. With a full pack, an item underfoot still
-  shows its `Here:` fact with no Pick up button and a line saying the pack
-  is full (user, 2026-09-25).
-- It is pinned to the map's bottom edge, full map width less the map margin,
-  with a leader line to the hero's cell. If the hero's cell or its four
-  neighbours would be covered there (the player has panned the hero low), the
-  card pins to the top edge instead, below the turn-order strip.
-- It takes input only inside its own bounds and does not stop the map from
-  being tapped or panned. The target card and the card never overlap.
-- The map rectangle does not change when the card appears or goes.
+- Titled `ACTIONS`. One button per legal action; several actions share the
+  bar. It shows what is here when a place action applies (for example
+  `Here: Common Iron Helm and 1 more`, `Underfoot: ore vein`). With a full
+  pack, an item underfoot still shows its `Here:` fact with no Pick up button
+  and a line saying the pack is full (user, 2026-09-25).
+- When nothing applies, the bar keeps its height and shows a quiet line such
+  as `Nothing to do here.`; the map never changes size.
+- It lives in its own row between the map and the bottom menu, never on the
+  map, and has no leader line.
+
+### 4a. Events strip and full log
+
+- A borderless strip over the map's bottom edge shows the last three log
+  lines in the mono role and category tint, newest at the bottom, each older
+  line at lower opacity. No title, no entry count, no frame.
+- It takes taps only inside its own bounds; the rest of the map stays
+  tappable and pannable. The target card and recenter never overlap it.
+- Tapping it opens the full history as a full page in today's expanded
+  style (one category pictogram per row, mono sentence, close control).
+  Ordering, follow/unread and causal text are unchanged.
+- `You step <direction>.` is no longer logged; other lines are unchanged.
 
 ### 5. Battle overlays
 
@@ -168,7 +184,7 @@ Mark superseded in `units/unit-13/VISUAL-SYSTEM.md` and the ledger's locked
 section: the 16×20 dp cell, the Unit 16.5 fixed-chrome-by-mode rule and its
 45%/35% map floors, the five-slot contextual action bar, the three-column
 hero and combat panels, and the four-region rule's "action shelf = verbs"
-(verbs now split between the bottom menu, the action card and the map
+(verbs now split between the bottom menu, the action bar and the map
 itself). Historical entries are not rewritten.
 
 ## Protected boundaries
@@ -180,7 +196,8 @@ itself). Historical entries are not rewritten.
   decide.
 - Timeline schedule and identity semantics, hidden-actor secrecy,
   `LogCategory` semantics, event ordering, follow/unread and causal text are
-  unchanged.
+  unchanged, except that the hero's own step no longer writes a log line
+  (user, 2026-09-28).
 - Determinism: no unseeded randomness; decoration stays hashed from
   coordinates and a fixed salt.
 - Accessibility: nothing important carried by hue alone; no red-versus-green
@@ -215,13 +232,14 @@ itself). Historical entries are not rewritten.
 5. Spells: an untargeted spell casts outside combat; a targeted spell arms,
    shows reticles and casts on tap; refusals are visible.
 6. Quick: drinking takes exactly two taps, in and out of combat.
-7. While Watched in a dungeon, Wait is visible in the action card and ends
+7. While Watched in a dungeon, Wait is visible in the action bar and ends
    the stall from the walkthrough (UXW-BAT 27–32) without special taps.
-8. The action card appears exactly when one of its actions applies (or, with
-   a full pack, to report what is underfoot and that the pack is full), sits on
-   the map's bottom edge (top edge when the hero is there) with a leader line
-   to the hero, never covers the hero or its neighbours, and leaves the rest
-   of the map tappable. The log row holds only the log.
+8. The `ACTIONS` bar sits in its own row below the map at a constant
+   height, shows every applicable action (or, with a full pack, what is
+   underfoot and that the pack is full), and shows a quiet line when nothing
+   applies. The events strip floats borderless over the map's bottom edge
+   with three fading lines, newest at the bottom; tapping it opens the full
+   log page; steps are not logged.
 9. Turn-order strip and target card: no silent clipping with four or more
    actors; reach cannot be read as distance.
 10. Map cells are about 24×30 dp. On the physical phone, the user taps each
