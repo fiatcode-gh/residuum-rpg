@@ -85,7 +85,6 @@ const double crawlActionBarGap = 6;
 const double crawlActionBarPadding = 6;
 const double crawlActionBarTitleRow = 16;
 const double crawlActionBarTitleGap = 4;
-const double crawlActionBarFactLines = 3;
 
 const BoxDecoration crawlCalloutDecoration = BoxDecoration(
   color: crawlCalloutFill,

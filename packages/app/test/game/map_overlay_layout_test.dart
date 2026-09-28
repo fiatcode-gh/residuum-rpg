@@ -269,7 +269,7 @@ void main() {
     test('on the final widget map, a melee target next to a hero panned '
         'low still lands the card clear of the turn-order strip and the '
         'events strip', () {
-      const map = Size(392.7, 533.9);
+      const map = Size(392.7, 561.9);
       const cellSize = Size(24, 30);
       const cardSize = Size(172, 95);
 
@@ -474,7 +474,7 @@ void main() {
         }
       }
 
-      const maps = [Size(392.7, 533.9), Size(392.7, 510.6), Size(392.7, 545.8)];
+      const maps = [Size(392.7, 561.9), Size(392.7, 547.0), Size(392.7, 573.8)];
       for (final map in maps) {
         for (final scale in [1.0, 1.3]) {
           for (final lines in [2, 3, 4]) {

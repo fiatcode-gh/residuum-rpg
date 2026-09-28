@@ -20,7 +20,7 @@ double actionBarHeight(double scale) =>
     2 * crawlActionBarPadding +
     crawlActionBarTitleRow * scale +
     crawlActionBarTitleGap +
-    crawlActionBarFactLines * crawlCalloutLineHeight * scale +
+    crawlCalloutLineHeight * scale +
     crawlActionBarGap +
     crawlTouchTarget;
 
@@ -34,13 +34,12 @@ class ActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final scale = crawlScale(context);
     final verbs = cardVerbsFor(state);
-    final rawFacts = placeFacts(state);
-    final facts = rawFacts.length <= 3
-        ? rawFacts
-        : [rawFacts[0], rawFacts[1], rawFacts.sublist(2).join(' · ')];
-    final lines = facts.isEmpty && verbs.isEmpty
-        ? const [actionBarIdle]
-        : facts;
+    final facts = placeFacts(state);
+    final lineText = facts.isNotEmpty
+        ? facts.join(' · ')
+        : verbs.isEmpty
+        ? actionBarIdle
+        : null;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: crawlGutter),
@@ -67,17 +66,22 @@ class ActionBar extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: crawlActionBarTitleGap),
-                    for (final line in lines)
-                      SizedBox(
-                        height: crawlCalloutLineHeight * scale,
-                        child: Text(
-                          line,
-                          style: monoMeta,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                    if (lineText != null)
+                      Semantics(
+                        label: lineText,
+                        child: SizedBox(
+                          height: crawlCalloutLineHeight * scale,
+                          child: ExcludeSemantics(
+                            child: Text(
+                              lineText,
+                              style: monoMeta,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ),
                       ),
-                    if (lines.isNotEmpty)
+                    if (lineText != null)
                       const SizedBox(height: crawlActionBarGap),
                     SizedBox(
                       height: crawlTouchTarget,

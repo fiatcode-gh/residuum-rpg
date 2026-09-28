@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/action_bar.dart';
@@ -149,8 +150,8 @@ GameState _roadEdge({bool withMonster = false}) {
 }
 
 /// The largest reachable fixture: loot, a gatherable node and the bottom
-/// stairs share the hero's own tile while Watched — 3 fact lines (or 4 with
-/// a full pack) and up to 5 buttons.
+/// stairs share the hero's own tile while Watched — 3 facts (or 4 with a
+/// full pack), joined on one line, and up to 5 buttons.
 GameState _largestFixture({bool fullPack = false}) => _dungeon(
   stairsUp: _heroAt,
   depth: deepestDepth,
@@ -555,7 +556,7 @@ void main() {
           previous ??= rect;
           expect(rect, previous);
         }
-        expect(previous!.height, closeTo(128.0, 0.01));
+        expect(previous!.height, closeTo(100.0, 0.01));
 
         previous = null;
         for (final state in states) {
@@ -566,34 +567,13 @@ void main() {
           previous ??= rect;
           expect(rect, previous);
         }
-        expect(previous!.height, closeTo(145.4, 0.01));
+        expect(previous!.height, closeTo(109.0, 0.01));
       },
     );
 
     testWidgets(
-      'the button row sits 6 dp under a single fact line, not pinned to '
-      'the bar\'s bottom',
-      (tester) async {
-        await _openCrawl(
-          tester,
-          _dungeon(nodes: {_heroAt: GatherKind.oreVein}),
-        );
-        final factLine = find.descendant(
-          of: find.byKey(actionBarKey),
-          matching: find.textContaining('Underfoot:'),
-        );
-        expect(factLine, findsOneWidget);
-        final factBottom = tester.getBottomLeft(factLine).dy;
-        final buttonTop = tester
-            .getTopLeft(find.byKey(const ValueKey('gather')))
-            .dy;
-        expect(buttonTop - factBottom, closeTo(6, 0.5));
-      },
-    );
-
-    testWidgets(
-      'with two fact lines, the button row follows the second line, not '
-      'the first',
+      'two facts (a node underfoot and an item underfoot) render on one '
+      'line joined by \' · \', with the button row 6 dp under it',
       (tester) async {
         await _openCrawl(
           tester,
@@ -602,12 +582,22 @@ void main() {
             groundItems: {_heroAt: _oneSword()},
           ),
         );
-        final secondLine = find.descendant(
+        final joinedLine = find.descendant(
           of: find.byKey(actionBarKey),
-          matching: find.textContaining('Here:'),
+          matching: find.textContaining(' · '),
         );
-        expect(secondLine, findsOneWidget);
-        final lineBottom = tester.getBottomLeft(secondLine).dy;
+        expect(joinedLine, findsOneWidget);
+        final line = tester.widget<Text>(joinedLine).data!;
+        expect(line, contains('Underfoot:'));
+        expect(line, contains('Here:'));
+        expect(
+          find.descendant(
+            of: find.byKey(actionBarKey),
+            matching: find.textContaining('Underfoot:'),
+          ),
+          findsOneWidget,
+        );
+        final lineBottom = tester.getBottomLeft(joinedLine).dy;
         final buttonTop = tester
             .getTopLeft(find.byKey(const ValueKey('pick-up')))
             .dy;
@@ -664,9 +654,8 @@ void main() {
       },
     );
 
-    testWidgets('at s 1.3, 3 fact lines and 4 buttons overflow nothing', (
-      tester,
-    ) async {
+    testWidgets('at s 1.3, 3 facts joined on one line and 4 buttons overflow '
+        'nothing', (tester) async {
       await _openCrawl(
         tester,
         _dungeon(
@@ -713,17 +702,32 @@ void main() {
     );
 
     testWidgets(
-      'a 4-fact fixture (the largest, plus a full pack) folds onto a third '
-      'line holding both Here: and the full-pack sentence',
+      'at s 1.3 the largest fixture with a full pack joins all 4 facts on '
+      'one ellipsized line, whose semantics label carries the full text, '
+      'and overflows nothing with its 4 buttons',
       (tester) async {
-        await _openCrawl(tester, _largestFixture(fullPack: true));
-        final thirdLine = find.descendant(
-          of: find.byKey(actionBarKey),
-          matching: find.textContaining('Here:'),
+        final bloc = await _openCrawl(
+          tester,
+          _largestFixture(fullPack: true),
+          textScaler: const TextScaler.linear(1.3),
         );
-        expect(thirdLine, findsOneWidget);
-        final text = tester.widget<Text>(thirdLine).data!;
-        expect(text, contains(inventoryFullSentence));
+        expect(tester.takeException(), isNull);
+
+        final fullText = placeFacts(bloc.state).join(' · ');
+        expect(find.bySemanticsLabel(fullText), findsOneWidget);
+
+        final paragraph = tester.renderObject<RenderParagraph>(
+          find.descendant(
+            of: find.byKey(actionBarKey),
+            matching: find.text(fullText),
+          ),
+        );
+        expect(paragraph.didExceedMaxLines, isTrue);
+
+        for (final id in ['gather', 'ascend', 'leave-dungeon', 'wait']) {
+          expect(find.byKey(ValueKey(id)), findsOneWidget, reason: id);
+        }
+        expect(find.byKey(const ValueKey('pick-up')), findsNothing);
       },
     );
 
