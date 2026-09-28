@@ -5468,3 +5468,13 @@ request exists, and the integration choice is the user's.
   inspected `02_D1_scenario_reproduced_flip`. AVD saves backed up to
   `.flow/evidence/e913b8d/avd-save-backup/`, not yet restored; the user
   signs off on the AVD first. Next: user sign-off.
+- **Amendment (2026-09-28) from the user's I2505 check**, contract and plan
+  re-approved: the action card leaves the map for a fixed `ACTIONS` bar row
+  (128 dp, title on its own line, "Nothing to do here." when empty); events
+  become a borderless fading 3-line strip over the map's bottom edge with a
+  soft fade behind it; tapping it opens a full log page in today's style,
+  keeping the title and count; hero steps are no longer logged.
+- Task 13 accepted: `a38f4a6` ActionBar row between the map and the menu;
+  the on-map card, its leader and its placement code deleted. Red observed,
+  mutations M1–M5 killed, suite 1286/1286, analyze clean. Intermediate map
+  423.9 dp (widget, s1.0) until Task 14 removes the log row.
