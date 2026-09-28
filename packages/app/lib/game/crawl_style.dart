@@ -13,9 +13,17 @@ const double crawlStripPadding = 8;
 const double crawlTokenHeight = 24;
 const double crawlLogLine = 15;
 
-const double crawlLogRowHeight = 104;
-const double crawlLogSheetHeight = 345;
-const double crawlLogSheetHeader = 40;
+const int crawlEventsLines = 3;
+const double crawlEventsStripTop = 6;
+const double crawlEventsStripBottom = 4;
+const List<double> crawlEventsFade = [1.0, 0.7, 0.45];
+const BoxDecoration crawlEventsStripDecoration = BoxDecoration(
+  gradient: LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0x000B1215), crawlCalloutFill],
+  ),
+);
 const double crawlLogRowPadding = 1.5;
 const double crawlLogPictogram = 15;
 

@@ -2,13 +2,13 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/action_bar.dart';
 import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
-import 'package:residuum_app/game/log_drawer.dart';
 import 'package:residuum_app/game/target_card.dart';
 import 'package:residuum_app/game/turn_order_strip.dart';
 import 'package:residuum_app/style/tokens.dart';
@@ -245,7 +245,7 @@ void main() {
       expect(find.byType(TurnOrderStrip), findsNothing);
       expect(find.text('Wait'), findsNothing);
       expect(find.byType(DungeonSceneHost), findsOneWidget);
-      expect(find.byKey(logPeekKey), findsOneWidget);
+      expect(find.byKey(actionBarKey), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -577,7 +577,7 @@ void main() {
       expect(find.byType(DungeonSceneHost), findsOneWidget);
       expect(find.text('Wait'), findsOneWidget);
       expect(find.textContaining('Engaged'), findsOneWidget);
-      expect(find.byKey(logPeekKey), findsOneWidget);
+      expect(find.byKey(actionBarKey), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
@@ -825,7 +825,7 @@ void main() {
 
         final mapRectAfter = tester.getRect(find.byKey(dungeonSceneSlotKey));
         final stripFlipped = tester.getRect(find.byType(TurnOrderStrip));
-        expect(stripFlipped.bottom, closeTo(mapRectAfter.bottom, 0.5));
+        expect(stripFlipped.bottom, closeTo(mapRectAfter.bottom - 55.0, 0.5));
         expect(stripFlipped.top, greaterThan(mapRectAfter.top));
         expect(mapRectAfter.right - stripFlipped.right, closeTo(64, 0.5));
       },

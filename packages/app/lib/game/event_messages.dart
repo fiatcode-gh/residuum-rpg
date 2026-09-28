@@ -20,8 +20,6 @@ LogLine? describeEvent(
   Map<String, String> names, {
   Set<String> strikesFromAfar = const {},
 }) => switch (event) {
-  ActorMoved(:final actorId, :final from, :final to) when actorId == heroId =>
-    LogLine('You step ${_bearing(from, to)}.', LogCategory.moved),
   ActorMoved() => null,
   MoveBlocked(:final actorId) when actorId == heroId => LogLine(
     'The way is blocked.',
@@ -198,6 +196,3 @@ String _named(Map<String, String> names, String id) =>
 
 String _capitalised(String text) =>
     text.isEmpty ? text : '${text[0].toUpperCase()}${text.substring(1)}';
-
-String _bearing(Position from, Position to) =>
-    from.directionTo(to)?.name ?? 'aside';

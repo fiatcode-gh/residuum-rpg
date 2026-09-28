@@ -188,37 +188,102 @@ void main() {
     });
   });
 
+  group('eventsStripRect', () {
+    test('is a 55.0 dp band along the map\'s bottom edge at s 1.0', () {
+      const map = Size(300, 400);
+      final rect = eventsStripRect(map, 1.0);
+      expect(rect.left, 0);
+      expect(rect.width, 300);
+      expect(rect.bottom, closeTo(400, 0.01));
+      expect(rect.height, closeTo(55.0, 0.01));
+    });
+
+    test('grows to a 68.5 dp band at s 1.3', () {
+      const map = Size(300, 400);
+      final rect = eventsStripRect(map, 1.3);
+      expect(rect.left, 0);
+      expect(rect.width, 300);
+      expect(rect.bottom, closeTo(400, 0.01));
+      expect(rect.height, closeTo(68.5, 0.01));
+    });
+  });
+
   group('recenterRect', () {
-    test('is a 48 dp square in the map\'s bottom-right corner', () {
-      expect(
-        recenterRect(const Size(300, 400)),
-        Rect.fromLTWH(
-          300 - 8 - crawlTouchTarget,
-          400 - 8 - crawlTouchTarget,
-          crawlTouchTarget,
-          crawlTouchTarget,
-        ),
+    test('is a 48 dp square 8 dp clear of the map\'s right edge and the '
+        'events strip', () {
+      const map = Size(300, 400);
+      const events = Rect.fromLTWH(0, 345, 300, 55);
+      final rect = recenterRect(map, events: events);
+      expect(rect.right, map.width - 8);
+      expect(rect.bottom, events.top - 8);
+      expect(rect.width, crawlTouchTarget);
+      expect(rect.height, crawlTouchTarget);
+    });
+  });
+
+  group('turnOrderStripRect', () {
+    const map = Size(300, 400);
+    const events = Rect.fromLTWH(0, 345, 300, 55);
+
+    test('sits at the top, unflipped, when the hero is clear of the top '
+        'band', () {
+      const hero = Rect.fromLTWH(100, 200, 24, 30);
+      final strip = turnOrderStripRect(
+        map: map,
+        height: 48,
+        hero: hero,
+        events: events,
       );
+      expect(strip.flipped, isFalse);
+      expect(strip.rect, const Rect.fromLTWH(0, 0, 300, 48));
+    });
+
+    test('flips to sit just above the events strip when the hero is in '
+        'the top band', () {
+      const hero = Rect.fromLTWH(100, 10, 24, 30);
+      final strip = turnOrderStripRect(
+        map: map,
+        height: 48,
+        hero: hero,
+        events: events,
+      );
+      expect(strip.flipped, isTrue);
+      expect(strip.rect.bottom, events.top);
+      expect(strip.rect.width, map.width - 64);
+    });
+
+    test('the flipped rect never overlaps the recenter pill', () {
+      const hero = Rect.fromLTWH(100, 10, 24, 30);
+      final strip = turnOrderStripRect(
+        map: map,
+        height: 48,
+        hero: hero,
+        events: events,
+      );
+      final recenter = recenterRect(map, events: events);
+      expect(strip.rect.overlaps(recenter), isFalse);
     });
   });
 
   group('target card vs the strip (D1)', () {
-    test('on the Task 13 widget map, a melee target next to a hero panned '
-        'low still lands the card clear of the turn-order strip', () {
-      // 423.9 is the Task 13 widget map height at s 1.0, measured by the
-      // untracked probe (PLAN.md §10.1): the bar replaces the action card,
-      // so this area is bounded only by the strip now.
-      const map = Size(392.7, 423.9);
+    test('on the final widget map, a melee target next to a hero panned '
+        'low still lands the card clear of the turn-order strip and the '
+        'events strip', () {
+      const map = Size(392.7, 533.9);
       const cellSize = Size(24, 30);
       const cardSize = Size(172, 95);
-      const stripHeight = 48.0;
 
-      final hero = const Offset(184.35, 385.9) & cellSize;
+      final events = eventsStripRect(map, 1.0);
+      final hero = Offset(184.35, map.height - cellSize.height - 8) & cellSize;
       final targetCell =
           Offset(hero.left + cellSize.width, hero.top) & cellSize;
-      final strip = Rect.fromLTWH(0, 0, map.width, stripHeight);
-
-      final area = targetCardArea(map: map, strip: strip);
+      final strip = turnOrderStripRect(
+        map: map,
+        height: 48,
+        hero: hero,
+        events: events,
+      );
+      final area = targetCardArea(map: map, events: events, strip: strip.rect);
 
       final placed = placeMapOverlay(
         area: area,
@@ -246,45 +311,53 @@ void main() {
       );
 
       expect(
-        placed.overlaps(strip),
+        placed.overlaps(strip.rect),
         isFalse,
         reason: 'D1: the target card must never cover the turn-order strip',
+      );
+      expect(
+        placed.overlaps(events),
+        isFalse,
+        reason: 'D1: the target card must never cover the events strip',
       );
       expect(placed.overlaps(heroBlock(hero)), isFalse);
     });
   });
 
   group('targetCardArea', () {
-    test('is the full map when there is no strip', () {
-      const map = Size(300, 400);
+    const map = Size(300, 400);
+    const events = Rect.fromLTWH(0, 345, 300, 55);
+
+    test('is bounded below by the events strip when there is no '
+        'turn-order strip', () {
       expect(
-        targetCardArea(map: map),
-        Rect.fromLTRB(0, 0, map.width, map.height),
+        targetCardArea(map: map, events: events),
+        const Rect.fromLTRB(0, 0, 300, 345),
       );
     });
 
-    test('excludes the strip\'s rows from the top when it sits at the top', () {
-      const map = Size(300, 400);
+    test('excludes the strip\'s rows from the top when it sits at the '
+        'top, still bounded by the events strip below', () {
       const strip = Rect.fromLTWH(0, 0, 300, 48);
       expect(
-        targetCardArea(map: map, strip: strip),
-        const Rect.fromLTRB(0, 48, 300, 400),
+        targetCardArea(map: map, events: events, strip: strip),
+        const Rect.fromLTRB(0, 48, 300, 345),
       );
     });
 
     test('excludes the strip\'s rows from the bottom when it is flipped', () {
-      const map = Size(300, 400);
       const strip = Rect.fromLTWH(0, 352, 300, 48);
       expect(
-        targetCardArea(map: map, strip: strip),
+        targetCardArea(map: map, events: events, strip: strip),
         const Rect.fromLTRB(0, 0, 300, 352),
       );
     });
   });
 
-  group('the target card never covers the strip or the hero cell, and (at '
-      's 1.0) never the target cell either (D1/F1 sweep)', () {
-    test('across the full content grid, on both Task 13 widget map sizes', () {
+  group('the target card never covers the turn-order strip, the events strip, '
+      'the hero cell or the target cell, at either scale (D1/F1 sweep)', () {
+    test('across the full content grid, on the final map at s 1.0 and '
+        's 1.3', () {
       const cellSize = Size(24, 30);
       const cardWidth = 172.0;
       const offsets = [
@@ -306,13 +379,9 @@ void main() {
           crawlCalloutBarRow +
           crawlCalloutLineHeight * scale * lines;
 
-      void sweep(
-        Size map,
-        double scale,
-        int lines, {
-        required bool expectTargetCellClear,
-      }) {
+      void sweep(Size map, double scale, int lines) {
         final card = Size(cardWidth, targetHeightFor(lines, scale));
+        final events = eventsStripRect(map, scale);
         final stripHeight = crawlStripHeight * scale;
         for (
           var heroLeft = 0.0;
@@ -325,16 +394,17 @@ void main() {
             heroTop += 8
           ) {
             final hero = Offset(heroLeft, heroTop) & cellSize;
-            final topBand = Rect.fromLTWH(0, 0, map.width, stripHeight);
-            final flipped = topBand.overlaps(hero);
-            final stripWidth = flipped ? map.width - 64 : map.width;
-            final strip = Rect.fromLTWH(
-              0,
-              flipped ? map.height - stripHeight : 0,
-              stripWidth,
-              stripHeight,
+            final strip = turnOrderStripRect(
+              map: map,
+              height: stripHeight,
+              hero: hero,
+              events: events,
             );
-            final area = targetCardArea(map: map, strip: strip);
+            final area = targetCardArea(
+              map: map,
+              events: events,
+              strip: strip.rect,
+            );
             final block = heroBlock(hero);
 
             for (final offset in offsets) {
@@ -379,46 +449,38 @@ void main() {
               final reason =
                   'map $map scale $scale lines $lines hero $hero '
                   'offset $offset';
-              expect(placed.overlaps(strip), isFalse, reason: 'strip: $reason');
+              expect(
+                placed.overlaps(strip.rect),
+                isFalse,
+                reason: 'turn-order strip: $reason',
+              );
+              expect(
+                placed.overlaps(events),
+                isFalse,
+                reason: 'events strip: $reason',
+              );
               expect(
                 placed.overlaps(hero),
                 isFalse,
                 reason: 'hero cell: $reason',
               );
-              if (expectTargetCellClear) {
-                expect(
-                  placed.overlaps(targetCell),
-                  isFalse,
-                  reason: 'target cell: $reason',
-                );
-              }
+              expect(
+                placed.overlaps(targetCell),
+                isFalse,
+                reason: 'target cell: $reason',
+              );
             }
           }
         }
       }
 
-      // `placeFacts` and `cardVerbsFor` no longer shape this area (the bar
-      // owns them off the map now); only the target card's own height
-      // varies, 2–4 lines being `targetFactLines`'s own ceiling (no
-      // bestiary entry carries more than 1 resist and 1 vulnerability).
-      // Both Task 13 widget map sizes are proven clear of the strip and the
-      // hero's own cell; the target cell is proven clear too at s 1.0. At
-      // s 1.3 the target cell is not asserted here — this is an
-      // intermediate map (the log row still stands), and Task 14 re-runs
-      // this sweep on the final map.
-      for (final lines in [2, 3, 4]) {
-        sweep(
-          const Size(392.7, 423.9),
-          1.0,
-          lines,
-          expectTargetCellClear: true,
-        );
-        sweep(
-          const Size(392.7, 369.4),
-          1.3,
-          lines,
-          expectTargetCellClear: false,
-        );
+      const maps = [Size(392.7, 533.9), Size(392.7, 510.6), Size(392.7, 545.8)];
+      for (final map in maps) {
+        for (final scale in [1.0, 1.3]) {
+          for (final lines in [2, 3, 4]) {
+            sweep(map, scale, lines);
+          }
+        }
       }
     });
   });

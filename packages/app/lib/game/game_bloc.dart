@@ -157,14 +157,12 @@ final class InspectDismissed extends GameBlocEvent {
   const InspectDismissed();
 }
 
-/// The player pulled the log drawer's handle, cycling its extent.
-final class LogDrawerHandlePulled extends GameBlocEvent {
-  const LogDrawerHandlePulled();
+final class LogOpened extends GameBlocEvent {
+  const LogOpened();
 }
 
-/// The player used the drawer's explicit close affordance.
-final class LogDrawerClosed extends GameBlocEvent {
-  const LogDrawerClosed();
+final class LogClosed extends GameBlocEvent {
+  const LogClosed();
 }
 
 /// The reader scrolled away from the newest log entry.
@@ -189,36 +187,19 @@ class GameViewState {
     ActorIdentityContext? actorIdentity,
     this.selectedActorId,
     this.inspectedActorId,
-    LogDrawerExtent logDrawerExtent = LogDrawerExtent.peek,
+    bool logOpen = false,
     bool logFollowing = true,
     int logUnread = 0,
   }) : actorIdentity = actorIdentity ?? ActorIdentityContext.fromGame(game),
-       logDrawerExtent = game.isGameOver
-           ? LogDrawerExtent.peek
-           : logDrawerExtent,
-       logFollowing = _followsAt(game, logDrawerExtent, logFollowing),
-       logUnread = _followsAt(game, logDrawerExtent, logFollowing)
-           ? 0
-           : logUnread;
+       logOpen = !game.isGameOver && logOpen,
+       logFollowing = _followsAt(game, logOpen, logFollowing),
+       logUnread = _followsAt(game, logOpen, logFollowing) ? 0 : logUnread;
 
-  /// Whether a reader is anchored to the newest entry: [following] holds
-  /// except that game-over and [LogDrawerExtent.peek] both force this true
-  /// regardless, because each already anchors the reader to the newest line
-  /// by what it is.
-  static bool _followsAt(
-    GameState game,
-    LogDrawerExtent extent,
-    bool following,
-  ) => following || game.isGameOver || extent == LogDrawerExtent.peek;
+  static bool _followsAt(GameState game, bool open, bool following) =>
+      following || game.isGameOver || !open;
 
-  /// How much of the log the drawer shows. Forced to [LogDrawerExtent.peek]
-  /// on game-over by construction, so no handler can leave a game-over
-  /// state with the drawer open.
-  final LogDrawerExtent logDrawerExtent;
+  final bool logOpen;
 
-  /// Whether the drawer is anchored to the newest log entry. Forced true by
-  /// construction on game-over and at [LogDrawerExtent.peek]: a peek not at
-  /// the newest entry would be a state lying about what is on screen.
   final bool logFollowing;
 
   /// Lines appended while [logFollowing] was false. Forced to zero by
@@ -648,8 +629,8 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     on<SkillArmed>(_onSkillArmed);
     on<SystemBackPressed>(_onSystemBackPressed);
     on<FleePressed>(_onFleePressed);
-    on<LogDrawerHandlePulled>(_onLogDrawerHandlePulled);
-    on<LogDrawerClosed>(_onLogDrawerClosed);
+    on<LogOpened>(_onLogOpened);
+    on<LogClosed>(_onLogClosed);
     on<LogFollowBroken>(_onLogFollowBroken);
     on<LogFollowResumed>(_onLogFollowResumed);
   }
@@ -696,7 +677,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
             walkId: state.walkId,
             actorIdentity: state.actorIdentity,
             selectedActorId: state.selectedActorId,
-            logDrawerExtent: state.logDrawerExtent,
+            logOpen: state.logOpen,
             logFollowing: state.logFollowing,
             logUnread: state.logUnread,
           ),
@@ -720,7 +701,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
           armedSpellId: state.armedSpellId,
           actorIdentity: state.actorIdentity,
           selectedActorId: state.selectedActorId,
-          logDrawerExtent: state.logDrawerExtent,
+          logOpen: state.logOpen,
           logFollowing: state.logFollowing,
           logUnread: _unreadAfter(1),
         ),
@@ -739,7 +720,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         armedSpellId: state.armedSpellId,
         actorIdentity: state.actorIdentity,
         selectedActorId: state.selectedActorId,
-        logDrawerExtent: state.logDrawerExtent,
+        logOpen: state.logOpen,
         logFollowing: state.logFollowing,
         logUnread: state.logUnread,
       ),
@@ -770,7 +751,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         hasFled: state.hasFled,
         actorIdentity: state.actorIdentity,
         selectedActorId: actor.id,
-        logDrawerExtent: state.logDrawerExtent,
+        logOpen: state.logOpen,
         logFollowing: state.logFollowing,
         logUnread: state.logUnread,
       ),
@@ -799,7 +780,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         actorIdentity: state.actorIdentity,
         selectedActorId: state.selectedActorId,
         inspectedActorId: actor.id,
-        logDrawerExtent: state.logDrawerExtent,
+        logOpen: state.logOpen,
         logFollowing: state.logFollowing,
         logUnread: state.logUnread,
       ),
@@ -822,7 +803,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         hasFled: state.hasFled,
         actorIdentity: state.actorIdentity,
         selectedActorId: state.selectedActorId,
-        logDrawerExtent: state.logDrawerExtent,
+        logOpen: state.logOpen,
         logFollowing: state.logFollowing,
         logUnread: state.logUnread,
       ),
@@ -879,7 +860,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       hasFled: state.hasFled,
       actorIdentity: state.actorIdentity,
       selectedActorId: state.selectedActorId,
-      logDrawerExtent: state.logDrawerExtent,
+      logOpen: state.logOpen,
       logFollowing: state.logFollowing,
       logUnread: state.logUnread,
     ),
@@ -901,7 +882,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       hasFled: state.hasFled,
       actorIdentity: state.actorIdentity,
       selectedActorId: state.selectedActorId,
-      logDrawerExtent: state.logDrawerExtent,
+      logOpen: state.logOpen,
       logFollowing: state.logFollowing,
       logUnread: state.logUnread,
     ),
@@ -922,26 +903,14 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
           armedSpellId: state.armedSpellId,
           hasFled: state.hasFled,
           actorIdentity: state.actorIdentity,
-          logDrawerExtent: state.logDrawerExtent,
+          logOpen: state.logOpen,
           logFollowing: state.logFollowing,
           logUnread: state.logUnread,
         ),
       );
 
-  /// Cycles the log drawer through peek → half → full → peek without
-  /// spending a turn.
-  ///
-  /// Inert on game-over. Arriving back at [LogDrawerExtent.peek] resumes
-  /// follow and clears the unread count through [GameViewState]'s own
-  /// constructor invariant, not through code here. Joins [_onMapPanned],
-  /// [_onSkillArmed], [_onRecenterPressed] and the walk bookkeeping as a
-  /// handler that changes nothing about the game: [pan] is carried, not
-  /// reset.
-  void _onLogDrawerHandlePulled(
-    LogDrawerHandlePulled event,
-    Emitter<GameViewState> emit,
-  ) {
-    if (state.game.isGameOver) return;
+  void _onLogOpened(LogOpened event, Emitter<GameViewState> emit) {
+    if (state.game.isGameOver || state.logOpen) return;
     emit(
       GameViewState(
         game: state.game,
@@ -953,26 +922,15 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         hasFled: state.hasFled,
         actorIdentity: state.actorIdentity,
         selectedActorId: state.selectedActorId,
-        logDrawerExtent: switch (state.logDrawerExtent) {
-          LogDrawerExtent.peek => LogDrawerExtent.half,
-          LogDrawerExtent.half => LogDrawerExtent.full,
-          LogDrawerExtent.full => LogDrawerExtent.peek,
-        },
+        logOpen: true,
         logFollowing: state.logFollowing,
         logUnread: state.logUnread,
       ),
     );
   }
 
-  /// Uses the drawer's explicit close affordance, collapsing straight to
-  /// [LogDrawerExtent.peek] without spending a turn.
-  ///
-  /// Emits nothing when the drawer is already at [LogDrawerExtent.peek]: the
-  /// drawer's scroll listener fires on every frame of a drag, and a bloc
-  /// that re-emitted an identical state each time would rebuild the whole
-  /// screen at scroll rate.
-  void _onLogDrawerClosed(LogDrawerClosed event, Emitter<GameViewState> emit) {
-    if (state.logDrawerExtent == LogDrawerExtent.peek) return;
+  void _onLogClosed(LogClosed event, Emitter<GameViewState> emit) {
+    if (!state.logOpen) return;
     emit(
       GameViewState(
         game: state.game,
@@ -984,7 +942,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         hasFled: state.hasFled,
         actorIdentity: state.actorIdentity,
         selectedActorId: state.selectedActorId,
-        logDrawerExtent: LogDrawerExtent.peek,
+        logOpen: false,
         logFollowing: state.logFollowing,
         logUnread: state.logUnread,
       ),
@@ -994,7 +952,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
   /// Marks that the reader scrolled away from the newest log entry.
   ///
   /// Emits nothing when follow is already off, for the same no-op reason as
-  /// [_onLogDrawerClosed].
+  /// [_onLogClosed].
   void _onLogFollowBroken(LogFollowBroken event, Emitter<GameViewState> emit) {
     if (!state.logFollowing) return;
     emit(
@@ -1008,7 +966,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         hasFled: state.hasFled,
         actorIdentity: state.actorIdentity,
         selectedActorId: state.selectedActorId,
-        logDrawerExtent: state.logDrawerExtent,
+        logOpen: state.logOpen,
         logFollowing: false,
         logUnread: state.logUnread,
       ),
@@ -1037,7 +995,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         hasFled: state.hasFled,
         actorIdentity: state.actorIdentity,
         selectedActorId: state.selectedActorId,
-        logDrawerExtent: state.logDrawerExtent,
+        logOpen: state.logOpen,
         logFollowing: true,
         logUnread: state.logUnread,
       ),
@@ -1101,7 +1059,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         hasFled: state.hasFled,
         actorIdentity: state.actorIdentity,
         selectedActorId: state.selectedActorId,
-        logDrawerExtent: state.logDrawerExtent,
+        logOpen: state.logOpen,
         logFollowing: state.logFollowing,
         logUnread: _unreadAfter(1),
       ),
@@ -1125,7 +1083,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         walkId: state.walkId + 1,
         hasFled: events.contains(const Fled()),
         actorIdentity: presentation.identity,
-        logDrawerExtent: state.logDrawerExtent,
+        logOpen: state.logOpen,
         logFollowing: state.logFollowing,
         logUnread: _unreadAfter(presentation.lines.length),
       ),
@@ -1178,7 +1136,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
         autoPath: interrupted ? const [] : remaining,
         walkId: interrupted ? state.walkId + 1 : state.walkId,
         actorIdentity: presentation.identity,
-        logDrawerExtent: state.logDrawerExtent,
+        logOpen: state.logOpen,
         logFollowing: state.logFollowing,
         logUnread: _unreadAfter(presentation.lines.length),
       ),
@@ -1199,7 +1157,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
       walkId: state.walkId,
       hasFled: events.contains(const Fled()),
       actorIdentity: presentation.identity,
-      logDrawerExtent: state.logDrawerExtent,
+      logOpen: state.logOpen,
       logFollowing: state.logFollowing,
       logUnread: _unreadAfter(presentation.lines.length),
     );
@@ -1213,7 +1171,7 @@ class GameBloc extends Bloc<GameBlocEvent, GameViewState> {
     hasFled: state.hasFled,
     actorIdentity: state.actorIdentity,
     selectedActorId: state.selectedActorId,
-    logDrawerExtent: state.logDrawerExtent,
+    logOpen: state.logOpen,
     logFollowing: state.logFollowing,
     logUnread: state.logUnread,
   );

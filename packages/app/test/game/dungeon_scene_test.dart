@@ -12,7 +12,6 @@ import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/glyph_plan.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
-import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 import 'package:residuum_app/game/glyph_marks.dart';
@@ -959,7 +958,7 @@ void main() {
         armedSpellId: state.armedSpellId,
         actorIdentity: state.actorIdentity,
         selectedActorId: state.selectedActorId,
-        logDrawerExtent: LogDrawerExtent.full,
+        logOpen: true,
       );
       await pumpScene(withDrawerOpen);
       final gameAfter = tester

@@ -6,9 +6,8 @@ import 'crawl_surfaces.dart';
 import 'game_bloc.dart';
 import 'log_line.dart';
 
-const logPeekKey = Key('log-peek');
-const logHandleKey = Key('log-handle');
-const logDrawerKey = Key('log-drawer');
+const eventsStripKey = Key('events-strip');
+const logPageKey = Key('log-page');
 const logCloseKey = Key('log-close');
 const logUnreadKey = Key('log-unread');
 
@@ -44,14 +43,8 @@ TextStyle logTint(LogCategory category) => switch (category) {
   LogCategory.reported => monoLog,
 };
 
-/// The fixed compact strip above the crawl's action controls: the last few
-/// lines of the message log, oldest to newest top to bottom, and the true
-/// running count — so a glance already answers "how much have I missed"
-/// without opening the drawer. The whole strip is the handle that opens it;
-/// its trailing chevron-like affordance is the mock's explicit invitation.
-/// No pictogram and no timestamp here — those belong to the expanded log.
-class LogPeek extends StatelessWidget {
-  const LogPeek({required this.state, required this.bloc, super.key});
+class EventsStrip extends StatelessWidget {
+  const EventsStrip({required this.state, required this.bloc, super.key});
 
   final GameViewState state;
   final GameBloc bloc;
@@ -59,73 +52,43 @@ class LogPeek extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final log = state.log;
-    final shown = log.length > 4 ? log.sublist(log.length - 4) : log;
+    final shown = log.length > crawlEventsLines
+        ? log.sublist(log.length - crawlEventsLines)
+        : log;
+    final gameOver = state.game.isGameOver;
     return Semantics(
       button: true,
-      enabled: !state.game.isGameOver,
+      enabled: !gameOver,
       label: 'Open the message log',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: state.game.isGameOver
-            ? null
-            : () => bloc.add(const LogDrawerHandlePulled()),
+        onTap: gameOver ? null : () => bloc.add(const LogOpened()),
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: crawlPanelFill,
-            border: Border.all(color: crawlFrame, width: hairline),
-            borderRadius: BorderRadius.circular(radius),
-          ),
+          decoration: crawlEventsStripDecoration,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
-              gutter,
-              crawlPanelPadding,
-              gutter,
-              rhythm,
+              8,
+              crawlEventsStripTop,
+              8,
+              crawlEventsStripBottom,
             ),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(
-                  height: 16 * crawlScale(context),
-                  child: Row(
-                    children: [
-                      const Expanded(
-                        child: Text('RECENT EVENTS', style: displaySection),
+                for (var index = 0; index < shown.length; index++)
+                  SizedBox(
+                    height: crawlLogLine * crawlScale(context),
+                    child: Opacity(
+                      opacity: crawlEventsFade[shown.length - 1 - index],
+                      child: Text(
+                        shown[index].sentence,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: logTint(shown[index].category),
                       ),
-                      Text('${log.length} entries', style: monoMeta),
-                      const SizedBox(width: rhythm),
-                      const Icon(
-                        Icons.unfold_more,
-                        size: 16,
-                        color: crawlTextDim,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
-                Container(height: hairline, color: crawlDivider),
-                const SizedBox(height: rhythm),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var index = 0; index < shown.length; index++)
-                        SizedBox(
-                          height: crawlLogLine * crawlScale(context),
-                          child: Opacity(
-                            opacity: index == shown.length - 1 ? 1 : 0.72,
-                            child: Text(
-                              shown[index].sentence,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: logTint(shown[index].category),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
@@ -175,22 +138,17 @@ class _LogRow extends StatelessWidget {
   }
 }
 
-/// The overlay panel: the drag handle, the title row with its close
-/// affordance, and the expanded, pictogrammed log. Peek → half → full and
-/// this panel's own extent and position are [GameScreen]'s job entirely
-/// (PLAN.md G8); this widget owns only its own fill and border, scroll
-/// position, and the reader crossing the newest-entry boundary.
-class LogDrawer extends StatefulWidget {
-  const LogDrawer({required this.state, required this.bloc, super.key});
+class LogPage extends StatefulWidget {
+  const LogPage({required this.state, required this.bloc, super.key});
 
   final GameViewState state;
   final GameBloc bloc;
 
   @override
-  State<LogDrawer> createState() => _LogDrawerState();
+  State<LogPage> createState() => _LogPageState();
 }
 
-class _LogDrawerState extends State<LogDrawer> {
+class _LogPageState extends State<LogPage> {
   static const double _followTolerance = 8;
 
   final ScrollController _controller = ScrollController();
@@ -205,7 +163,7 @@ class _LogDrawerState extends State<LogDrawer> {
   }
 
   @override
-  void didUpdateWidget(covariant LogDrawer oldWidget) {
+  void didUpdateWidget(covariant LogPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     final grew = widget.state.log.length > _lastLogLength;
     final justFollowed =
@@ -247,79 +205,37 @@ class _LogDrawerState extends State<LogDrawer> {
   @override
   Widget build(BuildContext context) {
     final count = widget.state.log.length;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: crawlGutter),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          color: crawlPanelFill,
-          border: Border(
-            top: BorderSide(color: crawlFrame, width: hairline),
-          ),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
-        ),
+    return BlockSemantics(
+      child: Material(
+        color: crawlPanelFill,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: gutter),
           child: Column(
             children: [
               SizedBox(
-                height: crawlLogSheetHeader,
-                child: Stack(
+                height: crawlTouchTarget,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Positioned(
-                      top: 3,
-                      left: 0,
-                      right: 0,
-                      child: Center(child: _HandlePill()),
-                    ),
-                    Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: rhythm),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Semantics(
-                                button: true,
-                                label: 'Resize the message log',
-                                child: GestureDetector(
-                                  key: logHandleKey,
-                                  behavior: HitTestBehavior.opaque,
-                                  onTap: () => widget.bloc.add(
-                                    const LogDrawerHandlePulled(),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Text(
-                                        'RECENT EVENTS',
-                                        style: displaySheetTitle,
-                                      ),
-                                      const Spacer(),
-                                      Text('$count entries', style: monoMeta),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: gutter),
-                            Semantics(
-                              button: true,
-                              label: 'Close the message log',
-                              child: GestureDetector(
-                                key: logCloseKey,
-                                onTap: () =>
-                                    widget.bloc.add(const LogDrawerClosed()),
-                                child: const SizedBox(
-                                  width: 40,
-                                  height: 40,
-                                  child: Icon(
-                                    Icons.close,
-                                    size: 18,
-                                    color: crawlTextDim,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                    const Text('RECENT EVENTS', style: displaySheetTitle),
+                    const Spacer(),
+                    Text('$count entries', style: monoMeta),
+                    const SizedBox(width: gutter),
+                    Semantics(
+                      button: true,
+                      label: 'Close the message log',
+                      child: GestureDetector(
+                        key: logCloseKey,
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => widget.bloc.add(const LogClosed()),
+                        child: const SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: Icon(
+                            Icons.close,
+                            size: 18,
+                            color: crawlTextDim,
+                          ),
                         ),
                       ),
                     ),
@@ -368,20 +284,4 @@ class _LogDrawerState extends State<LogDrawer> {
       ),
     );
   }
-}
-
-/// The drawer's own drag-handle pill: the shape that says "there is more
-/// here" without a word.
-class _HandlePill extends StatelessWidget {
-  const _HandlePill();
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 32,
-    height: 3,
-    decoration: BoxDecoration(
-      color: crawlTextDim,
-      borderRadius: BorderRadius.circular(1.5),
-    ),
-  );
 }

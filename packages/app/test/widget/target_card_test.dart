@@ -4,9 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:residuum_app/game/actor_presentation.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
+import 'package:residuum_app/game/event_log.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
+import 'package:residuum_app/game/log_line.dart';
 import 'package:residuum_app/game/map_overlay_layout.dart';
 import 'package:residuum_app/game/target_card.dart';
 import 'package:residuum_app/game/turn_order_strip.dart';
@@ -862,6 +864,89 @@ void main() {
   );
 
   testWidgets(
+    'a monster two rows above the map\'s bottom edge, inspected, with a '
+    'seeded log, misses the events strip and the hero block',
+    (tester) async {
+      await onTheTargetPhone(tester);
+      const heroAt = Position(3, 3);
+      const monsterAt = Position(3, 20);
+      final map = FloorMap.parse(
+        List.generate(
+          30,
+          (row) => row == 0 || row == 29 ? '#######' : '#.....#',
+        ).join('\n'),
+      );
+      final monster = _ghoul(monsterAt);
+      final game = GameState(
+        map: map,
+        hero: Actor(
+          id: 'hero',
+          name: 'you',
+          glyph: '@',
+          position: heroAt,
+          hp: 20,
+          maxHp: 20,
+          attackMin: 4,
+          attackMax: 4,
+          speed: 10,
+          energy: actThreshold,
+        ),
+        monsters: [monster],
+        rng: Rng(1),
+        lootRng: Rng(2),
+        visible: {heroAt, monsterAt},
+        explored: {heroAt, monsterAt},
+        buildFloor: (depth) => throw StateError('no floor below'),
+      );
+      final bloc = GameBloc(
+        game: game,
+        log: const [LogLine('Something is on the road.', LogCategory.noticed)],
+        stepDelay: Duration.zero,
+      );
+      addTearDown(bloc.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider.value(
+            value: bloc,
+            child: const GameScreen(palette: DungeonPalette.crypt),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final mapSize = tester.getSize(find.byKey(dungeonSceneSlotKey));
+      final geometry0 = GridGeometry.camera(
+        mapSize,
+        map.width,
+        map.height,
+        heroAt,
+      );
+      final desiredBottom = mapSize.height - 2 * mapCellHeight;
+      final panDy = desiredBottom - geometry0.rectOf(monsterAt).bottom;
+      bloc.add(MapPanned(Offset(0, panDy)));
+      await tester.pumpAndSettle();
+
+      final geometry1 = GridGeometry.camera(
+        mapSize,
+        map.width,
+        map.height,
+        heroAt,
+        Offset(0, panDy),
+      );
+      final topLeft = tester.getTopLeft(find.byKey(dungeonSceneKey));
+      await tester.tapAt(topLeft + geometry1.centreOf(monsterAt));
+      await tester.pumpAndSettle();
+      expect(bloc.state.inspectedActorId, monster.id);
+
+      final cardRect = tester.getRect(find.byKey(targetCardKey));
+      final stripRect = tester.getRect(find.byKey(eventsStripKey));
+      final heroRect = geometry1.rectOf(heroAt).shift(topLeft);
+      expect(cardRect.overlaps(stripRect), isFalse);
+      expect(cardRect.overlaps(heroBlock(heroRect)), isFalse);
+    },
+  );
+
+  testWidgets(
     'the target card never lands on the turn-order strip when the hero '
     'is panned low in battle (D1 wiring, F3)',
     (tester) async {
@@ -916,7 +1001,11 @@ void main() {
           ],
         },
       );
-      final bloc = GameBloc(game: game, stepDelay: Duration.zero);
+      final bloc = GameBloc(
+        game: game,
+        log: const [LogLine('Something is on the road.', LogCategory.noticed)],
+        stepDelay: Duration.zero,
+      );
       addTearDown(bloc.close);
       await tester.pumpWidget(
         MediaQuery(
@@ -941,6 +1030,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.getRect(card).overlaps(tester.getRect(strip)), isFalse);
+      expect(
+        tester
+            .getRect(card)
+            .overlaps(tester.getRect(find.byKey(eventsStripKey))),
+        isFalse,
+      );
     },
   );
 }

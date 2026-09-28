@@ -286,13 +286,14 @@ void main() {
     });
 
     blocTest<GameBloc, GameViewState>(
-      'a tap on an adjacent tile moves the hero and writes to the log',
+      'a tap on an adjacent tile moves the hero and writes nothing to the '
+      'log',
       build: () => GameBloc(game: arenaGame(heroAt: const Position(3, 2))),
       act: (bloc) => bloc.add(const TileTapped(Position(4, 2))),
       expect: () => [
         isA<GameViewState>()
             .having((s) => s.game.hero.position, 'hero', const Position(4, 2))
-            .having(logSentences, 'log', ['You step east.']),
+            .having(logSentences, 'log', <String>[]),
       ],
     );
 
@@ -1407,7 +1408,7 @@ void main() {
       expect(armed.inspectedActorId, isNull);
     });
 
-    test('pulling the log handle clears the inspected actor', () async {
+    test('opening the log clears the inspected actor', () async {
       final bloc = walker(
         arenaGame(
           heroAt: const Position(1, 1),
@@ -1421,10 +1422,10 @@ void main() {
       await next;
 
       next = bloc.stream.first;
-      bloc.add(const LogDrawerHandlePulled());
-      final pulled = await next;
+      bloc.add(const LogOpened());
+      final opened = await next;
 
-      expect(pulled.inspectedActorId, isNull);
+      expect(opened.inspectedActorId, isNull);
     });
   });
 }
@@ -2888,7 +2889,6 @@ void _lootTests() {
       act: (bloc) => bloc.add(const TileTapped(Position(2, 1))),
       expect: () => [
         isA<GameViewState>().having((s) => s.log, 'log', [
-          const LogLine('You step east.', LogCategory.moved),
           const LogLine('The ghoul gets the drop on you.', LogCategory.struck),
           const LogLine('The ghoul claws you for 3.', LogCategory.struck),
         ]),
@@ -2942,7 +2942,7 @@ void _lootTests() {
                     .firstWhere((line) => line.contains('drop on you')),
               ),
               'beat position',
-              1,
+              0,
             ),
       ],
     );

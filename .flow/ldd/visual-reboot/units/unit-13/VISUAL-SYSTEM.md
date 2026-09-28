@@ -221,8 +221,9 @@ Behaviour and accessibility, unchanged:
 > 35% in battle. The 600 dp worst-legal-chrome ceiling and `_fitFor` are
 > retired. See `units/unit-16.5/CONTRACT.md`.
 
-> **Superseded by Unit 16.6 (2026-09-24):** the chrome is one fixed
-> composition in every crawl state (HUD, map, log row, bottom menu); the
+> **Superseded by Unit 16.6 (2026-09-24, amended 2026-09-28):** the chrome
+> is one fixed composition in every crawl state (HUD, map with the events
+> strip over its bottom edge, action bar, bottom menu); the
 > map rectangle is identical in exploration, Watched, battle and armed;
 > the 45%/35% floors, the five-slot contextual bar and the three-column
 > hero and combat panels are retired. See `units/unit-16.6/CONTRACT.md`.

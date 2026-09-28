@@ -39,11 +39,6 @@ void main() {
 
     test('refusal is distinguished from movement', () {
       // arrange
-      const moved = ActorMoved(
-        actorId: heroId,
-        from: Position(1, 1),
-        to: Position(2, 1),
-      );
       const blocked = MoveBlocked(actorId: heroId, at: Position(2, 1));
       const descended = Descended(newDepth: 2);
       const ascended = Ascended(newDepth: 1);
@@ -52,7 +47,6 @@ void main() {
 
       // act
       final categories = <GameEvent>[
-        moved,
         blocked,
         descended,
         ascended,
@@ -62,7 +56,6 @@ void main() {
 
       // assert
       expect(categories, [
-        LogCategory.moved,
         LogCategory.refused,
         LogCategory.moved,
         LogCategory.moved,
@@ -157,8 +150,13 @@ void main() {
       },
     );
 
-    test('the three silent variants stay silent', () {
+    test('the four silent variants stay silent', () {
       // arrange
+      const heroMoved = ActorMoved(
+        actorId: heroId,
+        from: Position(1, 1),
+        to: Position(2, 1),
+      );
       const monsterMoved = ActorMoved(
         actorId: 'ghoul-1',
         from: Position(1, 1),
@@ -171,6 +169,7 @@ void main() {
       const gameOver = GameOver();
 
       // act + assert
+      expect(describeEvent(heroMoved, const {}), isNull);
       expect(describeEvent(monsterMoved, const {}), isNull);
       expect(describeEvent(monsterBlocked, const {}), isNull);
       expect(describeEvent(gameOver, const {}), isNull);

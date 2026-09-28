@@ -7,11 +7,10 @@ import 'package:residuum_app/game/crawl_menu.dart';
 import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
+import 'package:residuum_app/game/event_log.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
-import 'package:residuum_app/game/log_drawer.dart';
-import 'package:residuum_app/game/log_row.dart';
 import 'package:residuum_app/game/target_card.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
@@ -162,14 +161,13 @@ Future<void> _tapTile(WidgetTester tester, Position tile) async {
 
 void main() {
   testWidgets(
-    'regions run HUD, map, log row, bar, menu top to bottom, each clear of '
-    'the safe body',
+    'regions run HUD, map, bar, menu top to bottom, each clear of the '
+    'safe body',
     (tester) async {
       await _openCrawl(tester, _exploringGame());
 
       final hud = tester.getRect(find.byKey(crawlHudKey));
       final map = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      final logRow = tester.getRect(find.byKey(logRowKey));
       final bar = tester.getRect(find.byKey(actionBarKey));
       final menu = tester.getRect(find.byKey(crawlMenuKey));
       final surfaceHeight =
@@ -177,8 +175,7 @@ void main() {
 
       expect(hud.top, closeTo(34.9, 0.5));
       expect(hud.bottom, closeTo(map.top, 0.01));
-      expect(map.bottom + crawlPanelGap, closeTo(logRow.top, 0.01));
-      expect(logRow.bottom + crawlPanelGap, closeTo(bar.top, 0.01));
+      expect(map.bottom + crawlPanelGap, closeTo(bar.top, 0.01));
       expect(bar.bottom + crawlGap, closeTo(menu.top, 0.01));
       expect(
         menu.bottom + crawlBottomGap,
@@ -188,8 +185,8 @@ void main() {
   );
 
   testWidgets(
-    'the HUD, map, log row, bar and menu rects are identical, and the menu '
-    'order unchanged, in exploration, armed, Watched and battle',
+    'the HUD, map, bar and menu rects are identical, and the menu order '
+    'unchanged, in exploration, armed, Watched and battle',
     (tester) async {
       const knownSpells = {'firebolt'};
       final bloc = await _openCrawl(
@@ -201,7 +198,6 @@ void main() {
       final mana = tester.getRect(find.byKey(manaMeterKey));
       final gold = tester.getRect(find.byKey(crawlGoldKey));
       final map = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      final logRow = tester.getRect(find.byKey(logRowKey));
       final bar = tester.getRect(find.byKey(actionBarKey));
       final menu = tester.getRect(find.byKey(crawlMenuKey));
       const menuSlotIds = [
@@ -221,7 +217,6 @@ void main() {
         expect(tester.getRect(find.byKey(manaMeterKey)), mana);
         expect(tester.getRect(find.byKey(crawlGoldKey)), gold);
         expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), map);
-        expect(tester.getRect(find.byKey(logRowKey)), logRow);
         expect(tester.getRect(find.byKey(actionBarKey)), bar);
         expect(tester.getRect(find.byKey(crawlMenuKey)), menu);
         expect([
@@ -269,29 +264,28 @@ void main() {
   });
 
   testWidgets(
-    'cycling the log extent peek, half, full and back leaves the map slot '
-    'and the peek unchanged',
+    'opening and closing the log page leaves the map, bar and menu rects '
+    'unchanged',
     (tester) async {
-      await _openCrawl(tester, _exploringGame());
+      final bloc = await _openCrawl(tester, _exploringGame());
 
       final mapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      final peekRect = tester.getRect(find.byKey(logPeekKey));
+      final barRect = tester.getRect(find.byKey(actionBarKey));
+      final menuRect = tester.getRect(find.byKey(crawlMenuKey));
 
-      await tester.tap(find.byKey(logPeekKey));
+      bloc.add(const LogOpened());
       await tester.pumpAndSettle();
+      expect(find.byKey(logPageKey), findsOneWidget);
       expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRect);
-      expect(tester.getRect(find.byKey(logPeekKey)), peekRect);
+      expect(tester.getRect(find.byKey(actionBarKey)), barRect);
+      expect(tester.getRect(find.byKey(crawlMenuKey)), menuRect);
 
-      await tester.tap(find.byKey(logHandleKey));
+      bloc.add(const LogClosed());
       await tester.pumpAndSettle();
+      expect(find.byKey(logPageKey), findsNothing);
       expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRect);
-      expect(tester.getRect(find.byKey(logPeekKey)), peekRect);
-
-      await tester.tap(find.byKey(logHandleKey));
-      await tester.pumpAndSettle();
-      expect(find.byKey(logDrawerKey), findsNothing);
-      expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRect);
-      expect(tester.getRect(find.byKey(logPeekKey)), peekRect);
+      expect(tester.getRect(find.byKey(actionBarKey)), barRect);
+      expect(tester.getRect(find.byKey(crawlMenuKey)), menuRect);
     },
   );
 

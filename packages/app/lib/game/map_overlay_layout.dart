@@ -89,16 +89,38 @@ double _overlapArea(Rect rect, Rect other) {
   return overlap.width * overlap.height;
 }
 
-Rect targetCardArea({required Size map, Rect? strip}) {
+Rect eventsStripRect(Size map, double scale) {
+  final h =
+      crawlEventsStripTop +
+      crawlEventsLines * crawlLogLine * scale +
+      crawlEventsStripBottom;
+  return Rect.fromLTWH(0, map.height - h, map.width, h);
+}
+
+Rect targetCardArea({required Size map, required Rect events, Rect? strip}) {
   final stripAtTop = strip != null && strip.center.dy < map.height / 2;
   final top = stripAtTop ? strip.bottom : 0.0;
-  final bottom = strip != null && !stripAtTop ? strip.top : map.height;
+  final bottom = strip != null && !stripAtTop ? strip.top : events.top;
   return Rect.fromLTRB(0, top, map.width, bottom);
 }
 
-Rect recenterRect(Size map) => Rect.fromLTWH(
+Rect recenterRect(Size map, {required Rect events}) => Rect.fromLTWH(
   map.width - 8 - crawlTouchTarget,
-  map.height - 8 - crawlTouchTarget,
+  events.top - 8 - crawlTouchTarget,
   crawlTouchTarget,
   crawlTouchTarget,
 );
+
+({Rect rect, bool flipped}) turnOrderStripRect({
+  required Size map,
+  required double height,
+  required Rect hero,
+  required Rect events,
+}) {
+  final top = Rect.fromLTWH(0, 0, map.width, height);
+  final flipped = top.overlaps(hero);
+  final rect = flipped
+      ? Rect.fromLTWH(0, events.top - height, map.width - 64, height)
+      : top;
+  return (rect: rect, flipped: flipped);
+}

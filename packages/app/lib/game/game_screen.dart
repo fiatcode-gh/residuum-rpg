@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -13,11 +11,9 @@ import 'crawl_style.dart';
 import 'crawl_surfaces.dart';
 import 'dungeon_palette.dart';
 import 'dungeon_scene.dart';
+import 'event_log.dart';
 import 'game_bloc.dart';
 import 'grid_geometry.dart';
-import 'log_drawer.dart';
-import 'log_line.dart';
-import 'log_row.dart';
 import 'map_overlays.dart';
 import 'map_touch.dart';
 
@@ -47,7 +43,10 @@ class GameScreen extends StatelessWidget {
     canPop: false,
     onPopInvokedWithResult: (didPop, _) {
       if (didPop) return;
-      context.read<GameBloc>().add(const SystemBackPressed());
+      final bloc = context.read<GameBloc>();
+      bloc.add(
+        bloc.state.logOpen ? const LogClosed() : const SystemBackPressed(),
+      );
     },
     child: BlocListener<GameBloc, GameViewState>(
       listenWhen: (before, after) => !before.hasFled && after.hasFled,
@@ -73,97 +72,43 @@ class GameScreen extends StatelessWidget {
                             day: bloc.day,
                           ),
                           Expanded(
+                            key: dungeonSceneSlotKey,
                             child: LayoutBuilder(
-                              builder: (overlayContext, overlayConstraints) {
-                                final overlayHeight =
-                                    overlayConstraints.maxHeight;
-                                final fullDrawer =
-                                    state.logDrawerExtent ==
-                                    LogDrawerExtent.full;
+                              builder: (mapContext, constraints) {
+                                final size = constraints.biggest;
                                 return Stack(
                                   children: [
-                                    Column(
-                                      children: [
-                                        Expanded(
-                                          key: dungeonSceneSlotKey,
-                                          child: LayoutBuilder(
-                                            builder: (mapContext, constraints) {
-                                              final size = constraints.biggest;
-                                              return Stack(
-                                                children: [
-                                                  DungeonSceneHost(
-                                                    key: dungeonSceneHostKey,
-                                                    state: state,
-                                                    palette: palette,
-                                                    onTap: (local, geometry) =>
-                                                        _onMapTap(
-                                                          bloc,
-                                                          state,
-                                                          geometry,
-                                                          local,
-                                                        ),
-                                                    onPan: (delta) => bloc.add(
-                                                      MapPanned(delta),
-                                                    ),
-                                                    onLongPress:
-                                                        (local, geometry) =>
-                                                            _onMapLongPress(
-                                                              bloc,
-                                                              state,
-                                                              geometry,
-                                                              local,
-                                                            ),
-                                                  ),
-                                                  MapOverlays(
-                                                    bloc: bloc,
-                                                    state: state,
-                                                    size: size,
-                                                  ),
-                                                ],
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                        const SizedBox(height: crawlPanelGap),
-                                        LogRow(
-                                          key: logRowKey,
-                                          state: state,
-                                          bloc: bloc,
-                                        ),
-                                        const SizedBox(height: crawlPanelGap),
-                                      ],
-                                    ),
-                                    if (state.logDrawerExtent !=
-                                        LogDrawerExtent.peek)
-                                      Positioned(
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        top: fullDrawer ? 0 : null,
-                                        child: fullDrawer
-                                            ? LogDrawer(
-                                                key: logDrawerKey,
-                                                state: state,
-                                                bloc: bloc,
-                                              )
-                                            : SizedBox(
-                                                height: math.min(
-                                                  crawlLogSheetHeight *
-                                                      crawlScale(context),
-                                                  overlayHeight,
-                                                ),
-                                                child: LogDrawer(
-                                                  key: logDrawerKey,
-                                                  state: state,
-                                                  bloc: bloc,
-                                                ),
-                                              ),
+                                    DungeonSceneHost(
+                                      key: dungeonSceneHostKey,
+                                      state: state,
+                                      palette: palette,
+                                      onTap: (local, geometry) => _onMapTap(
+                                        bloc,
+                                        state,
+                                        geometry,
+                                        local,
                                       ),
+                                      onPan: (delta) =>
+                                          bloc.add(MapPanned(delta)),
+                                      onLongPress: (local, geometry) =>
+                                          _onMapLongPress(
+                                            bloc,
+                                            state,
+                                            geometry,
+                                            local,
+                                          ),
+                                    ),
+                                    MapOverlays(
+                                      bloc: bloc,
+                                      state: state,
+                                      size: size,
+                                    ),
                                   ],
                                 );
                               },
                             ),
                           ),
+                          const SizedBox(height: crawlPanelGap),
                           ActionBar(
                             key: actionBarKey,
                             bloc: bloc,
@@ -178,6 +123,14 @@ class GameScreen extends StatelessWidget {
                           const SizedBox(height: crawlBottomGap),
                         ],
                       ),
+                      if (state.logOpen)
+                        Positioned.fill(
+                          child: LogPage(
+                            key: logPageKey,
+                            state: state,
+                            bloc: bloc,
+                          ),
+                        ),
                       if (state.game.isGameOver) _DeathOverlay(state: state),
                     ],
                   );
