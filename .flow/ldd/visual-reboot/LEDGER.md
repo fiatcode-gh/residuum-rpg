@@ -69,7 +69,7 @@ The epic was opened from an approved external planning handoff:
 | Units 12.5–15 | see decision log | code of Units 13–14 merged by PR #23 `4033de5`, Unit 15 by PR #24 `374ee77`; Unit 12.5 was a device gate (see decision log) | see decision log and RESUME | U13 visual system and U14 type authority are partly superseded by U16.5 |
 | Unit 16 — ASCII atmospheric crawl parity | Unit 15 | **merged** to `main` with 16.5 | accepted together with U16.5 | merged by PR #25 at `4b8bd10`; contract: `units/unit-16/CONTRACT.md` |
 | Unit 16.5 — ASCII crawl full parity | Unit 16 | **merged** to `main` | 1252 app tests; user visual sign-off on the vivo | merged by PR #25 at `4b8bd10`; contract: `units/unit-16.5/CONTRACT.md` |
-| Unit 16.6 — crawl controls and layout revamp | Units 16, 16.5 | **implemented; correction round** | 1290 app tests, analyze/format clean, CP-A on the I2219; acceptance review CHANGES-REQUIRED | contract and plan: `units/unit-16.6/`; device gate DEV-FS/EXP/BAT/FINGER pending |
+| Unit 16.6 — crawl controls and layout revamp | Units 16, 16.5 | **accepted** (user sign-off 2026-09-28) | 1303 app tests, analyze/format clean, device capsules on the I2219 and AVD | branch `residuum-visual-reboot-16.6`, not pushed; contract and plan: `units/unit-16.6/` |
 
 Completed units are ordered **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11**.
 Unit 12 follows Unit 11 and consumes its renderer as a closed dependency.
@@ -5531,3 +5531,33 @@ request exists, and the integration choice is the user's.
   on the new map at both scales with its invariants holding. Main gates:
   format clean, analyze clean, 1303/1303. APK `e0b99037…` installed on the
   AVD and launched.
+
+### Unit 16.6 accepted — 2026-09-28
+
+- **User sign-off (verbatim): "let's close this 16.6"**, given after checking
+  the final build (`8b3de8d`, APK `e0b99037…`) on the AVD Medium_Phone.
+- Final state: full-screen; top HUD; 24×30 dp map with a hero-centred camera
+  and pan; a 48 dp near-hero step box on floor cells only; a borderless
+  3-line events strip over the map bottom opening a full log page; a fixed
+  100 dp `ACTIONS` bar (one fact line) between the map and the menu; the
+  menu Quests / Spells / Quick / Hero with icon and label only; the
+  turn-order strip and target card over the map, never covering each
+  other, the strips or the hero. Steps are no longer logged. Suite
+  1303/1303, analyze and format clean, core/content unchanged since
+  `4b8bd10`.
+- Accepted residuals: PLAN 9.6 (text scale 1.3 with tall cards can cover
+  the adjacent target) and 10.7 (panning the hero into the bottom 55 dp puts
+  its lower neighbours under the events strip). Parked minors: N1 stale
+  `_dialogButtonSpacing` dartdoc, M1 the CrawlPanel dartdoc naming the log
+  peek, M2 a stale test doc, N4 card verbs computed several times per build.
+- Device cleanup: the AVD holds its own saves (restored MATCH, then new
+  builds installed over them with `install -r`, the user's own play since).
+  The I2505 holds the user's game and is the user's to keep; its
+  pre-session backup is in `.flow/evidence/6971881/i2505-save-backup/` if
+  wanted. **Still owed:** the vivo I2219 needs its saves restored from
+  `.flow/evidence/848ecc9/save-backup/` and then the test app uninstalled
+  (it had no app before Unit 16.6); it is not attached.
+- Integration: branch `residuum-visual-reboot-16.6`, 55 commits over
+  `4b8bd10`, not pushed. `b536349` mixes an app fix with ledger files and
+  should be split before a pull request. Next: user's integration choice;
+  Unit 16.7 (Hero screen) follows.
