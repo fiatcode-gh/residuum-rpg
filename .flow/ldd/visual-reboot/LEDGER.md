@@ -43,11 +43,9 @@ The epic was opened from an approved external planning handoff:
   references.
 - **Units 16 and 16.5 are accepted and merged to `main`** as `4b8bd10`
   (PR #25).
-- **Unit 16.6 is implemented and in correction** on
-  `residuum-visual-reboot-16.6` (restarted 2026-09-24; see "Unit 16.6
-  restart"). Tasks 01–10 committed, final gates green at `27aa0f8`;
-  acceptance review CHANGES-REQUIRED (F1 pop-up anchoring, F2–F5 minors),
-  one correction round executing. Device gate follows closure.
+- **Unit 16.6 is accepted** (user sign-off 2026-09-28) on
+  `residuum-visual-reboot-16.6`, not pushed; see "Unit 16.6 accepted".
+  Awaiting the user's integration choice. Unit 16.7 (Hero screen) is next.
 
 ## Epic status
 
