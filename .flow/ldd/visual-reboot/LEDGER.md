@@ -5504,3 +5504,14 @@ request exists, and the integration choice is the user's.
   when the hero is panned onto the strip. Main inspected `10_after_wait`
   and `log_page_full`. Observation for the user: with only Wait, the bar
   shows a large empty band above the button (reserved fact lines).
+- **DEV-BAT-4** (`.flow/evidence/86d4727/DEV-BAT-4/`): the verifier stalled
+  for 50 min trying to pan the hero high enough to flip the turn-order strip
+  (the small road arena's pan clamp stops first; identical shots 10–12) and
+  was stopped by Main. Its shots `06` and `12` (inspected by Main) show the
+  turn strip on top, events at the bottom, and target cards clear of both
+  strips and the hero in two fights, with Wait in the ACTIONS bar. The flip
+  onto the events strip is not observed on device; it is widget-tested and
+  mutation-checked (M7). The page in battle was not captured.
+- AVD saves restored from `.flow/evidence/e913b8d/avd-save-backup/`: both
+  slots MATCH by sha256 (`18995c4a…`, `8909f70c…`); tmp files removed. The
+  app is launched on the AVD for the user's check.
