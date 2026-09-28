@@ -5478,3 +5478,10 @@ request exists, and the integration choice is the user's.
   the on-map card, its leader and its placement code deleted. Red observed,
   mutations M1–M5 killed, suite 1286/1286, analyze clean. Intermediate map
   423.9 dp (widget, s1.0) until Task 14 removes the log row.
+- Task 14 accepted: `3d181a3` events strip over the map's bottom edge (3
+  fading lines, soft fade, hidden on an empty log), full log page in the
+  crawl screen (title, count, close, Back closes it), log row and drawer
+  deleted, `You step` removed. Mutations M1–M7 killed; sweep on the final
+  map at both scales found no hit on strip, events, hero or target cell.
+  Final widget map 533.9 dp at s1.0 (device estimate 545.8). Main gates:
+  format clean, analyze clean, 1299/1299, core/content unchanged.
