@@ -1091,7 +1091,12 @@ at `.flow/evidence/e913b8d/avd-save-backup/` and still owed a restore).
    Record verbatim. Still owed outside this plan: the AVD restore, and the
    I2219 restore and uninstall (checkpoint `6971881`).
 
-### 10.6 Decisions for Main and the user (defaults applied; the plan proceeds on them)
+### 10.6 Decisions — resolved 2026-09-28
+
+The user chose D10 128 dp with the title on its own line, D11 the soft
+fade, and D13 keeping the title and count on the page. Main kept D9
+(in-screen page) and D12 (no strip on an empty log) as defaults, since
+neither changes what the player sees. All five are locked.
 
 - **D9 In-screen full page, not a pushed route.** The page is a full-body
   layer driven by `logOpen`: game-over closes it by construction, the
