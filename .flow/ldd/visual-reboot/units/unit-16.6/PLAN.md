@@ -897,6 +897,16 @@ here.
   (user, 2026-09-28):** the button row sits directly below the last drawn
   text line; the unused fact space falls to the bottom of the bar as
   padding. The bar's outer height stays `actionBarHeight(s)` in every state.
+- **Amendment 2 (user, 2026-09-28): one fact line.** The fact zone holds a
+  single line: `placeFacts` joined with ` · ` (or the quiet line), one line,
+  ellipsis. `actionBarHeight(s) = 2·6 + 16·s + 4 + 14·s + 6 + 48 = 70 + 30·s`
+  → **100.0 dp at s 1.0, 109.0 at s 1.3**; the map gains 28 dp (36.4 at
+  1.3) and is still identical in every state. The line's semantics label
+  carries the full, un-ellipsized joined text. This supersedes the
+  three-line zone above and the "more than 3 facts" rule below; D10's
+  128 dp figure is superseded. Tests and sweeps that used the old bar or
+  map heights are updated to the new measured figures; the target-card
+  sweep reruns at both scales on the new map.
 - **Fact lines total over fixtures:** more than 3 facts (only reachable in a
   fixture with a node on stairs) render as `facts[0]`, `facts[1]`, and
   `facts.sublist(2).join(' · ')` on the third line.
