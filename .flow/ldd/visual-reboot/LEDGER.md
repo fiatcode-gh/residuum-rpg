@@ -5523,3 +5523,11 @@ request exists, and the integration choice is the user's.
   and Wait-only cases. Main gates: format clean, analyze clean, 1304/1304,
   diff inspected. APK `470dca63…` installed on the AVD over the user's
   restored saves (`install -r` keeps app data).
+- The user then asked what the space at the bottom of the bar was for, and
+  chose a shorter fixed bar. PLAN G14 amendment 2 (re-approved): one fact
+  line, facts joined with ` · `, ellipsis, full text in semantics; bar 100
+  dp at s1.0 and 109 at s1.3; the map grows to 561.9 dp (widget, s1.0) and
+  stays constant. Fix `8b3de8d`; Red observed; the target-card sweep reran
+  on the new map at both scales with its invariants holding. Main gates:
+  format clean, analyze clean, 1303/1303. APK `e0b99037…` installed on the
+  AVD and launched.
