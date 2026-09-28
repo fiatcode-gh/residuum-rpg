@@ -6,7 +6,7 @@ import 'package:flutter/material.dart' hide Route;
 import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/crawl_header.dart';
+import 'package:residuum_app/game/crawl_hud.dart';
 import 'package:residuum_app/game/glyph_marks.dart';
 import 'package:residuum_app/game/glyph_plan.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../style/tokens.dart';
@@ -20,12 +22,14 @@ class CrawlPill extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.icon,
+    this.extent = tapTarget,
     super.key,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
+  final double extent;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +48,7 @@ class CrawlPill extends StatelessWidget {
               ),
             ),
           )
-        : SizedBox(width: tapTarget, height: tapTarget, child: Icon(icon));
+        : SizedBox(width: extent, height: extent, child: Icon(icon));
     return Semantics(
       button: true,
       enabled: enabled,
@@ -169,4 +173,82 @@ Future<bool> showCrawlConfirm(
     ),
   );
   return confirmed ?? false;
+}
+
+Future<T?> showCrawlPopup<T>(
+  BuildContext anchorContext, {
+  required WidgetBuilder builder,
+}) {
+  final anchorBox = anchorContext.findRenderObject()! as RenderBox;
+  final anchorTopLeft = anchorBox.localToGlobal(Offset.zero);
+  final anchorSize = anchorBox.size;
+  final screenSize = MediaQuery.sizeOf(anchorContext);
+  final safeTop = MediaQuery.paddingOf(anchorContext).top;
+  final width = math.min(
+    crawlPopupWidth,
+    screenSize.width - crawlPopupEdgeMargin * 2,
+  );
+  final anchorCentre = anchorTopLeft.dx + anchorSize.width / 2;
+  final left = (anchorCentre - width / 2).clamp(
+    crawlPopupEdgeMargin,
+    screenSize.width - crawlPopupEdgeMargin - width,
+  );
+  final bottomEdge = anchorTopLeft.dy - crawlPopupGap;
+  final maxHeight = math.max(0.0, bottomEdge - safeTop - crawlPopupEdgeMargin);
+  return showGeneralDialog<T>(
+    context: anchorContext,
+    barrierDismissible: true,
+    barrierLabel: 'Close',
+    barrierColor: const Color(0x00000000),
+    transitionDuration: Duration.zero,
+    pageBuilder: (dialogContext, _, _) => Stack(
+      children: [
+        Positioned(
+          left: left,
+          width: width,
+          bottom: screenSize.height - bottomEdge,
+          child: Theme(
+            data: residuumTheme,
+            child: Material(
+              type: MaterialType.transparency,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                child: DecoratedBox(
+                  decoration: crawlFrameDecoration,
+                  child: Padding(
+                    padding: const EdgeInsets.all(crawlPopupPadding),
+                    child: SingleChildScrollView(child: builder(dialogContext)),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class LeaderPainter extends CustomPainter {
+  const LeaderPainter({required this.from, required this.to});
+
+  final Offset from;
+  final Offset to;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final line = Paint()
+      ..color = crawlGold.withValues(alpha: 0.7)
+      ..strokeWidth = crawlCalloutLeaderWidth
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(from, to, line);
+    final dot = Paint()
+      ..color = crawlGold.withValues(alpha: 0.7)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(from, crawlCalloutDotRadius, dot);
+  }
+
+  @override
+  bool shouldRepaint(covariant LeaderPainter oldDelegate) =>
+      oldDelegate.from != from || oldDelegate.to != to;
 }

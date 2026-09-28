@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/combat_panel.dart';
-import 'package:residuum_app/game/crawl_action_row.dart';
-import 'package:residuum_app/game/crawl_header.dart';
+import 'package:residuum_app/game/action_bar.dart';
+import 'package:residuum_app/game/crawl_hud.dart';
+import 'package:residuum_app/game/crawl_menu.dart';
 import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
+import 'package:residuum_app/game/event_log.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/game/grid_geometry.dart';
-import 'package:residuum_app/game/hero_panel.dart';
-import 'package:residuum_app/game/log_drawer.dart';
-import 'package:residuum_app/game/map_callout.dart';
+import 'package:residuum_app/game/target_card.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
 
@@ -44,7 +43,11 @@ Actor _actor(String id, Position at, {String glyph = '@', int speed = 10}) =>
 
 /// A quiet room with nothing nearby, so `isBattleOpen` is false and the
 /// action bar's only slot is Pack.
-GameState _exploringGame() {
+GameState _exploringGame({
+  Map<String, Spell> spells = const {},
+  Set<String> knownSpells = const {},
+  int mana = 0,
+}) {
   final map = FloorMap.parse(_arena);
   final visible = computeFov(map, _heroAt, fovRadius);
   return GameState(
@@ -56,6 +59,9 @@ GameState _exploringGame() {
     buildFloor: (depth) => throw StateError('this arena has no floor below'),
     visible: visible,
     explored: {...visible},
+    spells: spells,
+    knownSpells: knownSpells,
+    mana: mana,
   );
 }
 
@@ -87,72 +93,62 @@ GameState _battleGame({
 
 /// A visible ghoul two cells away, outside engagement range — known but not
 /// adjacent, so tapping it inspects rather than bumps.
-GameState _watchedGame() => _exploringGame().copyWith(
-  monsters: [_actor('ghoul-1', const Position(4, 2), glyph: 'g')],
-);
+GameState _watchedGame({
+  Map<String, Spell> spells = const {},
+  Set<String> knownSpells = const {},
+  int mana = 0,
+}) => _exploringGame(
+  spells: spells,
+  knownSpells: knownSpells,
+  mana: mana,
+).copyWith(monsters: [_actor('ghoul-1', const Position(4, 2), glyph: 'g')]);
 
 /// [_exploringGame] plus a gather node underfoot — the note-invariance
 /// proof's other half.
 GameState _noteScene() =>
     _exploringGame().copyWith(nodes: {_heroAt: GatherKind.oreVein});
 
-const _openArena = '''
-...
-...
-...''';
-
-/// The bar's own worst case, lit all at once: drink, the three readied
-/// spells, the overflow, wait, pick up, gather, pack, flee, descend and
-/// leave — twelve slots deep, none of which the map floor may ever answer
-/// to.
-GameState _twelveActionScene() {
-  final map = FloorMap.parse(_openArena);
-  const heroAt = Position(0, 0);
-  final visible = computeFov(map, heroAt, fovRadius);
-  return GameState(
-    map: map,
-    hero: _actor('hero', heroAt),
-    monsters: [_actor('ghoul-1', const Position(1, 0), glyph: 'g')],
-    rng: Rng(1),
-    lootRng: Rng(2),
-    buildFloor: (depth) => throw StateError('this arena has no floor below'),
-    visible: visible,
-    explored: {...visible},
-    isEncounter: true,
-    stairsDown: heroAt,
-    nodes: {heroAt: GatherKind.oreVein},
-    groundItems: {
-      heroAt: [
-        const Item(id: 'floor-loot', base: ironSword, rarity: Rarity.common),
-      ],
-    },
-    inventory: const [
-      Item(id: 'potion-1', base: healingPotion, rarity: Rarity.common),
-    ],
-    spells: spellsById,
-    knownSpells: const {'firebolt', 'mend', 'ward', 'bind'},
-    mana: 10,
-  );
-}
-
-Future<GameBloc> _openCrawl(WidgetTester tester, GameState game) async {
+Future<GameBloc> _openCrawl(
+  WidgetTester tester,
+  GameState game, {
+  TextScaler? textScaler,
+}) async {
   await onTheTargetPhone(tester);
   final bloc = GameBloc(game: game, stepDelay: Duration.zero);
   addTearDown(bloc.close);
-  await tester.pumpWidget(
-    MaterialApp(
-      home: BlocProvider.value(
-        value: bloc,
-        child: const GameScreen(palette: DungeonPalette.crypt),
-      ),
+  final app = MaterialApp(
+    home: BlocProvider.value(
+      value: bloc,
+      child: const GameScreen(palette: DungeonPalette.crypt),
     ),
+  );
+  await tester.pumpWidget(
+    textScaler == null
+        ? app
+        : MediaQuery(
+            data: MediaQueryData(textScaler: textScaler),
+            child: app,
+          ),
   );
   await tester.pumpAndSettle();
   return bloc;
 }
 
-double _surfaceWidth(WidgetTester tester) =>
-    tester.view.physicalSize.width / tester.view.devicePixelRatio;
+/// The hero engaged by four monsters at once — the worst case the strip's
+/// own `+N` cue exists for.
+GameState _crowdedBattleGame({
+  Map<String, Spell> spells = const {},
+  Set<String> knownSpells = const {},
+  int mana = 0,
+}) => _exploringGame(spells: spells, knownSpells: knownSpells, mana: mana)
+    .copyWith(
+      monsters: [
+        _actor('ghoul-1', const Position(1, 2), glyph: 'g'),
+        _actor('ghoul-2', const Position(3, 2), glyph: 'g'),
+        _actor('ghoul-3', const Position(2, 1), glyph: 'g'),
+        _actor('ghoul-4', const Position(2, 3), glyph: 'g'),
+      ],
+    );
 
 /// Taps one tile of the exploration arena, through the scene's own geometry.
 Future<void> _tapTile(WidgetTester tester, Position tile) async {
@@ -165,72 +161,85 @@ Future<void> _tapTile(WidgetTester tester, Position tile) async {
 
 void main() {
   testWidgets(
-    'exploration renders header, map, hero panel and peek in the mock '
-    'order, each at its own fixed height, and the map clears its floor',
+    'regions run HUD, map, bar, menu top to bottom, each clear of the '
+    'safe body',
     (tester) async {
       await _openCrawl(tester, _exploringGame());
 
-      final header = tester.getRect(find.byType(CrawlHeader));
+      final hud = tester.getRect(find.byKey(crawlHudKey));
       final map = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      final heroPanel = tester.getRect(find.byType(HeroPanel));
-      final peek = tester.getRect(find.byKey(logPeekKey));
-      final bar = tester.getRect(find.byKey(actionRowKey));
+      final bar = tester.getRect(find.byKey(actionBarKey));
+      final menu = tester.getRect(find.byKey(crawlMenuKey));
+      final surfaceHeight =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
 
-      expect(header.height, closeTo(88, 0.01));
-      expect(heroPanel.height, closeTo(102, 0.01));
-      expect(peek.height, closeTo(96, 0.01));
-      expect(bar.height, closeTo(60, 0.01));
-      expect(map.height, greaterThanOrEqualTo(394.0));
-
-      expect(header.bottom, closeTo(map.top, 0.01));
-      expect(map.bottom + crawlPanelGap, closeTo(heroPanel.top, 0.01));
-      expect(heroPanel.bottom + crawlGap, closeTo(peek.top, 0.01));
-      expect(peek.bottom + crawlGap, closeTo(bar.top, 0.01));
+      expect(hud.top, closeTo(34.9, 0.5));
+      expect(hud.bottom, closeTo(map.top, 0.01));
+      expect(map.bottom + crawlPanelGap, closeTo(bar.top, 0.01));
+      expect(bar.bottom + crawlGap, closeTo(menu.top, 0.01));
+      expect(
+        menu.bottom + crawlBottomGap,
+        closeTo(surfaceHeight - crawlGestureClear, 0.5),
+      );
     },
   );
 
   testWidgets(
-    'battle renders header, timeline, map, combat panel and peek in the '
-    'mock order, each at its own fixed height, and the map still clears its '
-    'floor',
+    'the HUD, map, bar and menu rects are identical, and the menu order '
+    'unchanged, in exploration, armed, Watched and battle',
     (tester) async {
-      await _openCrawl(tester, _battleGame());
-
-      final header = tester.getRect(find.byType(CrawlHeader));
-      final dock = tester.getRect(find.byKey(const Key('dock-backing')));
+      const knownSpells = {'firebolt'};
+      final bloc = await _openCrawl(
+        tester,
+        _exploringGame(spells: spellsById, knownSpells: knownSpells, mana: 10),
+      );
+      final hud = tester.getRect(find.byKey(crawlHudKey));
+      final hp = tester.getRect(find.byKey(hpMeterKey));
+      final mana = tester.getRect(find.byKey(manaMeterKey));
+      final gold = tester.getRect(find.byKey(crawlGoldKey));
       final map = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      final combatPanel = tester.getRect(find.byType(CombatPanel));
-      final peek = tester.getRect(find.byKey(logPeekKey));
-      final bar = tester.getRect(find.byKey(actionRowKey));
+      final bar = tester.getRect(find.byKey(actionBarKey));
+      final menu = tester.getRect(find.byKey(crawlMenuKey));
+      const menuSlotIds = [
+        'menu-quests',
+        'menu-spells',
+        'menu-quick',
+        'menu-hero',
+      ];
+      final menuOrder = [
+        for (final id in menuSlotIds)
+          tester.getTopLeft(find.byKey(ValueKey(id))).dx,
+      ];
 
-      expect(header.height, closeTo(88, 0.01));
-      expect(dock.height, closeTo(58, 0.01));
-      expect(combatPanel.height, closeTo(124, 0.01));
-      expect(peek.height, closeTo(96, 0.01));
-      expect(bar.height, closeTo(60, 0.01));
-      expect(map.height, greaterThanOrEqualTo(306.5));
+      void expectSameLayout() {
+        expect(tester.getRect(find.byKey(crawlHudKey)), hud);
+        expect(tester.getRect(find.byKey(hpMeterKey)), hp);
+        expect(tester.getRect(find.byKey(manaMeterKey)), mana);
+        expect(tester.getRect(find.byKey(crawlGoldKey)), gold);
+        expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), map);
+        expect(tester.getRect(find.byKey(actionBarKey)), bar);
+        expect(tester.getRect(find.byKey(crawlMenuKey)), menu);
+        expect([
+          for (final id in menuSlotIds)
+            tester.getTopLeft(find.byKey(ValueKey(id))).dx,
+        ], menuOrder);
+      }
 
-      expect(header.bottom, closeTo(dock.top, 0.01));
-      expect(dock.bottom, closeTo(map.top, 0.01));
-      expect(map.bottom + crawlPanelGap, closeTo(combatPanel.top, 0.01));
-      expect(combatPanel.bottom + crawlGap, closeTo(peek.top, 0.01));
-      expect(peek.bottom + crawlGap, closeTo(bar.top, 0.01));
-    },
-  );
+      bloc.add(const SkillArmed('firebolt'));
+      await tester.pumpAndSettle();
+      expectSameLayout();
 
-  testWidgets(
-    'the map spans the full width and the timeline is inset by the gutter '
-    'on both sides',
-    (tester) async {
-      await _openCrawl(tester, _battleGame());
-      final width = _surfaceWidth(tester);
-      final map = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      final dock = tester.getRect(find.byKey(const Key('dock-backing')));
+      await _openCrawl(
+        tester,
+        _watchedGame(spells: spellsById, knownSpells: knownSpells, mana: 10),
+      );
+      expectSameLayout();
 
-      expect(map.left, 0);
-      expect(map.right, closeTo(width, 0.01));
-      expect(dock.left, closeTo(crawlGutter, 0.01));
-      expect(dock.right, closeTo(width - crawlGutter, 0.01));
+      await _openCrawl(
+        tester,
+        _battleGame(spells: spellsById, knownSpells: knownSpells, mana: 10),
+      );
+      expectSameLayout();
     },
   );
 
@@ -255,64 +264,28 @@ void main() {
   });
 
   testWidgets(
-    'the action row\'s own legal-action count never moves the map, from the '
-    'battle floor of wait and pack to all twelve slots lit',
+    'opening and closing the log page leaves the map, bar and menu rects '
+    'unchanged',
     (tester) async {
-      await _openCrawl(tester, _battleGame());
-      final fewActionsMapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      expect(find.byKey(const ValueKey('wait')), findsOneWidget);
-      expect(find.byKey(const ValueKey('pack')), findsOneWidget);
-      expect(find.byKey(const ValueKey('drink')), findsNothing);
-
-      await _openCrawl(tester, _twelveActionScene());
-      final twelveActionMapRect = tester.getRect(
-        find.byKey(dungeonSceneSlotKey),
-      );
-      for (final id in [
-        'drink',
-        'spell:firebolt',
-        'spell:mend',
-        'spell:ward',
-        'spells-overflow',
-        'wait',
-        'pick-up',
-        'gather',
-        'pack',
-        'flee',
-        'descend',
-        'leave-dungeon',
-      ]) {
-        expect(find.byKey(ValueKey(id)), findsOneWidget, reason: id);
-      }
-
-      expect(twelveActionMapRect, fewActionsMapRect);
-    },
-  );
-
-  testWidgets(
-    'cycling the log extent peek, half, full and back leaves the map slot '
-    'and the peek unchanged',
-    (tester) async {
-      await _openCrawl(tester, _exploringGame());
+      final bloc = await _openCrawl(tester, _exploringGame());
 
       final mapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
-      final peekRect = tester.getRect(find.byKey(logPeekKey));
+      final barRect = tester.getRect(find.byKey(actionBarKey));
+      final menuRect = tester.getRect(find.byKey(crawlMenuKey));
 
-      await tester.tap(find.byKey(logPeekKey));
+      bloc.add(const LogOpened());
       await tester.pumpAndSettle();
+      expect(find.byKey(logPageKey), findsOneWidget);
       expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRect);
-      expect(tester.getRect(find.byKey(logPeekKey)), peekRect);
+      expect(tester.getRect(find.byKey(actionBarKey)), barRect);
+      expect(tester.getRect(find.byKey(crawlMenuKey)), menuRect);
 
-      await tester.tap(find.byKey(logHandleKey));
+      bloc.add(const LogClosed());
       await tester.pumpAndSettle();
+      expect(find.byKey(logPageKey), findsNothing);
       expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRect);
-      expect(tester.getRect(find.byKey(logPeekKey)), peekRect);
-
-      await tester.tap(find.byKey(logHandleKey));
-      await tester.pumpAndSettle();
-      expect(find.byKey(logDrawerKey), findsNothing);
-      expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRect);
-      expect(tester.getRect(find.byKey(logPeekKey)), peekRect);
+      expect(tester.getRect(find.byKey(actionBarKey)), barRect);
+      expect(tester.getRect(find.byKey(crawlMenuKey)), menuRect);
     },
   );
 
@@ -324,15 +297,22 @@ void main() {
     final mapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
     expect(mapRect, mapRectNoNotes);
 
+    expect(
+      find.descendant(
+        of: find.byKey(dungeonSceneSlotKey),
+        matching: find.textContaining('Underfoot:'),
+      ),
+      findsNothing,
+    );
     final note = find.descendant(
-      of: find.byKey(dungeonSceneSlotKey),
+      of: find.byKey(actionBarKey),
       matching: find.textContaining('Underfoot:'),
     );
     expect(note, findsOneWidget);
   });
 
   testWidgets(
-    'inspecting a far monster opens the map callout without moving the map',
+    'inspecting a far monster opens the target card without moving the map',
     (tester) async {
       await _openCrawl(tester, _exploringGame());
       final mapRectNoInspect = tester.getRect(find.byKey(dungeonSceneSlotKey));
@@ -345,8 +325,25 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(BottomSheet), findsNothing);
-      expect(find.byKey(mapCalloutKey), findsOneWidget);
+      expect(find.byKey(targetCardKey), findsOneWidget);
       expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRectBefore);
     },
   );
+
+  testWidgets('a crowded battle with every spell readied fits the screen at an '
+      'ambient text scale the crawl clamps down to 1.3', (tester) async {
+    await _openCrawl(
+      tester,
+      _crowdedBattleGame(
+        spells: spellsById,
+        knownSpells: spellsById.keys.toSet(),
+        mana: 20,
+      ),
+      textScaler: const TextScaler.linear(2),
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(crawlHudKey), findsOneWidget);
+    expect(find.byKey(crawlMenuKey), findsOneWidget);
+  });
 }

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/crawl_header.dart';
+import 'package:residuum_app/game/crawl_hud.dart';
 import 'package:residuum_app/game/crawl_style.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
-import 'package:residuum_app/style/tokens.dart';
 import 'package:residuum_app/town/town_bloc.dart';
 import 'package:residuum_content/content.dart';
 import 'package:residuum_core/core.dart';
@@ -136,6 +135,9 @@ Future<void> _pumpArena(
   List<Actor> monsters = const [],
   int hp = 20,
   int warded = 0,
+  Set<String> knownSpells = const {},
+  int mana = 0,
+  int gold = 0,
 }) async {
   final map = FloorMap.parse(_arena);
   final visible = computeFov(map, _heroAt, fovRadius);
@@ -160,6 +162,10 @@ Future<void> _pumpArena(
     explored: {...visible},
     buildFloor: (depth) => throw StateError('no floor below'),
     warded: warded,
+    spells: spellsById,
+    knownSpells: knownSpells,
+    mana: mana,
+    gold: gold,
   );
   final town = TownBloc(profile: newProfile(worldSeed: 5));
   final bloc = GameBloc(
@@ -332,23 +338,70 @@ void main() {
     });
   });
 
-  group('the header holds its fixed height', () {
-    testWidgets('88 dp while exploring', (tester) async {
-      await _pumpArena(tester);
+  group('the HUD replaces the wordmark header', () {
+    testWidgets('no RESIDUUM text appears anywhere in the crawl', (
+      tester,
+    ) async {
+      await _pumpCrawlAt(tester, cryptNode, day: 3);
 
-      expect(tester.getRect(find.byType(CrawlHeader)).height, 88);
+      expect(find.text('RESIDUUM'), findsNothing);
+    });
+  });
+
+  group('the HUD reads HP, mana and gold', () {
+    testWidgets('HP reads a/b and clamps a dead hero at zero', (tester) async {
+      await _pumpArena(tester, hp: 20);
+      expect(find.text('HP 20/20'), findsOneWidget);
+
+      await _pumpArena(tester, hp: -5);
+      expect(find.text('HP 0/20'), findsOneWidget);
+      expect(find.byKey(hpMeterKey), findsOneWidget);
     });
 
-    testWidgets('88 dp with a battle open', (tester) async {
+    testWidgets(
+      'the mana meter appears only once a spell is known, and the gold '
+      'rect never moves',
+      (tester) async {
+        await _pumpArena(tester);
+        expect(find.byKey(manaMeterKey), findsNothing);
+        final goldRectWithoutSpell = tester.getRect(find.byKey(crawlGoldKey));
+
+        await _pumpArena(tester, knownSpells: const {'firebolt'}, mana: 3);
+        expect(find.byKey(manaMeterKey), findsOneWidget);
+        expect(tester.getRect(find.byKey(crawlGoldKey)), goldRectWithoutSpell);
+      },
+    );
+
+    testWidgets("gold shows the hero's own total", (tester) async {
+      await _pumpArena(tester, gold: 40);
+
+      expect(
+        find.descendant(
+          of: find.byKey(crawlGoldKey),
+          matching: find.text('40'),
+        ),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('the HUD holds its fixed height', () {
+    testWidgets('crawlHudHeight dp while exploring', (tester) async {
+      await _pumpArena(tester);
+
+      expect(tester.getRect(find.byKey(crawlHudKey)).height, crawlHudHeight);
+    });
+
+    testWidgets('crawlHudHeight dp with a battle open', (tester) async {
       await _pumpArena(
         tester,
         monsters: [_ghoul('ghoul-1', const Position(2, 1))],
       );
 
-      expect(tester.getRect(find.byType(CrawlHeader)).height, 88);
+      expect(tester.getRect(find.byKey(crawlHudKey)).height, crawlHudHeight);
     });
 
-    testWidgets('114.4 dp at 1.3x text scale, with nothing overflowing', (
+    testWidgets('grows with 1.3x text scale, with nothing overflowing', (
       tester,
     ) async {
       await onAPhone(tester);
@@ -379,30 +432,8 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('The Ruined Keep'), findsOneWidget);
       expect(
-        tester.getRect(find.byType(CrawlHeader)).height,
-        closeTo(114.4, 0.1),
-      );
-    });
-  });
-  group('the wordmark rule', () {
-    testWidgets('spans the header width minus the gutters, not zero width', (
-      tester,
-    ) async {
-      await onTheTargetPhone(tester);
-      await _pumpCrawlAt(tester, cryptNode, day: 3);
-
-      final rule = find.descendant(
-        of: find.byKey(crawlHeaderKey),
-        matching: find.byWidgetPredicate(
-          (widget) => widget is ColoredBox && widget.color == crawlGoldRule,
-        ),
-      );
-      expect(rule, findsOneWidget);
-      final screenWidth =
-          tester.view.physicalSize.width / tester.view.devicePixelRatio;
-      expect(
-        tester.getSize(rule).width,
-        closeTo(screenWidth - crawlGutter * 2, 0.5),
+        tester.getRect(find.byKey(crawlHudKey)).height,
+        closeTo(crawlHudHeight * 1.3, 0.1),
       );
     });
   });
@@ -413,19 +444,19 @@ void main() {
     ) async {
       await _pumpCrawlAt(tester, cryptNode, day: 3);
 
-      final header = find.byType(CrawlHeader);
+      final hud = find.byKey(crawlHudKey);
       for (final word in ['Seed', 'Torch', 'Hungry', 'Clear']) {
         expect(
-          find.descendant(of: header, matching: find.textContaining(word)),
+          find.descendant(of: hud, matching: find.textContaining(word)),
           findsNothing,
         );
       }
       expect(
-        find.descendant(of: header, matching: find.byIcon(Icons.menu)),
+        find.descendant(of: hud, matching: find.byIcon(Icons.menu)),
         findsNothing,
       );
       expect(
-        find.descendant(of: header, matching: find.byIcon(Icons.settings)),
+        find.descendant(of: hud, matching: find.byIcon(Icons.settings)),
         findsNothing,
       );
     });

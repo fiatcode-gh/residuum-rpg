@@ -89,7 +89,7 @@ Future<GameBloc> _openCrawlAndPack(WidgetTester tester, GameState game) async {
     ),
   );
   await tester.pumpAndSettle();
-  await tester.tap(find.byKey(const ValueKey('pack')));
+  await tester.tap(find.byKey(const ValueKey('menu-hero')));
   await tester.pumpAndSettle();
   return bloc;
 }
@@ -268,7 +268,7 @@ void main() {
     await tester.pump();
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('pack')));
+    await tester.tap(find.byKey(const ValueKey('menu-hero')));
     await tester.pumpAndSettle();
 
     // assert

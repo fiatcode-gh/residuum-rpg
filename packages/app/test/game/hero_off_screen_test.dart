@@ -6,8 +6,8 @@ import 'package:residuum_core/core.dart';
 void main() {
   group('heroOffScreen', () {
     test('a hero the camera centres inside a small viewport is on screen', () {
-      // arrange - the camera clamps the map's origin, so the focus cell's
-      // position is read off the clamped origin, not a naive centre
+      // arrange - the camera keeps the focus cell exactly centred at zero
+      // pan on every floor size, so a small viewport still shows the hero
       const viewport = Size(72, 72);
       const hero = Position(1, 1);
       final geometry = GridGeometry.camera(viewport, 7, 5, hero);

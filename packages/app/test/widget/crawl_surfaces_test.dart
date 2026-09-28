@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/crawl_exits.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
@@ -226,22 +227,9 @@ void main() {
 
       // act - open the crawl's own overflow sheet
       await _openCrawl(tester, _battleWithOverflowScene());
-      await tester.tap(find.byKey(const ValueKey('spells-overflow')));
+      await tester.tap(find.byKey(const ValueKey('menu-spells')));
       await tester.pumpAndSettle();
-
-      // assert
-      final sheetColor = _routeSurfaceColor(tester, BottomSheet);
-      expect(sheetColor, panel);
-      expect(sheetColor, isNot(bareColor));
-    });
-
-    testWidgets('the enemy info sheet renders on panel', (tester) async {
-      // arrange
-      final bareColor = await _bareBottomSheetColor(tester);
-
-      // act - select the timeline token, which opens the enemy sheet
-      await _openCrawl(tester, _battleWithOverflowScene());
-      await tester.tap(find.byKey(const Key('timeline-actor-ghoul-1-1')));
+      await tester.tap(find.byKey(const ValueKey('spells-overflow')));
       await tester.pumpAndSettle();
 
       // assert
@@ -287,7 +275,7 @@ void main() {
     (tester) async {
       // act
       await _openCrawl(tester, _bareScene());
-      await tester.tap(find.byKey(const ValueKey('pack')));
+      await tester.tap(find.byKey(const ValueKey('menu-hero')));
       await tester.pumpAndSettle();
 
       // assert - the pack route pushed from the crawl is inside a theme at all

@@ -1,13 +1,22 @@
 # Resume Visual Reboot
 
-**Units 16 and 16.5 are accepted (user sign-off 2026-09-24).** Branch
-`residuum-visual-reboot-16` is pushed and has a pull request against `main`.
-**Next: the user's merge decision.** No device cleanup is owed (the user
-waived it).
+**Units 16 and 16.5 are accepted and merged to `main` (`4b8bd10`, PR #25).**
 
-Parked follow-ups for a later unit: an upright wall `#` if wanted, an 8 dp map
-gutter (touches the projection), the hero-panel left-column gap, spell marks
-keyed on content (not the `frost-lance` id), the remaining test-body comments.
+**Unit 16.6 is accepted (user sign-off 2026-09-28).** Branch
+`residuum-visual-reboot-16.6`, not pushed; see the ledger's "Unit 16.6
+accepted". **Next: the user's integration choice** (push, pull request,
+merge are each separately gated; the mixed commit is already split). Then Unit 16.7,
+the Hero screen (stats, inventory, equipment).
+
+- Owed device cleanup: the vivo I2219 needs its saves restored from
+  `.flow/evidence/848ecc9/save-backup/` and the test app uninstalled.
+- The discarded first execution lives on `backup/u166-other-session-0f8e4e0`
+  and in `.flow/evidence/u166-other-session/`; delete only on the user's say.
+
+Parked follow-ups (folded into 16.6 recon where relevant): an upright wall
+`#` if wanted, an 8 dp map gutter, the hero-panel left-column gap, spell
+marks keyed on content (not the `frost-lance` id), the remaining test-body
+comments.
 
 ## Historical U16 detail
 

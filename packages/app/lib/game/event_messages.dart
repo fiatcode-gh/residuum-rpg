@@ -20,8 +20,6 @@ LogLine? describeEvent(
   Map<String, String> names, {
   Set<String> strikesFromAfar = const {},
 }) => switch (event) {
-  ActorMoved(:final actorId, :final from, :final to) when actorId == heroId =>
-    LogLine('You step ${_bearing(from, to)}.', LogCategory.moved),
   ActorMoved() => null,
   MoveBlocked(:final actorId) when actorId == heroId => LogLine(
     'The way is blocked.',
@@ -70,10 +68,7 @@ LogLine? describeEvent(
     'You pick up ${item.displayName}.',
     LogCategory.item,
   ),
-  InventoryFull() => const LogLine(
-    'You cannot carry any more.',
-    LogCategory.refused,
-  ),
+  InventoryFull() => const LogLine(inventoryFullSentence, LogCategory.refused),
   ItemEquipped(:final item, :final slot) => LogLine(
     'You put on ${item.displayName} (${_slotName(slot)}).',
     LogCategory.item,
@@ -194,11 +189,10 @@ String _skillName(SkillId skill) => switch (skill) {
 /// The id the hero always answers to.
 const String heroId = 'hero';
 
+const String inventoryFullSentence = 'You cannot carry any more.';
+
 String _named(Map<String, String> names, String id) =>
     names[id] ?? 'something in the dark';
 
 String _capitalised(String text) =>
     text.isEmpty ? text : '${text[0].toUpperCase()}${text.substring(1)}';
-
-String _bearing(Position from, Position to) =>
-    from.directionTo(to)?.name ?? 'aside';

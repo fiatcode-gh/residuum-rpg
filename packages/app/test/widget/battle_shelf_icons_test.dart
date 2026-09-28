@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/crawl_action_row.dart';
+import 'package:residuum_app/game/action_bar.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/game_bloc.dart';
 import 'package:residuum_app/game/game_screen.dart';
@@ -15,7 +15,8 @@ const _arena = '''
 #######''';
 
 /// An open battle: the hero and one live ghoul stand adjacent, so
-/// `isBattleOpen` is true and the shelf renders.
+/// `isBattleOpen` is true and the Spells/Quick pop-ups have something to
+/// offer.
 GameState _battleGame({
   Set<String> knownSpells = const {},
   int mana = 10,
@@ -83,12 +84,18 @@ Future<GameBloc> _openBattle(WidgetTester tester, GameState game) async {
 Finder _shelfText(String id, String label) =>
     find.descendant(of: _shelfButton(id), matching: find.text(label));
 
-/// The chip carrying [id], scoped to the action row so a same-worded surface
-/// elsewhere never satisfies this finder by accident.
-Finder _shelfButton(String id) => find.descendant(
-  of: find.byKey(actionRowKey),
-  matching: find.byKey(ValueKey(id)),
-);
+/// The chip carrying [id]: scoped to the action bar for `wait`, which
+/// sits alongside the place verbs and Flee (PLAN.md G14); every other id
+/// is a `spell:<id>`, `drink:<id>` or `spells-overflow` row inside
+/// whichever pop-up the test has open, and those ids are unique enough on
+/// their own that no scope is needed to tell them apart from anything else
+/// on screen.
+Finder _shelfButton(String id) => id == 'wait'
+    ? find.descendant(
+        of: find.byKey(actionBarKey),
+        matching: find.byKey(ValueKey(id)),
+      )
+    : find.byKey(ValueKey(id));
 
 Finder _shelfMetadata(String id, String metadata) =>
     find.descendant(of: _shelfButton(id), matching: find.text(metadata));
@@ -110,11 +117,19 @@ BorderSide _borderOf(WidgetTester tester, Finder chip) {
   return (material.shape! as RoundedRectangleBorder).side;
 }
 
+Future<void> _openSpells(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('menu-spells')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _openQuick(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('menu-quick')));
+  await tester.pumpAndSettle();
+}
+
 void main() {
-  group('the icon language on the battle shelf', () {
-    testWidgets('every icon-bearing shelf action keeps its word', (
-      tester,
-    ) async {
+  group('the icon language in the Spells and Quick pop-ups', () {
+    testWidgets('every icon-bearing chip keeps its word', (tester) async {
       // arrange
       final game = _battleGame(
         knownSpells: const {'firebolt', 'frost-lance', 'mend', 'banish'},
@@ -126,19 +141,47 @@ void main() {
       // act
       await _openBattle(tester, game);
 
-      // assert - every verb, count and marking survives as separate fields
-      _expectShelfAction('drink', label: 'Drink', metadata: '×1');
+      // assert - Wait keeps its word and icon on the log row
       _expectShelfAction('wait', label: 'Wait');
-      _expectShelfAction('spells-overflow', label: '+1');
+      expect(
+        find.descendant(of: _shelfButton('wait'), matching: find.byType(Image)),
+        findsOneWidget,
+      );
+
+      // assert - the Quick pop-up's row keeps the verb, name and count
+      // separate
+      await _openQuick(tester);
+      _expectShelfAction(
+        'drink:potion-1',
+        label: 'Common Healing Potion',
+        metadata: '×1 · heals 10',
+      );
+      expect(
+        find.descendant(
+          of: _shelfButton('drink:potion-1'),
+          matching: find.byType(Image),
+        ),
+        findsOneWidget,
+      );
+      await tester.tapAt(const Offset(4, 4));
+      await tester.pumpAndSettle();
+
+      // assert - the Spells pop-up's readied rows and the overflow count
+      await _openSpells(tester);
+      _expectShelfAction('spells-overflow', label: '+1 more spells');
       _expectShelfAction(
         'spell:firebolt',
         label: '✳ Firebolt',
-        metadata: '2 mana',
+        metadata: '2 mana · 2-4 fire △',
       );
-      _expectShelfAction('spell:mend', label: '✚ Mend', metadata: '3 mana');
+      _expectShelfAction(
+        'spell:mend',
+        label: '✚ Mend',
+        metadata: '3 mana · heals 8',
+      );
 
-      // assert - the five with an exact asset each carry one icon
-      for (final id in ['drink', 'wait', 'spell:firebolt', 'spell:mend']) {
+      // assert - the two spells with an exact asset each carry one icon
+      for (final id in ['spell:firebolt', 'spell:mend']) {
         final button = _shelfButton(id);
         expect(
           find.descendant(of: button, matching: find.byType(Image)),
@@ -151,7 +194,10 @@ void main() {
       final frostLance = _shelfButton('spell:frost-lance');
       expect(frostLance, findsOneWidget);
       expect(_shelfText('spell:frost-lance', '✳ Frost Lance'), findsOneWidget);
-      expect(_shelfMetadata('spell:frost-lance', '4 mana'), findsOneWidget);
+      expect(
+        _shelfMetadata('spell:frost-lance', '4 mana · 4-7 frost ◇'),
+        findsOneWidget,
+      );
       expect(
         find.descendant(of: frostLance, matching: find.byType(Image)),
         findsNothing,
@@ -166,22 +212,24 @@ void main() {
       // arrange
       final game = _battleGame(knownSpells: const {'firebolt'});
       await _openBattle(tester, game);
-      final firebolt = _shelfButton('spell:firebolt');
-      final wait = _shelfButton('wait');
-      final unarmedBorder = _borderOf(tester, wait);
+      final unarmedBorder = _borderOf(tester, _shelfButton('wait'));
 
       // act
-      await tester.tap(firebolt);
+      await _openSpells(tester);
+      await tester.tap(_shelfButton('spell:firebolt'));
       await tester.pumpAndSettle();
 
-      // assert
+      // assert - the Spells slot itself carries the armed border; the row
+      // inside its pop-up reads by word alone
+      expect(
+        _borderOf(tester, find.byKey(const ValueKey('menu-spells'))).width,
+        greaterThan(unarmedBorder.width),
+      );
+      await _openSpells(tester);
+      final firebolt = _shelfButton('spell:firebolt');
       expect(_shelfText('spell:firebolt', '✳ Firebolt'), findsOneWidget);
       expect(_shelfMetadata('spell:firebolt', '— armed'), findsOneWidget);
       expect(_shelfMetadata('spell:firebolt', '2 mana'), findsNothing);
-      expect(
-        _borderOf(tester, firebolt).width,
-        greaterThan(unarmedBorder.width),
-      );
       expect(
         find.descendant(of: firebolt, matching: find.byType(Image)),
         findsOneWidget,
@@ -196,6 +244,7 @@ void main() {
         knownSpells: const {'firebolt', 'frost-lance', 'mend', 'banish'},
       );
       await _openBattle(tester, game);
+      await _openSpells(tester);
 
       // act
       await tester.tap(_shelfButton('spells-overflow'));

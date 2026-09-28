@@ -41,13 +41,11 @@ The epic was opened from an approved external planning handoff:
   `residuum-visual-reboot-16` (`b301f27`, pushed, no pull request) and is
   **not accepted**: device exploration evidence showed it far from the
   references.
-- **Unit 16.5 (ASCII crawl full parity)** has an approved contract
-  (`units/unit-16.5/CONTRACT.md`, 2026-09-23) on the same branch, and planning
-  is in progress. It supersedes the 36 dp cell, the monospace retirement, the
-  600 dp action-driven chrome ceiling, U15's chip-fit search and the textured
-  or material dungeon direction. U16 and U16.5 are accepted together.
-- The test app is installed on the user's physical phone with U16 test
-  saves. U16.5 ends by uninstalling it and verifying absence.
+- **Units 16 and 16.5 are accepted and merged to `main`** as `4b8bd10`
+  (PR #25).
+- **Unit 16.6 is accepted** (user sign-off 2026-09-28) on
+  `residuum-visual-reboot-16.6`, not pushed; see "Unit 16.6 accepted".
+  Awaiting the user's integration choice. Unit 16.7 (Hero screen) is next.
 
 ## Epic status
 
@@ -67,8 +65,9 @@ The epic was opened from an approved external planning handoff:
 | Unit 11 — dungeon scene recomposition | Unit 10 | **merged** to `main` | `dart format` clean, `flutter analyze` clean, full app 884 tests; `Medium_Phone` colour/greyscale capsules; both save slots restored SHA-256 MATCH | merged by PR #21 at `60909e6` (code `824f53f`); contract: `units/unit-11/CONTRACT.md`; plan: `units/unit-11/PLAN.md`; later task receipts and acceptance were never written to this ledger — the PR record is the surviving evidence |
 | Unit 12 — crawl interface visual grammar | Unit 11 | **merged** to `main` | see decision log | merged by PR #22 at `907a4a8` |
 | Units 12.5–15 | see decision log | code of Units 13–14 merged by PR #23 `4033de5`, Unit 15 by PR #24 `374ee77`; Unit 12.5 was a device gate (see decision log) | see decision log and RESUME | U13 visual system and U14 type authority are partly superseded by U16.5 |
-| Unit 16 — ASCII atmospheric crawl parity | Unit 15 | **implemented, not accepted** | package gates passed; one exploration device capsule; parity failed | `b301f27` on `residuum-visual-reboot-16`; contract: `units/unit-16/CONTRACT.md` |
-| Unit 16.5 — ASCII crawl full parity | Unit 16 | **contract approved; planning** | pending | contract: `units/unit-16.5/CONTRACT.md`; accepted together with U16 |
+| Unit 16 — ASCII atmospheric crawl parity | Unit 15 | **merged** to `main` with 16.5 | accepted together with U16.5 | merged by PR #25 at `4b8bd10`; contract: `units/unit-16/CONTRACT.md` |
+| Unit 16.5 — ASCII crawl full parity | Unit 16 | **merged** to `main` | 1252 app tests; user visual sign-off on the vivo | merged by PR #25 at `4b8bd10`; contract: `units/unit-16.5/CONTRACT.md` |
+| Unit 16.6 — crawl controls and layout revamp | Units 16, 16.5 | **accepted** (user sign-off 2026-09-28) | 1303 app tests, analyze/format clean, device capsules on the I2219 and AVD | branch `residuum-visual-reboot-16.6`, not pushed; contract and plan: `units/unit-16.6/` |
 
 Completed units are ordered **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11**.
 Unit 12 follows Unit 11 and consumes its renderer as a closed dependency.
@@ -85,7 +84,9 @@ log drawer; no unit reordering is needed.
   texture).
 - Four-region responsibility rule: map = space/targets, timeline = time,
   log = causality, action shelf = verbs. No concern duplicated across
-  regions.
+  regions. **"Action shelf = verbs" is superseded by Unit 16.6:** verbs
+  live on the bottom menu, the log-side Wait/Flee, on-map place pop-ups and
+  the map itself.
 - Map-first melee (tap adjacent enemy); explicit Attack shelf control is
   removed once direct melee is proven; long-press/timeline token inspect,
   never long-press-only.
@@ -5158,3 +5159,408 @@ request exists, and the integration choice is the user's.
   (the `frost-lance` id in the app), and the closure Minors (a few remaining
   test-body comments).
 - The user authorized push and opening a pull request. Merge stays gated.
+
+## Unit 16.6 intake — 2026-09-24
+
+- Units 16 and 16.5 merged to `main` as `4b8bd10` (PR #25). The user then
+  judged the crawl cramped and its UX bad, and set **"feels right" over mock
+  parity, same art direction.**
+- Discovery walkthrough on the vivo I2505 (capsules UXW-EXP, UXW-BAT, ADB
+  input, `.flow/evidence/4b8bd10/`): both save slots backed up first and
+  restored byte-identically (Main re-hashed after each capsule). Findings in
+  `units/unit-16.6/recon.md`. Verifier claims corrected at source: dismissing
+  a callout costs no turn and the Watched "soft-lock" is a refusal loop plus a
+  missing Wait, not a rules lock (`game_bloc.dart:787-801`,
+  `game_screen.dart:361-453`).
+- A GPT mock pass (`external/unit-16.6-mock-brief/BRIEF.md`) did not produce
+  usable mocks; the user set the direction directly instead.
+- **User decisions (2026-09-24):** persistent bottom menu Quests / Spells /
+  Quick / Hero; Spells and Quick open child pop-ups, Spells works outside
+  combat, Quick drinks in two taps; Quests shows a coming-soon notice (no
+  quest system exists; user's explicit choice); Hero opens the character
+  screen (Unit 16.7; until then today's pack screen); Wait moves beside the
+  log, visible in combat and while Watched, with Flee beside it when legal;
+  HP/mana/gold HUD replaces the wordmark; place actions become on-map
+  pop-ups; battle info floats over the map; full-screen app; map big enough
+  to tap adjacent floor, pan kept. Unit split: 16.6 crawl screen, 16.7 Hero
+  screen.
+- **Superseded by U16.6 (on implementation):** the 16×20 dp cell, the U16.5
+  fixed-chrome-by-mode rule and 45%/35% floors, the five-slot contextual
+  action bar, the three-column hero and combat panels, and "action shelf =
+  verbs" in the four-region rule.
+- Contract `units/unit-16.6/CONTRACT.md` approved by the user via
+  `flow_gate` (sha256 `d0bae5fa…`). Feature branch
+  `residuum-visual-reboot-16.6` from `4b8bd10`. Next: `flow-planner`.
+- `flow-planner` wrote `units/unit-16.6/PLAN.md` and ten task capsules
+  (01 full-screen … 10 docs supersession), strictly sequential with
+  Checkpoint A after Task 03. Main checked the plan's key platform claim at
+  source: Flutter's `system_chrome.dart` states that apps targeting API 36
+  have `SystemUiMode` immersive values ignored, so full-screen is native in
+  `MainActivity.kt`. The user accepted the planner's defaults for Q1–Q6
+  (recorded in PLAN section 7). **Plan approved by the user via `flow_gate`
+  (sha256 `2378cf11…`).** The user will run execution from a fresh session.
+
+### Unit 16.6 restart — 2026-09-24
+
+- A separate session had executed Tasks 01–03 (`67a7df5`, `4d69ed5`,
+  `0f8e4e0`) and amended the contract and plan after its Checkpoint A review.
+  **The user chose to revert that work and start over in this session.**
+  The branch was reset to `4b8bd10`; the old head is kept as local branch
+  `backup/u166-other-session-0f8e4e0`, and its ledger, resume, contract,
+  plan and briefs are copied to `.flow/evidence/u166-other-session/`. The
+  contract (`d0bae5fa…`), plan (`2378cf11…`) and briefs 02/03 were restored
+  from git objects to the revisions the user approved here. No device action
+  had run in that session.
+- **Trap carried from that session's review (CP-A-1/2):** the 48 dp
+  near-hero step box let a tap on the visible void (off the floor, e.g. an
+  edge diagonal) choose a direction and step. A near-hero step must start
+  only from a tap that maps to a floor cell. Also, far-cell auto-walk
+  selects the exact tapped 24×30 dp cell, which is smaller than 48 dp — the
+  contract's "every map interaction ≥ 48 dp" overstates it. Task 03 must
+  handle both; if it cannot within the brief, escalate.
+- Task 01 accepted: `2be5f62` native immersive bars in `MainActivity.kt`
+  (SHORT_EDGES cut-out, re-hide on post-resume and focus), 18 dp gesture
+  clearance. Red observed (bar bottom 869.64 > 852.14); format/analyze clean;
+  1255/1255; debug APK builds. System-bar hiding is proved only at CP-A.
+- **Amendment A1 (Task 02, architect ruling):** at 31.5 the Plex Mono `@`
+  line box overflows the 24×30 cell by 2.28 dp against the existing
+  containment tolerance of 0.075 × cell height (2.25 dp). PLAN G2 had
+  assumed the line box equals the em square. The tolerance stays; the map
+  glyph drops to 31 (about 2.0 dp overflow). The 0.5 dp change is invisible
+  on the phone and needs no plan re-approval.
+- Task 02 accepted: `7aa0289` 24×30 cells, glyph 31 (A1), badge 15,
+  hero-centred camera with bounded pan. The first executor was interrupted
+  and a second lost its connection before committing; the third turn of the
+  same executor finished it. Two `map_touch_test` fixtures were migrated to
+  the new geometry with the rule under test unchanged. Main reran analyze
+  (clean) on the uncommitted tree; the executor's final suite: 1252/1252.
+- Task 03 accepted: `d86495e` 48 dp step box with the floor-only guard;
+  `5b6376b` adds the vertical-dominant void case after Main's mutation
+  check showed the first void cases passed with the guard removed (the
+  in-bounds check hid it). Mutant fails the new case; restored file hash
+  matches the commit. Suite 1263/1263, analyze clean.
+- Checkpoint A: checkpoint `.flow/checkpoints/5b6376b.md`, capsule CP-A.
+- CP-A is blocked: the phone dropped off wireless ADB overnight. The APK for
+  `5b6376b` is built (`3dfb6665…`). No ADB command has run at this head.
+- **CP-A passed** on the vivo I2219 (the I2505 was not attached) at
+  `5b6376b`, APK `3dfb6665…`, evidence `.flow/evidence/5b6376b/CP-A/`: bars
+  hidden on world, town, dialog, crawl and pack; they re-hide after home,
+  app switch and a transient top swipe; nothing under the cut-out; glyph
+  pitch 66 × 82.5 px; hero centred at the same pixel across moves; drag
+  pans within bounds; recenter appears bottom-right and returns exactly.
+  Measured: top cut-out inset 96 px = 34.9 dp (plan estimate 24); gesture
+  bar 49 px = 17.8 dp (the 18 dp clearance holds). Main inspected
+  `13-step-south` and `18-drag-pan-opposite2`. App left installed; the phone
+  had no app before (`device-state-before.md`), so uninstall at unit end.
+- **Amendment A2 (Task 04 test profile):** `onTheTargetPhone` keeps the
+  I2505 size (the shorter phone, the tighter layout) with the I2219's
+  measured top inset `T = 34.9`, taking the worst of both phones.
+- Task 04 accepted: `4c6abba` HUD (HP, mana when known, gold, meta, chips)
+  replaces the wordmark header; hero and combat panels and their tokens
+  deleted; `heroLabel` removed. Suite 1232/1232, analyze clean. Widget map
+  height at the test profile: 561.9 dp exploring/Watched/armed, 503.9 in
+  battle until Task 09 removes the dock row. **A3:** one callout test relied
+  on an exact-centre float cancellation that broke under the new profile;
+  rewritten to tap off-centre in the hero cell and assert dismissal only.
+  Process note: the executor read figures with a temporary print in a
+  tracked test and reverted it (the rule is an untracked copy); no residue.
+- Task 05 accepted: `04ff171` `offersWait` (not game over; battle or enemy
+  in sight), Wait and Flee in a constant-height log row beside the peek;
+  Watched-stall regression test (Wait advances the game). Suite 1247/1247,
+  analyze clean. Consequence noted: the open log drawer covers Wait/Flee,
+  as it covered the peek; closing the drawer is one tap. Main's wait was
+  interrupted once mid-task; the executor resumed from its own edits.
+- Task 06 accepted: `a4d61b8` on-map place pop-up (pick up, mine/gather,
+  stairs, leave/Finish, move on) with one overlay placement owner
+  (`map_overlay_layout.dart`) that never overlaps the hero block; exits
+  moved to `crawl_exits.dart`; notes overlay and the six place verbs left
+  the action row; `crawl_controls_test.dart` deleted (retired presentation).
+  Suite 1279/1279, format and analyze clean.
+- Task 07 accepted: `bed095b` persistent menu Quests / Spells / Quick /
+  Hero, Spells and Quick pop-ups, Quests coming-soon, contextual action bar
+  and quick-drink state deleted, `crawl_verbs_test` reaches every verb. The
+  first executor yielded on its request budget with production done; a
+  fresh executor finished the test migration (crawl_verbs_test created
+  fresh because Task 06 had already deleted its `git mv` source; accepted).
+  A refused cast now dispatches on the first tap (no arm-then-refuse).
+- **A4:** PLAN G9's row template `'${manaCost} mana · ${effectOf(spell)}'`
+  doubled the separator (`effectOf` starts with ` · `), and the executor
+  pinned the doubled text in 10 assertions. Fixed in `b536349`. Suite
+  1293/1293, analyze clean.
+- Task 08 accepted: `4f5197a` target card over the map (`target_card.dart`,
+  placed by `placeMapOverlay`, avoids the place pop-up and hero block),
+  enemy sheet removed, reach reads "Melee only" / "Ranged, reach N". The
+  executor yielded on its request budget before committing; Main ran the
+  remaining gates (battle_view 38/38, analyze clean, format 0 changed, full
+  suite 1304/1304) and committed the app paths only. Executor fixes
+  accepted: `Positioned.fill` around the card (a bare child collapsed the
+  overlay Stack to 0×0 when the card was hidden, breaking hit tests for the
+  pop-up and recenter); `crawlCalloutBarRow` 13 not 12 (0.1 px overflow at
+  text scale 1.3).
+- **Hygiene trap:** `b536349` (sonic's separator fix) also committed every
+  staged ledger file, because a plain `git commit` takes the whole index.
+  Content is correct. Split that commit at integration. Every future brief
+  must say `git commit -- <paths>`. The Task 08 executor also used
+  `git stash` for a bisect; the stash is empty and nothing was lost.
+- Task 09 accepted: `fd2197e` turn-order strip over the top of the map
+  (`turn_order_strip.dart`, `+N` cue, no scroll), dock row removed; the map
+  rectangle is identical in exploration, Watched, battle and armed. The
+  executor deleted `battle_view_test.dart` outright instead of renaming and
+  rewriting it; Main's audit found that it dropped non-dock coverage. A
+  fresh executor classified all 42 old tests and restored the three real
+  gaps (cast lands on the tapped target, second arm disarms the first,
+  overflow arms an unshelved spell) in `b458cc3`. Suite 1290/1290, analyze
+  clean.
+- Task 10 accepted: `27aa0f8` VISUAL-SYSTEM supersession blockquotes (four-
+  region verbs, readied spells/Flee, cell and step rule, fixed chrome, action
+  shelf) plus a section 8 bullet; the design spec had nothing to supersede.
+  Main corrected the step-rule wording (box, floor-only, exact far cell).
+- **Main final gates at `27aa0f8`:** format 146 files 0 changed, analyze
+  clean, full app suite 1290/1290; `packages/core` and `packages/content`
+  unchanged since `4b8bd10`. Next: one `flow-acceptance-reviewer` pass.
+- **Acceptance review at `27aa0f8`: CHANGES-REQUIRED.** F1 (Important): the
+  place pop-up's preferred offsets are hero-cell-relative, not hero-block-
+  relative, so both candidates always overlap the block and placement falls
+  to a map corner (probe: top-left exploring, bottom-left in battle); the
+  test used the same wrong offsets. F2 orphan tokens; F3 stale dartdoc and
+  new app dartdoc against G11 (no waiver: delete); F4 pop-up bodies are
+  build-time snapshots; F5 duplicate capitalise helper; F6 Main's ledger and
+  VISUAL-SYSTEM items (done by Main now). Items 1–7, 9, 11 (code), 12 PASS;
+  8 PARTIAL on F1. One batched correction dispatched.
+- Correction `4de51c3` (F1–F5): the pop-up is anchored under or over the
+  hero block (Red: top 8.0 vs 334.0); orphan tokens deleted; app dartdoc
+  added by this unit is 0 lines against `4b8bd10`; Spells and Quick bodies
+  read live state; one capitalise helper. Suite 1268/1268 (−24
+  parameterised role-table cases, +2 tests), analyze and format clean.
+- **Scoped closure review: CLOSED** (F1–F6). A sweep over three map sizes
+  found no overlap of the hero block, step box or strip on the target map.
+  N1 (Minor, parked): a stale dartdoc on `_dialogButtonSpacing` in
+  `crawl_surfaces.dart` still names the action bar. Accepted via
+  `flow_gate` at `4de51c3`. Next: device gate on the vivo I2219 (the I2505
+  is not attached), capsules DEV-FS, DEV-EXP, DEV-BAT, then the user's
+  DEV-FINGER.
+- **DEV-FS PASS** on the vivo I2219 at `9db8ea5` (`.flow/evidence/9db8ea5/DEV-FS/`):
+  bars hidden on every screen and after home, app switch and a transient
+  swipe; nothing under the cut-out; all four menu slots respond; a short
+  swipe from the menu reveals the bars without triggering a slot (long
+  swipes go to the OS Home/Recents, as expected); 6.2 dp clearance at the
+  cut-out and the gesture band. The first attempt was blocked by the lock
+  screen; that verifier changed `screen_off_timeout` without leave and set
+  it back to the vivo default (original not recorded, user told). The
+  timeout later read 600000, set by the user.
+- **DEV-EXP PASS** (`.flow/evidence/9db8ea5/DEV-EXP/`, 97 shots): same HUD
+  across states, no wordmark; menu order and notices; two-tap drink; Hero →
+  pack → back; place pop-ups for Pick up, Mine (×2), Descend/Leave,
+  Ascend/Leave, each anchored under the hero block; auto-walk; pan and
+  recenter on depth 1, pan on depth 2; Wait while Watched advances the game;
+  map rectangle constant. Main inspected `11_autowalk1` (Watched + Wait) and
+  `92_toward_stairs` (stairs pop-up). Gaps: no herb node found; recenter
+  not tapped on depth 2 (the pan clamp stopped before the hero left).
+- **DEV-BAT PASS** (`.flow/evidence/9db8ea5/DEV-BAT/`): the map rectangle
+  does not move when a fight starts or ends; the strip shows NOW/NEXT with
+  `+2`/`+3` cues and no clipping; the target card sits beside the target,
+  never over the hero, reading "Melee only"; tap melee, Wait by the log,
+  two-tap drink in battle, the Spells notice in battle, and Move on after a
+  cleared road all work. Main inspected `16a-battle-engaged-3actors`. Not
+  exercised: Flee (not offered in two road fights), a ranged monster's
+  "Ranged, reach N", the death screen. Next: user DEV-FINGER and sign-off.
+- **DEV-FINGER (user, vivo I2219, 2026-09-25): "1-5 are good."** Steps: four
+  neighbour steps, void tap does not step, exact far-cell auto-walk, pan +
+  recenter, repeat on a deeper floor. User feedback, verbatim:
+  "make pickup/gather/mine/move-on/flee behaves like enemy info panel. with
+  a line pointing the hero and a box outside the map instead of blocking the
+  map. Because I noticed when encountering enemies while travelling, "move
+  on" box is shown on the map while I still want to explore the area. Doing
+  this will also make the experience more uniform" and "turns out my idea
+  for wait button placement is bad, I don't like it there". Not yet signed
+  off; these reopen the contract (place pop-up form, Flee and Wait
+  placement).
+- **Amendment (2026-09-25) from the user's device feedback**, contract and
+  plan re-approved: one action card pinned to the map's bottom edge (top
+  when the hero is there) with a leader line to the hero holds Pick up,
+  Mine/Gather, Move on, Ascend, Descend, Leave/Finish, Flee and Wait; the
+  log row is the log only; menu slots show icon and label only, centred;
+  Q7 full pack shows the fact plus "You cannot carry any more."; Q8 the
+  armed Spells slot gets a 3 dp frame (and ", armed" for screen readers).
+- Task 11 accepted: `6d2a94f` action card; place pop-up and log-side
+  Wait/Flee deleted; target card placed only in the area the card leaves;
+  recenter lifts above the card; the full-pack line reuses the
+  `InventoryFull` sentence constant. Red came from mutations M1–M5 (each
+  broke a geometric test, files restored by hash), not a separate
+  pre-change run; accepted. Suite 1292/1292, analyze clean.
+- Task 12 accepted: `e5f23b6` menu slots show only icon above label,
+  centred; counts gone; armed Spells frame 3 dp plus ", armed" in its
+  semantics label. Red observed at HEAD (two Texts, off-centre, 1.5 vs 3).
+- **Main gates at `e5f23b6`:** format 0 changed, analyze clean, full suite
+  1295/1295, core/content unchanged. Next: scoped review of Tasks 11–12.
+- **Amendment review AccU166b: ACCEPT-WITH-MINORS** at `e5f23b6`. Probe:
+  7260 rendered samples over four map sizes; map and log rows never move;
+  the card pins bottom exactly when that misses the hero block, else top
+  (below the strip in battle); the leader runs hero edge to card; the
+  target card never overlaps the action card; recenter never overlaps
+  either. Residuals only in the accepted PLAN 9.6 regime (5+ buttons at text
+  scale ≥ 1.2 in battle), where N1 the target card can land on the adjacent
+  target's cell; parked in PLAN 9.6. N2 (1.3 test cases dropped the phone
+  inset) and N3 (full-pack test did not check the card's line) fixed in a
+  test-only commit; Main ran format, analyze and the full suite (1295/1295).
+  N4 (verbs computed three times per build) parked.
+- APK for the amendment built at `596f784` (code `6454271`), sha256
+  `3611cddb…`. The vivo I2219 dropped off wireless ADB before install; the
+  device still holds the `9db8ea5` APK (`67ad98ca…`). Next: reconnect,
+  install, then DEV-EXP-2, DEV-BAT-2 (PLAN 9.4) and the user's sign-off.
+- **DEV-EXP-2 PASS** on the vivo I2219 at `848ecc9`
+  (`.flow/evidence/848ecc9/DEV-EXP-2/`): no card on bare floor; the card
+  sits on the bottom edge at full width with a leader line to the hero for
+  Pick up, Mine, Gather, Descend+Leave, Ascend+Leave; it moves to the top
+  edge when the hero is panned low; taps and drags outside it reach the map;
+  Wait while Watched advances the game; the log row holds only the log; the
+  menu shows no counts; the map is 569.8 dp in exploration and Watched and
+  pixel-identical to the `9db8ea5` build. Main inspected `59_descend` and
+  `20_drag_test`. Not captured: the full-pack line (unit-tested and
+  widget-tested).
+- **DEV-BAT-2** (`.flow/evidence/848ecc9/DEV-BAT-2/`): PASS for Wait in the
+  card with the strip on top, top-edge flip below the strip (dungeon), target
+  card never over the action card, Move on with the hero's surroundings
+  open, dimmed Spells notice, the log drawer covering the card, and an
+  unchanged map rectangle (≈570 dp). Flee was not offered in three ambushes
+  (it needs the literal ring edge). **Defect D1 (Important):** on a crowded
+  road fight (`+4` in the strip) with the hero panned low, the target card
+  sat over the turn-order strip (`crop_stripoverlap.png`, Main inspected).
+  Likely the least-overlap fallback in `placeMapOverlay`: the fallback
+  corners are computed from the area top, which includes the strip, and the
+  strip is only a soft avoid there. Routed to a correction owner; device
+  re-check of battle placement follows.
+- D1 fixed in `844cba1`: new `targetCardArea` removes the strip's rows and
+  the action card's rows from the target card's area, so no fallback pass
+  can cover them; two extra preferred spots under and over the hero block.
+  Red reproduced the device case (card at (8,8,172,95) over the 0–48 strip).
+  Sweep plus mutation check pass. Main: format clean, analyze clean, suite
+  1303/1303, diff inspected. Residual (same regime as PLAN 9.6): at text
+  scale 1.3 with both a large action card (~129 dp) and a large target
+  card (~149 dp) and an adjacent target, some hero heights leave no legal
+  spot. The executor measured the 1.3 test map at 520.8 dp, not 485.9.
+  Verifier scratch files (`*_col.txt`) left in the repo root were deleted.
+- D1 closure review (CloseD1): NOT-CLOSED. D1 was fixed at scale 1.0, but
+  at scale 1.3 the fix moved the fallback from the strip onto the adjacent
+  target's cell for ordinary 3–4-line cards (F1). Correction `7d99bea`: a
+  fallback pass that keeps the target cell clear whenever possible; the
+  sweep covers facts 0–4 × up to 5 buttons × 2–4-line targets; the
+  comment is fixed (F2); a widget test guards the `targetCardArea` wiring
+  (F3). Scale 1.0: 0 hits of strip, action card, hero or target cell.
+  Scale 1.3: the target cell is still covered in 34 of 90 combinations
+  (geometry: no side room for a 172 dp card beside a centred hero). Main
+  accepted this and recorded it in PLAN 9.6. The user's phones run font
+  scale 1.0. Main gates: format clean, analyze clean, 1305/1305.
+- APK with the D1 fix built at `1f40a7e` (code `7d99bea`), sha256
+  `4bfc880c…`. The vivo I2219 is off ADB again. Still owed on the device:
+  a short battle-placement re-check (target card vs strip and action card
+  after D1; DEV-BAT-2 evidence predates it), restoring the saves from
+  `.flow/evidence/848ecc9/save-backup/`, then the user's sign-off and the
+  uninstall at unit end.
+- **DEV-BAT-3 PASS** on the AVD Medium_Phone (user-directed; the vivo was
+  off ADB) at `e913b8d`, APK `4bfc880c…` (`.flow/evidence/e913b8d/DEV-BAT-3/`):
+  D1 reproduced as closely as possible (Engaged 3, `+5` in the strip, hero
+  panned low, action card flipped under the strip). Four target-card
+  placements with no overlap of the strip, action card, hero or adjacent
+  target. The map rectangle is the same in exploration and battle. Main
+  inspected `02_D1_scenario_reproduced_flip`. AVD saves backed up to
+  `.flow/evidence/e913b8d/avd-save-backup/`, not yet restored; the user
+  signs off on the AVD first. Next: user sign-off.
+- **Amendment (2026-09-28) from the user's I2505 check**, contract and plan
+  re-approved: the action card leaves the map for a fixed `ACTIONS` bar row
+  (128 dp, title on its own line, "Nothing to do here." when empty); events
+  become a borderless fading 3-line strip over the map's bottom edge with a
+  soft fade behind it; tapping it opens a full log page in today's style,
+  keeping the title and count; hero steps are no longer logged.
+- Task 13 accepted: `a38f4a6` ActionBar row between the map and the menu;
+  the on-map card, its leader and its placement code deleted. Red observed,
+  mutations M1–M5 killed, suite 1286/1286, analyze clean. Intermediate map
+  423.9 dp (widget, s1.0) until Task 14 removes the log row.
+- Task 14 accepted: `3d181a3` events strip over the map's bottom edge (3
+  fading lines, soft fade, hidden on an empty log), full log page in the
+  crawl screen (title, count, close, Back closes it), log row and drawer
+  deleted, `You step` removed. Mutations M1–M7 killed; sweep on the final
+  map at both scales found no hit on strip, events, hero or target cell.
+  Final widget map 533.9 dp at s1.0 (device estimate 545.8). Main gates:
+  format clean, analyze clean, 1299/1299, core/content unchanged.
+- **Swap review AccU166c: ACCEPT-WITH-MINORS** at `3d181a3`. Probe (14/14):
+  map rect identical in six states (533.9 dp s1.0, 475.7 s1.3); the quiet
+  line only on bare floor; the strip at the map bottom, 3 lines at opacity
+  0.45/0.7/1.0, absent on an empty log, taps only inside; Back closes the
+  page first; follow/unread hold; no step lines while blocked and watched
+  lines remain; sweeps found no target-card overlap of the strip, its own
+  cell or the turn strip. M1 (a stale dartdoc naming the log peek) and M2
+  (a stale test doc) parked. APK `5d8d5d3e…` built. Next: DEV-EXP-3 and
+  DEV-BAT-4 on the AVD (the only device attached), then the user's check.
+- **DEV-EXP-3** on the AVD (`.flow/evidence/86d4727/DEV-EXP-3/`): PASS for
+  the ACTIONS bar and its quiet line, Pick up, Gather, Wait while Watched,
+  the bar and map rects being constant to the pixel (bar 127.6 dp), the
+  borderless 3-line strip, no step lines, the page opening and closing with
+  Back closing it first, drags just above the strip panning, and recenter
+  above the strip. Stairs were not reached (UNKNOWN; covered by widget
+  tests). Caveat: the oldest line's end washes out over the torch bloom
+  when the hero is panned onto the strip. Main inspected `10_after_wait`
+  and `log_page_full`. Observation for the user: with only Wait, the bar
+  shows a large empty band above the button (reserved fact lines).
+- **DEV-BAT-4** (`.flow/evidence/86d4727/DEV-BAT-4/`): the verifier stalled
+  for 50 min trying to pan the hero high enough to flip the turn-order strip
+  (the small road arena's pan clamp stops first; identical shots 10–12) and
+  was stopped by Main. Its shots `06` and `12` (inspected by Main) show the
+  turn strip on top, events at the bottom, and target cards clear of both
+  strips and the hero in two fights, with Wait in the ACTIONS bar. The flip
+  onto the events strip is not observed on device; it is widget-tested and
+  mutation-checked (M7). The page in battle was not captured.
+- AVD saves restored from `.flow/evidence/e913b8d/avd-save-backup/`: both
+  slots MATCH by sha256 (`18995c4a…`, `8909f70c…`); tmp files removed. The
+  app is launched on the AVD for the user's check.
+- User on the AVD (2026-09-28): asked why the ACTIONS buttons sat far below
+  a single fact line, and chose buttons directly under the text with the
+  bar height kept. PLAN G14 amended and re-approved. Fix `d3901e8`: the
+  fact lines render as drawn, the 6 dp gap only after text, and the unused
+  space falls to the bottom. Red: off by 28/14/48 dp in the 1-fact, 2-fact
+  and Wait-only cases. Main gates: format clean, analyze clean, 1304/1304,
+  diff inspected. APK `470dca63…` installed on the AVD over the user's
+  restored saves (`install -r` keeps app data).
+- The user then asked what the space at the bottom of the bar was for, and
+  chose a shorter fixed bar. PLAN G14 amendment 2 (re-approved): one fact
+  line, facts joined with ` · `, ellipsis, full text in semantics; bar 100
+  dp at s1.0 and 109 at s1.3; the map grows to 561.9 dp (widget, s1.0) and
+  stays constant. Fix `8b3de8d`; Red observed; the target-card sweep reran
+  on the new map at both scales with its invariants holding. Main gates:
+  format clean, analyze clean, 1303/1303. APK `e0b99037…` installed on the
+  AVD and launched.
+
+### Unit 16.6 accepted — 2026-09-28
+
+- **User sign-off (verbatim): "let's close this 16.6"**, given after checking
+  the final build (`8b3de8d`, APK `e0b99037…`) on the AVD Medium_Phone.
+- Final state: full-screen; top HUD; 24×30 dp map with a hero-centred camera
+  and pan; a 48 dp near-hero step box on floor cells only; a borderless
+  3-line events strip over the map bottom opening a full log page; a fixed
+  100 dp `ACTIONS` bar (one fact line) between the map and the menu; the
+  menu Quests / Spells / Quick / Hero with icon and label only; the
+  turn-order strip and target card over the map, never covering each
+  other, the strips or the hero. Steps are no longer logged. Suite
+  1303/1303, analyze and format clean, core/content unchanged since
+  `4b8bd10`.
+- Accepted residuals: PLAN 9.6 (text scale 1.3 with tall cards can cover
+  the adjacent target) and 10.7 (panning the hero into the bottom 55 dp puts
+  its lower neighbours under the events strip). Parked minors: N1 stale
+  `_dialogButtonSpacing` dartdoc, M1 the CrawlPanel dartdoc naming the log
+  peek, M2 a stale test doc, N4 card verbs computed several times per build.
+- Device cleanup: the AVD holds its own saves (restored MATCH, then new
+  builds installed over them with `install -r`, the user's own play since).
+  The I2505 holds the user's game and is the user's to keep; its
+  pre-session backup is in `.flow/evidence/6971881/i2505-save-backup/` if
+  wanted. **Still owed:** the vivo I2219 needs its saves restored from
+  `.flow/evidence/848ecc9/save-backup/` and then the test app uninstalled
+  (it had no app before Unit 16.6); it is not attached.
+- Integration: branch `residuum-visual-reboot-16.6`, 55 commits over
+  `4b8bd10`, not pushed. `b536349` mixes an app fix with ledger files and
+  should be split before a pull request. Next: user's integration choice;
+  Unit 16.7 (Hero screen) follows.
+- `b536349` split locally (user: "go"): the app fix is now `9fabced`
+  `fix(app): single separator in spell pop-up rows` and the ledger files
+  that commit had swept in are `3dd05c2`. The branch was rebased, so every
+  later hash changed; the final tree is byte-identical to the pre-split
+  head, kept as `backup/u166-before-split`. Still not pushed.

@@ -60,82 +60,45 @@ const _heroAt = Position(2, 2);
 const _adjacentToHero = Position(3, 2);
 
 void main() {
-  group('a fresh drawer', () {
-    test('starts at peek, following, with nothing unread', () {
-      // arrange
+  group('a fresh crawl', () {
+    test('starts closed, following, with nothing unread', () {
       final bloc = GameBloc(game: _game(heroAt: _heroAt));
       addTearDown(bloc.close);
 
-      // assert
-      expect(bloc.state.logDrawerExtent, LogDrawerExtent.peek);
+      expect(bloc.state.logOpen, isFalse);
       expect(bloc.state.logFollowing, isTrue);
       expect(bloc.state.logUnread, 0);
     });
   });
 
-  group('the handle and the close affordance', () {
+  group('opening and closing the log', () {
     blocTest<GameBloc, GameViewState>(
-      'the handle cycles peek, half, full, then back to peek',
+      'LogOpened opens the log, and a second LogOpened is silent',
       build: () => GameBloc(game: _game(heroAt: _heroAt)),
       act: (bloc) => bloc
-        ..add(const LogDrawerHandlePulled())
-        ..add(const LogDrawerHandlePulled())
-        ..add(const LogDrawerHandlePulled())
-        ..add(const LogDrawerHandlePulled()),
+        ..add(const LogOpened())
+        ..add(const LogOpened()),
       expect: () => [
-        isA<GameViewState>().having(
-          (s) => s.logDrawerExtent,
-          'extent',
-          LogDrawerExtent.half,
-        ),
-        isA<GameViewState>().having(
-          (s) => s.logDrawerExtent,
-          'extent',
-          LogDrawerExtent.full,
-        ),
-        isA<GameViewState>().having(
-          (s) => s.logDrawerExtent,
-          'extent',
-          LogDrawerExtent.peek,
-        ),
-        isA<GameViewState>().having(
-          (s) => s.logDrawerExtent,
-          'extent',
-          LogDrawerExtent.half,
-        ),
+        isA<GameViewState>().having((s) => s.logOpen, 'logOpen', isTrue),
       ],
     );
 
     blocTest<GameBloc, GameViewState>(
-      'closing collapses from anywhere, and a second close at peek is silent',
+      'LogClosed closes the log, and a second LogClosed is silent',
       build: () => GameBloc(game: _game(heroAt: _heroAt)),
       act: (bloc) => bloc
-        ..add(const LogDrawerHandlePulled())
-        ..add(const LogDrawerHandlePulled())
-        ..add(const LogDrawerClosed())
-        ..add(const LogDrawerClosed()),
+        ..add(const LogOpened())
+        ..add(const LogClosed())
+        ..add(const LogClosed()),
       expect: () => [
-        isA<GameViewState>().having(
-          (s) => s.logDrawerExtent,
-          'extent',
-          LogDrawerExtent.half,
-        ),
-        isA<GameViewState>().having(
-          (s) => s.logDrawerExtent,
-          'extent',
-          LogDrawerExtent.full,
-        ),
-        isA<GameViewState>().having(
-          (s) => s.logDrawerExtent,
-          'extent',
-          LogDrawerExtent.peek,
-        ),
+        isA<GameViewState>().having((s) => s.logOpen, 'logOpen', isTrue),
+        isA<GameViewState>().having((s) => s.logOpen, 'logOpen', isFalse),
       ],
     );
   });
 
-  group('criterion 7: a drawer interaction spends no turn and mutates '
-      'nothing', () {
+  group('criterion 7: an open or close interaction spends no turn and '
+      'mutates nothing', () {
     final seededGame = _game(heroAt: _heroAt);
     const seededLog = [
       LogLine('Something is on the road.', LogCategory.noticed),
@@ -148,9 +111,9 @@ void main() {
     final seededIdentity = ActorIdentityContext.fromGame(seededGame);
 
     blocTest<GameBloc, GameViewState>(
-      'the drawer handle, follow-broken and close events all carry pan, '
-      'the walk, the arm, the selection, the fled flag, the actor identity '
-      'and the game and log references through unchanged',
+      'LogOpened, follow-broken and LogClosed all carry pan, the walk, '
+      'the arm, the selection, the fled flag, the actor identity and the '
+      'game and log references through unchanged',
       build: () => GameBloc(game: seededGame),
       seed: () => GameViewState(
         game: seededGame,
@@ -164,9 +127,9 @@ void main() {
         selectedActorId: seededSelected,
       ),
       act: (bloc) => bloc
-        ..add(const LogDrawerHandlePulled())
+        ..add(const LogOpened())
         ..add(const LogFollowBroken())
-        ..add(const LogDrawerClosed()),
+        ..add(const LogClosed()),
       expect: () => [
         for (var i = 0; i < 3; i++)
           isA<GameViewState>()
@@ -193,14 +156,14 @@ void main() {
 
   group('criteria 5 and 6: follow and the unread count', () {
     blocTest<GameBloc, GameViewState>(
-      'follow holds: an arriving line stays visible and nothing '
-      'accumulates',
+      'follow holds while open: an arriving line stays visible and '
+      'nothing accumulates',
       build: () => GameBloc(game: _game(heroAt: _heroAt)),
       act: (bloc) => bloc
-        ..add(const LogDrawerHandlePulled())
+        ..add(const LogOpened())
         ..add(const WaitPressed()),
       verify: (bloc) {
-        expect(bloc.state.logDrawerExtent, LogDrawerExtent.half);
+        expect(bloc.state.logOpen, isTrue);
         expect(bloc.state.logFollowing, isTrue);
         expect(bloc.state.logUnread, 0);
         expect(bloc.state.log.length, 1);
@@ -215,7 +178,7 @@ void main() {
         log: const [LogLine('Something is on the road.', LogCategory.noticed)],
       ),
       act: (bloc) => bloc
-        ..add(const LogDrawerHandlePulled())
+        ..add(const LogOpened())
         ..add(const LogFollowBroken())
         ..add(const WaitPressed())
         ..add(const WaitPressed()),
@@ -230,7 +193,7 @@ void main() {
       'resuming clears the count; a second resume is silent',
       build: () => GameBloc(game: _game(heroAt: _heroAt)),
       act: (bloc) => bloc
-        ..add(const LogDrawerHandlePulled())
+        ..add(const LogOpened())
         ..add(const LogFollowBroken())
         ..add(const WaitPressed())
         ..add(const LogFollowResumed())
@@ -246,54 +209,35 @@ void main() {
       'closing while follow is off resumes follow and clears the count',
       build: () => GameBloc(game: _game(heroAt: _heroAt)),
       act: (bloc) => bloc
-        ..add(const LogDrawerHandlePulled())
-        ..add(const LogDrawerHandlePulled())
+        ..add(const LogOpened())
         ..add(const LogFollowBroken())
         ..add(const WaitPressed())
-        ..add(const LogDrawerClosed()),
+        ..add(const LogClosed()),
       verify: (bloc) {
-        expect(bloc.state.logDrawerExtent, LogDrawerExtent.peek);
+        expect(bloc.state.logOpen, isFalse);
         expect(bloc.state.logFollowing, isTrue);
         expect(bloc.state.logUnread, 0);
       },
     );
 
     blocTest<GameBloc, GameViewState>(
-      'cycling the handle back to peek also resumes follow and clears the '
-      'count',
+      'a turn does not close the page or resume follow',
       build: () => GameBloc(game: _game(heroAt: _heroAt)),
       act: (bloc) => bloc
-        ..add(const LogDrawerHandlePulled())
-        ..add(const LogDrawerHandlePulled())
-        ..add(const LogFollowBroken())
-        ..add(const WaitPressed())
-        ..add(const LogDrawerHandlePulled()),
-      verify: (bloc) {
-        expect(bloc.state.logDrawerExtent, LogDrawerExtent.peek);
-        expect(bloc.state.logFollowing, isTrue);
-        expect(bloc.state.logUnread, 0);
-      },
-    );
-
-    blocTest<GameBloc, GameViewState>(
-      'a turn does not close the drawer or resume follow',
-      build: () => GameBloc(game: _game(heroAt: _heroAt)),
-      act: (bloc) => bloc
-        ..add(const LogDrawerHandlePulled())
-        ..add(const LogDrawerHandlePulled())
+        ..add(const LogOpened())
         ..add(const LogFollowBroken())
         ..add(const WaitPressed()),
       verify: (bloc) {
-        expect(bloc.state.logDrawerExtent, LogDrawerExtent.full);
+        expect(bloc.state.logOpen, isTrue);
         expect(bloc.state.logFollowing, isFalse);
       },
     );
   });
 
-  group('criterion 8: death collapses and inerts the drawer', () {
+  group('criterion 8: death closes and inerts the log', () {
     blocTest<GameBloc, GameViewState>(
-      'a lethal turn collapses the drawer, resumes follow, clears the '
-      'count, and the handle stops responding',
+      'a lethal turn closes the page, resumes follow, clears the count, '
+      'and LogOpened after death emits nothing',
       build: () => GameBloc(
         game: _game(
           heroAt: _heroAt,
@@ -302,18 +246,16 @@ void main() {
         ),
       ),
       act: (bloc) => bloc
-        ..add(const LogDrawerHandlePulled())
-        ..add(const LogDrawerHandlePulled())
+        ..add(const LogOpened())
         ..add(const LogFollowBroken())
         ..add(const TileTapped(_adjacentToHero))
-        ..add(const LogDrawerHandlePulled()),
+        ..add(const LogOpened()),
       expect: () => [
-        isA<GameViewState>(),
         isA<GameViewState>(),
         isA<GameViewState>(),
         isA<GameViewState>()
             .having((s) => s.game.isGameOver, 'isGameOver', isTrue)
-            .having((s) => s.logDrawerExtent, 'extent', LogDrawerExtent.peek)
+            .having((s) => s.logOpen, 'logOpen', isFalse)
             .having((s) => s.logFollowing, 'following', isTrue)
             .having((s) => s.logUnread, 'unread', 0),
       ],
@@ -322,20 +264,17 @@ void main() {
 
   group('the invariant is unconditional', () {
     test('holds for a state built directly, not only through a handler', () {
-      // arrange
       final over = _game(heroAt: _heroAt).copyWith(isGameOver: true);
 
-      // act
       final state = GameViewState(
         game: over,
         log: const [],
-        logDrawerExtent: LogDrawerExtent.full,
+        logOpen: true,
         logFollowing: false,
         logUnread: 5,
       );
 
-      // assert
-      expect(state.logDrawerExtent, LogDrawerExtent.peek);
+      expect(state.logOpen, isFalse);
       expect(state.logFollowing, isTrue);
       expect(state.logUnread, 0);
     });

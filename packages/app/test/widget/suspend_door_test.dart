@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/crawl_exits.dart';
 import 'package:residuum_app/game/game_screen.dart';
 import 'package:residuum_app/style/surfaces.dart';
 import 'package:residuum_app/world/world_screen.dart';
@@ -226,14 +227,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // assert
-      final pack = find.byKey(const ValueKey('pack'));
+      final pack = find.byKey(const ValueKey('menu-hero'));
       expect(pack, findsOneWidget);
       expect(
-        find.descendant(of: pack, matching: find.text('Pack')),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(of: pack, matching: find.text('×${carried + 1}')),
+        find.descendant(of: pack, matching: find.text('Hero')),
         findsOneWidget,
       );
       expect(app.saved!.inside, isTrue);

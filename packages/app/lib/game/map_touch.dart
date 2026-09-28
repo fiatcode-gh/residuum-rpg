@@ -8,6 +8,8 @@ import 'grid_geometry.dart';
 /// monster" is, amended by A1 to a 48 dp target.
 const double mapTouchRadius = 24;
 
+const double mapStepReach = 48;
+
 /// What a map tap or long-press resolves to, once the touch point's
 /// distance from every candidate monster is weighed against the cell the
 /// finger actually landed on.
@@ -66,8 +68,6 @@ Actor? _nearest(
 Iterable<Actor> _known(GameViewState state) =>
     state.game.monsters.where((m) => state.inspectTargetAt(m.position) != null);
 
-/// A bump on an adjacent monster, or the sheet on a distant one: identical
-/// for a tap and a long-press once a monster is chosen.
 MapTouch _meleeOrInspect(Actor actor, Position hero) =>
     actor.position.isOrthogonallyAdjacentTo(hero)
     ? MapTouchCell(actor.position)
@@ -111,10 +111,13 @@ MapTouch resolveMapTap(
   }
   final nearestKnown = _nearest(_known(state), dist);
   if (nearestKnown != null) return _meleeOrInspect(nearestKnown, hero);
-  if (dist(hero) <= mapTouchRadius && under != hero) {
-    final heroCentre = geometry.centreOf(hero);
-    final u = (local.dx - heroCentre.dx) / mapCellWidth;
-    final v = (local.dy - heroCentre.dy) / mapCellHeight;
+  final d = local - geometry.centreOf(hero);
+  if (under != null &&
+      d.dx.abs() <= mapStepReach &&
+      d.dy.abs() <= mapStepReach &&
+      d != Offset.zero) {
+    final u = d.dx / mapCellWidth;
+    final v = d.dy / mapCellHeight;
     final direction = u.abs() >= v.abs()
         ? (u >= 0 ? Direction.east : Direction.west)
         : (v >= 0 ? Direction.south : Direction.north);

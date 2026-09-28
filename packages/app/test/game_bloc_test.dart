@@ -286,13 +286,14 @@ void main() {
     });
 
     blocTest<GameBloc, GameViewState>(
-      'a tap on an adjacent tile moves the hero and writes to the log',
+      'a tap on an adjacent tile moves the hero and writes nothing to the '
+      'log',
       build: () => GameBloc(game: arenaGame(heroAt: const Position(3, 2))),
       act: (bloc) => bloc.add(const TileTapped(Position(4, 2))),
       expect: () => [
         isA<GameViewState>()
             .having((s) => s.game.hero.position, 'hero', const Position(4, 2))
-            .having(logSentences, 'log', ['You step east.']),
+            .having(logSentences, 'log', <String>[]),
       ],
     );
 
@@ -788,41 +789,6 @@ void main() {
 
       // assert
       expect(seen, 0);
-      addTearDown(bloc.close);
-    });
-  });
-
-  group('GameBloc counting potions', () {
-    test('counts the potions in the pack and nothing else', () {
-      // arrange
-      final bloc = walker(
-        arenaGame(
-          heroAt: const Position(1, 1),
-          inventory: [
-            _item('kit-1', _potion),
-            _item('kit-2', _sword),
-            _item('kit-3', _potion),
-          ],
-        ),
-      );
-
-      // act
-      final count = bloc.state.potionCount;
-
-      // assert
-      expect(count, 2);
-      addTearDown(bloc.close);
-    });
-
-    test('counts none with an empty pack', () {
-      // arrange
-      final bloc = walker(arenaGame(heroAt: const Position(1, 1)));
-
-      // act
-      final count = bloc.state.potionCount;
-
-      // assert
-      expect(count, 0);
       addTearDown(bloc.close);
     });
   });
@@ -1442,7 +1408,7 @@ void main() {
       expect(armed.inspectedActorId, isNull);
     });
 
-    test('pulling the log handle clears the inspected actor', () async {
+    test('opening the log clears the inspected actor', () async {
       final bloc = walker(
         arenaGame(
           heroAt: const Position(1, 1),
@@ -1456,10 +1422,10 @@ void main() {
       await next;
 
       next = bloc.stream.first;
-      bloc.add(const LogDrawerHandlePulled());
-      final pulled = await next;
+      bloc.add(const LogOpened());
+      final opened = await next;
 
-      expect(pulled.inspectedActorId, isNull);
+      expect(opened.inspectedActorId, isNull);
     });
   });
 }
@@ -1715,7 +1681,7 @@ void _lootTests() {
 
   group('GameBloc drinking', () {
     blocTest<GameBloc, GameViewState>(
-      'the quick drink heals and logs the amount',
+      'DrinkPressed heals and logs the amount',
       build: () => GameBloc(
         game: arenaGame(
           heroAt: const Position(3, 2),
@@ -1723,7 +1689,7 @@ void _lootTests() {
           inventory: [_item('kit-1', _potion)],
         ),
       ),
-      act: (bloc) => bloc.add(const QuickDrinkPressed()),
+      act: (bloc) => bloc.add(const DrinkPressed('kit-1')),
       expect: () => [
         isA<GameViewState>()
             .having((s) => s.game.hero.hp, 'hp', 15)
@@ -1734,21 +1700,6 @@ void _lootTests() {
       ],
     );
 
-    test('the quick drink does nothing at all with no potion carried', () {
-      // arrange
-      final bloc = GameBloc(
-        game: arenaGame(heroAt: const Position(3, 2), heroHp: 5),
-      );
-
-      // act
-      bloc.add(const QuickDrinkPressed());
-
-      // assert
-      expect(bloc.state.firstPotion, isNull);
-      expect(bloc.state.game.hero.hp, 5);
-      addTearDown(bloc.close);
-    });
-
     blocTest<GameBloc, GameViewState>(
       'a potion drunk at full health is wasted, and the log admits it',
       build: () => GameBloc(
@@ -1757,11 +1708,25 @@ void _lootTests() {
           inventory: [_item('kit-1', _potion)],
         ),
       ),
-      act: (bloc) => bloc.add(const QuickDrinkPressed()),
+      act: (bloc) => bloc.add(const DrinkPressed('kit-1')),
       expect: () => [
         isA<GameViewState>().having(logSentences, 'log', [
           'You drink Common Healing Potion. Nothing was wrong with you.',
         ]),
+      ],
+    );
+
+    blocTest<GameBloc, GameViewState>(
+      'a non-carried id is refused and logged, and no turn is spent',
+      build: () =>
+          GameBloc(game: arenaGame(heroAt: const Position(3, 2), heroHp: 5)),
+      act: (bloc) => bloc.add(const DrinkPressed('missing-id')),
+      expect: () => [
+        isA<GameViewState>().having((s) => s.game.hero.hp, 'hp', 5).having(
+          logSentences,
+          'log',
+          ['You are not carrying that.'],
+        ),
       ],
     );
   });
@@ -1866,7 +1831,7 @@ void _lootTests() {
 
       // assert
       expect(state.attack, (3, 5));
-      expect(state.firstPotion, isNotNull);
+      expect(state.game.inventory.any((item) => item.base.isPotion), isTrue);
       expect(state.game.equipment[EquipSlot.mainHand], isNotNull);
       addTearDown(bloc.close);
     });
@@ -2841,7 +2806,7 @@ void _lootTests() {
       ),
       act: (bloc) {
         bloc.add(const SkillArmed('firebolt'));
-        bloc.add(const QuickDrinkPressed());
+        bloc.add(const DrinkPressed('potion-1'));
       },
       expect: () => [
         isA<GameViewState>().having((s) => s.armedSpellId, 'armed', 'firebolt'),
@@ -2924,7 +2889,6 @@ void _lootTests() {
       act: (bloc) => bloc.add(const TileTapped(Position(2, 1))),
       expect: () => [
         isA<GameViewState>().having((s) => s.log, 'log', [
-          const LogLine('You step east.', LogCategory.moved),
           const LogLine('The ghoul gets the drop on you.', LogCategory.struck),
           const LogLine('The ghoul claws you for 3.', LogCategory.struck),
         ]),
@@ -2978,10 +2942,96 @@ void _lootTests() {
                     .firstWhere((line) => line.contains('drop on you')),
               ),
               'beat position',
-              1,
+              0,
             ),
       ],
     );
+  });
+
+  group('offersWait', () {
+    test('is false with nothing in sight', () {
+      final bloc = walker(arenaGame(heroAt: const Position(1, 1)));
+      addTearDown(bloc.close);
+
+      expect(bloc.state.offersWait, isFalse);
+    });
+
+    test('is true while Watched: a visible monster not holding reach', () {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(3, 1))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      expect(bloc.state.isBattleOpen, isFalse);
+      expect(bloc.state.enemiesInSight, greaterThan(0));
+      expect(bloc.state.offersWait, isTrue);
+    });
+
+    test('is true in battle', () {
+      final bloc = walker(
+        arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(1, 2))],
+        ),
+      );
+      addTearDown(bloc.close);
+
+      expect(bloc.state.isBattleOpen, isTrue);
+      expect(bloc.state.offersWait, isTrue);
+    });
+
+    test('is false once the game is over, even mid-battle', () {
+      final bloc = GameBloc(
+        game: arenaGame(
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(1, 2))],
+        ).copyWith(isGameOver: true),
+        stepDelay: Duration.zero,
+      );
+      addTearDown(bloc.close);
+
+      expect(bloc.state.offersWait, isFalse);
+    });
+
+    test('is false on a road with monsters, none of which is visible '
+        '(Q1 default: the contract limits Wait to combat and Watched)', () {
+      final map = FloorMap.parse(wideArena);
+      const heroAt = Position(1, 1);
+      final visible = computeFov(map, heroAt, fovRadius);
+      final bloc = GameBloc(
+        game: GameState(
+          map: map,
+          hero: Actor(
+            id: 'hero',
+            name: 'you',
+            glyph: '@',
+            position: heroAt,
+            hp: 20,
+            maxHp: 20,
+            attackMin: 4,
+            attackMax: 4,
+            speed: 10,
+            energy: actThreshold,
+          ),
+          monsters: [ghoul(const Position(23, 1))],
+          rng: Rng(1),
+          lootRng: Rng(2),
+          buildFloor: _noFloorBelow,
+          visible: visible,
+          explored: {...visible},
+          isEncounter: true,
+        ),
+        stepDelay: Duration.zero,
+      );
+      addTearDown(bloc.close);
+
+      expect(bloc.state.enemiesInSight, 0);
+      expect(bloc.state.isRoadClear, isFalse);
+      expect(bloc.state.offersWait, isFalse);
+    });
   });
 
   group('the wait verb on the crawl screen', () {
@@ -3000,6 +3050,39 @@ void _lootTests() {
         expect(bloc.state.game.hero.hp, lessThan(20));
       },
     );
+
+    test('ends the Watched stall (UXW-BAT 27-32): a visible monster 3+ cells '
+        'away and not holding reach closes in or opens the fight', () async {
+      final bloc = walker(
+        arenaGame(
+          ascii: wideArena,
+          heroAt: const Position(1, 1),
+          monsters: [ghoul(const Position(5, 1))],
+        ),
+      );
+      addTearDown(bloc.close);
+      final before = bloc.state;
+      expect(before.isBattleOpen, isFalse);
+      expect(before.enemiesInSight, greaterThan(0));
+      final distanceBefore = before.game.hero.position.chebyshevTo(
+        before.game.monsters.single.position,
+      );
+      expect(distanceBefore, greaterThanOrEqualTo(3));
+
+      final next = bloc.stream.first;
+      bloc.add(const WaitPressed());
+      final after = await next;
+
+      expect(logSentences(after).first, 'You hold your ground.');
+      final distanceAfter = after.game.hero.position.chebyshevTo(
+        after.game.monsters.single.position,
+      );
+      expect(
+        distanceAfter < distanceBefore || after.isBattleOpen,
+        isTrue,
+        reason: 'the monster must close in or the fight must open',
+      );
+    });
 
     blocTest<GameBloc, GameViewState>(
       'a reach-holder shoots a waiting hero',
