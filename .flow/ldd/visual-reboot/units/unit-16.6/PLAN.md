@@ -889,12 +889,14 @@ here.
   Wait; road: Pick up, Move on or Flee, Wait — Move on excludes Wait).
 - **Body, top to bottom:** title row `16·s` with `ACTIONS` in
   `displaySection` (the display role, letter-spaced capitals, the role the
-  old `RECENT EVENTS` peek title used); gap 4; fact zone `3 × 14·s` holding
-  the fact lines (`monoMeta`, one line each, ellipsis, `crawlCalloutLineHeight
-  × s` tall) or, when `cardVerbsFor` and `placeFacts` are both empty, the
-  quiet line `actionBarIdle = 'Nothing to do here.'` (`monoMeta`); gap 6;
-  button row 48 tall. The zones never collapse: an empty fact zone or an
-  empty button row keeps its height.
+  old `RECENT EVENTS` peek title used); gap 4; the fact lines actually
+  present (`monoMeta`, one line each, ellipsis, `crawlCalloutLineHeight × s`
+  tall, at most 3) or, when `cardVerbsFor` and `placeFacts` are both empty,
+  the quiet line `actionBarIdle = 'Nothing to do here.'` (`monoMeta`); gap 6
+  only when a fact line was drawn; then the button row, 48 tall. **Amendment
+  (user, 2026-09-28):** the button row sits directly below the last drawn
+  text line; the unused fact space falls to the bottom of the bar as
+  padding. The bar's outer height stays `actionBarHeight(s)` in every state.
 - **Fact lines total over fixtures:** more than 3 facts (only reachable in a
   fixture with a node on stairs) render as `facts[0]`, `facts[1]`, and
   `facts.sublist(2).join(' · ')` on the third line.
