@@ -67,28 +67,18 @@ class ActionBar extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: crawlActionBarTitleGap),
-                    SizedBox(
-                      height:
-                          crawlActionBarFactLines *
-                          crawlCalloutLineHeight *
-                          scale,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          for (final line in lines)
-                            SizedBox(
-                              height: crawlCalloutLineHeight * scale,
-                              child: Text(
-                                line,
-                                style: monoMeta,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                        ],
+                    for (final line in lines)
+                      SizedBox(
+                        height: crawlCalloutLineHeight * scale,
+                        child: Text(
+                          line,
+                          style: monoMeta,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: crawlActionBarGap),
+                    if (lines.isNotEmpty)
+                      const SizedBox(height: crawlActionBarGap),
                     SizedBox(
                       height: crawlTouchTarget,
                       child: Row(

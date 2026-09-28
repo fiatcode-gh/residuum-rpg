@@ -571,6 +571,120 @@ void main() {
     );
 
     testWidgets(
+      'the button row sits 6 dp under a single fact line, not pinned to '
+      'the bar\'s bottom',
+      (tester) async {
+        await _openCrawl(
+          tester,
+          _dungeon(nodes: {_heroAt: GatherKind.oreVein}),
+        );
+        final factLine = find.descendant(
+          of: find.byKey(actionBarKey),
+          matching: find.textContaining('Underfoot:'),
+        );
+        expect(factLine, findsOneWidget);
+        final factBottom = tester.getBottomLeft(factLine).dy;
+        final buttonTop = tester
+            .getTopLeft(find.byKey(const ValueKey('gather')))
+            .dy;
+        expect(buttonTop - factBottom, closeTo(6, 0.5));
+      },
+    );
+
+    testWidgets(
+      'with two fact lines, the button row follows the second line, not '
+      'the first',
+      (tester) async {
+        await _openCrawl(
+          tester,
+          _dungeon(
+            nodes: {_heroAt: GatherKind.oreVein},
+            groundItems: {_heroAt: _oneSword()},
+          ),
+        );
+        final secondLine = find.descendant(
+          of: find.byKey(actionBarKey),
+          matching: find.textContaining('Here:'),
+        );
+        expect(secondLine, findsOneWidget);
+        final lineBottom = tester.getBottomLeft(secondLine).dy;
+        final buttonTop = tester
+            .getTopLeft(find.byKey(const ValueKey('pick-up')))
+            .dy;
+        expect(buttonTop - lineBottom, closeTo(6, 0.5));
+      },
+    );
+
+    testWidgets('with Wait only and no fact line, the button row sits directly '
+        'under the title zone', (tester) async {
+      await _openCrawl(
+        tester,
+        _dungeon(monsters: [_ghoulAt(const Position(6, 2))]),
+      );
+      final titleBottom = tester
+          .getBottomLeft(
+            find.descendant(
+              of: find.byKey(actionBarKey),
+              matching: find.text('ACTIONS'),
+            ),
+          )
+          .dy;
+      final buttonTop = tester
+          .getTopLeft(find.byKey(const ValueKey('wait')))
+          .dy;
+      expect(buttonTop - titleBottom, closeTo(4, 0.5));
+    });
+
+    testWidgets(
+      'the bar\'s outer rect stays actionBarHeight(s) across the one-fact, '
+      'two-fact and no-fact states, at s 1.0 and s 1.3',
+      (tester) async {
+        final states = <GameState>[
+          _dungeon(nodes: {_heroAt: GatherKind.oreVein}),
+          _dungeon(
+            nodes: {_heroAt: GatherKind.oreVein},
+            groundItems: {_heroAt: _oneSword()},
+          ),
+          _dungeon(monsters: [_ghoulAt(const Position(6, 2))]),
+        ];
+        for (final scale in [1.0, 1.3]) {
+          Rect? previous;
+          for (final state in states) {
+            await _openCrawl(
+              tester,
+              state,
+              textScaler: TextScaler.linear(scale),
+            );
+            final rect = tester.getRect(find.byKey(actionBarKey));
+            previous ??= rect;
+            expect(rect, previous);
+            expect(rect.height, closeTo(actionBarHeight(scale), 0.01));
+          }
+        }
+      },
+    );
+
+    testWidgets('at s 1.3, 3 fact lines and 4 buttons overflow nothing', (
+      tester,
+    ) async {
+      await _openCrawl(
+        tester,
+        _dungeon(
+          stairsUp: _heroAt,
+          depth: deepestDepth,
+          nodes: {_heroAt: GatherKind.oreVein},
+          groundItems: {_heroAt: _oneSword()},
+        ),
+        textScaler: const TextScaler.linear(1.3),
+      );
+      expect(tester.takeException(), isNull);
+      for (final id in ['pick-up', 'gather', 'ascend', 'leave-dungeon']) {
+        expect(find.byKey(ValueKey(id)), findsOneWidget, reason: id);
+      }
+      expect(find.byKey(const ValueKey('wait')), findsNothing);
+    });
+
+    testWidgets(
       'at s 1.3 the largest fixture overflows nothing and every button is '
       'at least 48 dp square, inside the bar\'s frame rect',
       (tester) async {
