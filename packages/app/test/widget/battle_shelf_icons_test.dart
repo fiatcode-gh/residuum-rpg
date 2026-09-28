@@ -171,12 +171,12 @@ void main() {
       _expectShelfAction(
         'spell:firebolt',
         label: '✳ Firebolt',
-        metadata: '2 mana ·  · 2-4 fire △',
+        metadata: '2 mana · 2-4 fire △',
       );
       _expectShelfAction(
         'spell:mend',
         label: '✚ Mend',
-        metadata: '3 mana ·  · heals 8',
+        metadata: '3 mana · heals 8',
       );
 
       // assert - the two spells with an exact asset each carry one icon
@@ -194,7 +194,7 @@ void main() {
       expect(frostLance, findsOneWidget);
       expect(_shelfText('spell:frost-lance', '✳ Frost Lance'), findsOneWidget);
       expect(
-        _shelfMetadata('spell:frost-lance', '4 mana ·  · 4-7 frost ◇'),
+        _shelfMetadata('spell:frost-lance', '4 mana · 4-7 frost ◇'),
         findsOneWidget,
       );
       expect(

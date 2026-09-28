@@ -796,12 +796,12 @@ void main() {
       _expectAction(
         'spell:firebolt',
         label: '✳ Firebolt',
-        metadata: '2 mana ·  · 2-4 fire △',
+        metadata: '2 mana · 2-4 fire △',
       );
       _expectAction(
         'spell:mend',
         label: '✚ Mend',
-        metadata: '3 mana ·  · heals 8',
+        metadata: '3 mana · heals 8',
       );
     });
 
@@ -923,7 +923,7 @@ void main() {
       _expectAction(
         'spell:firebolt',
         label: '✳ Firebolt',
-        metadata: '2 mana ·  · 2-4 fire △',
+        metadata: '2 mana · 2-4 fire △',
       );
     });
 
@@ -943,7 +943,7 @@ void main() {
       _expectAction(
         'spell:firebolt',
         label: '✳ Firebolt',
-        metadata: '2 mana ·  · 2-4 fire △',
+        metadata: '2 mana · 2-4 fire △',
       );
       _expectAction('wait', label: 'Wait');
     });
@@ -1136,17 +1136,17 @@ void main() {
       _expectAction(
         'spell:firebolt',
         label: '✳ Firebolt',
-        metadata: '2 mana ·  · 2-4 fire △',
+        metadata: '2 mana · 2-4 fire △',
       );
       _expectAction(
         'spell:frost-lance',
         label: '✳ Frost Lance',
-        metadata: '4 mana ·  · 4-7 frost ◇',
+        metadata: '4 mana · 4-7 frost ◇',
       );
       _expectAction(
         'spell:mend',
         label: '✚ Mend',
-        metadata: '3 mana ·  · heals 8',
+        metadata: '3 mana · heals 8',
       );
       _expectAction('spells-overflow', label: '+3 more spells');
       expect(_action('spell:bind'), findsNothing);

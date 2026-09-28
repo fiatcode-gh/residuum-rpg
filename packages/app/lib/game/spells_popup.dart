@@ -112,7 +112,7 @@ class _SpellRow extends StatelessWidget {
         ? '— armed'
         : refusal != null
         ? _capitalised(refusal!)
-        : '${spell.manaCost} mana · ${effectOf(spell)}';
+        : '${spell.manaCost} mana${effectOf(spell)}';
     return InkWell(
       key: ValueKey('spell:${spell.id}'),
       onTap: onChoose,
