@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../style/tokens.dart';
 import '../world/world_bloc.dart';
+import 'action_bar.dart';
 import 'crawl_exits.dart';
 import 'crawl_hud.dart';
 import 'crawl_menu.dart';
@@ -129,7 +130,7 @@ class GameScreen extends StatelessWidget {
                                           state: state,
                                           bloc: bloc,
                                         ),
-                                        const SizedBox(height: crawlGap),
+                                        const SizedBox(height: crawlPanelGap),
                                       ],
                                     ),
                                     if (state.logDrawerExtent !=
@@ -163,6 +164,12 @@ class GameScreen extends StatelessWidget {
                               },
                             ),
                           ),
+                          ActionBar(
+                            key: actionBarKey,
+                            bloc: bloc,
+                            state: state,
+                          ),
+                          const SizedBox(height: crawlGap),
                           CrawlMenu(
                             key: crawlMenuKey,
                             state: state,

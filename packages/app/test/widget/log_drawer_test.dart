@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/action_bar.dart';
 import 'package:residuum_app/game/crawl_menu.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/event_messages.dart';
@@ -200,10 +201,12 @@ void main() {
 
     final mapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
     final peekRect = tester.getRect(find.byKey(logPeekKey));
+    final barRect = tester.getRect(find.byKey(actionBarKey));
     final actionRect = tester.getRect(find.byKey(crawlMenuKey));
     void reportStableCrawlGeometry(String extent) {
       expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), mapRect);
       expect(tester.getRect(find.byKey(logPeekKey)), peekRect);
+      expect(tester.getRect(find.byKey(actionBarKey)), barRect);
       expect(tester.getRect(find.byKey(crawlMenuKey)), actionRect);
     }
 
@@ -220,7 +223,7 @@ void main() {
       halfRect.height,
       closeTo(math.min(crawlLogSheetHeight, innerStackHeight), 0.5),
     );
-    expect(halfRect.bottom, closeTo(actionRect.top, 0.5));
+    expect(halfRect.bottom, closeTo(barRect.top, 0.5));
 
     await tester.tap(find.byKey(logHandleKey));
     await tester.pumpAndSettle();
@@ -228,7 +231,7 @@ void main() {
     reportStableCrawlGeometry('full');
     final fullRect = tester.getRect(find.byKey(logDrawerKey));
     expect(fullRect.top, closeTo(mapRect.top, 0.5));
-    expect(fullRect.bottom, closeTo(actionRect.top, 0.5));
+    expect(fullRect.bottom, closeTo(barRect.top, 0.5));
     expect(fullRect.top, lessThan(halfRect.top));
 
     await tester.tap(find.byKey(logHandleKey));

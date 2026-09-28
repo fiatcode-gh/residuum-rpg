@@ -73,7 +73,11 @@ const double crawlCalloutLeaderGap = 6;
 const double crawlCalloutLeaderWidth = 1;
 const double crawlCalloutDotRadius = 2.5;
 
-const double crawlActionCardGap = 6;
+const double crawlActionBarGap = 6;
+const double crawlActionBarPadding = 6;
+const double crawlActionBarTitleRow = 16;
+const double crawlActionBarTitleGap = 4;
+const double crawlActionBarFactLines = 3;
 
 const BoxDecoration crawlCalloutDecoration = BoxDecoration(
   color: crawlCalloutFill,

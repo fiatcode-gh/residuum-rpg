@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'action_card.dart';
-import 'action_card_verbs.dart';
 import 'crawl_style.dart';
 import 'crawl_surfaces.dart';
 import 'game_bloc.dart';
@@ -62,33 +60,9 @@ class MapOverlays extends StatelessWidget {
       );
     }
 
-    final showCard =
-        cardVerbsFor(state).isNotEmpty || placeFacts(state).isNotEmpty;
-    Rect? cardRect;
-    if (showCard) {
-      cardRect = placeActionCard(
-        map: size,
-        height: actionCardHeight(state, crawlScale(context)),
-        hero: hero,
-        strip: stripRect,
-      );
-    }
+    final recenter = showRecenter ? recenterRect(size) : null;
 
-    Rect? recenter;
-    if (showRecenter) {
-      recenter = recenterRect(size, actionCard: cardRect);
-    }
-
-    final leader = cardRect == null
-        ? null
-        : actionCardLeader(map: size, card: cardRect, hero: hero);
-
-    final targetArea = targetCardArea(
-      map: size,
-      hero: hero,
-      actionCard: cardRect,
-      strip: stripRect,
-    );
+    final targetArea = targetCardArea(map: size, strip: stripRect);
 
     return Stack(
       children: [
@@ -104,20 +78,6 @@ class MapOverlays extends StatelessWidget {
                   bloc.add(TimelineActorSelected(actor.id)),
               flipped: stripFlipped,
             ),
-          ),
-        if (leader != null)
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(
-                key: actionCardLeaderKey,
-                painter: LeaderPainter(from: leader.$1, to: leader.$2),
-              ),
-            ),
-          ),
-        if (cardRect != null)
-          Positioned.fromRect(
-            rect: cardRect,
-            child: ActionCard(bloc: bloc, state: state, width: cardRect.width),
           ),
         Positioned.fill(
           child: TargetCard(

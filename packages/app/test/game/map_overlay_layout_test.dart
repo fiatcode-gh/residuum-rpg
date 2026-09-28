@@ -188,131 +188,6 @@ void main() {
     });
   });
 
-  group('placeActionCard', () {
-    test('sits at the bottom edge, full width, when the hero is clear', () {
-      final hero = Offset(140, 140) & const Size(24, 30);
-      final placed = placeActionCard(
-        map: const Size(300, 300),
-        height: 50,
-        hero: hero,
-      );
-      expect(placed, const Rect.fromLTWH(8, 300 - 8 - 50, 300 - 16, 50));
-    });
-
-    test('falls back to the top edge when the bottom candidate hits the '
-        'hero block', () {
-      final hero = Offset(100, 260) & const Size(24, 30);
-      final placed = placeActionCard(
-        map: const Size(300, 300),
-        height: 50,
-        hero: hero,
-      );
-      expect(placed, const Rect.fromLTWH(8, 8, 300 - 16, 50));
-    });
-
-    test('sits below a top strip', () {
-      final hero = Offset(100, 260) & const Size(24, 30);
-      const strip = Rect.fromLTWH(0, 0, 300, 48);
-      final placed = placeActionCard(
-        map: const Size(300, 300),
-        height: 50,
-        hero: hero,
-        strip: strip,
-      );
-      expect(placed.top, 56);
-    });
-
-    test('sits above a flipped, bottom-hugging strip', () {
-      final hero = Offset(100, 20) & const Size(24, 30);
-      const strip = Rect.fromLTWH(0, 300 - 48, 300, 48);
-      final placed = placeActionCard(
-        map: const Size(300, 300),
-        height: 50,
-        hero: hero,
-        strip: strip,
-      );
-      expect(placed.bottom, strip.top - 8);
-    });
-
-    test('ties to the bottom when both edges overlap the block equally', () {
-      const hero = Rect.fromLTWH(40, 52, 20, 16);
-      final placed = placeActionCard(
-        map: const Size(100, 120),
-        height: 32,
-        hero: hero,
-      );
-      expect(placed, const Rect.fromLTWH(8, 80, 84, 32));
-    });
-
-    test('never overlaps the padded hero block across the map, at either text '
-        'scale, with or without the strip', () {
-      void sweep(Size map, double height, bool withStrip) {
-        for (var top = 0.0; top <= map.height - 30; top += 0.5) {
-          final hero = Offset((map.width - 24) / 2, top) & const Size(24, 30);
-          Rect? strip;
-          if (withStrip) {
-            const stripHeight = 48.0;
-            final topStrip = Rect.fromLTWH(0, 0, map.width, stripHeight);
-            final flipped = topStrip.overlaps(hero);
-            final stripWidth = flipped ? map.width - 64 : map.width;
-            strip = Rect.fromLTWH(
-              0,
-              flipped ? map.height - stripHeight : 0,
-              stripWidth,
-              stripHeight,
-            );
-          }
-          final placed = placeActionCard(
-            map: map,
-            height: height,
-            hero: hero,
-            strip: strip,
-          );
-          expect(
-            placed.overlaps(heroBlock(hero)),
-            isFalse,
-            reason: 'map $map, height $height, strip $withStrip, top $top',
-          );
-        }
-      }
-
-      for (final withStrip in [false, true]) {
-        sweep(const Size(392.7, 561.9), 170, withStrip);
-        sweep(const Size(392.7, 489.9), 110.4, withStrip);
-      }
-    });
-  });
-
-  group('actionCardLeader', () {
-    const map = Size(300, 300);
-    const card = Rect.fromLTWH(8, 200, 284, 60);
-
-    test('runs from the hero\'s bottom edge to the card\'s top edge when the '
-        'card sits below it', () {
-      final hero = Offset(140, 60) & const Size(24, 30);
-      final leader = actionCardLeader(map: map, card: card, hero: hero);
-      expect(leader, (const Offset(152, 90), const Offset(152, 200)));
-    });
-
-    test('runs from the hero\'s top edge to the card\'s bottom edge when the '
-        'card sits above it', () {
-      final hero = Offset(140, 280) & const Size(24, 30);
-      final leader = actionCardLeader(map: map, card: card, hero: hero);
-      expect(leader, (const Offset(152, 280), const Offset(152, 260)));
-    });
-
-    test('clamps the card end 6 dp inside a side edge', () {
-      final hero = Offset(2, 60) & const Size(24, 30);
-      final leader = actionCardLeader(map: map, card: card, hero: hero);
-      expect(leader!.$2.dx, card.left + 6);
-    });
-
-    test('is null when the hero cell is panned outside the map', () {
-      final hero = Offset(-100, 60) & const Size(24, 30);
-      expect(actionCardLeader(map: map, card: card, hero: hero), isNull);
-    });
-  });
-
   group('recenterRect', () {
     test('is a 48 dp square in the map\'s bottom-right corner', () {
       expect(
@@ -325,62 +200,25 @@ void main() {
         ),
       );
     });
-
-    test('is unchanged when it does not overlap the action card', () {
-      const map = Size(300, 400);
-      const card = Rect.fromLTWH(8, 8, 284, 50);
-      expect(recenterRect(map, actionCard: card), recenterRect(map));
-    });
-
-    test('lifts above the action card when it would overlap', () {
-      const map = Size(300, 400);
-      final base = recenterRect(map);
-      final card = Rect.fromLTWH(8, base.top - 10, 284, 60);
-      final lifted = recenterRect(map, actionCard: card);
-      expect(lifted.bottom, card.top - 8);
-      expect(lifted.left, base.left);
-      expect(lifted.width, crawlTouchTarget);
-      expect(lifted.height, crawlTouchTarget);
-    });
   });
 
   group('target card vs the strip (D1)', () {
-    test('on a real device layout, a melee target next to a hero panned low '
-        'still lands the card clear of the turn-order strip', () {
-      const map = Size(392.7, 557.9);
+    test('on the Task 13 widget map, a melee target next to a hero panned '
+        'low still lands the card clear of the turn-order strip', () {
+      // 423.9 is the Task 13 widget map height at s 1.0, measured by the
+      // untracked probe (PLAN.md §10.1): the bar replaces the action card,
+      // so this area is bounded only by the strip now.
+      const map = Size(392.7, 423.9);
       const cellSize = Size(24, 30);
       const cardSize = Size(172, 95);
-      const actionCardHeight = 68.0;
       const stripHeight = 48.0;
 
-      // Hero centred horizontally, low enough that the padded hero block
-      // still misses the bottom-pinned action card (it never flips) but
-      // covers every other legal corner of the old, strip-blind area.
-      final hero = const Offset(184.35, 384) & cellSize;
+      final hero = const Offset(184.35, 385.9) & cellSize;
       final targetCell =
           Offset(hero.left + cellSize.width, hero.top) & cellSize;
       final strip = Rect.fromLTWH(0, 0, map.width, stripHeight);
-      final card = placeActionCard(
-        map: map,
-        height: actionCardHeight,
-        hero: hero,
-        strip: strip,
-      );
-      expect(
-        card.overlaps(heroBlock(hero)),
-        isFalse,
-        reason:
-            'sanity: the action card must stay pinned to the bottom, '
-            'matching the field report — a flipped card is a different '
-            'scenario',
-      );
 
-      final area = targetCardArea(
-        map: map,
-        hero: hero,
-        actionCard: card,
-        strip: strip,
-      );
+      final area = targetCardArea(map: map, strip: strip);
 
       final placed = placeMapOverlay(
         area: area,
@@ -410,88 +248,43 @@ void main() {
       expect(
         placed.overlaps(strip),
         isFalse,
-        reason:
-            'D1: the target card must never cover the turn-order '
-            'strip',
+        reason: 'D1: the target card must never cover the turn-order strip',
       );
       expect(placed.overlaps(heroBlock(hero)), isFalse);
-      expect(placed.overlaps(card), isFalse);
     });
   });
 
   group('targetCardArea', () {
-    test('is the full map when there is no strip and no action card', () {
+    test('is the full map when there is no strip', () {
       const map = Size(300, 400);
-      final hero = const Offset(140, 140) & const Size(24, 30);
       expect(
-        targetCardArea(map: map, hero: hero),
+        targetCardArea(map: map),
         Rect.fromLTRB(0, 0, map.width, map.height),
       );
     });
 
     test('excludes the strip\'s rows from the top when it sits at the top', () {
       const map = Size(300, 400);
-      final hero = const Offset(140, 300) & const Size(24, 30);
       const strip = Rect.fromLTWH(0, 0, 300, 48);
       expect(
-        targetCardArea(map: map, hero: hero, strip: strip),
+        targetCardArea(map: map, strip: strip),
         const Rect.fromLTRB(0, 48, 300, 400),
       );
     });
 
     test('excludes the strip\'s rows from the bottom when it is flipped', () {
       const map = Size(300, 400);
-      final hero = const Offset(140, 20) & const Size(24, 30);
       const strip = Rect.fromLTWH(0, 352, 300, 48);
       expect(
-        targetCardArea(map: map, hero: hero, strip: strip),
+        targetCardArea(map: map, strip: strip),
         const Rect.fromLTRB(0, 0, 300, 352),
-      );
-    });
-
-    test('excludes the action card\'s rows from the bottom when it sits below '
-        'the hero', () {
-      const map = Size(300, 400);
-      final hero = const Offset(140, 140) & const Size(24, 30);
-      const actionCard = Rect.fromLTWH(8, 300, 284, 50);
-      expect(
-        targetCardArea(map: map, hero: hero, actionCard: actionCard),
-        const Rect.fromLTRB(0, 0, 300, 300),
-      );
-    });
-
-    test('excludes the action card\'s rows from the top when it is flipped '
-        'above the hero', () {
-      const map = Size(300, 400);
-      final hero = const Offset(140, 300) & const Size(24, 30);
-      const actionCard = Rect.fromLTWH(8, 8, 284, 50);
-      expect(
-        targetCardArea(map: map, hero: hero, actionCard: actionCard),
-        const Rect.fromLTRB(0, 58, 300, 400),
-      );
-    });
-
-    test('excludes both the strip and the action card at once', () {
-      const map = Size(300, 400);
-      final hero = const Offset(140, 300) & const Size(24, 30);
-      const strip = Rect.fromLTWH(0, 0, 300, 48);
-      const actionCard = Rect.fromLTWH(8, 340, 284, 50);
-      expect(
-        targetCardArea(
-          map: map,
-          hero: hero,
-          actionCard: actionCard,
-          strip: strip,
-        ),
-        const Rect.fromLTRB(0, 48, 300, 340),
       );
     });
   });
 
-  group('the target card never covers the strip, the action card, the hero '
-      'cell or the target cell (D1/F1 sweep)', () {
-    test('across the full content grid, on every target-phone map size, '
-        'with the strip and action card present', () {
+  group('the target card never covers the strip or the hero cell, and (at '
+      's 1.0) never the target cell either (D1/F1 sweep)', () {
+    test('across the full content grid, on both Task 13 widget map sizes', () {
       const cellSize = Size(24, 30);
       const cardWidth = 172.0;
       const offsets = [
@@ -505,15 +298,6 @@ void main() {
         Offset(-1, -1),
       ];
 
-      double actionHeightFor(int facts, int rows, double scale) {
-        if (facts == 0 && rows == 0) return 0;
-        return crawlCalloutPadding * 2 +
-            facts * crawlCalloutLineHeight * scale +
-            (facts > 0 && rows > 0 ? crawlActionCardGap : 0) +
-            rows * crawlTouchTarget +
-            (rows > 1 ? (rows - 1) * crawlActionCardGap : 0);
-      }
-
       double targetHeightFor(int lines, double scale) =>
           crawlCalloutPadding * 2 +
           crawlCalloutNameRow * scale +
@@ -525,12 +309,9 @@ void main() {
       void sweep(
         Size map,
         double scale,
-        int facts,
-        int rows,
         int lines, {
         required bool expectTargetCellClear,
       }) {
-        final actionHeight = actionHeightFor(facts, rows, scale);
         final card = Size(cardWidth, targetHeightFor(lines, scale));
         final stripHeight = crawlStripHeight * scale;
         for (
@@ -553,18 +334,7 @@ void main() {
               stripWidth,
               stripHeight,
             );
-            final actionCard = placeActionCard(
-              map: map,
-              height: actionHeight,
-              hero: hero,
-              strip: strip,
-            );
-            final area = targetCardArea(
-              map: map,
-              hero: hero,
-              actionCard: actionCard,
-              strip: strip,
-            );
+            final area = targetCardArea(map: map, strip: strip);
             final block = heroBlock(hero);
 
             for (final offset in offsets) {
@@ -607,14 +377,9 @@ void main() {
                 avoid: [targetCell],
               );
               final reason =
-                  'map $map scale $scale facts $facts rows $rows '
-                  'lines $lines hero $hero offset $offset';
+                  'map $map scale $scale lines $lines hero $hero '
+                  'offset $offset';
               expect(placed.overlaps(strip), isFalse, reason: 'strip: $reason');
-              expect(
-                placed.overlaps(actionCard),
-                isFalse,
-                reason: 'action card: $reason',
-              );
               expect(
                 placed.overlaps(hero),
                 isFalse,
@@ -632,96 +397,28 @@ void main() {
         }
       }
 
-      // `cardVerbsFor` can reach 5 in combat (loot, a gatherable node
-      // and stairs on one tile, plus flee and wait — `moveOn` alone
-      // needs an empty floor, which cannot hold a target); rows =
-      // ⌈verbs / 4⌉, so 1–4 verbs is one row (identical height) and 5 is
-      // two, so `rows` sweeps the verb axis without repeating a height.
-      // `placeFacts` can reach 4 (`doneAtTheBottom`, the node, `Here:`,
-      // the full-pack sentence); no bestiary entry carries more than 1
-      // resist and 1 vulnerability, so 4 lines is `targetFactLines`'s
-      // own ceiling too.
-      //
-      // The strip, the action card and the hero's own cell are proven
-      // clear over the whole grid, both text scales, both 1.3 map
-      // heights (measured under `onTheTargetPhone`: 557.9 at 1.0; 1.3
-      // gave 520.8, the plan's own figure is 489.9 — both probed). The
-      // target cell is proven clear over the whole grid at 1.0. At 1.3
-      // a narrow band of hero positions exists, for the combinations
-      // listed in `dirty520`/`dirty489` below, where the target cell is
-      // the only place left for the card — measured directly, not a
-      // derived rule (a facts-only or verbs-only card is not
-      // sufficient on its own: `0,2,*` and `4,0,4` are both in the
-      // dirty sets). This is Main's decision, recorded next to PLAN
-      // §9.6's existing 5-button acceptance, not asserted here.
-      for (final facts in [0, 1, 2, 3, 4]) {
-        for (final rows in [0, 1, 2]) {
-          for (final lines in [2, 3, 4]) {
-            sweep(
-              const Size(392.7, 557.9),
-              1.0,
-              facts,
-              rows,
-              lines,
-              expectTargetCellClear: true,
-            );
-            final dirty520 = const {
-              '0,2,4',
-              '1,2,3',
-              '1,2,4',
-              '2,1,4',
-              '2,2,3',
-              '2,2,4',
-              '3,1,4',
-              '3,2,3',
-              '3,2,4',
-              '4,1,3',
-              '4,1,4',
-              '4,2,2',
-              '4,2,3',
-              '4,2,4',
-            };
-            final dirty489 = const {
-              '0,2,3',
-              '0,2,4',
-              '1,1,4',
-              '1,2,3',
-              '1,2,4',
-              '2,1,4',
-              '2,2,2',
-              '2,2,3',
-              '2,2,4',
-              '3,1,3',
-              '3,1,4',
-              '3,2,2',
-              '3,2,3',
-              '3,2,4',
-              '4,0,4',
-              '4,1,3',
-              '4,1,4',
-              '4,2,2',
-              '4,2,3',
-              '4,2,4',
-            };
-            final key = '$facts,$rows,$lines';
-            sweep(
-              const Size(392.7, 520.8),
-              1.3,
-              facts,
-              rows,
-              lines,
-              expectTargetCellClear: !dirty520.contains(key),
-            );
-            sweep(
-              const Size(392.7, 489.9),
-              1.3,
-              facts,
-              rows,
-              lines,
-              expectTargetCellClear: !dirty489.contains(key),
-            );
-          }
-        }
+      // `placeFacts` and `cardVerbsFor` no longer shape this area (the bar
+      // owns them off the map now); only the target card's own height
+      // varies, 2–4 lines being `targetFactLines`'s own ceiling (no
+      // bestiary entry carries more than 1 resist and 1 vulnerability).
+      // Both Task 13 widget map sizes are proven clear of the strip and the
+      // hero's own cell; the target cell is proven clear too at s 1.0. At
+      // s 1.3 the target cell is not asserted here — this is an
+      // intermediate map (the log row still stands), and Task 14 re-runs
+      // this sweep on the final map.
+      for (final lines in [2, 3, 4]) {
+        sweep(
+          const Size(392.7, 423.9),
+          1.0,
+          lines,
+          expectTargetCellClear: true,
+        );
+        sweep(
+          const Size(392.7, 369.4),
+          1.3,
+          lines,
+          expectTargetCellClear: false,
+        );
       }
     });
   });

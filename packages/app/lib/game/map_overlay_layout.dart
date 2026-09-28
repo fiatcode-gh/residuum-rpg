@@ -89,70 +89,16 @@ double _overlapArea(Rect rect, Rect other) {
   return overlap.width * overlap.height;
 }
 
-Rect placeActionCard({
-  required Size map,
-  required double height,
-  required Rect hero,
-  Rect? strip,
-}) {
-  const m = crawlOverlayMargin;
-  final w = map.width - 2 * m;
+Rect targetCardArea({required Size map, Rect? strip}) {
   final stripAtTop = strip != null && strip.center.dy < map.height / 2;
-  final topLimit = stripAtTop ? strip.bottom : 0.0;
-  final bottomLimit = strip != null && !stripAtTop ? strip.top : map.height;
-  final bottom = Rect.fromLTWH(m, bottomLimit - m - height, w, height);
-  final top = Rect.fromLTWH(m, topLimit + m, w, height);
-  final block = heroBlock(hero);
-  if (!bottom.overlaps(block)) return bottom;
-  if (!top.overlaps(block)) return top;
-  return _overlapArea(bottom, block) <= _overlapArea(top, block) ? bottom : top;
-}
-
-Rect targetCardArea({
-  required Size map,
-  required Rect hero,
-  Rect? actionCard,
-  Rect? strip,
-}) {
-  final stripAtTop = strip != null && strip.center.dy < map.height / 2;
-  var top = stripAtTop ? strip.bottom : 0.0;
-  var bottom = strip != null && !stripAtTop ? strip.top : map.height;
-  if (actionCard != null) {
-    if (actionCard.center.dy >= hero.center.dy) {
-      bottom = math.min(bottom, actionCard.top);
-    } else {
-      top = math.max(top, actionCard.bottom);
-    }
-  }
+  final top = stripAtTop ? strip.bottom : 0.0;
+  final bottom = strip != null && !stripAtTop ? strip.top : map.height;
   return Rect.fromLTRB(0, top, map.width, bottom);
 }
 
-(Offset, Offset)? actionCardLeader({
-  required Size map,
-  required Rect card,
-  required Rect hero,
-}) {
-  if (!(Offset.zero & map).overlaps(hero)) return null;
-  final x = hero.center.dx;
-  final tx = x.clamp(card.left + 6, card.right - 6);
-  if (card.center.dy >= hero.center.dy) {
-    return (Offset(x, hero.bottom), Offset(tx, card.top));
-  }
-  return (Offset(x, hero.top), Offset(tx, card.bottom));
-}
-
-Rect recenterRect(Size map, {Rect? actionCard}) {
-  final base = Rect.fromLTWH(
-    map.width - 8 - crawlTouchTarget,
-    map.height - 8 - crawlTouchTarget,
-    crawlTouchTarget,
-    crawlTouchTarget,
-  );
-  if (actionCard == null || !base.overlaps(actionCard)) return base;
-  return Rect.fromLTWH(
-    base.left,
-    actionCard.top - 8 - crawlTouchTarget,
-    crawlTouchTarget,
-    crawlTouchTarget,
-  );
-}
+Rect recenterRect(Size map) => Rect.fromLTWH(
+  map.width - 8 - crawlTouchTarget,
+  map.height - 8 - crawlTouchTarget,
+  crawlTouchTarget,
+  crawlTouchTarget,
+);

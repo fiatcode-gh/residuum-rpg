@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:residuum_app/game/action_card.dart';
+import 'package:residuum_app/game/action_bar.dart';
 import 'package:residuum_app/game/dungeon_palette.dart';
 import 'package:residuum_app/game/dungeon_scene.dart';
 import 'package:residuum_app/game/game_bloc.dart';
@@ -242,7 +242,7 @@ Future<void> _tapTile(
 }
 
 Finder _cardVerb(String id) => find.descendant(
-  of: find.byKey(actionCardKey),
+  of: find.byKey(actionBarKey),
   matching: find.byKey(ValueKey(id)),
 );
 
@@ -328,7 +328,7 @@ void main() {
     expect(bloc.state.game.hero.hp, greaterThan(hpBefore));
   });
 
-  testWidgets('wait: the action card control holds ground for a turn', (
+  testWidgets('wait: the action bar control holds ground for a turn', (
     tester,
   ) async {
     final bloc = await _pushCrawl(tester, _roadScene());
@@ -342,7 +342,7 @@ void main() {
     );
   });
 
-  testWidgets('flee: the action card control walks the hero off the ring', (
+  testWidgets('flee: the action bar control walks the hero off the ring', (
     tester,
   ) async {
     final bloc = await _pushCrawl(tester, _roadScene());
@@ -353,7 +353,7 @@ void main() {
     expect(bloc.state.hasFled, isTrue);
   });
 
-  testWidgets('pick up: the action card takes what is underfoot', (
+  testWidgets('pick up: the action bar takes what is underfoot', (
     tester,
   ) async {
     final bloc = await _pushCrawl(tester, _landingScene());
@@ -365,7 +365,7 @@ void main() {
     expect(bloc.state.game.inventory, hasLength(2));
   });
 
-  testWidgets('mine/gather: the action card works the node underfoot', (
+  testWidgets('mine/gather: the action bar works the node underfoot', (
     tester,
   ) async {
     final bloc = await _pushCrawl(tester, _gatherScene());
@@ -376,7 +376,7 @@ void main() {
     expect(bloc.state.nodeUnderfoot, isNull);
   });
 
-  testWidgets('descend, then ascend: the action card moves a floor at a time', (
+  testWidgets('descend, then ascend: the action bar moves a floor at a time', (
     tester,
   ) async {
     final bloc = await _pushCrawl(tester, _descendScene());
@@ -390,7 +390,7 @@ void main() {
     expect(bloc.state.game.depth, 1);
   });
 
-  testWidgets('move on: the action card clears a won road fight', (
+  testWidgets('move on: the action bar clears a won road fight', (
     tester,
   ) async {
     await _pushCrawl(tester, _clearedRoadScene());
@@ -401,7 +401,7 @@ void main() {
     expect(find.byType(GameScreen), findsNothing);
   });
 
-  testWidgets('leave/finish: the action card ends a bottom-floor delve', (
+  testWidgets('leave/finish: the action bar ends a bottom-floor delve', (
     tester,
   ) async {
     await _pushCrawl(tester, _bottomLandingScene());

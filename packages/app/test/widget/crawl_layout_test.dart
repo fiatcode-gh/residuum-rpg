@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:residuum_app/game/action_bar.dart';
 import 'package:residuum_app/game/crawl_hud.dart';
 import 'package:residuum_app/game/crawl_menu.dart';
 import 'package:residuum_app/game/crawl_style.dart';
@@ -161,31 +162,33 @@ Future<void> _tapTile(WidgetTester tester, Position tile) async {
 
 void main() {
   testWidgets(
-    'regions run HUD, map, log row, bar top to bottom, each clear of the '
-    'safe body',
+    'regions run HUD, map, log row, bar, menu top to bottom, each clear of '
+    'the safe body',
     (tester) async {
       await _openCrawl(tester, _exploringGame());
 
       final hud = tester.getRect(find.byKey(crawlHudKey));
       final map = tester.getRect(find.byKey(dungeonSceneSlotKey));
       final logRow = tester.getRect(find.byKey(logRowKey));
-      final bar = tester.getRect(find.byKey(crawlMenuKey));
+      final bar = tester.getRect(find.byKey(actionBarKey));
+      final menu = tester.getRect(find.byKey(crawlMenuKey));
       final surfaceHeight =
           tester.view.physicalSize.height / tester.view.devicePixelRatio;
 
       expect(hud.top, closeTo(34.9, 0.5));
       expect(hud.bottom, closeTo(map.top, 0.01));
       expect(map.bottom + crawlPanelGap, closeTo(logRow.top, 0.01));
-      expect(logRow.bottom + crawlGap, closeTo(bar.top, 0.01));
+      expect(logRow.bottom + crawlPanelGap, closeTo(bar.top, 0.01));
+      expect(bar.bottom + crawlGap, closeTo(menu.top, 0.01));
       expect(
-        bar.bottom + crawlBottomGap,
+        menu.bottom + crawlBottomGap,
         closeTo(surfaceHeight - crawlGestureClear, 0.5),
       );
     },
   );
 
   testWidgets(
-    'the HUD, map, log row and menu rects are identical, and the menu '
+    'the HUD, map, log row, bar and menu rects are identical, and the menu '
     'order unchanged, in exploration, armed, Watched and battle',
     (tester) async {
       const knownSpells = {'firebolt'};
@@ -199,6 +202,7 @@ void main() {
       final gold = tester.getRect(find.byKey(crawlGoldKey));
       final map = tester.getRect(find.byKey(dungeonSceneSlotKey));
       final logRow = tester.getRect(find.byKey(logRowKey));
+      final bar = tester.getRect(find.byKey(actionBarKey));
       final menu = tester.getRect(find.byKey(crawlMenuKey));
       const menuSlotIds = [
         'menu-quests',
@@ -218,6 +222,7 @@ void main() {
         expect(tester.getRect(find.byKey(crawlGoldKey)), gold);
         expect(tester.getRect(find.byKey(dungeonSceneSlotKey)), map);
         expect(tester.getRect(find.byKey(logRowKey)), logRow);
+        expect(tester.getRect(find.byKey(actionBarKey)), bar);
         expect(tester.getRect(find.byKey(crawlMenuKey)), menu);
         expect([
           for (final id in menuSlotIds)
@@ -298,8 +303,15 @@ void main() {
     final mapRect = tester.getRect(find.byKey(dungeonSceneSlotKey));
     expect(mapRect, mapRectNoNotes);
 
+    expect(
+      find.descendant(
+        of: find.byKey(dungeonSceneSlotKey),
+        matching: find.textContaining('Underfoot:'),
+      ),
+      findsNothing,
+    );
     final note = find.descendant(
-      of: find.byKey(dungeonSceneSlotKey),
+      of: find.byKey(actionBarKey),
       matching: find.textContaining('Underfoot:'),
     );
     expect(note, findsOneWidget);
