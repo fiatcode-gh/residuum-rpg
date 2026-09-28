@@ -5,7 +5,7 @@
 **Unit 16.6 is accepted (user sign-off 2026-09-28).** Branch
 `residuum-visual-reboot-16.6`, not pushed; see the ledger's "Unit 16.6
 accepted". **Next: the user's integration choice** (push, pull request,
-merge are each separately gated; split `b536349` first). Then Unit 16.7,
+merge are each separately gated; the mixed commit is already split). Then Unit 16.7,
 the Hero screen (stats, inventory, equipment).
 
 - Owed device cleanup: the vivo I2219 needs its saves restored from
