@@ -5494,3 +5494,13 @@ request exists, and the integration choice is the user's.
   cell or the turn strip. M1 (a stale dartdoc naming the log peek) and M2
   (a stale test doc) parked. APK `5d8d5d3e…` built. Next: DEV-EXP-3 and
   DEV-BAT-4 on the AVD (the only device attached), then the user's check.
+- **DEV-EXP-3** on the AVD (`.flow/evidence/86d4727/DEV-EXP-3/`): PASS for
+  the ACTIONS bar and its quiet line, Pick up, Gather, Wait while Watched,
+  the bar and map rects being constant to the pixel (bar 127.6 dp), the
+  borderless 3-line strip, no step lines, the page opening and closing with
+  Back closing it first, drags just above the strip panning, and recenter
+  above the strip. Stairs were not reached (UNKNOWN; covered by widget
+  tests). Caveat: the oldest line's end washes out over the torch bloom
+  when the hero is panned onto the strip. Main inspected `10_after_wait`
+  and `log_page_full`. Observation for the user: with only Wait, the bar
+  shows a large empty band above the button (reserved fact lines).
