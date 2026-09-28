@@ -41,13 +41,12 @@ The epic was opened from an approved external planning handoff:
   `residuum-visual-reboot-16` (`b301f27`, pushed, no pull request) and is
   **not accepted**: device exploration evidence showed it far from the
   references.
-- **Unit 16.5 (ASCII crawl full parity)** has an approved contract
-  (`units/unit-16.5/CONTRACT.md`, 2026-09-23) on the same branch, and planning
-  is in progress. It supersedes the 36 dp cell, the monospace retirement, the
-  600 dp action-driven chrome ceiling, U15's chip-fit search and the textured
-  or material dungeon direction. U16 and U16.5 are accepted together.
-- The test app is installed on the user's physical phone with U16 test
-  saves. U16.5 ends by uninstalling it and verifying absence.
+- **Units 16 and 16.5 are accepted and merged to `main`** as `4b8bd10`
+  (PR #25).
+- **Unit 16.6 is paused before Checkpoint A** on
+  `residuum-visual-reboot-16.6`. Contract `31edb858` and plan `d4cb78a7`
+  are approved. The fresh Task 03 void-tap correction executor is active;
+  device work follows its proof and a new scoped acceptance review.
 
 ## Epic status
 
@@ -69,6 +68,7 @@ The epic was opened from an approved external planning handoff:
 | Units 12.5–15 | see decision log | code of Units 13–14 merged by PR #23 `4033de5`, Unit 15 by PR #24 `374ee77`; Unit 12.5 was a device gate (see decision log) | see decision log and RESUME | U13 visual system and U14 type authority are partly superseded by U16.5 |
 | Unit 16 — ASCII atmospheric crawl parity | Unit 15 | **implemented, not accepted** | package gates passed; one exploration device capsule; parity failed | `b301f27` on `residuum-visual-reboot-16`; contract: `units/unit-16/CONTRACT.md` |
 | Unit 16.5 — ASCII crawl full parity | Unit 16 | **contract approved; planning** | pending | contract: `units/unit-16.5/CONTRACT.md`; accepted together with U16 |
+| Unit 16.6 — crawl controls and layout revamp | Units 16, 16.5 | **Task 03 correction executing** | Approved contract and plan; correction adds floor-only step hit and diagonal-void regression while retaining exact far-cell auto-walk | Full Green and fresh code review before corrected-head Checkpoint A |
 
 Completed units are ordered **1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11**.
 Unit 12 follows Unit 11 and consumes its renderer as a closed dependency.
@@ -5158,3 +5158,120 @@ request exists, and the integration choice is the user's.
   (the `frost-lance` id in the app), and the closure Minors (a few remaining
   test-body comments).
 - The user authorized push and opening a pull request. Merge stays gated.
+
+## Unit 16.6 intake — 2026-09-24
+
+- Units 16 and 16.5 merged to `main` as `4b8bd10` (PR #25). The user then
+  judged the crawl cramped and its UX bad, and set **"feels right" over mock
+  parity, same art direction.**
+- Discovery walkthrough on the vivo I2505 (capsules UXW-EXP, UXW-BAT, ADB
+  input, `.flow/evidence/4b8bd10/`): both save slots backed up first and
+  restored byte-identically (Main re-hashed after each capsule). Findings in
+  `units/unit-16.6/recon.md`. Verifier claims corrected at source: dismissing
+  a callout costs no turn and the Watched "soft-lock" is a refusal loop plus a
+  missing Wait, not a rules lock (`game_bloc.dart:787-801`,
+  `game_screen.dart:361-453`).
+- A GPT mock pass (`external/unit-16.6-mock-brief/BRIEF.md`) did not produce
+  usable mocks; the user set the direction directly instead.
+- **User decisions (2026-09-24):** persistent bottom menu Quests / Spells /
+  Quick / Hero; Spells and Quick open child pop-ups, Spells works outside
+  combat, Quick drinks in two taps; Quests shows a coming-soon notice (no
+  quest system exists; user's explicit choice); Hero opens the character
+  screen (Unit 16.7; until then today's pack screen); Wait moves beside the
+  log, visible in combat and while Watched, with Flee beside it when legal;
+  HP/mana/gold HUD replaces the wordmark; place actions become on-map
+  pop-ups; battle info floats over the map; full-screen app; map big enough
+  to tap adjacent floor, pan kept. Unit split: 16.6 crawl screen, 16.7 Hero
+  screen.
+- **Superseded by U16.6 (on implementation):** the 16×20 dp cell, the U16.5
+  fixed-chrome-by-mode rule and 45%/35% floors, the five-slot contextual
+  action bar, the three-column hero and combat panels, and "action shelf =
+  verbs" in the four-region rule.
+- Contract `units/unit-16.6/CONTRACT.md` approved by the user via
+  `flow_gate` (sha256 `d0bae5fa…`). Feature branch
+  `residuum-visual-reboot-16.6` from `4b8bd10`. Next: `flow-planner`.
+- `flow-planner` wrote `units/unit-16.6/PLAN.md` and ten task capsules
+  (01 full-screen … 10 docs supersession), strictly sequential with
+  Checkpoint A after Task 03. Main checked the plan's key platform claim at
+  source: Flutter's `system_chrome.dart` states that apps targeting API 36
+  have `SystemUiMode` immersive values ignored, so full-screen is native in
+  `MainActivity.kt`. The user accepted the planner's defaults for Q1–Q6
+  (recorded in PLAN section 7). **Plan approved by the user via `flow_gate`
+  (sha256 `2378cf11…`).** The user will run execution from a fresh session.
+
+### Unit 16.6 restart — 2026-09-24
+
+- A separate session had executed Tasks 01–03 (`67a7df5`, `4d69ed5`,
+  `0f8e4e0`) and amended the contract and plan after its Checkpoint A review.
+  **The user chose to revert that work and start over in this session.**
+  The branch was reset to `4b8bd10`; the old head is kept as local branch
+  `backup/u166-other-session-0f8e4e0`, and its ledger, resume, contract,
+  plan and briefs are copied to `.flow/evidence/u166-other-session/`. The
+  contract (`d0bae5fa…`), plan (`2378cf11…`) and briefs 02/03 were restored
+  from git objects to the revisions the user approved here. No device action
+  had run in that session.
+- **Trap carried from that session's review (CP-A-1/2):** the 48 dp
+  near-hero step box let a tap on the visible void (off the floor, e.g. an
+  edge diagonal) choose a direction and step. A near-hero step must start
+  only from a tap that maps to a floor cell. Also, far-cell auto-walk
+  selects the exact tapped 24×30 dp cell, which is smaller than 48 dp — the
+  contract's "every map interaction ≥ 48 dp" overstates it. Task 03 must
+  handle both; if it cannot within the brief, escalate.
+- Task 01 accepted: `2be5f62` native immersive bars in `MainActivity.kt`
+  (SHORT_EDGES cut-out, re-hide on post-resume and focus), 18 dp gesture
+  clearance. Red observed (bar bottom 869.64 > 852.14); format/analyze clean;
+  1255/1255; debug APK builds. System-bar hiding is proved only at CP-A.
+- **Amendment A1 (Task 02, architect ruling):** at 31.5 the Plex Mono `@`
+  line box overflows the 24×30 cell by 2.28 dp against the existing
+  containment tolerance of 0.075 × cell height (2.25 dp). PLAN G2 had
+  assumed the line box equals the em square. The tolerance stays; the map
+  glyph drops to 31 (about 2.0 dp overflow). The 0.5 dp change is invisible
+  on the phone and needs no plan re-approval.
+- Task 02 accepted: `7aa0289` 24×30 cells, glyph 31 (A1), badge 15,
+  hero-centred camera with bounded pan. The first executor was interrupted
+  and a second lost its connection before committing; the third turn of the
+  same executor finished it. Two `map_touch_test` fixtures were migrated to
+  the new geometry with the rule under test unchanged. Main reran analyze
+  (clean) on the uncommitted tree; the executor's final suite: 1252/1252.
+- Task 03 accepted: `d86495e` 48 dp step box with the floor-only guard;
+  `5b6376b` adds the vertical-dominant void case after Main's mutation
+  check showed the first void cases passed with the guard removed (the
+  in-bounds check hid it). Mutant fails the new case; restored file hash
+  matches the commit. Suite 1263/1263, analyze clean.
+- Checkpoint A: checkpoint `.flow/checkpoints/5b6376b.md`, capsule CP-A.
+- CP-A is blocked: the phone dropped off wireless ADB overnight. The APK for
+  `5b6376b` is built (`3dfb6665…`). No ADB command has run at this head.
+- **CP-A passed** on the vivo I2219 (the I2505 was not attached) at
+  `5b6376b`, APK `3dfb6665…`, evidence `.flow/evidence/5b6376b/CP-A/`: bars
+  hidden on world, town, dialog, crawl and pack; they re-hide after home,
+  app switch and a transient top swipe; nothing under the cut-out; glyph
+  pitch 66 × 82.5 px; hero centred at the same pixel across moves; drag
+  pans within bounds; recenter appears bottom-right and returns exactly.
+  Measured: top cut-out inset 96 px = 34.9 dp (plan estimate 24); gesture
+  bar 49 px = 17.8 dp (the 18 dp clearance holds). Main inspected
+  `13-step-south` and `18-drag-pan-opposite2`. App left installed; the phone
+  had no app before (`device-state-before.md`), so uninstall at unit end.
+- **Amendment A2 (Task 04 test profile):** `onTheTargetPhone` keeps the
+  I2505 size (the shorter phone, the tighter layout) with the I2219's
+  measured top inset `T = 34.9`, taking the worst of both phones.
+- Task 04 accepted: `4c6abba` HUD (HP, mana when known, gold, meta, chips)
+  replaces the wordmark header; hero and combat panels and their tokens
+  deleted; `heroLabel` removed. Suite 1232/1232, analyze clean. Widget map
+  height at the test profile: 561.9 dp exploring/Watched/armed, 503.9 in
+  battle until Task 09 removes the dock row. **A3:** one callout test relied
+  on an exact-centre float cancellation that broke under the new profile;
+  rewritten to tap off-centre in the hero cell and assert dismissal only.
+  Process note: the executor read figures with a temporary print in a
+  tracked test and reverted it (the rule is an untracked copy); no residue.
+- Task 05 accepted: `04ff171` `offersWait` (not game over; battle or enemy
+  in sight), Wait and Flee in a constant-height log row beside the peek;
+  Watched-stall regression test (Wait advances the game). Suite 1247/1247,
+  analyze clean. Consequence noted: the open log drawer covers Wait/Flee,
+  as it covered the peek; closing the drawer is one tap. Main's wait was
+  interrupted once mid-task; the executor resumed from its own edits.
+- Task 06 accepted: `a4d61b8` on-map place pop-up (pick up, mine/gather,
+  stairs, leave/Finish, move on) with one overlay placement owner
+  (`map_overlay_layout.dart`) that never overlaps the hero block; exits
+  moved to `crawl_exits.dart`; notes overlay and the six place verbs left
+  the action row; `crawl_controls_test.dart` deleted (retired presentation).
+  Suite 1279/1279, format and analyze clean.

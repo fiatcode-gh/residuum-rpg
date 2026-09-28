@@ -1,13 +1,28 @@
 # Resume Visual Reboot
 
-**Units 16 and 16.5 are accepted (user sign-off 2026-09-24).** Branch
-`residuum-visual-reboot-16` is pushed and has a pull request against `main`.
-**Next: the user's merge decision.** No device cleanup is owed (the user
-waived it).
+**Units 16 and 16.5 are accepted and merged to `main` (`4b8bd10`, PR #25).**
 
-Parked follow-ups for a later unit: an upright wall `#` if wanted, an 8 dp map
-gutter (touches the projection), the hero-panel left-column gap, spell marks
-keyed on content (not the `frost-lance` id), the remaining test-body comments.
+**Active: Unit 16.6 "crawl controls and layout revamp" — restarted
+2026-09-24 in the controlling session.** A separate session's Tasks 01–03
+were reverted by the user's choice (ledger "Unit 16.6 restart"); its head is
+kept as `backup/u166-other-session-0f8e4e0` and its artifacts in
+`.flow/evidence/u166-other-session/`. Branch `residuum-visual-reboot-16.6`
+is back at `4b8bd10` with no production edits.
+
+- Contract and plan restored to the revisions approved here, then amended
+  once (floor-only near-hero step; exact far-cell auto-walk as a 48 dp
+  exception). Current approvals are bound in `flow_gate`, scope
+  `visual-reboot/unit-16.6`.
+- Device: the vivo I2505 (`192.168.18.149:42999`) holds the `4b8bd10` debug
+  APK and the user's saves, equal to `.flow/evidence/4b8bd10/save-backup/`.
+  A second device is sometimes attached: always pass `-s`.
+- **Next: fresh `flow-plan-executor` per task, starting at
+  `plan-tasks/01-full-screen.md`;** Checkpoint A after Task 03.
+
+Parked follow-ups (folded into 16.6 recon where relevant): an upright wall
+`#` if wanted, an 8 dp map gutter, the hero-panel left-column gap, spell
+marks keyed on content (not the `frost-lance` id), the remaining test-body
+comments.
 
 ## Historical U16 detail
 
